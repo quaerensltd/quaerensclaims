@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Submit Your Claim | Quaerens Ltd</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #f3f4f6;
+        padding: 2rem;
+        margin: 0;
+        color: #1f2937;
+      }
+      .form-wrapper {
+        max-width: 700px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+      .form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .form-header h1 {
+        font-size: 1.5rem;
+        margin: 0;
+      }
+      .form-header img {
+        height: 40px;
+      }
+      label {
+        display: block;
+        margin: 1rem 0 0.5rem;
+        font-weight: 600;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+      button {
+        margin-top: 1.5rem;
+        width: 100%;
+        background: #2563eb;
+        color: white;
+        padding: 0.75rem;
+        font-weight: bold;
+        font-size: 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #1d4ed8;
+      }
+      .message {
+        margin-top: 1rem;
+        text-align: center;
+        font-weight: 500;
+      }
+      .upload-area {
+        border: 2px dashed #9ca3af;
+        padding: 1rem;
+        text-align: center;
+        border-radius: 6px;
+        margin-top: 1rem;
+        background: #f9fafb;
+        cursor: pointer;
+      }
+      .upload-area.dragover {
+        background: #e0f2fe;
+        border-color: #3b82f6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-wrapper">
+      <div class="form-header">
+        <h1>Submit Your Claim</h1>
+        <img src="/quaerens-logo.png" alt="Quaerens Logo" />
+      </div>
+      <form id="claimForm">
+        <label for="title">Title</label>
+        <select id="title" required>
+          <option value="">Select...</option>
+          <option>Mr</option>
+          <option>Mrs</option>
+          <option>Miss</option>
+          <option>Ms</option>
+          <option>Other</option>
+        </select>
+
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required />
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required />
+
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" required />
+
+        <label for="type">Type of Claim</label>
+        <select id="type" required>
+          <option value="">Select...</option>
+          <option value="mis-sold product">Mis-sold Product</option>
+          <option value="delayed refund">Delayed Refund</option>
+          <option value="hidden fees">Hidden Fees</option>
+          <option value="flight delay">Flight Delay</option>
+          <option value="Spanish mortgage">Spanish Mortgage</option>
+          <option value="Package holiday issue">Package Holiday Issue</option>
+          <option value="Data breach / GDPR">Data Breach / GDPR</option>
+          <option value="Bank charges">Bank Charges</option>
+          <option value="Energy provider">Energy Provider</option>
+        </select>
+
+        <label for="details">Claim Details</label>
+        <textarea id="details" rows="5" required></textarea>
+
+        <label for="fileUpload">Attach a file (PDF, image, etc.)</label>
+        <div class="upload-area" id="uploadArea">Drag & Drop or Click to Upload</div>
+        <input type="file" id="fileUpload" hidden />
+
+        <button type="submit">Submit Claim</button>
+        <div class="message" id="message"></div>
+      </form>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "quaerensclaims.firebaseapp.com",
+        projectId: "quaerensclaims",
+        storageBucket: "quaerensclaims.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const storage = getStorage(app);
+
+      const form = document.getElementById("claimForm");
+      const message = document.getElementById("message");
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileUpload");
+      let uploadedFile = null;
+
+      uploadArea.addEventListener("click", () => fileInput.click());
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+      uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        fileInput.files = e.dataTransfer.files;
+        uploadedFile = fileInput.files[0];
+        uploadArea.textContent = uploadedFile.name;
+      });
+      fileInput.addEventListener("change", () => {
+        uploadedFile = fileInput.files[0];
+        uploadArea.textContent = uploadedFile.name;
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        message.textContent = "Submitting...";
+
+        const title = document.getElementById("title").value;
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const phone = document.getElementById("phone").value;
+        const type = document.getElementById("type").value;
+        const details = document.getElementById("details").value;
+
+        let fileUrl = "";
+
+        try {
+          if (uploadedFile) {
+            const storageRef = ref(storage, `claims/${Date.now()}_${uploadedFile.name}`);
+            const snapshot = await uploadBytes(storageRef, uploadedFile);
+            fileUrl = await getDownloadURL(snapshot.ref);
+          }
+
+          const subject = `New Claim Submitted: ${type}`;
+          const html = `
+            <p><strong>Title:</strong> ${title}</p>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone}</p>
+            <p><strong>Claim Type:</strong> ${type}</p>
+            <p><strong>Details:</strong> ${details}</p>
+            ${fileUrl ? `<p><strong>Attachment:</strong> <a href="${fileUrl}" target="_blank">View File</a></p>` : ""}
+          `;
+
+          const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to: email, subject, html })
+          });
+
+          if (response.ok) {
+            message.textContent = "✅ Claim submitted successfully!";
+            form.reset();
+            uploadArea.textContent = "Drag & Drop or Click to Upload";
+            uploadedFile = null;
+          } else {
+            message.textContent = "⚠️ An error occurred. Please try again.";
+          }
+        } catch (err) {
+          console.error(err);
+          message.textContent = "⚠️ An error occurred. Please try again.";
+        }
+      });
+    </script>
+  </body>
+</html>
