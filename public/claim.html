@@ -64,11 +64,6 @@
       button:hover {
         background: #1d4ed8;
       }
-      .message {
-        margin-top: 1rem;
-        text-align: center;
-        font-weight: 500;
-      }
       .upload-area {
         border: 2px dashed #9ca3af;
         padding: 1rem;
@@ -82,7 +77,19 @@
         background: #e0f2fe;
         border-color: #3b82f6;
       }
-    </style>
+      .message {
+    margin-top: 1rem;
+    text-align: center;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.4s ease;
+  }
+  .message.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
   </head>
   <body>
   
@@ -216,19 +223,22 @@
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
 
       const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
+        apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
         authDomain: "quaerensclaims.firebaseapp.com",
         projectId: "quaerensclaims",
         storageBucket: "quaerensclaims.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        messagingSenderId: "57715464932",
+        appId: "1:57715464932:web:a69a4949f36c2ad214eaf1"
       };
 
       const app = initializeApp(firebaseConfig);
       const storage = getStorage(app);
+      const db = getFirestore(app);
 
       const form = document.getElementById("claimForm");
       const message = document.getElementById("message");
@@ -255,55 +265,73 @@
       });
 
       form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        message.textContent = "Submitting...";
+  e.preventDefault();
+  message.textContent = "Submitting...";
 
-        const title = document.getElementById("title").value;
-        const name = document.getElementById("name").value;
-        const email = document.getElementById("email").value;
-        const phone = document.getElementById("phone").value;
-        const type = document.getElementById("type").value;
-        const details = document.getElementById("details").value;
+  const title = document.getElementById("title").value;
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const phone = document.getElementById("phone").value;
+  const type = document.getElementById("type").value;
+  const details = document.getElementById("details").value;
 
-        let fileUrl = "";
+  let fileUrl = "";
 
-        try {
-          if (uploadedFile) {
-            const storageRef = ref(storage, `claims/${Date.now()}_${uploadedFile.name}`);
-            const snapshot = await uploadBytes(storageRef, uploadedFile);
-            fileUrl = await getDownloadURL(snapshot.ref);
-          }
+  try {
+    if (uploadedFile) {
+      const storageRef = ref(storage, `claims/${Date.now()}_${uploadedFile.name}`);
+      const snapshot = await uploadBytes(storageRef, uploadedFile);
+      fileUrl = await getDownloadURL(snapshot.ref);
+    }
 
-          const subject = `New Claim Submitted: ${type}`;
-          const html = `
-            <p><strong>Title:</strong> ${title}</p>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone}</p>
-            <p><strong>Claim Type:</strong> ${type}</p>
-            <p><strong>Details:</strong> ${details}</p>
-            ${fileUrl ? `<p><strong>Attachment:</strong> <a href="${fileUrl}" target="_blank">View File</a></p>` : ""}
-          `;
+    const subject = `New Claim Submitted: ${type}`;
+    const html = `
+      <p><strong>Title:</strong> ${title}</p>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Claim Type:</strong> ${type}</p>
+      <p><strong>Details:</strong> ${details}</p>
+      ${fileUrl ? `<p><strong>Attachment:</strong> <a href="${fileUrl}" target="_blank">View File</a></p>` : ""}
+    `;
 
-          const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ to: email, subject, html })
-          });
+    // ✅ Save to Firestore
+    await addDoc(collection(db, "claims"), {
+      title,
+      name,
+      email,
+      phone,
+      type,
+      details,
+      fileUrl,
+      html,
+      status: "pending",
+      createdAt: new Date()
+    });
 
-          if (response.ok) {
-            message.textContent = "✅ Claim submitted successfully!";
-            form.reset();
-            uploadArea.textContent = "Drag & Drop or Click to Upload";
-            uploadedFile = null;
-          } else {
-            message.textContent = "⚠️ An error occurred. Please try again.";
-          }
-        } catch (err) {
-          console.error(err);
-          message.textContent = "⚠️ An error occurred. Please try again.";
-        }
-      });
+    // ✅ Send email (optional: you can move this before or after Firestore)
+    const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: email, subject, html })
+    });
+
+    if (response.ok) {
+        message.textContent = "✅ Claim submitted successfully!";
+message.classList.add("show");
+form.reset();
+uploadArea.textContent = "Drag & Drop or Click to Upload";
+uploadedFile = null;
+    } else {
+      message.textContent = "⚠️ Claim saved but email failed. Please check.";
+    }
+  } catch (err) {
+    console.error(err);
+    message.textContent = "⚠️ An error occurred. Please try again.";
+message.classList.add("show");
+  }
+});
+
     </script>
   </body>
 </html>
