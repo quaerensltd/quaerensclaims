@@ -6,11 +6,17 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 const db = admin.firestore();
 
-const resend = new Resend("your-resend-api-key-here"); // wrap in quotes
+const resend = new Resend("re_1234567890abcdef"); // your real Resend API key here
 
 exports.sendClaimEmail = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
+    if (req.method === "OPTIONS") {
+      // Handle preflight requests
+      return res.status(204).send("");
+    }
+
     if (req.method !== "POST") {
+      // Reject anything that is not POST
       return res.status(405).send("Method Not Allowed");
     }
 
@@ -30,9 +36,9 @@ exports.sendClaimEmail = functions.https.onRequest((req, res) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // Send email (optional: disable temporarily if not verified yet)
+      // Send email with Resend
       await resend.emails.send({
-        from: "claims@quaerens.co.uk", // or use quaerensltd@consultant.com temporarily
+        from: "claims@quaerens.co.uk", // or your consultant.com if needed temporarily
         to,
         subject,
         html,
