@@ -10,27 +10,27 @@
     body {
       font-family: 'Inter', sans-serif;
     }
-  </style>
-  <script>
-    function calculateCompensation() {
-      const delay = parseInt(document.getElementById('delay').value);
-      const distance = parseInt(document.getElementById('distance').value);
-      const result = document.getElementById('result');
-      if (isNaN(delay) || isNaN(distance)) {
-        result.innerText = 'Please enter valid numbers.';
-        return;
-      }
-      if (delay < 180) {
-        result.innerText = 'No compensation: Delay must be at least 3 hours.';
-      } else {
-        let compensation = 0;
-        if (distance < 1500) compensation = 250;
-        else if (distance <= 3500) compensation = 400;
-        else compensation = 600;
-        result.innerText = `You may be entitled to €${compensation} in compensation.`;
-      }
+    .content-box {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f9fafb;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
-  </script>
+    form label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+    form input, form select {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
   <!-- Header -->
@@ -58,23 +58,33 @@
 
   <!-- Claim Calculator -->
   <section id="calculator" class="py-16 bg-white">
-    <div class="max-w-3xl mx-auto text-center">
-      <h2 class="text-2xl font-bold mb-4">Free Flight Compensation Check</h2>
-      <p class="mb-6">Fill in your flight details to check if you're eligible.</p>
-      <div class="bg-gray-100 p-6 rounded shadow-md">
-        <div class="grid grid-cols-1 gap-4 text-left">
-          <label class="block">
-            <span class="text-gray-700">Delay Duration (minutes)</span>
-            <input id="delay" type="number" class="mt-1 block w-full rounded border-gray-300" placeholder="e.g. 190" />
-          </label>
-          <label class="block">
-            <span class="text-gray-700">Flight Distance (km)</span>
-            <input id="distance" type="number" class="mt-1 block w-full rounded border-gray-300" placeholder="e.g. 1600" />
-          </label>
-          <button onclick="calculateCompensation()" class="mt-4 bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700">Check Eligibility</button>
-          <p id="result" class="mt-4 text-lg font-semibold"></p>
-        </div>
-      </div>
+    <div class="content-box">
+      <h2>✈️ Check Your Flight Delay Compensation</h2>
+      <p>Enter your flight details to see if you’re entitled to compensation under EU261.</p>
+      <form id="compensation-form">
+        <label for="departure">Departure Airport</label>
+        <input list="airports" id="departure" placeholder="e.g. Amsterdam AMS" required>
+
+        <label for="arrival">Arrival Airport</label>
+        <input list="airports" id="arrival" placeholder="e.g. Malaga AGP" required>
+
+        <label for="delay">Delay Duration</label>
+        <select id="delay" required>
+          <option value="">Select Delay Duration</option>
+          <option value="2">Less than 3 hours</option>
+          <option value="3">3 to 4 hours</option>
+          <option value="4">More than 4 hours</option>
+        </select>
+
+        <button type="submit"
+                style="margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+          Check Compensation
+        </button>
+      </form>
+
+      <div id="compensation-result" style="margin-top: 1.5rem; font-size: 1.2rem; font-weight: 500;"></div>
+
+      <datalist id="airports"></datalist>
     </div>
   </section>
 
@@ -113,15 +123,53 @@
   </section>
 
   <!-- Footer -->
-  <footer class="bg-gray-900 text-white py-8 mt-16">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-      <p>&copy; 2025 Quaerens. All rights reserved.</p>
-      <div class="space-x-4 mt-4 md:mt-0">
-        <a href="/privacy" class="text-gray-400 hover:text-white">Privacy</a>
-        <a href="/terms" class="text-gray-400 hover:text-white">Terms</a>
-        <a href="/gdpr" class="text-gray-400 hover:text-white">GDPR</a>
-      </div>
-    </div>
-  </footer>
+  <footer style="text-align: center; font-size: 0.85rem; color: #6b7280; padding: 2rem 1rem; max-width: 800px; margin: 0 auto;">
+  © 2025 Quaerens Ltd. All rights reserved.<br />
+  <a href="privacy.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Privacy Policy</a> |
+  <a href="terms.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Terms of Use</a> |
+  <a href="gdpr.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">GDPR</a> |
+  <a href="contact.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Contact Us</a>
+</footer>
+
+  <script>
+    document.getElementById('compensation-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const delay = parseInt(document.getElementById('delay').value);
+      let compensation = 0;
+
+      if (delay >= 4) {
+        compensation = 600;
+      } else if (delay >= 3) {
+        compensation = 400;
+      }
+
+      const result = document.getElementById('compensation-result');
+      if (compensation > 0) {
+        result.innerHTML = `✅ You may be entitled to <strong>€${compensation}</strong> in compensation.<br>
+          <a href="claim.html?type=flight-delay" style="color: white; background: #2563eb; padding: 0.6rem 1.2rem; border-radius: 6px; display: inline-block; margin-top: 1rem; text-decoration: none;">Start Your Claim</a>`;
+      } else {
+        result.innerHTML = `ℹ️ Unfortunately, delays under 3 hours don't qualify under EU261 rules.`;
+      }
+    });
+
+    const airportList = [
+      "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
+      "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
+      "London Gatwick (LGW)", "London Heathrow (LHR)", "Madrid Barajas (MAD)", "Malaga (AGP)", "Manchester (MAN)",
+      "Milan Malpensa (MXP)", "Munich (MUC)", "Nice Côte d'Azur (NCE)", "Oslo Gardermoen (OSL)", "Paris Charles de Gaulle (CDG)",
+      "Paris Orly (ORY)", "Porto (OPO)", "Prague Vaclav Havel (PRG)", "Rome Fiumicino (FCO)", "Stockholm Arlanda (ARN)",
+      "Vienna (VIE)", "Warsaw Chopin (WAW)", "Zagreb (ZAG)", "Zurich (ZRH)", "Athens (ATH)", "Palma de Mallorca (PMI)",
+      "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
+      "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
+    ];
+
+    const datalist = document.getElementById('airports');
+    airportList.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      datalist.appendChild(option);
+    });
+  </script>
 </body>
 </html>
