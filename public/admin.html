@@ -151,7 +151,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, updateDoc, doc, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, updateDoc, deleteDoc, doc, addDoc, Timestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -205,7 +205,8 @@
 
     async function loadClaims() {
       const filter = document.getElementById("statusFilter").value;
-      const snapshot = await getDocs(collection(db, "claims"));
+      const claimsQuery = query(collection(db, "claims"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(claimsQuery);
       table.innerHTML = "";
 
       snapshot.forEach(docSnap => {
@@ -227,9 +228,10 @@
           </td>
           <td>${extractAttachment(data.html)}</td>
           <td>
-            <a href="/claim-detail.html?id=${docSnap.id}" target="_blank">View</a>
-            <a href="/claim-detail.html?id=${docSnap.id}&pdf=true" target="_blank">PDF</a>
-          </td>
+  <a href="/claim-detail.html?id=${docSnap.id}" target="_blank">View</a>
+  <a href="/claim-detail.html?id=${docSnap.id}&pdf=true" target="_blank">PDF</a>
+  <a href="#" onclick="deleteClaim('${docSnap.id}')" style="color:red;">Delete</a>
+</td>
         `;
         table.appendChild(row);
       });
@@ -240,6 +242,14 @@
       await updateDoc(ref, { status: newStatus });
       loadClaims();
     };
+
+    window.deleteClaim = async function (id) {
+  if (confirm("Are you sure you want to delete this claim? This action cannot be undone.")) {
+    await deleteDoc(doc(db, "claims", id));
+    showToast("🗑️ Claim deleted.");
+    loadClaims(); // refresh the list
+  }
+};
 
     function extractField(html, label) {
       const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
