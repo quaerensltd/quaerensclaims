@@ -152,7 +152,7 @@ nav a:hover {
 }
 .hero-section {
   position: relative;
-  background-image: url('/images/hero-gdpr.jpg');
+  background-image: url('/images/hero-contact.jpg');
   background-size: cover;
   background-position: center;
   height: 50vh; /* Was 75vh — now reduced */
@@ -334,48 +334,201 @@ header nav a:hover {
   <section class="hero-section">
     <div class="hero-overlay"></div>
     <div class="hero-content">
-      <h1>PRIVACY POLICY</h1>
+      <h1>CONTACT US</h1>
       <p>"Quaerens Ltd"</p>
     </div>
   </section>
 
-  <div class="content-box">
-    <p>Quaerens Ltd is fully committed to protecting your personal data and complying with the General Data Protection Regulation (GDPR). We act solely as a consulting agent, coordinating claims and referring clients to external legal professionals. We are not a law firm and do not provide legal advice ourselves.</p>
+  <div class="wide-box">
+    <p><strong>Get in touch with us today for expert advice and personalized assistance. We’re here to help with any questions or concerns you may have.</strong></p>
+    <p><strong>Quaerens Ltd</strong><br>
+    71–75 Shelton Street<br>
+    Covent Garden<br>
+    WC2H 9JQ<br>
+    London<br>
+    United Kingdom</p>
+  </div>
 
-      <h3>1. Your Data Protection Rights</h3>
-      <ul>
-        <li>The right to access your personal data</li>
-        <li>The right to request correction of inaccurate data</li>
-        <li>The right to request deletion of data no longer needed</li>
-        <li>The right to restrict processing in certain situations</li>
-        <li>The right to object to processing for direct marketing</li>
-        <li>The right to data portability</li>
-      </ul>
-
-      <h3>2. Lawful Basis for Processing</h3>
-      <p>We process your data on the basis of legitimate interest, consent, and performance of a contract where applicable. In submitting a claim or enquiry, you consent to the use of your data to assess and forward your case to external legal professionals.</p>
-
-      <h3>3. Data Transfers and Storage</h3>
-      <p>Your data is stored securely in cloud-based systems with restricted access. Where data is transferred outside the UK/EEA, appropriate safeguards are in place, such as standard contractual clauses.</p>
-
-      <h3>4. Security Measures</h3>
-      <p>We use encrypted storage (Firebase), HTTPS protocols, and limited-access controls to protect your data. Our team is trained to handle personal data responsibly and in accordance with GDPR standards.</p>
-
-      <h3>5. Retention Policy</h3>
-      <p>We retain personal data only for as long as needed to process your case or comply with regulatory obligations. If you request deletion and we are not legally required to retain the data, it will be permanently removed.</p>
-
-      <h3>6. Cookies & Tracking</h3>
-      <p>We use cookies for analytics and site performance. These help us understand visitor behaviour and improve the user experience. You can control cookie settings in your browser at any time.</p>
-
-      <h3>7. Contact Us</h3>
-      <p>If you have any questions or wish to exercise your rights under GDPR, please contact us at:</p>
-      <p>
-        Quaerens Ltd<br>
-        Email: <a href="mailto:quaerensltd@consultant.com">quaerensltd@consultant.com</a><br>
-        Registered in England and Wales Registration nr. 16176152
-      </p>
+  <div class="form-wrapper">
+    <div class="form-header">
+      <h1>Submit Your Claim</h1>
+      <img src="/quaerens-logo.png" alt="Quaerens Logo" />
     </div>
-  </main>
+    <form id="claimForm">
+      <label for="title">Title</label>
+      <select id="title" required>
+        <option value="">Select...</option>
+        <option>Mr</option>
+        <option>Mrs</option>
+        <option>Miss</option>
+        <option>Ms</option>
+        <option>Other</option>
+      </select>
+
+      <label for="name">Full Name</label>
+      <input type="text" id="name" required />
+
+      <label for="email">Email Address</label>
+      <input type="email" id="email" required />
+
+      <label for="phone">Phone Number</label>
+      <input type="tel" id="phone" required />
+
+      <label for="type">Type of Claim</label>
+      <select id="type" required>
+        <option value="">Select...</option>
+        <option value="flight delay">Flight Delay</option>
+        <option value="train delay">Train Delay</option>
+        <option value="car finance">Car Finance</option>
+        <option value="housing disrepair">Housing Disrepair</option>
+        <option value="Spanish mortgage">Spanish Mortgage</option>
+        <option value="mis sold bank accounts">Mis-sold Bank Accounts</option>
+        <option value="credit card fees">Credit Card Fees</option>
+        <option value="medical negligence">Medical Negligence</option>
+        <option value="timeshare">Timeshare</option>
+        <option value="refund issues">Refund Issues</option>
+        <option value="cross border">Cross Border</option>
+        <option value="pension issues">Pension Issues</option>
+        <option value="holiday compensation">Holiday Compensation</option>
+        <option value="cyber data breach">Cyber Data Breach</option>
+        <option value="gdpr breach">GDPR Breach</option>
+        <option value="airbnb refunds">AIRBNB Refunds</option>
+        <option value="crypto scam recovery">Crypto Scam Recovery</option>
+        <option value="other claims">Other Claims</option>
+        <option value="contact me">Contact Me</option> 
+      </select>
+
+      <label for="details">Claim Details</label>
+      <textarea id="details" rows="5" required></textarea>
+
+      <label for="fileUpload">Attach a file (PDF, image, etc.)</label>
+      <div class="upload-area" id="uploadArea">Drag & Drop or Click to Upload</div>
+      <input type="file" id="fileUpload" hidden />
+
+      <button type="submit">Submit Claim</button>
+      <div class="message" id="message"></div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.appspot.com",
+      messagingSenderId: "57715464932",
+      appId: "1:57715464932:web:a69a4949f36c2ad214eaf1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("claimForm");
+    const message = document.getElementById("message");
+    const uploadArea = document.getElementById("uploadArea");
+    const fileInput = document.getElementById("fileUpload");
+    let uploadedFile = null;
+
+    uploadArea.addEventListener("click", () => fileInput.click());
+    uploadArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      uploadArea.classList.add("dragover");
+    });
+    uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+    uploadArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove("dragover");
+      fileInput.files = e.dataTransfer.files;
+      uploadedFile = fileInput.files[0];
+      uploadArea.textContent = uploadedFile.name;
+    });
+    fileInput.addEventListener("change", () => {
+      uploadedFile = fileInput.files[0];
+      uploadArea.textContent = uploadedFile.name;
+    });
+
+    form.addEventListener("submit", async (e) => {
+e.preventDefault();
+message.textContent = "Submitting...";
+message.classList.remove("show");
+
+const title = document.getElementById("title").value;
+const name = document.getElementById("name").value;
+const email = document.getElementById("email").value;
+const phone = document.getElementById("phone").value;
+const type = document.getElementById("type").value;
+const details = document.getElementById("details").value;
+
+let fileUrl = "";
+
+try {
+  console.log("Uploading file...");
+  if (uploadedFile) {
+    const storageRef = ref(storage, `claims/${Date.now()}_${uploadedFile.name}`);
+    const snapshot = await uploadBytes(storageRef, uploadedFile);
+    fileUrl = await getDownloadURL(snapshot.ref);
+    console.log("File uploaded:", fileUrl);
+  }
+
+  const subject = `New Claim Submitted: ${type}`;
+  const html = `
+    <p><strong>Title:</strong> ${title}</p>
+    <p><strong>Name:</strong> ${name}</p>
+    <p><strong>Email:</strong> ${email}</p>
+    <p><strong>Phone:</strong> ${phone}</p>
+    <p><strong>Claim Type:</strong> ${type}</p>
+    <p><strong>Details:</strong> ${details}</p>
+    ${fileUrl ? `<p><strong>Attachment:</strong> <a href="${fileUrl}" target="_blank">View File</a></p>` : ""}
+  `;
+
+  console.log("Saving to Firestore...");
+  await addDoc(collection(db, "claims"), {
+    title,
+    name,
+    email,
+    phone,
+    type,
+    details,
+    fileUrl,
+    html,
+    status: "pending",
+    createdAt: new Date()
+  });
+  console.log("Saved to Firestore.");
+
+  console.log("Sending email...");
+  const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to: email, subject, html })
+  });
+
+  if (response.ok) {
+    message.textContent = "✅ Claim submitted successfully!";
+    message.classList.add("show");
+    form.reset();
+    uploadArea.textContent = "Drag & Drop or Click to Upload";
+    uploadedFile = null;
+    console.log("Email sent.");
+  } else {
+    console.log("Email failed:", await response.text());
+    message.textContent = "⚠️ Claim saved but email failed. Please check.";
+    message.classList.add("show");
+  }
+
+} catch (err) {
+  console.error("Error during submit:", err);
+  message.textContent = "⚠️ An error occurred. Please try again.";
+  message.classList.add("show");
+}
+});
+
 
     
 <footer style="text-align: center; font-size: 0.85rem; color: #6b7280; padding: 2rem 1rem; max-width: 800px; margin: 0 auto;">
