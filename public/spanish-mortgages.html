@@ -468,22 +468,34 @@ header nav a:hover {
 
     const duration = endYear - startYear;
 
-    // === Determine average Euribor rate if not provided ===
-    let euribor;
-    if (startYear >= 2000 && startYear <= 2005) {
-      euribor = 3.5 / 100;
-    } else if (startYear >= 2006 && startYear <= 2010) {
-      euribor = 4.2 / 100;
-    } else if (startYear >= 2011 && startYear <= 2015) {
-      euribor = 1.8 / 100;
-    } else if (startYear >= 2016 && startYear <= 2019) {
-      euribor = 0.1 / 100;
-    } else {
-      euribor = 2 / 100; // Default if not in the range (2000–2019)
-    }
+    // === Average Euribor rates per period ===
+    const euriborRates = [
+      { range: [2000, 2005], rate: 3.5 / 100 },
+      { range: [2006, 2010], rate: 4.2 / 100 },
+      { range: [2011, 2015], rate: 1.8 / 100 },
+      { range: [2016, 2019], rate: 0.1 / 100 },
+      { range: [2020, 2025], rate: 2.0 / 100 }
+    ];
+
+    // === Calculate weighted average Euribor ===
+    let totalYears = 0;
+    let totalWeightedRate = 0;
+
+    euriborRates.forEach((period) => {
+      const [start, end] = period.range;
+      if (start <= endYear && end >= startYear) {
+        const effectiveStart = Math.max(start, startYear);
+        const effectiveEnd = Math.min(end, endYear);
+        const years = effectiveEnd - effectiveStart + 1;
+        totalYears += years;
+        totalWeightedRate += period.rate * years;
+      }
+    });
+
+    const averageEuribor = totalWeightedRate / totalYears;
 
     // === Perform calculation ===
-    const yearlyDifference = (floor - euribor) * principal;
+    const yearlyDifference = (floor - averageEuribor) * principal;
     const totalCompensation = yearlyDifference * duration;
 
     // === Display result with message ===
@@ -491,21 +503,22 @@ header nav a:hover {
       document.getElementById('result').innerHTML = `
         <p>Estimated Overpayment: <strong>€${totalCompensation.toFixed(2)}</strong></p>
         <p style="font-size: 0.9em; color: #6b7280;">
-          Calculation based on an estimated Euribor rate of ${euribor * 100}%. For that reason, this amount is claimable. For precise results, you can update the rate manually.
+          Average Euribor Rate during your mortgage period: ${(averageEuribor * 100).toFixed(2)}%<br>
+          For that reason, this amount is claimable under Spanish mortgage law.
         </p>
       `;
     } else {
       document.getElementById('result').innerHTML = `
         <p style="color: #d9534f;">Based on the entered data, it seems there is no claimable amount.</p>
         <p style="font-size: 0.9em; color: #6b7280;">
-          This is because the Euribor rate was estimated higher than your floor clause rate. You may want to adjust the rates for more accuracy.
+          This is because the average Euribor rate over the period (${(averageEuribor * 100).toFixed(2)}%) was higher than your floor clause rate.<br>
+          You may want to adjust the rates or check your contract details.
         </p>
       `;
     }
   }
 </script>
 
-      
       
       <section class="relative bg-blue-800 text-white py-16" style="background-image: url('/images/hero-mortgages2.jpg'); background-size: cover; background-position: center;">
         <div class="absolute inset-0 bg-black bg-opacity-60"></div>
