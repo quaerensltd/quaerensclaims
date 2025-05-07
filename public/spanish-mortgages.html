@@ -431,68 +431,80 @@ header nav a:hover {
         </ul>
       </div>
       
-      <!-- Floor Clause Compensation Calculator -->
-      <div id="calculator" class="info-box mt-6">
-        <h3 class="font-bold text-lg mb-4">Floor Clause Compensation Calculator</h3>
-      
-        <input type="number" id="mortgageAmount" placeholder="Mortgage Amount (€)" class="mb-2 p-2 w-full border rounded">
-        <input type="number" id="floorRate" placeholder="Floor Clause Rate (%)" class="mb-2 p-2 w-full border rounded">
-        
-        <!-- New Inputs -->
-        <input type="number" id="startYear" placeholder="Mortgage Start Year" class="mb-2 p-2 w-full border rounded">
-        <input type="number" id="endYear" placeholder="Mortgage End Year" class="mb-2 p-2 w-full border rounded">
-        
-        <button onclick="calculateCompensation()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full mt-3">
-          Calculate Compensation
-        </button>
-      
-        <div id="result" class="mt-4 text-lg font-semibold text-green-600"></div>
-      </div>
-      
-      <script>
-        function calculateCompensation() {
-          const principal = parseFloat(document.getElementById('mortgageAmount').value);
-          const floor = parseFloat(document.getElementById('floorRate').value) / 100;
-          const startYear = parseInt(document.getElementById('startYear').value);
-          const endYear = parseInt(document.getElementById('endYear').value);
-      
-          if (!principal || !floor || !startYear || !endYear) {
-            document.getElementById('result').innerText = "Please enter valid values for all fields.";
-            return;
-          }
-      
-          if (endYear <= startYear) {
-            document.getElementById('result').innerText = "End year must be after the start year.";
-            return;
-          }
-      
-          const duration = endYear - startYear;
-      
-          // === Determine average Euribor rate if not provided ===
-          let euribor;
-          if (startYear >= 2000 && startYear <= 2005) {
-            euribor = 3.5 / 100;
-          } else if (startYear >= 2006 && startYear <= 2010) {
-            euribor = 4.2 / 100;
-          } else if (startYear >= 2011 && startYear <= 2015) {
-            euribor = 1.8 / 100;
-          } else if (startYear >= 2016 && startYear <= 2019) {
-            euribor = 0.1 / 100;
-          } else {
-            euribor = 2 / 100; // Default if not in the range (2000–2019)
-          }
-      
-          // === Perform calculation ===
-          const yearlyDifference = (floor - euribor) * principal;
-          const totalCompensation = yearlyDifference * duration;
-      
-          // === Display result with message ===
-          document.getElementById('result').innerHTML = `
-            <p>Estimated Overpayment: <strong>€${totalCompensation.toFixed(2)}</strong></p>
-            <p style="font-size: 0.9em; color: #6b7280;">Calculation based on an estimated Euribor rate of ${euribor * 100}%. For precise results, you can update the rate manually.</p>
-          `;
-        }
-      </script>
+<!-- Floor Clause Compensation Calculator -->
+<div id="calculator" class="info-box mt-6">
+  <h3 class="font-bold text-lg mb-4">Floor Clause Compensation Calculator</h3>
+
+  <input type="number" id="mortgageAmount" placeholder="Mortgage Amount (€)" class="mb-2 p-2 w-full border rounded">
+  <input type="number" id="floorRate" placeholder="Floor Clause Rate (%)" class="mb-2 p-2 w-full border rounded">
+  
+  <!-- New Inputs -->
+  <input type="number" id="startYear" placeholder="Mortgage Start Year" class="mb-2 p-2 w-full border rounded">
+  <input type="number" id="endYear" placeholder="Mortgage End Year" class="mb-2 p-2 w-full border rounded">
+  
+  <button onclick="calculateCompensation()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full mt-3">
+    Calculate Compensation
+  </button>
+
+  <div id="result" class="mt-4 text-lg font-semibold text-green-600"></div>
+</div>
+
+<script>
+  function calculateCompensation() {
+    const principal = parseFloat(document.getElementById('mortgageAmount').value);
+    const floor = parseFloat(document.getElementById('floorRate').value) / 100;
+    const startYear = parseInt(document.getElementById('startYear').value);
+    const endYear = parseInt(document.getElementById('endYear').value);
+
+    if (!principal || !floor || !startYear || !endYear) {
+      document.getElementById('result').innerText = "Please enter valid values for all fields.";
+      return;
+    }
+
+    if (endYear <= startYear) {
+      document.getElementById('result').innerText = "End year must be after the start year.";
+      return;
+    }
+
+    const duration = endYear - startYear;
+
+    // === Determine average Euribor rate if not provided ===
+    let euribor;
+    if (startYear >= 2000 && startYear <= 2005) {
+      euribor = 3.5 / 100;
+    } else if (startYear >= 2006 && startYear <= 2010) {
+      euribor = 4.2 / 100;
+    } else if (startYear >= 2011 && startYear <= 2015) {
+      euribor = 1.8 / 100;
+    } else if (startYear >= 2016 && startYear <= 2019) {
+      euribor = 0.1 / 100;
+    } else {
+      euribor = 2 / 100; // Default if not in the range (2000–2019)
+    }
+
+    // === Perform calculation ===
+    const yearlyDifference = (floor - euribor) * principal;
+    const totalCompensation = yearlyDifference * duration;
+
+    // === Display result with message ===
+    if (totalCompensation > 0) {
+      document.getElementById('result').innerHTML = `
+        <p>Estimated Overpayment: <strong>€${totalCompensation.toFixed(2)}</strong></p>
+        <p style="font-size: 0.9em; color: #6b7280;">
+          Calculation based on an estimated Euribor rate of ${euribor * 100}%. For that reason, this amount is claimable. For precise results, you can update the rate manually.
+        </p>
+      `;
+    } else {
+      document.getElementById('result').innerHTML = `
+        <p style="color: #d9534f;">Based on the entered data, it seems there is no claimable amount.</p>
+        <p style="font-size: 0.9em; color: #6b7280;">
+          This is because the Euribor rate was estimated higher than your floor clause rate. You may want to adjust the rates for more accuracy.
+        </p>
+      `;
+    }
+  }
+</script>
+
       
       
       <section class="relative bg-blue-800 text-white py-16" style="background-image: url('/images/hero-mortgages2.jpg'); background-size: cover; background-position: center;">
