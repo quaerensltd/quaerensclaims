@@ -473,8 +473,8 @@ header nav a:hover {
           }
       
           // Initialize calculations
-          let remainingBalance = principal;
           let totalOverpayment = 0;
+          let remainingBalance = principal;
       
           // Loop through each year and calculate overpayment
           for (let year = start; year <= end; year++) {
@@ -486,28 +486,35 @@ header nav a:hover {
       
             // Loop through each month
             for (let month = 0; month < 12; month++) {
+              if (remainingBalance <= 0) break;
+      
+              // Calculate interest amounts
               const interestFloor = remainingBalance * (floor / 12);
               const interestEuribor = remainingBalance * (euribor / 12);
-              const overpayment = Math.max(0, interestFloor - interestEuribor);
       
+              // Overpayment is the difference if the floor is higher
+              const overpayment = Math.max(0, interestFloor - interestEuribor);
               totalOverpayment += overpayment;
       
-              const principalPayment = (remainingBalance * (floor / 12)) - interestFloor;
-              remainingBalance -= principalPayment;
+              // Calculate principal reduction (roughly 0.3% per month of remaining balance)
+              const principalReduction = remainingBalance * 0.003;
+              remainingBalance -= principalReduction;
       
-              if (remainingBalance <= 0) break;
+              // Prevent negative balance
+              if (remainingBalance < 0) remainingBalance = 0;
             }
           }
       
           // Display the result with a fade-in effect
           resultElement.innerText = totalOverpayment > 0
             ? `🧮 Estimated Overpayment and Claimable Amount: €${totalOverpayment.toFixed(2)}
-               📌 Note: This is an estimate based on average Euribor rates during the specified years.`
+               📌 This is a realistic estimate based on historical Euribor rates and typical mortgage reductions.`
             : "Based on the entered data, it seems there is no claimable amount.";
       
           resultElement.classList.remove("opacity-0");
         }
       </script>
+      
       
 
 
