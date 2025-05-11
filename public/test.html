@@ -823,7 +823,13 @@ header nav a:hover {
 
             // Clear previous result
             const resultDiv = document.getElementById('result');
+            if (!resultDiv) {
+                console.error("Result Div not found in the DOM!");
+                return;
+            }
+
             resultDiv.innerHTML = '';
+            console.log("Cleared previous results");
 
             // Get form values
             const initialPayment = parseFloat(document.getElementById('initialPayment').value);
@@ -831,16 +837,18 @@ header nav a:hover {
             const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
             const currency = document.getElementById('currency').value;
 
-            console.log({ initialPayment, yearOfPurchase, annualMaintenance, currency });
+            console.log("Form Values: ", { initialPayment, yearOfPurchase, annualMaintenance, currency });
 
             // Validation
             if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+                console.error("Validation failed. Missing or invalid inputs.");
                 alert('Please fill in all fields correctly.');
                 return;
             }
 
             const currentYear = new Date().getFullYear();
             if (yearOfPurchase > currentYear) {
+                console.error("Year of purchase is in the future.");
                 alert('The year of purchase cannot be in the future.');
                 return;
             }
@@ -854,11 +862,11 @@ header nav a:hover {
             let totalMaintenancePaid = 0;
             let currentFee = annualMaintenance;
 
+            console.log("Starting maintenance fee calculations...");
             for (let i = 0; i < yearsOwned; i++) {
                 totalMaintenancePaid += currentFee;
                 currentFee -= currentFee * decreaseRate;
             }
-
             console.log("Total Maintenance Paid: ", totalMaintenancePaid);
 
             const estimatedClaim = initialPayment + totalMaintenancePaid;
@@ -868,25 +876,22 @@ header nav a:hover {
             for (let i = 0; i < yearsOwned; i++) {
                 totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
             }
-
             console.log("Total Interest: ", totalInterest);
 
             const finalAmount = estimatedClaim + totalInterest;
             const symbol = currency === 'eur' ? '€' : '£';
 
             // Display the result
-            if (resultDiv) {
-                resultDiv.innerHTML = `
-                    <strong>Estimated Claim Amount (Approximate):</strong><br>
-                    Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
-                    Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
-                    Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
-                    <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
-                `;
-                console.log("Calculation Completed.");
-            } else {
-                console.error("Result element not found in the DOM.");
-            }
+            console.log("Displaying the result...");
+            resultDiv.innerHTML = `
+                <strong>Estimated Claim Amount (Approximate):</strong><br>
+                Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
+                Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
+                Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
+                <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
+            `;
+            console.log("Calculation Completed.");
+
         } catch (error) {
             console.error("Calculation error: ", error.message);
             alert("An error occurred during calculation. Check the console for more details.");
@@ -894,6 +899,7 @@ header nav a:hover {
     }
 
     async function downloadPDF() {
+        console.log("Generating PDF...");
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
 
@@ -907,7 +913,9 @@ header nav a:hover {
             y += 10;
         });
 
+        console.log("Saving PDF...");
         doc.save('Timeshare_Claim_Calculation.pdf');
+        console.log("PDF Generated and Downloaded.");
     }
 </script>
 
