@@ -762,9 +762,8 @@ header nav a:hover {
       </ul>
     </div>
 
-    <!-- Include jsPDF and jsPDF-AutoTable libraries -->
+    <!-- Include jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
 <h3 class="font-bold text-lg text-blue-900 mb-3 mt-5">Calculate Your Timeshare Claim</h3>
 
@@ -829,10 +828,8 @@ header nav a:hover {
 
         // Calculate Legal Interest
         let totalInterest = 0;
-        let yearlyBase = initialPayment + (totalMaintenancePaid / yearsOwned);
-
         for (let i = 0; i < yearsOwned; i++) {
-            totalInterest += yearlyBase * legalInterestRate;
+            totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
         }
 
         const finalAmount = estimatedClaim + totalInterest;
@@ -855,14 +852,16 @@ header nav a:hover {
         const doc = new jsPDF();
 
         // Add Quaerens logo
+        const logoUrl = 'https://quaerens.co.uk/logo.png'; // Replace with the correct URL if needed
         const img = new Image();
-        img.src = 'https://quaerens.co.uk/logo.png'; // Replace with actual logo URL
+        img.src = logoUrl;
+        
         img.onload = function () {
             doc.addImage(img, 'PNG', 10, 10, 50, 15);
-
             doc.setFontSize(12);
             doc.text('Estimated Claim Amount (Approximate):', 10, 30);
-            const resultText = document.getElementById('result').innerText.split('\\n');
+
+            const resultText = document.getElementById('result').innerText.split('\n');
             let y = 40;
             resultText.forEach(line => {
                 doc.text(line, 10, y);
@@ -902,7 +901,6 @@ header nav a:hover {
         border-radius: 4px;
         cursor: pointer;
         font-size: 1.1em;
-        margin-right: 10px;
     }
 
     .calculate-button:hover {
