@@ -813,113 +813,116 @@ header nav a:hover {
         </div>
     </div>
 
-    <script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<script>
-    function calculateClaim() {
-        try {
-            console.log("Starting Calculation...");
-
-            // Clear previous result
-            const resultDiv = document.getElementById('result');
-            if (!resultDiv) {
-                console.error("Result Div not found in the DOM!");
-                return;
-            }
-
-            resultDiv.innerHTML = '';
-            console.log("Cleared previous results");
-
-            // Get form values
-            const initialPayment = parseFloat(document.getElementById('initialPayment').value);
-            const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
-            const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
-            const currency = document.getElementById('currency').value;
-
-            console.log("Form Values: ", { initialPayment, yearOfPurchase, annualMaintenance, currency });
-
-            // Validation
-            if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
-                console.error("Validation failed. Missing or invalid inputs.");
-                alert('Please fill in all fields correctly.');
-                return;
-            }
-
-            const currentYear = new Date().getFullYear();
-            if (yearOfPurchase > currentYear) {
-                console.error("Year of purchase is in the future.");
-                alert('The year of purchase cannot be in the future.');
-                return;
-            }
-
-            const yearsOwned = currentYear - yearOfPurchase;
-            console.log("Years Owned: ", yearsOwned);
-
-            const decreaseRate = 0.05; // 5% decrease per year
-            const legalInterestRate = 0.03; // 3% legal interest
-
-            let totalMaintenancePaid = 0;
-            let currentFee = annualMaintenance;
-
-            console.log("Starting maintenance fee calculations...");
-            for (let i = 0; i < yearsOwned; i++) {
-                totalMaintenancePaid += currentFee;
-                currentFee -= currentFee * decreaseRate;
-            }
-            console.log("Total Maintenance Paid: ", totalMaintenancePaid);
-
-            const estimatedClaim = initialPayment + totalMaintenancePaid;
-
-            // Calculate Legal Interest
-            let totalInterest = 0;
-            for (let i = 0; i < yearsOwned; i++) {
-                totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
-            }
-            console.log("Total Interest: ", totalInterest);
-
-            const finalAmount = estimatedClaim + totalInterest;
-            const symbol = currency === 'eur' ? '€' : '£';
-
-            // Display the result
-            console.log("Displaying the result...");
-            resultDiv.innerHTML = `
-                <strong>Estimated Claim Amount (Approximate):</strong><br>
-                Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
-                Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
-                Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
-                <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
-            `;
-            console.log("Calculation Completed.");
-
-        } catch (error) {
-            console.error("Calculation error: ", error.message);
-            alert("An error occurred during calculation. Check the console for more details.");
-        }
-    }
-
-    async function downloadPDF() {
-        console.log("Generating PDF...");
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        doc.setFontSize(14);
-        doc.text("Timeshare Claim Calculation", 10, 10);
-
-        const resultText = document.getElementById('result').innerText.split('\n');
-        let y = 20;
-        resultText.forEach(line => {
-            doc.text(line, 10, y);
-            y += 10;
-        });
-
-        console.log("Saving PDF...");
-        doc.save('Timeshare_Claim_Calculation.pdf');
-        console.log("PDF Generated and Downloaded.");
-    }
-</script>
-
+    <script type="module">
+      import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
   
+      function calculateClaim() {
+          try {
+              console.log("Starting Calculation...");
+  
+              // Clear previous result
+              const resultDiv = document.getElementById('result');
+              if (!resultDiv) {
+                  console.error("Result Div not found in the DOM!");
+                  return;
+              }
+  
+              resultDiv.innerHTML = '';
+              console.log("Cleared previous results");
+  
+              // Get form values
+              const initialPayment = parseFloat(document.getElementById('initialPayment').value);
+              const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
+              const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
+              const currency = document.getElementById('currency').value;
+  
+              console.log("Form Values: ", { initialPayment, yearOfPurchase, annualMaintenance, currency });
+  
+              // Validation
+              if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+                  console.error("Validation failed. Missing or invalid inputs.");
+                  alert('Please fill in all fields correctly.');
+                  return;
+              }
+  
+              const currentYear = new Date().getFullYear();
+              if (yearOfPurchase > currentYear) {
+                  console.error("Year of purchase is in the future.");
+                  alert('The year of purchase cannot be in the future.');
+                  return;
+              }
+  
+              const yearsOwned = currentYear - yearOfPurchase;
+              console.log("Years Owned: ", yearsOwned);
+  
+              const decreaseRate = 0.05; // 5% decrease per year
+              const legalInterestRate = 0.03; // 3% legal interest
+  
+              let totalMaintenancePaid = 0;
+              let currentFee = annualMaintenance;
+  
+              console.log("Starting maintenance fee calculations...");
+              for (let i = 0; i < yearsOwned; i++) {
+                  totalMaintenancePaid += currentFee;
+                  currentFee -= currentFee * decreaseRate;
+              }
+              console.log("Total Maintenance Paid: ", totalMaintenancePaid);
+  
+              const estimatedClaim = initialPayment + totalMaintenancePaid;
+  
+              // Calculate Legal Interest
+              let totalInterest = 0;
+              for (let i = 0; i < yearsOwned; i++) {
+                  totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
+              }
+              console.log("Total Interest: ", totalInterest);
+  
+              const finalAmount = estimatedClaim + totalInterest;
+              const symbol = currency === 'eur' ? '€' : '£';
+  
+              // Display the result
+              console.log("Displaying the result...");
+              resultDiv.innerHTML = `
+                  <strong>Estimated Claim Amount (Approximate):</strong><br>
+                  Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
+                  Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
+                  Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
+                  <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
+              `;
+              console.log("Calculation Completed.");
+  
+          } catch (error) {
+              console.error("Calculation error: ", error.message);
+              alert("An error occurred during calculation. Check the console for more details.");
+          }
+      }
+  
+      async function downloadPDF() {
+          console.log("Generating PDF...");
+  
+          try {
+              const doc = new jsPDF();
+  
+              doc.setFontSize(14);
+              doc.text("Timeshare Claim Calculation", 10, 10);
+  
+              const resultText = document.getElementById('result').innerText.split('\n');
+              let y = 20;
+              resultText.forEach(line => {
+                  doc.text(line, 10, y);
+                  y += 10;
+              });
+  
+              console.log("Saving PDF...");
+              doc.save('Timeshare_Claim_Calculation.pdf');
+              console.log("PDF Generated and Downloaded.");
+          } catch (error) {
+              console.error("PDF Generation Error: ", error.message);
+          }
+      }
+  </script>  
+
+
 
     <div class="info-box">
       <p><strong>Take Control of Your Timeshare Situation Today</strong><br>
