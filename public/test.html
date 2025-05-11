@@ -762,6 +762,111 @@ header nav a:hover {
       </ul>
     </div>
 
+    <h3 class="font-bold text-lg text-blue-900 mb-3 mt-5">Calculate Your Timeshare Claim</h3>
+
+<div class="claim-calculator">
+    <label for="initialPayment"><strong>Initial Payment (€ or £):</strong></label>
+    <input type="number" id="initialPayment" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+
+    <label for="yearOfPurchase"><strong>Year of Purchase:</strong></label>
+    <input type="number" id="yearOfPurchase" placeholder="Enter year" class="calculator-input"><br><br>
+
+    <label for="annualMaintenance"><strong>Annual Maintenance Fee (€ or £):</strong></label>
+    <input type="number" id="annualMaintenance" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+
+    <label for="currency"><strong>Select Currency:</strong></label>
+    <select id="currency" class="calculator-input">
+        <option value="eur">Euros (€)</option>
+        <option value="gbp">Pounds (£)</option>
+    </select><br><br>
+
+    <button onclick="calculateClaim()" class="calculate-button">Calculate Claim</button>
+
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+    function calculateClaim() {
+        const initialPayment = parseFloat(document.getElementById('initialPayment').value);
+        const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
+        const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
+        const currency = document.getElementById('currency').value;
+
+        if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+            alert('Please fill in all fields correctly.');
+            return;
+        }
+
+        const currentYear = new Date().getFullYear();
+        const yearsOwned = currentYear - yearOfPurchase;
+        const increaseRate = 0.05;
+
+        let totalMaintenancePaid = 0;
+        let currentFee = annualMaintenance;
+
+        for (let i = 0; i < yearsOwned; i++) {
+            totalMaintenancePaid += currentFee;
+            currentFee += currentFee * increaseRate;
+        }
+
+        const estimatedClaim = initialPayment + totalMaintenancePaid * 0.8;
+        const symbol = currency === 'eur' ? '€' : '£';
+
+        document.getElementById('result').innerHTML = `
+            <strong>Estimated Claim Amount:</strong><br>
+            Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
+            Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
+            <strong>Potential Claim: ${symbol}${estimatedClaim.toFixed(2)}</strong>
+        `;
+    }
+</script>
+
+<style>
+    .claim-calculator {
+        margin-top: 20px;
+        padding: 20px;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        background-color: #eff6ff;
+        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .calculator-input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+
+    .calculate-button {
+        margin-top: 15px;
+        padding: 12px 25px;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.1em;
+    }
+
+    .calculate-button:hover {
+        background-color: #2563eb;
+    }
+
+    .result-box {
+        margin-top: 20px;
+        font-size: 1.2em;
+        color: #003366;
+        background-color: #f1f8ff;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #3b82f6;
+    }
+</style>
+
+
     <div class="info-box">
       <p><strong>Take Control of Your Timeshare Situation Today</strong><br>
       Whether you're still paying yearly fees or simply want to reclaim peace of mind, you have legal rights. Don’t let an unfair contract control your finances or your future.</p>
