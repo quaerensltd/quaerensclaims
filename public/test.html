@@ -765,8 +765,11 @@ header nav a:hover {
     <script>
       function calculateClaim() {
           try {
+              console.log("Starting Calculation...");
+  
               // Clear previous result
               document.getElementById('result').innerHTML = '';
+              console.log("Cleared previous result");
   
               // Get form values
               const initialPayment = parseFloat(document.getElementById('initialPayment').value);
@@ -774,19 +777,25 @@ header nav a:hover {
               const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
               const currency = document.getElementById('currency').value;
   
+              console.log("Form Values:", { initialPayment, yearOfPurchase, annualMaintenance, currency });
+  
               // Validation
               if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+                  console.error("Validation failed: Missing fields");
                   alert('Please fill in all fields correctly.');
                   return;
               }
   
               const currentYear = new Date().getFullYear();
               if (yearOfPurchase > currentYear) {
+                  console.error("Validation failed: Year of purchase is in the future");
                   alert('The year of purchase cannot be in the future.');
                   return;
               }
   
               const yearsOwned = currentYear - yearOfPurchase;
+              console.log("Years Owned:", yearsOwned);
+  
               const decreaseRate = 0.05; // 5% decrease
               const legalInterestRate = 0.03; // 3% legal interest
   
@@ -798,6 +807,8 @@ header nav a:hover {
                   currentFee -= currentFee * decreaseRate;
               }
   
+              console.log("Total Maintenance Paid:", totalMaintenancePaid);
+  
               const estimatedClaim = initialPayment + totalMaintenancePaid;
   
               // Calculate Legal Interest
@@ -805,6 +816,8 @@ header nav a:hover {
               for (let i = 0; i < yearsOwned; i++) {
                   totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
               }
+  
+              console.log("Total Interest:", totalInterest);
   
               const finalAmount = estimatedClaim + totalInterest;
               const symbol = currency === 'eur' ? '€' : '£';
@@ -817,6 +830,8 @@ header nav a:hover {
                   Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
                   <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
               `;
+  
+              console.log("Calculation Completed.");
   
           } catch (error) {
               console.error("Calculation error: ", error.message);
