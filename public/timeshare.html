@@ -429,6 +429,137 @@ header nav a:hover {
       </ol>
     </div>
 
+    <h2 class="calculator-title"><strong>This is what your timeshare is going to cost you if you decide to keep it!</strong></h2>
+
+    <div class="calculator-container">
+        <label for="annualFee" class="calculator-label"><strong>Annual Maintenance Fee:</strong></label>
+        <input type="number" id="annualFee" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+    
+        <label for="currency" class="calculator-label"><strong>Select Currency:</strong></label>
+        <select id="currency" class="calculator-input">
+            <option value="eur">Euros (€)</option>
+            <option value="gbp">Pounds (£)</option>
+        </select><br><br>
+    
+        <button onclick="calculateFees()" class="calculator-button">Calculate</button>
+    
+        <div id="result" class="calculator-result"></div>
+    </div>
+    
+    <script>
+        function calculateFees() {
+            const annualFee = parseFloat(document.getElementById('annualFee').value);
+            const currency = document.getElementById('currency').value;
+    
+            if (isNaN(annualFee)) {
+                alert('Please fill in the annual maintenance fee correctly.');
+                return;
+            }
+    
+            const increaseRate = 0.05;
+    
+            const calculateTotalCost = (years) => {
+                let totalCost = 0;
+                let currentFee = annualFee;
+    
+                for (let i = 0; i < years; i++) {
+                    totalCost += currentFee;
+                    currentFee += currentFee * increaseRate;
+                }
+    
+                return totalCost.toFixed(2);
+            }
+    
+            const cost5Years = calculateTotalCost(5);
+            const cost10Years = calculateTotalCost(10);
+            const cost20Years = calculateTotalCost(20);
+    
+            const symbol = currency === 'eur' ? '€' : '£';
+    
+            document.getElementById('result').innerHTML = `
+                <strong>Estimated Costs:</strong><br>
+                <ul>
+                    <li><strong>5 Years:</strong> ${symbol}${cost5Years}</li>
+                    <li><strong>10 Years:</strong> ${symbol}${cost10Years}</li>
+                    <li><strong>20 Years:</strong> ${symbol}${cost20Years}</li>
+                </ul>
+            `;
+        }
+    </script>
+    
+    <style>
+        .calculator-title {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #003366;
+            border-bottom: 2px solid #0077b6;
+            padding-bottom: 5px;
+        }
+    
+        .calculator-container {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #0077b6;
+            border-radius: 8px;
+            background-color: #e9f5ff;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    
+        .calculator-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+            color: #003366;
+        }
+    
+        .calculator-input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #0077b6;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+    
+        .calculator-button {
+            margin-top: 15px;
+            padding: 12px 25px;
+            background-color: #0077b6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+    
+        .calculator-button:hover {
+            background-color: #005f8a;
+        }
+    
+        .calculator-result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #003366;
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #0077b6;
+        }
+    
+        .calculator-result ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+    
+        .calculator-result ul li {
+            margin-bottom: 8px;
+        }
+    </style>
+    
+ 
+  
+
+
     <div style="max-width: 900px; margin: 0 auto; padding: 1rem;">
         <div style="display: flex; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;">
           <div style="flex: 1 1 28%; max-width: 28%;">
@@ -630,6 +761,169 @@ header nav a:hover {
         <li>✅ No Hidden Fees – Transparent pricing, and in many cases, no win – no fee.</li>
       </ul>
     </div>
+
+    <!-- Include jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<h3 class="font-bold text-lg text-blue-900 mb-3 mt-5">Calculate Your Timeshare Claim</h3>
+
+<div class="claim-calculator">
+    <label for="initialPayment"><strong>Initial Payment (€ or £):</strong></label>
+    <input type="number" id="initialPayment" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+
+    <label for="yearOfPurchase"><strong>Year of Purchase:</strong></label>
+    <input type="number" id="yearOfPurchase" placeholder="Enter year" class="calculator-input"><br><br>
+
+    <label for="annualMaintenance"><strong>Annual Maintenance Fee (€ or £):</strong></label>
+    <input type="number" id="annualMaintenance" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+
+    <label for="currency"><strong>Select Currency:</strong></label>
+    <select id="currency" class="calculator-input">
+        <option value="eur">Euros (€)</option>
+        <option value="gbp">Pounds (£)</option>
+    </select><br><br>
+
+    <button onclick="calculateClaim()" class="calculate-button">Calculate Claim</button>
+    <button onclick="downloadPDF()" class="calculate-button">Download as PDF</button>
+
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+    async function calculateClaim() {
+        // Clear previous result
+        document.getElementById('result').innerHTML = '';
+
+        // Get form values
+        const initialPayment = parseFloat(document.getElementById('initialPayment').value);
+        const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
+        const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
+        const currency = document.getElementById('currency').value;
+
+        // Validation
+        if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+            alert('Please fill in all fields correctly.');
+            return;
+        }
+
+        const currentYear = new Date().getFullYear();
+        if (yearOfPurchase > currentYear) {
+            alert('The year of purchase cannot be in the future.');
+            return;
+        }
+
+        const yearsOwned = currentYear - yearOfPurchase;
+        const decreaseRate = 0.05; // 5% decrease
+        const legalInterestRate = 0.03; // 3% legal interest
+
+        let totalMaintenancePaid = 0;
+        let currentFee = annualMaintenance;
+
+        for (let i = 0; i < yearsOwned; i++) {
+            totalMaintenancePaid += currentFee;
+            currentFee -= currentFee * decreaseRate;
+        }
+
+        const estimatedClaim = initialPayment + totalMaintenancePaid;
+
+        // Calculate Legal Interest
+        let totalInterest = 0;
+        for (let i = 0; i < yearsOwned; i++) {
+            totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
+        }
+
+        const finalAmount = estimatedClaim + totalInterest;
+        const symbol = currency === 'eur' ? '€' : '£';
+
+        // Display the result
+        document.getElementById('result').innerHTML = `
+            <strong>Estimated Claim Amount (Approximate):</strong><br>
+            Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
+            Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
+            Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
+            <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
+        `;
+    }
+
+    async function downloadPDF() {
+        await calculateClaim();
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add Quaerens logo
+        const logoUrl = 'https://quaerens.co.uk/logo.png';
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        
+        img.onload = function () {
+            doc.addImage(img, 'PNG', 10, 10, 50, 15);
+            doc.setFontSize(12);
+            doc.text('Estimated Claim Amount (Approximate):', 10, 40);
+
+            const resultText = document.getElementById('result').innerText.split('\n');
+            let y = 50;
+            resultText.forEach(line => {
+                doc.text(line, 10, y);
+                y += 10;
+            });
+
+            doc.save('Claim_Estimate.pdf');
+        };
+
+        img.onerror = function () {
+            alert('Failed to load the logo image.');
+        };
+
+        img.src = logoUrl;
+    }
+</script>
+
+<style>
+    .claim-calculator {
+        margin-top: 20px;
+        padding: 20px;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        background-color: #eff6ff;
+        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .calculator-input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+
+    .calculate-button {
+        margin-top: 15px;
+        padding: 12px 25px;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.1em;
+    }
+
+    .calculate-button:hover {
+        background-color: #2563eb;
+    }
+
+    .result-box {
+        margin-top: 20px;
+        font-size: 1.2em;
+        color: #003366;
+        background-color: #f1f8ff;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #3b82f6;
+    }
+</style>
+
 
     <div class="info-box">
       <p><strong>Take Control of Your Timeshare Situation Today</strong><br>
