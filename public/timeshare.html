@@ -435,56 +435,56 @@ header nav a:hover {
         <label for="annualFee" class="calculator-label"><strong>Annual Maintenance Fee:</strong></label>
         <input type="number" id="annualFee" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
     
-        <label for="currency" class="calculator-label"><strong>Select Currency:</strong></label>
-        <select id="currency" class="calculator-input">
+        <label for="currencyOne" class="calculator-label"><strong>Select Currency:</strong></label>
+        <select id="currencyOne" class="calculator-input">
             <option value="eur">Euros (€)</option>
             <option value="gbp">Pounds (£)</option>
         </select><br><br>
     
         <button onclick="calculateFees()" class="calculator-button">Calculate</button>
     
-        <div id="result" class="calculator-result"></div>
+        <div id="resultOne" class="calculator-result"></div> <!-- Renamed to resultOne -->
     </div>
     
     <script>
-        function calculateFees() {
-            const annualFee = parseFloat(document.getElementById('annualFee').value);
-            const currency = document.getElementById('currency').value;
-    
-            if (isNaN(annualFee)) {
-                alert('Please fill in the annual maintenance fee correctly.');
-                return;
-            }
-    
-            const increaseRate = 0.05;
-    
-            const calculateTotalCost = (years) => {
-                let totalCost = 0;
-                let currentFee = annualFee;
-    
-                for (let i = 0; i < years; i++) {
-                    totalCost += currentFee;
-                    currentFee += currentFee * increaseRate;
-                }
-    
-                return totalCost.toFixed(2);
-            }
-    
-            const cost5Years = calculateTotalCost(5);
-            const cost10Years = calculateTotalCost(10);
-            const cost20Years = calculateTotalCost(20);
-    
-            const symbol = currency === 'eur' ? '€' : '£';
-    
-            document.getElementById('result').innerHTML = `
-                <strong>Estimated Costs:</strong><br>
-                <ul>
-                    <li><strong>5 Years:</strong> ${symbol}${cost5Years}</li>
-                    <li><strong>10 Years:</strong> ${symbol}${cost10Years}</li>
-                    <li><strong>20 Years:</strong> ${symbol}${cost20Years}</li>
-                </ul>
-            `;
+function calculateFees() {
+    const annualFee = parseFloat(document.getElementById('annualFee').value);
+    const currency = document.getElementById('currencyOne').value;
+
+    if (isNaN(annualFee)) {
+        alert('Please fill in the annual maintenance fee correctly.');
+        return;
+    }
+
+    const increaseRate = 0.05;
+
+    const calculateTotalCost = (years) => {
+        let totalCost = 0;
+        let currentFee = annualFee;
+
+        for (let i = 0; i < years; i++) {
+            totalCost += currentFee;
+            currentFee += currentFee * increaseRate;
         }
+
+        return totalCost.toFixed(2);
+    };
+
+    const cost5Years = calculateTotalCost(5);
+    const cost10Years = calculateTotalCost(10);
+    const cost20Years = calculateTotalCost(20);
+
+    const symbol = currency === 'eur' ? '€' : '£';
+
+    document.getElementById('resultOne').innerHTML = `
+        <strong>Estimated Costs:</strong><br>
+        <ul>
+            <li><strong>5 Years:</strong> ${symbol}${cost5Years}</li>
+            <li><strong>10 Years:</strong> ${symbol}${cost10Years}</li>
+            <li><strong>20 Years:</strong> ${symbol}${cost20Years}</li>
+        </ul>
+    `;
+}
     </script>
     
     <style>
@@ -777,8 +777,8 @@ header nav a:hover {
     <label for="annualMaintenance"><strong>Annual Maintenance Fee (€ or £):</strong></label>
     <input type="number" id="annualMaintenance" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
 
-    <label for="currency"><strong>Select Currency:</strong></label>
-    <select id="currency" class="calculator-input">
+    <label for="currencyTwo"><strong>Select Currency:</strong></label>
+    <select id="currencyTwo" class="calculator-input">
         <option value="eur">Euros (€)</option>
         <option value="gbp">Pounds (£)</option>
     </select><br><br>
@@ -786,97 +786,80 @@ header nav a:hover {
     <button onclick="calculateClaim()" class="calculate-button">Calculate Claim</button>
     <button onclick="downloadPDF()" class="calculate-button">Download as PDF</button>
 
-    <div id="result" class="result-box"></div>
+    <div id="resultTwo" class="result-box"></div> <!-- Renamed to resultTwo -->
 </div>
 
 <script>
-    async function calculateClaim() {
-        // Clear previous result
-        document.getElementById('result').innerHTML = '';
+async function calculateClaim() {
+    const initialPayment = parseFloat(document.getElementById('initialPayment').value);
+    const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
+    const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
+    const currency = document.getElementById('currencyTwo').value;
 
-        // Get form values
-        const initialPayment = parseFloat(document.getElementById('initialPayment').value);
-        const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
-        const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
-        const currency = document.getElementById('currency').value;
-
-        // Validation
-        if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
-            alert('Please fill in all fields correctly.');
-            return;
-        }
-
-        const currentYear = new Date().getFullYear();
-        if (yearOfPurchase > currentYear) {
-            alert('The year of purchase cannot be in the future.');
-            return;
-        }
-
-        const yearsOwned = currentYear - yearOfPurchase;
-        const decreaseRate = 0.05; // 5% decrease
-        const legalInterestRate = 0.03; // 3% legal interest
-
-        let totalMaintenancePaid = 0;
-        let currentFee = annualMaintenance;
-
-        for (let i = 0; i < yearsOwned; i++) {
-            totalMaintenancePaid += currentFee;
-            currentFee -= currentFee * decreaseRate;
-        }
-
-        const estimatedClaim = initialPayment + totalMaintenancePaid;
-
-        // Calculate Legal Interest
-        let totalInterest = 0;
-        for (let i = 0; i < yearsOwned; i++) {
-            totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
-        }
-
-        const finalAmount = estimatedClaim + totalInterest;
-        const symbol = currency === 'eur' ? '€' : '£';
-
-        // Display the result
-        document.getElementById('result').innerHTML = `
-            <strong>Estimated Claim Amount (Approximate):</strong><br>
-            Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
-            Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
-            Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
-            <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
-        `;
+    if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+        alert('Please fill in all fields correctly.');
+        return;
     }
 
-    async function downloadPDF() {
-        await calculateClaim();
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        // Add Quaerens logo
-        const logoUrl = 'https://quaerens.co.uk/logo.png';
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        
-        img.onload = function () {
-            doc.addImage(img, 'PNG', 10, 10, 50, 15);
-            doc.setFontSize(12);
-            doc.text('Estimated Claim Amount (Approximate):', 10, 40);
-
-            const resultText = document.getElementById('result').innerText.split('\n');
-            let y = 50;
-            resultText.forEach(line => {
-                doc.text(line, 10, y);
-                y += 10;
-            });
-
-            doc.save('Claim_Estimate.pdf');
-        };
-
-        img.onerror = function () {
-            alert('Failed to load the logo image.');
-        };
-
-        img.src = logoUrl;
+    const currentYear = new Date().getFullYear();
+    if (yearOfPurchase > currentYear) {
+        alert('The year of purchase cannot be in the future.');
+        return;
     }
+
+    const yearsOwned = currentYear - yearOfPurchase;
+    const decreaseRate = 0.05;
+    const legalInterestRate = 0.03;
+
+    let totalMaintenancePaid = 0;
+    let currentFee = annualMaintenance;
+
+    for (let i = 0; i < yearsOwned; i++) {
+        totalMaintenancePaid += currentFee;
+        currentFee -= currentFee * decreaseRate;
+    }
+
+    const estimatedClaim = initialPayment + totalMaintenancePaid;
+
+    let totalInterest = 0;
+    for (let i = 0; i < yearsOwned; i++) {
+        totalInterest += (initialPayment + totalMaintenancePaid / yearsOwned) * legalInterestRate;
+    }
+
+    const finalAmount = estimatedClaim + totalInterest;
+    const symbol = currency === 'eur' ? '€' : '£';
+
+    document.getElementById('resultTwo').innerHTML = `
+        <strong>Estimated Claim Amount (Approximate):</strong><br>
+        Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
+        Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
+        Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
+        <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
+    `;
+}
+
+async function downloadPDF() {
+    await calculateClaim();
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Set PDF content
+    doc.setFontSize(12);
+    doc.text('Estimated Claim Amount (Approximate):', 10, 20);
+
+    // Get the content from the correct element (resultTwo)
+    const resultText = document.getElementById('resultTwo').innerText.split('\n');
+    
+    let y = 30;
+    resultText.forEach(line => {
+        doc.text(line, 10, y);
+        y += 10;
+    });
+
+    // Save the PDF
+    doc.save('Claim_Estimate.pdf');
+}
 </script>
 
 <style>
