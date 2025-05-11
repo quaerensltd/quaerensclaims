@@ -762,146 +762,164 @@ header nav a:hover {
       </ul>
     </div>
 
-    <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timeshare Claim Calculator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-        async function calculateClaim() {
-            document.getElementById('result').innerHTML = '';
+    <!-- Include jsPDF and jsPDF-AutoTable libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
-            const initialPayment = parseFloat(document.getElementById('initialPayment').value);
-            const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
-            const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
-            const currency = document.getElementById('currency').value;
+<h3 class="font-bold text-lg text-blue-900 mb-3 mt-5">Calculate Your Timeshare Claim</h3>
 
-            if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
-                alert('Please fill in all fields correctly.');
-                return;
-            }
+<div class="claim-calculator">
+    <label for="initialPayment"><strong>Initial Payment (€ or £):</strong></label>
+    <input type="number" id="initialPayment" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
 
-            const currentYear = new Date().getFullYear();
-            if (yearOfPurchase > currentYear) {
-                alert('The year of purchase cannot be in the future.');
-                return;
-            }
+    <label for="yearOfPurchase"><strong>Year of Purchase:</strong></label>
+    <input type="number" id="yearOfPurchase" placeholder="Enter year" class="calculator-input"><br><br>
 
-            const yearsOwned = currentYear - yearOfPurchase;
-            const increaseRate = 0.05;
-            const legalInterestRate = 0.04;
+    <label for="annualMaintenance"><strong>Annual Maintenance Fee (€ or £):</strong></label>
+    <input type="number" id="annualMaintenance" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
 
-            let totalMaintenancePaid = 0;
-            let currentFee = annualMaintenance;
+    <label for="currency"><strong>Select Currency:</strong></label>
+    <select id="currency" class="calculator-input">
+        <option value="eur">Euros (€)</option>
+        <option value="gbp">Pounds (£)</option>
+    </select><br><br>
 
-            for (let i = 0; i < yearsOwned; i++) {
-                totalMaintenancePaid += currentFee;
-                currentFee += currentFee * increaseRate;
-            }
+    <button onclick="calculateClaim()" class="calculate-button">Calculate Claim</button>
+    <button onclick="downloadPDF()" class="calculate-button">Download as PDF</button>
 
-            const estimatedClaim = initialPayment + totalMaintenancePaid;
+    <div id="result" class="result-box"></div>
+</div>
 
-            let totalInterest = 0;
-            let yearlyBase = initialPayment + (totalMaintenancePaid / yearsOwned);
+<script>
+    async function calculateClaim() {
+        // Clear previous result
+        document.getElementById('result').innerHTML = '';
 
-            for (let i = 0; i < yearsOwned; i++) {
-                totalInterest += yearlyBase * legalInterestRate;
-            }
+        // Get form values
+        const initialPayment = parseFloat(document.getElementById('initialPayment').value);
+        const yearOfPurchase = parseInt(document.getElementById('yearOfPurchase').value);
+        const annualMaintenance = parseFloat(document.getElementById('annualMaintenance').value);
+        const currency = document.getElementById('currency').value;
 
-            const finalAmount = estimatedClaim + totalInterest;
-            const symbol = currency === 'eur' ? '€' : '£';
-
-            const output = `Estimated Claim Amount:\n\n` +
-                `Initial Payment: ${symbol}${initialPayment.toFixed(2)}\n` +
-                `Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}\n` +
-                `Legal Interest: ${symbol}${totalInterest.toFixed(2)}\n` +
-                `Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}`;
-
-            document.getElementById('result').innerHTML = output.replace(/\n/g, '<br>');
+        // Validation
+        if (isNaN(initialPayment) || isNaN(yearOfPurchase) || isNaN(annualMaintenance)) {
+            alert('Please fill in all fields correctly.');
+            return;
         }
 
-        async function downloadPDF() {
-            await calculateClaim();
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text(document.getElementById('result').innerText, 10, 10);
+        const currentYear = new Date().getFullYear();
+        if (yearOfPurchase > currentYear) {
+            alert('The year of purchase cannot be in the future.');
+            return;
+        }
+
+        const yearsOwned = currentYear - yearOfPurchase;
+        const decreaseRate = 0.05; // 5% decrease
+        const legalInterestRate = 0.03; // 3% legal interest
+
+        let totalMaintenancePaid = 0;
+        let currentFee = annualMaintenance;
+
+        for (let i = 0; i < yearsOwned; i++) {
+            totalMaintenancePaid += currentFee;
+            currentFee -= currentFee * decreaseRate;
+        }
+
+        const estimatedClaim = initialPayment + totalMaintenancePaid;
+
+        // Calculate Legal Interest
+        let totalInterest = 0;
+        let yearlyBase = initialPayment + (totalMaintenancePaid / yearsOwned);
+
+        for (let i = 0; i < yearsOwned; i++) {
+            totalInterest += yearlyBase * legalInterestRate;
+        }
+
+        const finalAmount = estimatedClaim + totalInterest;
+        const symbol = currency === 'eur' ? '€' : '£';
+
+        // Display the result
+        document.getElementById('result').innerHTML = `
+            <strong>Estimated Claim Amount (Approximate):</strong><br>
+            Initial Payment: ${symbol}${initialPayment.toFixed(2)}<br>
+            Total Maintenance Paid: ${symbol}${totalMaintenancePaid.toFixed(2)}<br>
+            Legal Interest: ${symbol}${totalInterest.toFixed(2)}<br>
+            <strong>Total Potential Claim: ${symbol}${finalAmount.toFixed(2)}</strong>
+        `;
+    }
+
+    async function downloadPDF() {
+        await calculateClaim();
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add Quaerens logo
+        const img = new Image();
+        img.src = 'https://quaerens.co.uk/logo.png'; // Replace with actual logo URL
+        img.onload = function () {
+            doc.addImage(img, 'PNG', 10, 10, 50, 15);
+
+            doc.setFontSize(12);
+            doc.text('Estimated Claim Amount (Approximate):', 10, 30);
+            const resultText = document.getElementById('result').innerText.split('\\n');
+            let y = 40;
+            resultText.forEach(line => {
+                doc.text(line, 10, y);
+                y += 10;
+            });
+
             doc.save('Claim_Estimate.pdf');
-        }
-    </script>
-</head>
-<body>
-    <h2>Calculate Your Timeshare Claim</h2>
+        };
+    }
+</script>
 
-    <div class="claim-calculator">
-        <label for="initialPayment"><strong>Initial Payment (€ or £):</strong></label>
-        <input type="number" id="initialPayment" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+<style>
+    .claim-calculator {
+        margin-top: 20px;
+        padding: 20px;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        background-color: #eff6ff;
+        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    }
 
-        <label for="yearOfPurchase"><strong>Year of Purchase:</strong></label>
-        <input type="number" id="yearOfPurchase" placeholder="Enter year" class="calculator-input"><br><br>
+    .calculator-input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
 
-        <label for="annualMaintenance"><strong>Annual Maintenance Fee (€ or £):</strong></label>
-        <input type="number" id="annualMaintenance" placeholder="Enter amount" step="0.01" class="calculator-input"><br><br>
+    .calculate-button {
+        margin-top: 15px;
+        padding: 12px 25px;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.1em;
+        margin-right: 10px;
+    }
 
-        <label for="currency"><strong>Select Currency:</strong></label>
-        <select id="currency" class="calculator-input">
-            <option value="eur">Euros (€)</option>
-            <option value="gbp">Pounds (£)</option>
-        </select><br><br>
+    .calculate-button:hover {
+        background-color: #2563eb;
+    }
 
-        <button onclick="calculateClaim()" class="calculate-button">Calculate Claim</button>
-        <button onclick="downloadPDF()" class="calculate-button">Download as PDF</button>
+    .result-box {
+        margin-top: 20px;
+        font-size: 1.2em;
+        color: #003366;
+        background-color: #f1f8ff;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #3b82f6;
+    }
+</style>
 
-        <div id="result" class="result-box"></div>
-    </div>
-
-    <style>
-        .claim-calculator {
-            margin-top: 20px;
-            padding: 20px;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            background-color: #eff6ff;
-            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .calculator-input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #3b82f6;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
-
-        .calculate-button {
-            margin-top: 15px;
-            padding: 12px 25px;
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1.1em;
-        }
-
-        .calculate-button:hover {
-            background-color: #2563eb;
-        }
-
-        .result-box {
-            margin-top: 20px;
-            font-size: 1.2em;
-            color: #003366;
-            background-color: #f1f8ff;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #3b82f6;
-        }
-    </style>
-</body>
-</html>
 
     <div class="info-box">
       <p><strong>Take Control of Your Timeshare Situation Today</strong><br>
