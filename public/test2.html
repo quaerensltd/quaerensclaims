@@ -1,0 +1,97 @@
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { db } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+
+const SpanishMortgageClaimsPage = () => {
+  const [calculatorVisible, setCalculatorVisible] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    startYear: ''
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, 'spanish_mortgage_claims'), formData);
+      alert('Your claim has been submitted successfully!');
+    } catch (error) {
+      console.error('Error adding document: ', error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-10">
+      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md">
+        <div className="bg-blue-600 text-white text-center p-8 rounded-t-lg">
+          <h1 className="text-4xl font-bold mb-2">Could You Be Owed Thousands from Your Spanish Mortgage?</h1>
+          <p className="text-lg mb-6">
+            Check if your Spanish mortgage includes illegal clauses. It’s free to check, and you could be owed thousands.
+          </p>
+          <Button className="bg-white text-blue-600 font-semibold" onClick={() => setCalculatorVisible(!calculatorVisible)}>
+            🔍 Check My Mortgage Now →
+          </Button>
+        </div>
+
+        {calculatorVisible && (
+          <Card className="mb-8">
+            <CardContent>
+              <iframe
+                src="https://www.quaerens.co.uk/mortgage-calculator.html"
+                width="100%"
+                height="500"
+                className="border-none"
+              ></iframe>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="mb-8">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">Start Your Free Assessment:</h2>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <input type="text" name="name" placeholder="Your Full Name" className="w-full p-3 border rounded-md" onChange={handleChange} />
+              <input type="email" name="email" placeholder="Your Email Address" className="w-full p-3 border rounded-md" onChange={handleChange} />
+              <input type="tel" name="phone" placeholder="Your Phone Number" className="w-full p-3 border rounded-md" onChange={handleChange} />
+              <input type="text" name="location" placeholder="Property Location in Spain" className="w-full p-3 border rounded-md" onChange={handleChange} />
+              <input type="text" name="startYear" placeholder="Mortgage Start Year" className="w-full p-3 border rounded-md" onChange={handleChange} />
+              <Button type="submit" className="bg-green-600 text-white w-full p-3">🔍 Submit Claim →</Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">How It Works:</h2>
+            <ul className="list-disc list-inside space-y-2">
+              <li>✅ Free Assessment of your mortgage agreement for illegal terms.</li>
+              <li>✅ No Win, No Fee – if you don’t win, you don’t pay.</li>
+              <li>✅ Get Your Money Back – receive your compensation directly.</li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">FAQ:</h2>
+            <ul className="list-disc list-inside space-y-2">
+              <li>💡 How long does the process take? — Most claims are resolved within 6 months.</li>
+              <li>💡 Do I have to pay anything upfront? — No, our service is No Win, No Fee.</li>
+              <li>💡 What if I no longer live in Spain? — You can still claim, location does not matter.</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default SpanishMortgageClaimsPage;
