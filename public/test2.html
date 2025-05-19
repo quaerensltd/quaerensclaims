@@ -424,10 +424,11 @@ header nav a:hover {
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <div id="car-finance-calculator"></div>
 
-        <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+        <!-- Load React and ReactDOM (deferred to ensure proper load) -->
+        <script defer crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
         
-        <script>
+        <script defer>
           const { useState, useEffect } = React;
         
           // Define average rates based on region and year ranges
@@ -451,7 +452,6 @@ header nav a:hover {
             const [interestRate, setInterestRate] = useState("");
             const [term, setTerm] = useState("");
             const [compensation, setCompensation] = useState(null);
-            const [claimType, setClaimType] = useState("overcharged-interest");
             const [region, setRegion] = useState("UK");
             const [yearRange, setYearRange] = useState("2000-2015");
         
@@ -466,15 +466,9 @@ header nav a:hover {
             const calculateCompensation = () => {
               let result = 0;
         
-              if (claimType === "overcharged-interest") {
-                const paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
-                const statutoryInterest = paidInterest * 0.08 * (term / 12);
-                result = paidInterest + statutoryInterest;
-              } else if (claimType === "unfair-fees") {
-                result = loanAmount * 0.05;
-              } else if (claimType === "misrepresentation") {
-                result = loanAmount * 0.10;
-              }
+              const paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
+              const statutoryInterest = paidInterest * 0.08 * (term / 12);
+              result = paidInterest + statutoryInterest;
         
               setCompensation(result);
             };
@@ -518,15 +512,21 @@ header nav a:hover {
                 {compensation !== null && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <h3 className="text-lg font-semibold mb-2">Estimated Compensation:</h3>
-                    <p className="text-2xl font-bold text-blue-800">{region === 'UK' ? '£' : '€'}{compensation.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-blue-800">
+                      {region === 'UK' ? '£' : '€'}{compensation.toFixed(2)}
+                    </p>
                   </div>
                 )}
               </div>
             );
           };
         
-          ReactDOM.createRoot(document.getElementById("car-finance-calculator")).render(<CarFinanceCalculator />);
-        </script>           
+          // Wait until the DOM is fully loaded before rendering
+          window.onload = () => {
+            ReactDOM.createRoot(document.getElementById("car-finance-calculator")).render(<CarFinanceCalculator />);
+          };
+        </script>
+              
               
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <h3 class="font-bold text-lg text-blue-900 mb-3">Why Choose Quaerens?</h3>
