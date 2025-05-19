@@ -425,11 +425,24 @@ header nav a:hover {
         <div id="car-finance-calculator"></div>
 
         <!-- Load React and ReactDOM (deferred to ensure proper load) -->
-        <script defer crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-        <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+        <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
         
         <script defer>
-          window.onload = () => {
+          // Ensure the DOM is fully loaded before executing
+          document.addEventListener("DOMContentLoaded", () => {
+            console.log("React Loaded:", React);
+            console.log("ReactDOM Loaded:", ReactDOM);
+        
+            // Check if the container is available
+            const container = document.getElementById("car-finance-calculator");
+            if (!container) {
+              console.error("Calculator container not found!");
+              return;
+            }
+        
+            console.log("Container Found:", container);
+        
             const { useState, useEffect } = React;
         
             // Define average rates based on region and year ranges
@@ -465,15 +478,18 @@ header nav a:hover {
         
               // Calculation logic
               const calculateCompensation = () => {
-                let result = 0;
-        
-                const paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
-                const statutoryInterest = paidInterest * 0.08 * (term / 12);
-                result = paidInterest + statutoryInterest;
-        
-                setCompensation(result);
+                if (loanAmount && term) {
+                  let result = 0;
+                  const paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
+                  const statutoryInterest = paidInterest * 0.08 * (term / 12);
+                  result = paidInterest + statutoryInterest;
+                  setCompensation(result);
+                } else {
+                  alert("Please enter both the Loan Amount and the Term (Months).");
+                }
               };
         
+              // Format currency
               const formatCurrency = (value) => {
                 return value.toLocaleString('en-GB', {
                   style: 'currency',
@@ -481,6 +497,7 @@ header nav a:hover {
                 });
               };
         
+              // Render component
               return (
                 <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-200">
                   <h2 className="text-2xl font-semibold mb-4">Car Finance Mis-Selling Calculator</h2>
@@ -513,7 +530,10 @@ header nav a:hover {
                     className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
                   />
         
-                  <button onClick={calculateCompensation} className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg">
+                  <button 
+                    onClick={calculateCompensation} 
+                    className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg"
+                  >
                     Calculate Compensation
                   </button>
         
@@ -529,9 +549,15 @@ header nav a:hover {
               );
             };
         
-            ReactDOM.createRoot(document.getElementById("car-finance-calculator")).render(<CarFinanceCalculator />);
-          };
-        </script>            
+            // Attempt to render the component
+            try {
+              ReactDOM.createRoot(container).render(<CarFinanceCalculator />);
+              console.log("Calculator rendered successfully!");
+            } catch (error) {
+              console.error("Failed to render calculator:", error.message);
+            }
+          });
+        </script>        
         
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <h3 class="font-bold text-lg text-blue-900 mb-3">Why Choose Quaerens?</h3>
