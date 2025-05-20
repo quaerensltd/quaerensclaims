@@ -478,6 +478,104 @@ header nav a:hover {
     </ul>
   </div>
   
+  <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+    <div class="w-full p-4 bg-white rounded-xl shadow">
+      <h2 class="text-xl font-bold mb-4">Holiday Park & Caravan Claim Calculator</h2>
+      <form id="caravanForm" class="space-y-4">
+        <div id="step1">
+          <label class="block font-medium">What issue did you experience?</label>
+          <select id="issueType" class="w-full p-2 border rounded" required>
+            <option value="">-- Select an issue --</option>
+            <option value="mis_sold">Mis-sold ownership or investment</option>
+            <option value="false_promises">False resale or rental income promises</option>
+            <option value="hidden_fees">Hidden fees or charges</option>
+            <option value="poor_conditions">Poor park conditions vs. marketing</option>
+            <option value="service_withdrawal">Park services withdrawn post-sale</option>
+            <option value="cooling_off">No cooling-off period / unfair contract</option>
+          </select>
+  
+          <label class="block font-medium mt-4">Currency:</label>
+          <select id="currency" class="w-full p-2 border rounded">
+            <option value="£">£ Pound</option>
+            <option value="€">€ Euro</option>
+          </select>
+  
+          <button type="button" id="nextBtnCaravan" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+        </div>
+  
+        <div id="step2" class="hidden">
+          <label class="block font-medium">Total Paid (Purchase Price + Fees):</label>
+          <input type="number" id="totalPaid" class="w-full p-2 border rounded" required />
+  
+          <label class="block font-medium">Duration Owned (in months):</label>
+          <input type="number" id="durationMonths" class="w-full p-2 border rounded" required />
+  
+          <label class="block font-medium">Did they promise resale value or income?</label>
+          <select id="promisedIncome" class="w-full p-2 border rounded">
+            <option value="">-- Select --</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+  
+          <button type="submit" class="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Estimate</button>
+        </div>
+      </form>
+  
+      <div id="caravanResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const nextBtn = document.getElementById('nextBtnCaravan');
+  
+      nextBtn.addEventListener('click', () => {
+        const issue = document.getElementById('issueType').value;
+        if (!issue) {
+          alert('Please select an issue.');
+          return;
+        }
+        step1.classList.add('hidden');
+        step2.classList.remove('hidden');
+      });
+  
+      document.getElementById('caravanForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+  
+        const issue = document.getElementById('issueType').value;
+        const currency = document.getElementById('currency').value;
+        const paid = parseFloat(document.getElementById('totalPaid').value);
+        const months = parseInt(document.getElementById('durationMonths').value);
+        const promised = document.getElementById('promisedIncome').value;
+  
+        if (!paid || !months || paid <= 0 || months <= 0 || promised === '') {
+          alert('Please fill out all required fields.');
+          return;
+        }
+  
+        let factor = 0.3; // base refund estimate
+  
+        if (issue === 'mis_sold' || issue === 'false_promises') factor = 0.6;
+        if (issue === 'cooling_off') factor = 0.75;
+        if (promised === 'yes') factor += 0.1;
+  
+        const estimate = Math.min(paid * factor, paid).toFixed(2);
+  
+        const explanation = 'Claims related to mis-sold holiday parks or caravan ownership often involve false promises, hidden fees, or breaches of consumer law. You may be eligible for a refund or compensation.';
+  
+        const resultBox = document.getElementById('caravanResult');
+        resultBox.innerHTML = `
+          <p class="text-lg font-semibold">Estimated Compensation: ${currency}${estimate}</p>
+          <p class="mt-2 text-sm">${explanation}</p>
+          <p class="text-sm italic text-gray-600">This is a rough estimate based on your inputs. Final outcomes depend on documentation and legal review.</p>
+          <a href="/claim.html?type=caravan-${issue}&amount=${estimate}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+        `;
+        resultBox.classList.remove('hidden');
+      });
+    });
+  </script>  
       
   <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
     <h3 class="font-bold text-lg text-blue-900 mb-3">What can Quaerens help you claim?</h3>
