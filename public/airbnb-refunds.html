@@ -463,70 +463,72 @@ header nav a:hover {
         </div>
         
         <script>
-          const step1 = document.getElementById('step1');
-          const step2 = document.getElementById('step2');
-          const nextBtn1 = document.getElementById('nextBtn1');
+          document.addEventListener('DOMContentLoaded', function () {
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const nextBtn1 = document.getElementById('nextBtn1');
         
-          nextBtn1.addEventListener('click', () => {
-            const issue = document.getElementById('issueType').value;
-            if (!issue) {
-              alert('Please select an Airbnb issue.');
-              return;
-            }
-            step1.classList.add('hidden');
-            step2.classList.remove('hidden');
+            nextBtn1.addEventListener('click', () => {
+              const issue = document.getElementById('issueType').value;
+              if (!issue) {
+                alert('Please select an Airbnb issue.');
+                return;
+              }
+              step1.classList.add('hidden');
+              step2.classList.remove('hidden');
+            });
+        
+            document.getElementById('airbnbClaimForm').addEventListener('submit', function(e) {
+              e.preventDefault();
+        
+              const issue = document.getElementById('issueType').value;
+              const currency = document.getElementById('currency').value;
+              const cost = parseFloat(document.getElementById('bookingCost').value);
+              const nightsAffected = parseInt(document.getElementById('nightsAffected').value);
+              const totalNights = parseInt(document.getElementById('totalNights').value);
+              const extras = parseFloat(document.getElementById('extraCosts').value) || 0;
+        
+              if (!cost || !nightsAffected || !totalNights || nightsAffected > totalNights) {
+                alert('Please enter valid booking details.');
+                return;
+              }
+        
+              let baseComp = (cost * (nightsAffected / totalNights)).toFixed(2);
+              let totalComp = (parseFloat(baseComp) + extras).toFixed(2);
+        
+              let explanation = '';
+              switch(issue) {
+                case 'not_as_described':
+                  explanation = 'If your Airbnb property was not as described, you may claim a partial refund under Airbnb\'s Guest Refund Policy.';
+                  break;
+                case 'uninhabitable':
+                  explanation = 'Severe cleanliness or safety issues entitle you to compensation for uninhabitable stays.';
+                  break;
+                case 'cancellation':
+                  explanation = 'Host cancellations may entitle you to a full refund and reimbursement of additional expenses under Airbnb\'s policies.';
+                  break;
+                case 'injury':
+                  explanation = 'Injuries or illnesses caused by the property may be eligible for claims under Airbnb\'s Host Protection or personal injury laws.';
+                  break;
+                case 'harassment':
+                  explanation = 'Harassment or discrimination by hosts or co-guests is a violation of Airbnb\'s Nondiscrimination Policy and may entitle you to compensation.';
+                  break;
+                case 'scam':
+                  explanation = 'Fake listings or scams may qualify for a full refund and reimbursement of any resulting losses.';
+                  break;
+              }
+        
+              const resultBox = document.getElementById('airbnbResult');
+              resultBox.innerHTML = `
+                <p class="text-lg font-semibold">Estimated Compensation: ${currency}${totalComp}</p>
+                <p class="mt-2 text-sm">${explanation}</p>
+                <a href="/claim.html?type=airbnb-${issue}&amount=${totalComp}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+              `;
+              resultBox.classList.remove('hidden');
+            });
           });
+        </script>
         
-          document.getElementById('airbnbClaimForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-        
-            const issue = document.getElementById('issueType').value;
-            const currency = document.getElementById('currency').value;
-            const cost = parseFloat(document.getElementById('bookingCost').value);
-            const nightsAffected = parseInt(document.getElementById('nightsAffected').value);
-            const totalNights = parseInt(document.getElementById('totalNights').value);
-            const extras = parseFloat(document.getElementById('extraCosts').value) || 0;
-        
-            if (!cost || !nightsAffected || !totalNights || nightsAffected > totalNights) {
-              alert('Please enter valid booking details.');
-              return;
-            }
-        
-            let baseComp = (cost * (nightsAffected / totalNights)).toFixed(2);
-            let totalComp = (parseFloat(baseComp) + extras).toFixed(2);
-        
-            let explanation = '';
-            switch(issue) {
-              case 'not_as_described':
-                explanation = 'If your Airbnb property was not as described, you may claim a partial refund under Airbnb's Guest Refund Policy.';
-                break;
-              case 'uninhabitable':
-                explanation = 'Severe cleanliness or safety issues entitle you to compensation for uninhabitable stays.';
-                break;
-              case 'cancellation':
-                explanation = 'Host cancellations may entitle you to a full refund and reimbursement of additional expenses under Airbnb's policies.';
-                break;
-              case 'injury':
-                explanation = 'Injuries or illnesses caused by the property may be eligible for claims under Airbnb's Host Protection or personal injury laws.';
-                break;
-              case 'harassment':
-                explanation = 'Harassment or discrimination by hosts or co-guests is a violation of Airbnb's Nondiscrimination Policy and may entitle you to compensation.';
-                break;
-              case 'scam':
-                explanation = 'Fake listings or scams may qualify for a full refund and reimbursement of any resulting losses.';
-                break;
-            }
-        
-            const resultBox = document.getElementById('airbnbResult');
-            resultBox.innerHTML = `
-              <p class="text-lg font-semibold">Estimated Compensation: ${currency}${totalComp}</p>
-              <p class="mt-2 text-sm">${explanation}</p>
-              <a href="/claim.html?type=airbnb-${issue}&amount=${totalComp}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
-            `;
-            resultBox.classList.remove('hidden');
-          });
-        </script>        
-
         <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
           <h3 class="font-bold text-lg text-blue-900 mb-3">How Quaerens Helps</h3>
           <ul class="list-none space-y-3 text-base text-blue-800">
