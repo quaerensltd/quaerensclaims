@@ -485,6 +485,94 @@ header nav a:hover {
         <p class="mt-4">If these apply to you, you may be eligible for repairs and compensation. It’s quick and free to check your case — and remember, your landlord cannot evict you for taking legal action over disrepair.</p>
       </div>
       
+      <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+        <div class="w-full p-4 bg-white rounded-xl shadow">
+          <h2 class="text-xl font-bold mb-4">Housing Disrepair Compensation Calculator</h2>
+          <form id="housingForm" class="space-y-4">
+            <div id="step1">
+              <label class="block font-medium">What type of disrepair are you experiencing?</label>
+              <select id="disrepairType" class="w-full p-2 border rounded" required>
+                <option value="">-- Select an issue --</option>
+                <option value="damp">Damp or mould</option>
+                <option value="leaks">Leaks or flooding</option>
+                <option value="heating">No heating or hot water</option>
+                <option value="electrical">Faulty electrics</option>
+                <option value="structural">Structural issues</option>
+                <option value="vermin">Pests or vermin</option>
+              </select>
+      
+              <label class="block font-medium mt-4">Currency:</label>
+              <select id="currency" class="w-full p-2 border rounded">
+                <option value="£">£ Pound</option>
+                <option value="€">€ Euro</option>
+              </select>
+      
+              <button type="button" id="nextBtnHousing" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+            </div>
+      
+            <div id="step2" class="hidden">
+              <label class="block font-medium">How long have you lived with the disrepair (in months)?</label>
+              <input type="number" id="durationMonths" class="w-full p-2 border rounded" required />
+      
+              <label class="block font-medium">Monthly Rent Amount:</label>
+              <input type="number" id="monthlyRent" class="w-full p-2 border rounded" required />
+      
+              <label class="block font-medium">Additional Costs or Damages (optional):</label>
+              <input type="number" id="extraCosts" class="w-full p-2 border rounded" />
+      
+              <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Calculate Compensation</button>
+            </div>
+          </form>
+      
+          <div id="housingResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+        </div>
+      </div>
+      
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const step1 = document.getElementById('step1');
+          const step2 = document.getElementById('step2');
+          const nextBtn = document.getElementById('nextBtnHousing');
+      
+          nextBtn.addEventListener('click', () => {
+            const disrepair = document.getElementById('disrepairType').value;
+            if (!disrepair) {
+              alert('Please select a disrepair issue.');
+              return;
+            }
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+          });
+      
+          document.getElementById('housingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+      
+            const disrepair = document.getElementById('disrepairType').value;
+            const currency = document.getElementById('currency').value;
+            const months = parseInt(document.getElementById('durationMonths').value);
+            const rent = parseFloat(document.getElementById('monthlyRent').value);
+            const extras = parseFloat(document.getElementById('extraCosts').value) || 0;
+      
+            if (!months || !rent || months <= 0 || rent <= 0) {
+              alert('Please enter valid rent and duration details.');
+              return;
+            }
+      
+            const baseComp = 0.25 * rent * months; // 25% rent refund as rough estimate
+            const totalComp = (baseComp + extras).toFixed(2);
+      
+            let explanation = 'Tenants are entitled to claim compensation when landlords fail to fix essential issues within a reasonable time, often calculated as a portion of rent paid.';
+      
+            const resultBox = document.getElementById('housingResult');
+            resultBox.innerHTML = `
+              <p class="text-lg font-semibold">Estimated Compensation: ${currency}${totalComp}</p>
+              <p class="mt-2 text-sm">${explanation}</p>
+              <a href="/claim.html?type=housing-${disrepair}&amount=${totalComp}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+            `;
+            resultBox.classList.remove('hidden');
+          });
+        });
+      </script>       
 
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <h3 class="font-bold text-lg text-blue-900 mb-3">Why Choose Quaerens?</h3>
