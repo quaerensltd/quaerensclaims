@@ -402,7 +402,98 @@ header nav a:hover {
           <p class="text-lg">If you were misadvised, moved your pension into a risky scheme, or lost value due to poor advice — you could claim £1,000s in compensation. Quaerens is here to help.</p>
         </div>
       </section>
+  
+      <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+        <div class="w-full p-4 bg-white rounded-xl shadow">
+          <h2 class="text-xl font-bold mb-4">Pension Mis-Selling Claim Checker</h2>
+          <form id="pensionClaimForm" class="space-y-4">
+            <div id="step1">
+              <label class="block font-medium">What type of pension issue are you concerned about?</label>
+              <select id="pensionType" class="w-full p-2 border rounded" required>
+                <option value="">-- Select an issue --</option>
+                <option value="transfer">Advised to transfer a pension</option>
+                <option value="sipp">SIPP with high-risk investments</option>
+                <option value="fees">High fees or poor advice</option>
+                <option value="unregulated">Unregulated introducer or adviser</option>
+                <option value="loss">Loss of guaranteed benefits</option>
+              </select>
       
+              <button type="button" id="nextBtnPension" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+            </div>
+      
+            <div id="step2" class="hidden">
+              <label class="block font-medium">Estimated Pension Value Transferred (£ or €):</label>
+              <input type="number" id="pensionValue" class="w-full p-2 border rounded" required />
+      
+              <label class="block font-medium">Did you lose any guaranteed benefits?</label>
+              <select id="lostBenefits" class="w-full p-2 border rounded" required>
+                <option value="">-- Select an option --</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="unsure">Unsure</option>
+              </select>
+      
+              <label class="block font-medium">Were you advised by a financial adviser?</label>
+              <select id="hadAdviser" class="w-full p-2 border rounded" required>
+                <option value="">-- Select an option --</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="unsure">Unsure</option>
+              </select>
+      
+              <label class="block font-medium">Extra comments (optional):</label>
+              <textarea id="pensionNotes" class="w-full p-2 border rounded" rows="3"></textarea>
+      
+              <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Check Eligibility</button>
+            </div>
+          </form>
+      
+          <div id="pensionResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+        </div>
+      </div>
+      
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const step1 = document.getElementById('step1');
+          const step2 = document.getElementById('step2');
+          const nextBtn = document.getElementById('nextBtnPension');
+      
+          nextBtn.addEventListener('click', () => {
+            const pensionType = document.getElementById('pensionType').value;
+            if (!pensionType) {
+              alert('Please select a pension issue.');
+              return;
+            }
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+          });
+      
+          document.getElementById('pensionClaimForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+      
+            const pensionType = document.getElementById('pensionType').value;
+            const pensionValue = parseFloat(document.getElementById('pensionValue').value);
+            const lostBenefits = document.getElementById('lostBenefits').value;
+            const hadAdviser = document.getElementById('hadAdviser').value;
+            const notes = document.getElementById('pensionNotes').value;
+      
+            if (!pensionValue || pensionValue <= 0 || !lostBenefits || !hadAdviser) {
+              alert('Please fill in all required fields.');
+              return;
+            }
+      
+            let riskFlag = (lostBenefits === 'yes' || hadAdviser === 'yes');
+      
+            let resultMsg = `<p class='text-lg font-semibold'>Estimated Claim Eligibility: ${riskFlag ? 'Likely' : 'Possible'}</p>`;
+            resultMsg += `<p class='mt-2 text-sm'>Based on your input, you may have a valid pension mis-selling claim.</p>`;
+            resultMsg += `<p class='mt-2 text-sm'>Transferred Value: £${pensionValue.toFixed(2)}</p>`;
+            resultMsg += `<a href='/claim.html?type=pension-${pensionType}&value=${pensionValue}&adviser=${hadAdviser}&benefits=${lostBenefits}' class='mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700'>Start Your Claim</a>`;
+      
+            document.getElementById('pensionResult').innerHTML = resultMsg;
+            document.getElementById('pensionResult').classList.remove('hidden');
+          });
+        });
+      </script>      
 
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <h3 class="font-bold text-lg text-blue-900 mb-3">How Quaerens Helps</h3>
