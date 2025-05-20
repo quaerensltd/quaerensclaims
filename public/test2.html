@@ -430,117 +430,112 @@ header nav a:hover {
   <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
   <script defer>
-      window.addEventListener('DOMContentLoaded', () => {
-          if (!window.React || !window.ReactDOM) {
-              console.error("⚠️ React or ReactDOM not loaded.");
-              return;
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.React || !window.ReactDOM) {
+        console.error("⚠️ React or ReactDOM not loaded.");
+        return;
+      }
+  
+      const { useState, useEffect } = React;
+  
+      const CarFinanceCalculator = () => {
+        const [loanAmount, setLoanAmount] = useState("");
+        const [interestRate, setInterestRate] = useState("");
+        const [term, setTerm] = useState("");
+        const [compensation, setCompensation] = useState(null);
+        const [region, setRegion] = useState("UK");
+        const [yearRange, setYearRange] = useState("2000-2015");
+  
+        const yearToRateMap = {
+          'UK': {
+            '2000-2015': 4.75,
+            '2016-2020': 4.0,
+            '2021-2023': 5.5,
+            '2024-2025': 8.0
+          },
+          'EU': {
+            '2000-2015': 3.75,
+            '2016-2020': 3.0,
+            '2021-2023': 4.5,
+            '2024-2025': 7.5
           }
-
-          // Import hooks from React
-          const { useState, useEffect } = React;
-
-          // Define interest rates
-          const yearToRateMap = {
-              'UK': {
-                  '2000-2015': 4.75,
-                  '2016-2020': 4.0,
-                  '2021-2023': 5.5,
-                  '2024-2025': 8.0
-              },
-              'EU': {
-                  '2000-2015': 3.75,
-                  '2016-2020': 3.0,
-                  '2021-2023': 4.5,
-                  '2024-2025': 7.5
-              }
-          };
-
-          // Define the Calculator Component
-          const CarFinanceCalculator = () => {
-              const [loanAmount, setLoanAmount] = useState("");
-              const [interestRate, setInterestRate] = useState("");
-              const [term, setTerm] = useState("");
-              const [compensation, setCompensation] = useState(null);
-              const [region, setRegion] = useState("UK");
-              const [yearRange, setYearRange] = useState("2000-2015");
-
-              // Update interest rate based on selection
-              useEffect(() => {
-                  if (yearToRateMap[region][yearRange]) {
-                      setInterestRate(yearToRateMap[region][yearRange]);
-                  }
-              }, [region, yearRange]);
-
-              // Calculation Logic
-              const calculateCompensation = () => {
-                  if (loanAmount > 0 && term > 0) {
-                      let paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
-                      let statutoryInterest = paidInterest * 0.08 * (term / 12);
-                      let result = paidInterest + statutoryInterest;
-                      setCompensation(result);
-                  } else {
-                      alert("Please enter valid loan amount and term.");
-                  }
-              };
-
-              // Render Form
-              return (
-                  <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-200">
-                      <h2 className="text-2xl font-semibold mb-4">Car Finance Mis-Selling Calculator</h2>
-
-                      <select value={region} onChange={(e) => setRegion(e.target.value)} className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg">
-                          <option value="UK">United Kingdom</option>
-                          <option value="EU">European Union</option>
-                      </select>
-
-                      <select value={yearRange} onChange={(e) => setYearRange(e.target.value)} className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg">
-                          <option value="2000-2015">2000-2015</option>
-                          <option value="2016-2020">2016-2020</option>
-                          <option value="2021-2023">2021-2023</option>
-                          <option value="2024-2025">2024-2025</option>
-                      </select>
-
-                      <input
-                          type='number'
-                          placeholder='Loan Amount (€ or £)'
-                          value={loanAmount}
-                          onChange={(e) => setLoanAmount(e.target.value)}
-                          className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-                      />
-
-                      <input
-                          type='number'
-                          placeholder='Term (Months)'
-                          value={term}
-                          onChange={(e) => setTerm(e.target.value)}
-                          className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-                      />
-
-                      <button onClick={calculateCompensation} className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg">
-                          Calculate Compensation
-                      </button>
-
-                      {compensation !== null && (
-                          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                              <h3 className="text-lg font-semibold mb-2">Estimated Compensation:</h3>
-                              <p className="text-2xl font-bold text-blue-800">
-                                  {region === 'UK' ? '£' : '€'}{compensation.toFixed(2)}
-                              </p>
-                          </div>
-                      )}
-                  </div>
-              );
-          };
-
-          // Ensure the div exists before rendering
-          const container = document.getElementById("car-finance-calculator");
-          if (container) {
-              ReactDOM.createRoot(container).render(<CarFinanceCalculator />);
+        };
+  
+        useEffect(() => {
+          if (yearToRateMap[region][yearRange]) {
+            setInterestRate(yearToRateMap[region][yearRange]);
+          }
+        }, [region, yearRange]);
+  
+        const calculateCompensation = () => {
+          if (loanAmount > 0 && term > 0) {
+            let paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
+            let statutoryInterest = paidInterest * 0.08 * (term / 12);
+            let result = paidInterest + statutoryInterest;
+            setCompensation(result);
           } else {
-              console.error("⚠️ Element #car-finance-calculator not found.");
+            alert("Please enter valid loan amount and term.");
           }
-      });
-  </script>
+        };
+  
+        return (
+          React.createElement('div', { className: 'w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-200' },
+            React.createElement('h2', { className: 'text-2xl font-semibold mb-4' }, 'Car Finance Mis-Selling Calculator'),
+            React.createElement('select', {
+              value: region,
+              onChange: (e) => setRegion(e.target.value),
+              className: 'mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg'
+            },
+              React.createElement('option', { value: 'UK' }, 'United Kingdom'),
+              React.createElement('option', { value: 'EU' }, 'European Union')
+            ),
+            React.createElement('select', {
+              value: yearRange,
+              onChange: (e) => setYearRange(e.target.value),
+              className: 'mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg'
+            },
+              React.createElement('option', { value: '2000-2015' }, '2000-2015'),
+              React.createElement('option', { value: '2016-2020' }, '2016-2020'),
+              React.createElement('option', { value: '2021-2023' }, '2021-2023'),
+              React.createElement('option', { value: '2024-2025' }, '2024-2025')
+            ),
+            React.createElement('input', {
+              type: 'number',
+              placeholder: 'Loan Amount (€ or £)',
+              value: loanAmount,
+              onChange: (e) => setLoanAmount(e.target.value),
+              className: 'mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg'
+            }),
+            React.createElement('input', {
+              type: 'number',
+              placeholder: 'Term (Months)',
+              value: term,
+              onChange: (e) => setTerm(e.target.value),
+              className: 'mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg'
+            }),
+            React.createElement('button', {
+              onClick: calculateCompensation,
+              className: 'w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg'
+            }, 'Calculate Compensation'),
+            compensation !== null && React.createElement('div', { className: 'mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg' },
+              React.createElement('h3', { className: 'text-lg font-semibold mb-2' }, 'Estimated Compensation:'),
+              React.createElement('p', { className: 'text-2xl font-bold text-blue-800' },
+                region === 'UK' ? '£' : '€',
+                compensation.toFixed(2)
+              )
+            )
+          )
+        );
+      };
+  
+      const container = document.getElementById("car-finance-calculator");
+      if (container) {
+        ReactDOM.render(React.createElement(CarFinanceCalculator), container);
+      } else {
+        console.error("⚠️ Element #car-finance-calculator not found.");
+      }
+    });
+  </script>  
 </div>  
       
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
