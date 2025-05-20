@@ -468,6 +468,112 @@ header nav a:hover {
             </ul>
           </div>
 
+          <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+            <div class="w-full p-4 bg-white rounded-xl shadow">
+              <h2 class="text-xl font-bold mb-4">Medical Negligence Compensation Calculator</h2>
+              <form id="medNegForm" class="space-y-4">
+                <div id="step1">
+                  <label class="block font-medium">Type of Injury or Negligence:</label>
+                  <select id="injuryType" class="w-full p-2 border rounded" required>
+                    <option value="">-- Select an issue --</option>
+                    <option value="misdiagnosis">Misdiagnosis or delayed diagnosis</option>
+                    <option value="surgical">Surgical error</option>
+                    <option value="birth">Birth injury (mother or child)</option>
+                    <option value="infection">Hospital-acquired infection</option>
+                    <option value="medication">Incorrect medication or dosage</option>
+                    <option value="consent">Lack of informed consent</option>
+                    <option value="anaesthesia">Anaesthesia complications</option>
+                    <option value="nursing">Negligence by nursing staff</option>
+                    <option value="dental">Dental negligence</option>
+                    <option value="mental">Psychiatric misdiagnosis or neglect</option>
+                  </select>
+          
+                  <label class="block font-medium mt-4">Currency:</label>
+                  <select id="currency" class="w-full p-2 border rounded">
+                    <option value="£">£ Pound</option>
+                    <option value="€">€ Euro</option>
+                  </select>
+          
+                  <button type="button" id="nextBtnMedNeg" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+                </div>
+          
+                <div id="step2" class="hidden">
+                  <label class="block font-medium">Estimated Medical Expenses:</label>
+                  <input type="number" id="medicalExpenses" class="w-full p-2 border rounded" required />
+          
+                  <label class="block font-medium">Estimated Loss of Earnings:</label>
+                  <input type="number" id="lossEarnings" class="w-full p-2 border rounded" required />
+          
+                  <label class="block font-medium">Severity of Harm:</label>
+                  <select id="severity" class="w-full p-2 border rounded" required>
+                    <option value="">-- Select severity --</option>
+                    <option value="minor">Minor (e.g. temporary harm)</option>
+                    <option value="moderate">Moderate (e.g. prolonged recovery)</option>
+                    <option value="severe">Severe or life-altering injury</option>
+                    <option value="fatal">Fatal or permanent disability</option>
+                  </select>
+          
+                  <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Calculate Compensation</button>
+                </div>
+              </form>
+          
+              <div id="medNegResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+            </div>
+          </div>
+          
+          <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              const step1 = document.getElementById('step1');
+              const step2 = document.getElementById('step2');
+              const nextBtn = document.getElementById('nextBtnMedNeg');
+          
+              nextBtn.addEventListener('click', () => {
+                const injuryType = document.getElementById('injuryType').value;
+                if (!injuryType) {
+                  alert('Please select an injury or negligence type.');
+                  return;
+                }
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+              });
+          
+              document.getElementById('medNegForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+          
+                const injuryType = document.getElementById('injuryType').value;
+                const currency = document.getElementById('currency').value;
+                const expenses = parseFloat(document.getElementById('medicalExpenses').value);
+                const earnings = parseFloat(document.getElementById('lossEarnings').value);
+                const severity = document.getElementById('severity').value;
+          
+                if (!expenses || !earnings || !severity || expenses < 0 || earnings < 0) {
+                  alert('Please enter valid cost and severity details.');
+                  return;
+                }
+          
+                let generalDamages = 0;
+                switch(severity) {
+                  case 'minor': generalDamages = 2000; break;
+                  case 'moderate': generalDamages = 8000; break;
+                  case 'severe': generalDamages = 25000; break;
+                  case 'fatal': generalDamages = 50000; break;
+                }
+          
+                const total = generalDamages + expenses + earnings;
+          
+                let explanation = 'Medical negligence claims can include general damages for pain and suffering, and special damages for financial losses.';
+          
+                const resultBox = document.getElementById('medNegResult');
+                resultBox.innerHTML = `
+                  <p class="text-lg font-semibold">Estimated Compensation: ${currency}${total.toFixed(2)}</p>
+                  <p class="mt-2 text-sm">${explanation}</p>
+                  <p class="text-sm italic text-gray-600">This is an estimate based on your inputs. Actual compensation will depend on medical reports, legal review, and claim circumstances.</p>
+                  <a href="/claim.html?type=medical-${injuryType}&amount=${total}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+                `;
+                resultBox.classList.remove('hidden');
+              });
+            });
+          </script>          
 
           <div class="info-box" style="background-color: #f0f9ff; border: 2px solid #2563eb; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
             <h3 class="font-bold text-lg mb-3" style="color: #1e3a8a;">Why Choose Quaerens?</h3>
