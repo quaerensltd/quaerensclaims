@@ -423,126 +423,134 @@ header nav a:hover {
 
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <div id="car-finance-calculator"></div>
+      </div>
       
-        <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+      <!-- React and ReactDOM Scripts -->
+      <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+      <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
       
-        <script>
-          const { useState } = React;
+      <!-- Calculator Script -->
+      <script>
+        const { useState, useEffect } = React;
       
-          const CarFinanceCalculator = () => {
-            const [loanAmount, setLoanAmount] = useState("");
-            const [interestRate, setInterestRate] = useState("");
-            const [fairMarketRate, setFairMarketRate] = useState("");
-            const [term, setTerm] = useState("");
-            const [compensation, setCompensation] = useState(null);
-            const [claimType, setClaimType] = useState("overcharged-interest");
-            const [currency, setCurrency] = useState("EUR");
+        // Fair Market Rate data based on Year Range
+        const yearToFairMarketRate = {
+          '2000-2015': 3.5,
+          '2016-2020': 2.8,
+          '2021-2023': 4.2,
+          '2024-2025': 5.0
+        };
       
-            const calculateCompensation = () => {
-              let result = 0;
+        const CarFinanceCalculator = () => {
+          const [loanAmount, setLoanAmount] = useState("");
+          const [interestRate, setInterestRate] = useState("");
+          const [fairMarketRate, setFairMarketRate] = useState("");
+          const [term, setTerm] = useState("");
+          const [compensation, setCompensation] = useState(null);
+          const [yearRange, setYearRange] = useState("2000-2015");
       
-              if (claimType === "overcharged-interest") {
-                const paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
-                const fairInterest = (loanAmount * (fairMarketRate / 100) * term) / 12;
-                const difference = paidInterest - fairInterest;
-                const statutoryInterest = difference * 0.08 * (term / 12);
-                result = difference + statutoryInterest;
-              } else if (claimType === "unfair-fees") {
-                result = loanAmount * 0.05; // Estimation of 5% of the loan amount as unfair fees
-              } else if (claimType === "misrepresentation") {
-                result = loanAmount * 0.10; // Estimation of 10% of the loan amount for misrepresentation
-              }
+          // Update Fair Market Rate when Year Range changes
+          useEffect(() => {
+            if (yearToFairMarketRate[yearRange]) {
+              setFairMarketRate(yearToFairMarketRate[yearRange]);
+            }
+          }, [yearRange]);
       
-              setCompensation(result);
-            };
+          // Calculation Logic
+          const calculateCompensation = () => {
+            let result = 0;
+            const paidInterest = (loanAmount * (interestRate / 100) * term) / 12;
+            const fairInterest = (loanAmount * (fairMarketRate / 100) * term) / 12;
+            const difference = paidInterest - fairInterest;
+            const statutoryInterest = difference * 0.08 * (term / 12);
+            result = difference + statutoryInterest;
       
-            const formatCurrency = (amount) => {
-              return new Intl.NumberFormat("en-GB", {
-                style: "currency",
-                currency: currency,
-              }).format(amount);
-            };
-      
-            return React.createElement(
-              'div',
-              { className: "w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-200" },
-              React.createElement('h2', { className: "text-2xl font-semibold mb-4" }, 'Car Finance Mis-Selling Calculator'),
-      
-              // Currency Selector
-              React.createElement('select', {
-                value: currency,
-                onChange: (e) => setCurrency(e.target.value),
-                className: "mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-              },
-                React.createElement('option', { value: "EUR" }, "Euro (€)"),
-                React.createElement('option', { value: "GBP" }, "British Pound (£)")
-              ),
-      
-              // Claim Type Selector
-              React.createElement('select', {
-                value: claimType,
-                onChange: (e) => setClaimType(e.target.value),
-                className: "mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-              },
-                React.createElement('option', { value: "overcharged-interest" }, "Overcharged Interest"),
-                React.createElement('option', { value: "unfair-fees" }, "Unfair Fees"),
-                React.createElement('option', { value: "misrepresentation" }, "Misrepresentation of Terms")
-              ),
-              
-              // Input Fields
-              React.createElement('input', {
-                type: 'number',
-                placeholder: `Loan Amount (${currency === 'EUR' ? '€' : '£'})`,
-                value: loanAmount,
-                onChange: (e) => setLoanAmount(e.target.value),
-                className: "mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-              }),
-      
-              claimType === "overcharged-interest" && React.createElement('input', {
-                type: 'number',
-                placeholder: 'Interest Rate (%)',
-                value: interestRate,
-                onChange: (e) => setInterestRate(e.target.value),
-                className: "mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-              }),
-              
-              claimType === "overcharged-interest" && React.createElement('input', {
-                type: 'number',
-                placeholder: 'Fair Market Rate (%)',
-                value: fairMarketRate,
-                onChange: (e) => setFairMarketRate(e.target.value),
-                className: "mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-              }),
-      
-              claimType === "overcharged-interest" && React.createElement('input', {
-                type: 'number',
-                placeholder: 'Term (Months)',
-                value: term,
-                onChange: (e) => setTerm(e.target.value),
-                className: "mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
-              }),
-      
-              // Button
-              React.createElement('button', {
-                onClick: calculateCompensation,
-                className: "w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg"
-              }, 'Calculate Compensation'),
-      
-              // Result Display
-              compensation !== null && React.createElement(
-                'div',
-                { className: "mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg" },
-                React.createElement('h3', { className: "text-lg font-semibold mb-2" }, 'Estimated Compensation:'),
-                React.createElement('p', { className: "text-2xl font-bold text-blue-800" }, formatCurrency(compensation))
-              )
-            );
+            setCompensation(result);
           };
       
-          ReactDOM.createRoot(document.getElementById("car-finance-calculator")).render(
-            React.createElement(CarFinanceCalculator)
+          // Currency Formatter
+          const formatCurrency = (amount) => {
+            return new Intl.NumberFormat("en-GB", {
+              style: "currency",
+              currency: "EUR",
+            }).format(amount);
+          };
+      
+          // Render the Component
+          return (
+            <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-200">
+              <h2 className="text-2xl font-semibold mb-4">Car Finance Mis-Selling Calculator</h2>
+      
+              {/* Year Range Selector */}
+              <select
+                value={yearRange}
+                onChange={(e) => setYearRange(e.target.value)}
+                className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
+              >
+                <option value="2000-2015">2000-2015</option>
+                <option value="2016-2020">2016-2020</option>
+                <option value="2021-2023">2021-2023</option>
+                <option value="2024-2025">2024-2025</option>
+              </select>
+      
+              {/* Loan Amount */}
+              <input
+                type="number"
+                placeholder="Loan Amount (€)"
+                value={loanAmount}
+                onChange={(e) => setLoanAmount(e.target.value)}
+                className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
+              />
+      
+              {/* Interest Rate */}
+              <input
+                type="number"
+                placeholder="Interest Rate (%)"
+                value={interestRate}
+                onChange={(e) => setInterestRate(e.target.value)}
+                className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
+              />
+      
+              {/* Fair Market Rate - Prefilled and Disabled */}
+              <input
+                type="number"
+                placeholder="Fair Market Rate (%)"
+                value={fairMarketRate}
+                disabled
+                className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg bg-gray-100"
+              />
+      
+              {/* Term */}
+              <input
+                type="number"
+                placeholder="Term (Months)"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                className="mb-4 border border-gray-300 p-3 w-full rounded-lg text-lg"
+              />
+      
+              <button
+                onClick={calculateCompensation}
+                className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg"
+              >
+                Calculate Compensation
+              </button>
+      
+              {compensation !== null && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-2">Estimated Compensation:</h3>
+                  <p className="text-2xl font-bold text-blue-800">{formatCurrency(compensation)}</p>
+                </div>
+              )}
+            </div>
           );
-        </script>        
+        };
+      
+        ReactDOM.createRoot(document.getElementById("car-finance-calculator")).render(
+          <CarFinanceCalculator />
+        );
+      </script>
+        
       </div>      
       
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
