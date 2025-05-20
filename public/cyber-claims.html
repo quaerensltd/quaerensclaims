@@ -476,6 +476,104 @@ header nav a:hover {
         </div>
         
         <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+          <div class="w-full p-4 bg-white rounded-xl shadow">
+            <h2 class="text-xl font-bold mb-4">Cyber & Data Breach Compensation Calculator</h2>
+            <form id="breachForm" class="space-y-4">
+              <div id="step1">
+                <label class="block font-medium">What type of data was exposed?</label>
+                <select id="dataType" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select data type --</option>
+                  <option value="contact">Basic contact details (name, email)</option>
+                  <option value="financial">Bank or card details</option>
+                  <option value="identity">Identity documents (passport, ID)</option>
+                  <option value="medical">Medical or health data</option>
+                  <option value="sensitive">Sensitive personal data (e.g. religion, orientation)</option>
+                </select>
+        
+                <label class="block font-medium mt-4">Currency:</label>
+                <select id="currency" class="w-full p-2 border rounded">
+                  <option value="£">£ Pound</option>
+                  <option value="€">€ Euro</option>
+                </select>
+        
+                <button type="button" id="nextBtnBreach" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+              </div>
+        
+              <div id="step2" class="hidden">
+                <label class="block font-medium">Did you suffer emotional distress?</label>
+                <select id="distress" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+        
+                <label class="block font-medium">Did you suffer financial loss?</label>
+                <select id="loss" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+        
+                <button type="submit" class="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Estimate</button>
+              </div>
+            </form>
+        
+            <div id="breachResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+          </div>
+        </div>
+        
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const nextBtn = document.getElementById('nextBtnBreach');
+        
+            nextBtn.addEventListener('click', () => {
+              const dataType = document.getElementById('dataType').value;
+              if (!dataType) {
+                alert('Please select a data type.');
+                return;
+              }
+              step1.classList.add('hidden');
+              step2.classList.remove('hidden');
+            });
+        
+            document.getElementById('breachForm').addEventListener('submit', function(e) {
+              e.preventDefault();
+        
+              const dataType = document.getElementById('dataType').value;
+              const currency = document.getElementById('currency').value;
+              const distress = document.getElementById('distress').value;
+              const loss = document.getElementById('loss').value;
+        
+              if (!distress || !loss) {
+                alert('Please answer all questions.');
+                return;
+              }
+        
+              let base = 300; // base estimate
+        
+              if (dataType === 'financial' || dataType === 'identity') base = 800;
+              if (dataType === 'medical' || dataType === 'sensitive') base = 1500;
+        
+              if (distress === 'yes') base += 500;
+              if (loss === 'yes') base += 1000;
+        
+              const estimate = base.toFixed(2);
+        
+              const resultBox = document.getElementById('breachResult');
+              resultBox.innerHTML = `
+                <p class="text-lg font-semibold">Estimated Compensation: ${currency}${estimate}</p>
+                <p class="mt-2 text-sm">Under UK and EU GDPR, you may be entitled to claim compensation for distress and/or financial loss due to unlawful data breaches.</p>
+                <p class="text-sm italic text-gray-600">This is a preliminary estimate. Final compensation depends on evidence and legal review.</p>
+                <a href="/claim.html?type=cyber-${dataType}&amount=${estimate}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+              `;
+              resultBox.classList.remove('hidden');
+            });
+          });
+        </script>        
+
+        <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
           <h3 class="font-bold text-lg text-blue-900 mb-3">How Quaerens Helps</h3>
           <p class="mb-3 text-base">
             <li>

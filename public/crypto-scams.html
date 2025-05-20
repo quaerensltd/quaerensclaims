@@ -423,6 +423,105 @@ header nav a:hover {
           </div>
 
           <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+            <div class="w-full p-4 bg-white rounded-xl shadow">
+              <h2 class="text-xl font-bold mb-4">Crypto Scam & Recovery Claim Calculator</h2>
+              <form id="cryptoForm" class="space-y-4">
+                <div id="step1">
+                  <label class="block font-medium">What type of crypto scam were you affected by?</label>
+                  <select id="scamType" class="w-full p-2 border rounded" required>
+                    <option value="">-- Select scam type --</option>
+                    <option value="investment">Fake investment scheme</option>
+                    <option value="exchange">Scam crypto exchange or wallet</option>
+                    <option value="romance">Romance scam involving crypto</option>
+                    <option value="phishing">Phishing or impersonation</option>
+                    <option value="rugpull">Rug pull or token scam</option>
+                  </select>
+          
+                  <label class="block font-medium mt-4">Currency:</label>
+                  <select id="currency" class="w-full p-2 border rounded">
+                    <option value="£">£ Pound</option>
+                    <option value="€">€ Euro</option>
+                  </select>
+          
+                  <button type="button" id="nextBtnCrypto" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+                </div>
+          
+                <div id="step2" class="hidden">
+                  <label class="block font-medium">Amount Lost:</label>
+                  <input type="number" id="amountLost" class="w-full p-2 border rounded" required />
+          
+                  <label class="block font-medium">Did you send money via a regulated exchange or bank?</label>
+                  <select id="usedBank" class="w-full p-2 border rounded" required>
+                    <option value="">-- Select --</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+          
+                  <label class="block font-medium">Have you reported it to police or regulator?</label>
+                  <select id="reported" class="w-full p-2 border rounded" required>
+                    <option value="">-- Select --</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+          
+                  <button type="submit" class="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Estimate</button>
+                </div>
+              </form>
+          
+              <div id="cryptoResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+            </div>
+          </div>
+          
+          <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              const step1 = document.getElementById('step1');
+              const step2 = document.getElementById('step2');
+              const nextBtn = document.getElementById('nextBtnCrypto');
+          
+              nextBtn.addEventListener('click', () => {
+                const scamType = document.getElementById('scamType').value;
+                if (!scamType) {
+                  alert('Please select a scam type.');
+                  return;
+                }
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+              });
+          
+              document.getElementById('cryptoForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+          
+                const scamType = document.getElementById('scamType').value;
+                const currency = document.getElementById('currency').value;
+                const amountLost = parseFloat(document.getElementById('amountLost').value);
+                const usedBank = document.getElementById('usedBank').value;
+                const reported = document.getElementById('reported').value;
+          
+                if (!amountLost || amountLost <= 0 || !usedBank || !reported) {
+                  alert('Please complete all fields.');
+                  return;
+                }
+          
+                let recoveryChance = 0.1;
+          
+                if (usedBank === 'yes') recoveryChance += 0.3;
+                if (reported === 'yes') recoveryChance += 0.2;
+          
+                let estimatedRecovery = (amountLost * recoveryChance).toFixed(2);
+          
+                const resultBox = document.getElementById('cryptoResult');
+                resultBox.innerHTML = `
+                  <p class="text-lg font-semibold">Estimated Potential Recovery: ${currency}${estimatedRecovery}</p>
+                  <p class="mt-2 text-sm">This estimate is based on the likelihood of chargeback, tracing crypto, and legal action depending on the type of scam and reporting steps taken.</p>
+                  <p class="text-sm italic text-gray-600">This is not a guarantee. Recovery depends on many factors including evidence, jurisdiction, and third-party response.</p>
+                  <a href="/claim.html?type=crypto-${scamType}&amount=${estimatedRecovery}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+                `;
+                resultBox.classList.remove('hidden');
+              });
+            });
+          </script>          
+
+          <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
             <h3 class="font-bold text-lg text-blue-900 mb-3">How Quaerens Helps</h3>
             <p class="mb-3 text-base text-blue-800">
             <li>✅ Analyse your case and communications</li>
