@@ -495,6 +495,48 @@ header nav a:hover {
       </div>
       
       <script>
+        document.getElementById('creditFeeForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+      
+          const feeType = document.getElementById('feeType').value;
+          const monthlyFee = parseFloat(document.getElementById('monthlyFee').value);
+          const months = parseInt(document.getElementById('monthsCharged').value);
+          const currency = document.getElementById('currency').value;
+      
+          if (isNaN(monthlyFee) || isNaN(months) || monthlyFee <= 0 || months <= 0) {
+            alert('Please enter valid fee and month values.');
+            return;
+          }
+      
+          const totalClaim = monthlyFee * months;
+      
+          let explanation = '';
+          switch (feeType) {
+            case 'late':
+              explanation = 'Late payment fees can be challenged if they were excessive or unfair under the UK Consumer Credit Act.';
+              break;
+            case 'overlimit':
+              explanation = 'Over-limit fees may be reclaimed if they were applied unfairly or without proper warning.';
+              break;
+            case 'monthly':
+              explanation = 'Monthly fees may be reclaimed if the card was mis-sold or the fees were not properly disclosed.';
+              break;
+            case 'ppi':
+              explanation = 'Hidden PPI (Payment Protection Insurance) charges were often mis-sold and are eligible for full reimbursement.';
+              break;
+          }
+      
+          const resultBox = document.getElementById('creditFeeResult');
+          resultBox.innerHTML = `
+            <p class="text-lg font-semibold">Estimated Claimable Amount: ${currency}${totalClaim.toFixed(2)}</p>
+            <p class="mt-2 text-sm">${explanation}</p>
+            <a href="/submit-claim.html?type=credit-card-fee&amount=${totalClaim.toFixed(2)}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+          `;
+          resultBox.classList.remove('hidden');
+        });
+      </script>      
+      
+      <script>
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
       
