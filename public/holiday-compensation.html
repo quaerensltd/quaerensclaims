@@ -426,6 +426,105 @@ header nav a:hover {
         </section>
 
         <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+          <div class="w-full p-4 bg-white rounded-xl shadow">
+            <h2 class="text-xl font-bold mb-4">Holiday Compensation Calculator</h2>
+            <form id="holidayCompForm" class="space-y-4">
+              <div id="step1">
+                <label class="block font-medium">What went wrong with your holiday?</label>
+                <select id="issueType" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select an issue --</option>
+                  <option value="illness">Illness from hotel food/water</option>
+                  <option value="cancellation">Holiday cancelled</option>
+                  <option value="poor_conditions">Poor hotel conditions</option>
+                  <option value="injury">Injury during trip</option>
+                  <option value="misleading">Misleading description</option>
+                </select>
+                <button type="button" id="nextBtn1" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+              </div>
+        
+              <div id="step2" class="hidden">
+                <label class="block font-medium">Total Trip Cost (€ or £):</label>
+                <input type="number" id="tripCost" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Days Affected:</label>
+                <input type="number" id="daysAffected" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Total Trip Length (days):</label>
+                <input type="number" id="tripLength" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Extra Medical or Other Costs (optional):</label>
+                <input type="number" id="extraCosts" class="w-full p-2 border rounded" />
+        
+                <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Calculate Compensation</button>
+              </div>
+            </form>
+        
+            <div id="holidayResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+          </div>
+        </div>
+        
+        <script>
+          const step1 = document.getElementById('step1');
+          const step2 = document.getElementById('step2');
+          const nextBtn1 = document.getElementById('nextBtn1');
+        
+          nextBtn1.addEventListener('click', () => {
+            const issue = document.getElementById('issueType').value;
+            if (!issue) {
+              alert('Please select a holiday issue.');
+              return;
+            }
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+          });
+        
+          document.getElementById('holidayCompForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+        
+            const issue = document.getElementById('issueType').value;
+            const cost = parseFloat(document.getElementById('tripCost').value);
+            const daysAffected = parseInt(document.getElementById('daysAffected').value);
+            const tripLength = parseInt(document.getElementById('tripLength').value);
+            const extras = parseFloat(document.getElementById('extraCosts').value) || 0;
+        
+            if (!cost || !daysAffected || !tripLength || daysAffected > tripLength) {
+              alert('Please enter valid trip details.');
+              return;
+            }
+        
+            let baseComp = (cost * (daysAffected / tripLength)).toFixed(2);
+            let totalComp = (parseFloat(baseComp) + extras).toFixed(2);
+        
+            let explanation = '';
+            switch(issue) {
+              case 'illness':
+                explanation = 'If you fell ill due to food or water, you may claim for loss of enjoyment and medical costs.';
+                break;
+              case 'cancellation':
+                explanation = 'Holiday cancellations entitle you to a full or partial refund depending on timing and cause.';
+                break;
+              case 'poor_conditions':
+                explanation = 'Poor accommodation conditions may lead to a partial refund or compensation under the Package Travel Regulations.';
+                break;
+              case 'injury':
+                explanation = 'Injuries due to hotel or excursion negligence can result in claims for damages, pain, and loss of enjoyment.';
+                break;
+              case 'misleading':
+                explanation = 'Misleading descriptions that caused a worse experience may entitle you to partial refunds or compensation.';
+                break;
+            }
+        
+            const resultBox = document.getElementById('holidayResult');
+            resultBox.innerHTML = `
+              <p class="text-lg font-semibold">Estimated Compensation: €${totalComp}</p>
+              <p class="mt-2 text-sm">${explanation}</p>
+              <a href="/claim.html?type=holiday-${issue}&amount=${totalComp}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+            `;
+            resultBox.classList.remove('hidden');
+          });
+        </script>        
+
+        <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
           <h3 class="font-bold text-lg text-blue-900 mb-3">How Quaerens Helps</h3>
           <p class="mb-3 text-base">
             <li>
