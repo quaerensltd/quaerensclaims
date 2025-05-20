@@ -422,6 +422,107 @@ header nav a:hover {
         </div>
 
         <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+          <div class="w-full p-4 bg-white rounded-xl shadow">
+            <h2 class="text-xl font-bold mb-4">Mis-Sold Spanish Property Claim Calculator</h2>
+            <form id="propertyForm" class="space-y-4">
+              <div id="step1">
+                <label class="block font-medium">What type of property issue did you face?</label>
+                <select id="propertyIssue" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select issue type --</option>
+                  <option value="off_plan">Off-plan property never completed</option>
+                  <option value="bank_guarantee">No bank guarantee provided</option>
+                  <option value="licence">No licence of occupation or planning breach</option>
+                  <option value="misleading">Misleading marketing or misrepresentation</option>
+                  <option value="illegal">Illegal or non-habitable property</option>
+                </select>
+        
+                <label class="block font-medium mt-4">Currency:</label>
+                <select id="currency" class="w-full p-2 border rounded">
+                  <option value="€">€ Euro</option>
+                  <option value="£">£ Pound</option>
+                </select>
+        
+                <button type="button" id="nextBtnProperty" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+              </div>
+        
+              <div id="step2" class="hidden">
+                <label class="block font-medium">Amount Paid (deposit or full payment):</label>
+                <input type="number" id="amountPaid" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Was a bank guarantee issued?</label>
+                <select id="hadGuarantee" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unsure">Not sure</option>
+                </select>
+        
+                <label class="block font-medium">Was the property ever delivered?</label>
+                <select id="delivered" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="partially">Partially completed</option>
+                </select>
+        
+                <button type="submit" class="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Estimate</button>
+              </div>
+            </form>
+        
+            <div id="propertyResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+          </div>
+        </div>
+        
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const nextBtn = document.getElementById('nextBtnProperty');
+        
+            nextBtn.addEventListener('click', () => {
+              const issue = document.getElementById('propertyIssue').value;
+              if (!issue) {
+                alert('Please select an issue type.');
+                return;
+              }
+              step1.classList.add('hidden');
+              step2.classList.remove('hidden');
+            });
+        
+            document.getElementById('propertyForm').addEventListener('submit', function(e) {
+              e.preventDefault();
+        
+              const issue = document.getElementById('propertyIssue').value;
+              const currency = document.getElementById('currency').value;
+              const amountPaid = parseFloat(document.getElementById('amountPaid').value);
+              const hadGuarantee = document.getElementById('hadGuarantee').value;
+              const delivered = document.getElementById('delivered').value;
+        
+              if (!amountPaid || amountPaid <= 0 || !hadGuarantee || !delivered) {
+                alert('Please complete all fields.');
+                return;
+              }
+        
+              let refundFactor = 0.4;
+              if (issue === 'off_plan' && delivered === 'no') refundFactor = 1.0;
+              else if (hadGuarantee === 'no') refundFactor += 0.3;
+              else if (delivered === 'partially') refundFactor += 0.2;
+        
+              const estimate = Math.min(refundFactor * amountPaid, amountPaid).toFixed(2);
+        
+              const resultBox = document.getElementById('propertyResult');
+              resultBox.innerHTML = `
+                <p class="text-lg font-semibold">Estimated Compensation: ${currency}${estimate}</p>
+                <p class="mt-2 text-sm">Spanish law protects buyers of off-plan and misrepresented property. You may be eligible for a refund, even without a bank guarantee, under Law 57/68 and recent court rulings.</p>
+                <p class="text-sm italic text-gray-600">This is an estimate. Actual recovery depends on your documents, timeline, and legal review.</p>
+                <a href="/claim.html?type=spain-property-${issue}&amount=${estimate}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+              `;
+              resultBox.classList.remove('hidden');
+            });
+          });
+        </script>        
+
+        <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
           <h3 class="font-bold text-lg text-blue-900 mb-3">Why Choose Quaerens?</h3>
           <p class="mb-3 text-base">
             We’ve helped hundreds of international clients recover money from mis-sold Spanish mortgages and failed off-plan property deals. Here’s why Quaerens is the trusted choice:
