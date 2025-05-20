@@ -417,6 +417,117 @@ header nav a:hover {
         </div>
 
         <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+          <div class="w-full p-4 bg-white rounded-xl shadow">
+            <h2 class="text-xl font-bold mb-4">Airbnb Claim Calculator</h2>
+            <form id="airbnbClaimForm" class="space-y-4">
+              <div id="step1">
+                <label class="block font-medium">What went wrong with your Airbnb stay?</label>
+                <select id="issueType" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select an issue --</option>
+                  <option value="not_as_described">Property not as described</option>
+                  <option value="uninhabitable">Uninhabitable conditions</option>
+                  <option value="cancellation">Host cancelled the booking</option>
+                  <option value="injury">Injury or illness</option>
+                  <option value="harassment">Harassment or discrimination</option>
+                  <option value="scam">Fake listing or scam</option>
+                </select>
+        
+                <label class="block font-medium mt-4">Currency:</label>
+                <select id="currency" class="w-full p-2 border rounded">
+                  <option value="€">€ Euro</option>
+                  <option value="£">£ Pound</option>
+                </select>
+        
+                <button type="button" id="nextBtn1" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+              </div>
+        
+              <div id="step2" class="hidden">
+                <label class="block font-medium">Total Booking Cost:</label>
+                <input type="number" id="bookingCost" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Nights Affected:</label>
+                <input type="number" id="nightsAffected" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Total Nights Booked:</label>
+                <input type="number" id="totalNights" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Additional Expenses or Losses (optional):</label>
+                <input type="number" id="extraCosts" class="w-full p-2 border rounded" />
+        
+                <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Calculate Compensation</button>
+              </div>
+            </form>
+        
+            <div id="airbnbResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+          </div>
+        </div>
+        
+        <script>
+          const step1 = document.getElementById('step1');
+          const step2 = document.getElementById('step2');
+          const nextBtn1 = document.getElementById('nextBtn1');
+        
+          nextBtn1.addEventListener('click', () => {
+            const issue = document.getElementById('issueType').value;
+            if (!issue) {
+              alert('Please select an Airbnb issue.');
+              return;
+            }
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+          });
+        
+          document.getElementById('airbnbClaimForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+        
+            const issue = document.getElementById('issueType').value;
+            const currency = document.getElementById('currency').value;
+            const cost = parseFloat(document.getElementById('bookingCost').value);
+            const nightsAffected = parseInt(document.getElementById('nightsAffected').value);
+            const totalNights = parseInt(document.getElementById('totalNights').value);
+            const extras = parseFloat(document.getElementById('extraCosts').value) || 0;
+        
+            if (!cost || !nightsAffected || !totalNights || nightsAffected > totalNights) {
+              alert('Please enter valid booking details.');
+              return;
+            }
+        
+            let baseComp = (cost * (nightsAffected / totalNights)).toFixed(2);
+            let totalComp = (parseFloat(baseComp) + extras).toFixed(2);
+        
+            let explanation = '';
+            switch(issue) {
+              case 'not_as_described':
+                explanation = 'If your Airbnb property was not as described, you may claim a partial refund under Airbnb's Guest Refund Policy.';
+                break;
+              case 'uninhabitable':
+                explanation = 'Severe cleanliness or safety issues entitle you to compensation for uninhabitable stays.';
+                break;
+              case 'cancellation':
+                explanation = 'Host cancellations may entitle you to a full refund and reimbursement of additional expenses under Airbnb's policies.';
+                break;
+              case 'injury':
+                explanation = 'Injuries or illnesses caused by the property may be eligible for claims under Airbnb's Host Protection or personal injury laws.';
+                break;
+              case 'harassment':
+                explanation = 'Harassment or discrimination by hosts or co-guests is a violation of Airbnb's Nondiscrimination Policy and may entitle you to compensation.';
+                break;
+              case 'scam':
+                explanation = 'Fake listings or scams may qualify for a full refund and reimbursement of any resulting losses.';
+                break;
+            }
+        
+            const resultBox = document.getElementById('airbnbResult');
+            resultBox.innerHTML = `
+              <p class="text-lg font-semibold">Estimated Compensation: ${currency}${totalComp}</p>
+              <p class="mt-2 text-sm">${explanation}</p>
+              <a href="/claim.html?type=airbnb-${issue}&amount=${totalComp}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+            `;
+            resultBox.classList.remove('hidden');
+          });
+        </script>        
+
+        <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
           <h3 class="font-bold text-lg text-blue-900 mb-3">How Quaerens Helps</h3>
           <ul class="list-none space-y-3 text-base text-blue-800">
             <li>
