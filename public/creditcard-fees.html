@@ -460,6 +460,106 @@ header nav a:hover {
       </div>
       
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+        <div class="max-w-lg mx-auto p-4 bg-white rounded-xl shadow">
+          <h2 class="text-xl font-bold mb-4">Credit Card Fee Claim Calculator</h2>
+          <form id="creditFeeForm" class="space-y-4">
+            <div>
+              <label class="block font-medium">Currency:</label>
+              <select id="currency" class="w-full p-2 border rounded">
+                <option value="€">€ Euro</option>
+                <option value="£">£ Pound</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium">Type of Fee:</label>
+              <select id="feeType" class="w-full p-2 border rounded">
+                <option value="late">Late Payment Fee</option>
+                <option value="overlimit">Over-limit Fee</option>
+                <option value="monthly">Monthly Card Fee</option>
+                <option value="ppi">Hidden PPI Charge</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium">Average Monthly Fee:</label>
+              <input type="number" id="monthlyFee" class="w-full p-2 border rounded" required />
+            </div>
+            <div>
+              <label class="block font-medium">Number of Months Charged:</label>
+              <input type="number" id="monthsCharged" class="w-full p-2 border rounded" required />
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Calculate</button>
+          </form>
+      
+          <div id="creditFeeResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+        </div>
+      </div>
+      
+      <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+      
+        const firebaseConfig = {
+          apiKey: "YOUR_API_KEY",
+          authDomain: "YOUR_AUTH_DOMAIN",
+          projectId: "YOUR_PROJECT_ID",
+          storageBucket: "YOUR_STORAGE_BUCKET",
+          messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+          appId: "YOUR_APP_ID"
+        };
+      
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+      
+        document.getElementById('creditFeeForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+      
+          const feeType = document.getElementById('feeType').value;
+          const monthlyFee = parseFloat(document.getElementById('monthlyFee').value);
+          const months = parseInt(document.getElementById('monthsCharged').value);
+          const currency = document.getElementById('currency').value;
+          const totalClaim = monthlyFee * months;
+      
+          let explanation = '';
+          switch (feeType) {
+            case 'late':
+              explanation = 'Late payment fees can be challenged if they were excessive or unfair under the UK Consumer Credit Act.';
+              break;
+            case 'overlimit':
+              explanation = 'Over-limit fees may be reclaimed if they were applied unfairly or without proper warning.';
+              break;
+            case 'monthly':
+              explanation = 'Monthly fees may be reclaimed if the card was mis-sold or the fees were not properly disclosed.';
+              break;
+            case 'ppi':
+              explanation = 'Hidden PPI (Payment Protection Insurance) charges were often mis-sold and are eligible for full reimbursement.';
+              break;
+          }
+      
+          // Save to Firestore
+          try {
+            await addDoc(collection(db, "credit_card_fee_estimates"), {
+              feeType,
+              monthlyFee,
+              months,
+              currency,
+              totalClaim,
+              timestamp: serverTimestamp()
+            });
+          } catch (error) {
+            console.error("Error saving estimate:", error);
+          }
+      
+          const resultBox = document.getElementById('creditFeeResult');
+          resultBox.innerHTML = `
+            <p class="text-lg font-semibold">Estimated Claimable Amount: ${currency}${totalClaim.toFixed(2)}</p>
+            <p class="mt-2 text-sm">${explanation}</p>
+            <a href="/submit-claim.html?type=credit-card-fee&amount=${totalClaim.toFixed(2)}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+          `;
+          resultBox.classList.remove('hidden');
+        });
+      </script>      
+
+      <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <h3 class="font-bold text-lg text-blue-900 mb-3">Why use Quaerens?</h3>
         <p class="mb-3 text-base">
               <li><strong>✅ No Win, No Fee</strong>– risk-free</li>
