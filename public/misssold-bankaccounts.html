@@ -530,6 +530,93 @@ header nav a:hover {
           </p>
         </div>
         
+        <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+          <div class="w-full p-4 bg-white rounded-xl shadow">
+            <h2 class="text-xl font-bold mb-4">Mis-Sold Bank Account Compensation Calculator</h2>
+            <form id="bankAccountForm" class="space-y-4">
+              <div id="step1">
+                <label class="block font-medium">What type of account did you have?</label>
+                <select id="accountType" class="w-full p-2 border rounded" required>
+                  <option value="">-- Select an account type --</option>
+                  <option value="packaged">Packaged Bank Account (monthly fee)</option>
+                  <option value="unauthorized_upgrade">Upgraded without consent</option>
+                  <option value="ineligible">Benefits not applicable to you</option>
+                </select>
+        
+                <label class="block font-medium mt-4">Currency:</label>
+                <select id="currency" class="w-full p-2 border rounded">
+                  <option value="£">£ Pound</option>
+                  <option value="€">€ Euro</option>
+                </select>
+        
+                <button type="button" id="nextBtnBank" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next</button>
+              </div>
+        
+              <div id="step2" class="hidden">
+                <label class="block font-medium">Monthly Fee Paid:</label>
+                <input type="number" id="monthlyFee" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Number of Months Paid:</label>
+                <input type="number" id="monthsPaid" class="w-full p-2 border rounded" required />
+        
+                <label class="block font-medium">Additional Charges or Losses (optional):</label>
+                <input type="number" id="extraCosts" class="w-full p-2 border rounded" />
+        
+                <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Calculate Compensation</button>
+              </div>
+            </form>
+        
+            <div id="bankAccountResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+          </div>
+        </div>
+        
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const nextBtn = document.getElementById('nextBtnBank');
+        
+            nextBtn.addEventListener('click', () => {
+              const accountType = document.getElementById('accountType').value;
+              if (!accountType) {
+                alert('Please select your account type.');
+                return;
+              }
+              step1.classList.add('hidden');
+              step2.classList.remove('hidden');
+            });
+        
+            document.getElementById('bankAccountForm').addEventListener('submit', function(e) {
+              e.preventDefault();
+        
+              const accountType = document.getElementById('accountType').value;
+              const currency = document.getElementById('currency').value;
+              const monthlyFee = parseFloat(document.getElementById('monthlyFee').value);
+              const monthsPaid = parseInt(document.getElementById('monthsPaid').value);
+              const extras = parseFloat(document.getElementById('extraCosts').value) || 0;
+        
+              if (!monthlyFee || !monthsPaid || monthlyFee <= 0 || monthsPaid <= 0) {
+                alert('Please enter valid fee and duration.');
+                return;
+              }
+        
+              const baseRefund = monthlyFee * monthsPaid;
+              const interest = baseRefund * 0.08 * (monthsPaid / 12);
+              const totalComp = (baseRefund + interest + extras).toFixed(2);
+        
+              let explanation = 'Packaged bank account holders may be eligible for a refund of fees and 8% statutory interest if the account was mis-sold.';
+        
+              const resultBox = document.getElementById('bankAccountResult');
+              resultBox.innerHTML = `
+                <p class="text-lg font-semibold">Estimated Compensation: ${currency}${totalComp}</p>
+                <p class="mt-2 text-sm">${explanation}</p>
+                <a href="/claim.html?type=bankaccount-${accountType}&amount=${totalComp}&currency=${currency}" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Your Claim</a>
+              `;
+              resultBox.classList.remove('hidden');
+            });
+          });
+        </script>        
+
         <div class="info-box">
           <div class="bg-blue-50 border border-blue-300 rounded-xl p-6 shadow-md">
           <p class="font-bold text-lg text-blue-900"><strong>Why Use Quaerens?</strong></p>
