@@ -452,6 +452,83 @@ header nav a:hover {
       </div>
       
       <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+        <div class="w-full p-4 bg-white rounded-xl shadow">
+          <h2 class="text-xl font-bold mb-4">Return & Refund Calculator</h2>
+          <form id="returnForm" class="space-y-4">
+            <label class="block font-medium">Original Purchase Price:</label>
+            <input type="number" id="purchasePrice" class="w-full p-2 border rounded" required />
+      
+            <label class="block font-medium">Return Shipping Cost (if paid by customer):</label>
+            <input type="number" id="shippingCost" class="w-full p-2 border rounded" value="0" />
+      
+            <label class="block font-medium">Restocking Fee (if any):</label>
+            <input type="number" id="restockingFee" class="w-full p-2 border rounded" value="0" />
+      
+            <label class="block font-medium">Currency:</label>
+            <select id="currency" class="w-full p-2 border rounded">
+              <option value="£">£ Pound</option>
+              <option value="€">€ Euro</option>
+            </select>
+      
+            <label class="block font-medium">Condition of Returned Item:</label>
+            <select id="itemCondition" class="w-full p-2 border rounded">
+              <option value="new">New / Unused</option>
+              <option value="opened">Opened but in good condition</option>
+              <option value="damaged">Damaged or used</option>
+            </select>
+      
+            <label class="block font-medium">Days Since Purchase:</label>
+            <input type="number" id="daysSincePurchase" class="w-full p-2 border rounded" required />
+      
+            <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Calculate Refund</button>
+          </form>
+      
+          <div id="returnResult" class="mt-6 hidden bg-gray-100 p-4 rounded border border-gray-300"></div>
+        </div>
+      </div>
+      
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          document.getElementById('returnForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+      
+            const price = parseFloat(document.getElementById('purchasePrice').value);
+            const shipping = parseFloat(document.getElementById('shippingCost').value) || 0;
+            const restocking = parseFloat(document.getElementById('restockingFee').value) || 0;
+            const currency = document.getElementById('currency').value;
+            const condition = document.getElementById('itemCondition').value;
+            const days = parseInt(document.getElementById('daysSincePurchase').value);
+      
+            if (!price || price <= 0 || days < 0) {
+              alert('Please enter valid values for price and days.');
+              return;
+            }
+      
+            let deduction = shipping + restocking;
+            if (condition === 'damaged') {
+              deduction += price * 0.2; // 20% deduction for damaged
+            } else if (condition === 'opened') {
+              deduction += price * 0.1; // 10% for opened
+            }
+      
+            if (days > 30) {
+              deduction += price * 0.1; // possible policy deduction for late return
+            }
+      
+            const refund = Math.max(price - deduction, 0).toFixed(2);
+      
+            const resultBox = document.getElementById('returnResult');
+            resultBox.innerHTML = `
+              <p class="text-lg font-semibold">Estimated Refund: ${currency}${refund}</p>
+              <p class="mt-2 text-sm">This estimate considers return shipping, restocking fees, product condition, and timing.</p>
+              <p class="text-sm italic text-gray-600">This is an estimate. Final refund is subject to retailer's return policy.</p>
+            `;
+            resultBox.classList.remove('hidden');
+          });
+        });
+      </script>      
+
+      <div class="info-box" style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
         <h3 class="font-bold text-lg text-blue-900 mb-3">Why Choose Quaerens?</h3>
         <p class="mb-3 text-base">
           <li>✅ <strong>We deal with the seller directly</strong> – no more chasing emails or calls</li>
