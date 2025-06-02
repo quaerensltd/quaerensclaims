@@ -701,31 +701,12 @@ document.getElementById("airline").addEventListener("input", function () {
   });
   
   function generatePDF(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-  
-    const today = new Date().toLocaleDateString();
-  // Try to include airline logo if available
-const logoPath = airlineLogos[data.airline];
-if (logoPath) {
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = logoPath;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const today = new Date().toLocaleDateString();
 
-  img.onload = function () {
-    doc.addImage(img, "PNG", 150, 10, 40, 15); // Adjust placement & size as needed
-    finishPDF(); // Continue PDF after image is added
-  };
-
-  img.onerror = function () {
-    finishPDF(); // Skip image if it fails to load
-  };
-} else {
-  finishPDF(); // No logo? Just continue
-}
-
-function finishPDF() {
-  const content = `
+  function finishPDF() {
+    const content = `
 ${today}
 
 To: ${data.airline}
@@ -738,7 +719,7 @@ I am writing to formally request compensation under EC Regulation 261/2004 for f
 
 This flight was delayed and arrived at the destination more than 3 hours later than scheduled. The reason for the delay was: ${data.reason || "not specified"}.
 
-According to EC Regulation 261/2004, I am entitled to compensation of up to €600, based on the flight distance and the delay experienced. 
+According to EC Regulation 261/2004, I am entitled to compensation of up to €600, based on the flight distance and the delay experienced.
 
 Passenger details:
 Name: ${data.fullName}
@@ -751,17 +732,36 @@ Thank you for your cooperation.
 Sincerely,
 
 ${data.fullName}
-  `;
+    `;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  const lines = doc.splitTextToSize(content.trim(), 180);
-  doc.text(lines, 10, 30); // moved down to avoid overlapping logo
-  doc.setFontSize(10);
-  doc.setTextColor(150);
-  doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
-  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    const lines = doc.splitTextToSize(content.trim(), 180);
+    doc.text(lines, 10, 30);
+    doc.setFontSize(10);
+    doc.setTextColor(150);
+    doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+  }
+
+  const logoPath = airlineLogos[data.airline];
+  if (logoPath) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = logoPath;
+    img.onload = function () {
+      doc.addImage(img, "PNG", 150, 10, 40, 15);
+      finishPDF();
+    };
+    img.onerror = function () {
+      console.warn("Logo failed to load, continuing without it.");
+      finishPDF();
+    };
+  } else {
+    finishPDF();
+  }
 }
+
 
   </script>
   
