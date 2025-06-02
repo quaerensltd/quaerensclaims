@@ -500,5 +500,105 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+  authDomain: "quaerensclaims.firebaseapp.com",
+  projectId: "quaerensclaims",
+  storageBucket: "quaerensclaims.appspot.com",
+  messagingSenderId: "57715464932",
+  appId: "1:57715464932:web:a69a4949f36c2ad214eaf1",
+  measurementId: "G-GRT3XKF4KS"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const fullName = document.getElementById("fullName").value.trim();
+    const flightNumber = document.getElementById("flightNumber").value.trim();
+    const flightDate = document.getElementById("flightDate").value;
+    const depAirport = document.getElementById("depAirport").value.trim();
+    const arrAirport = document.getElementById("arrAirport").value.trim();
+    const airline = document.getElementById("airline").value;
+    const reason = document.getElementById("reason").value.trim();
+    const language = document.getElementById("language").value;
+    const email = document.getElementById("email").value.trim();
+    const handleOption = document.getElementById("handleOption").value;
+    const donation = document.getElementById("donation").value;
+
+    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    const claimData = {
+      fullName,
+      flightNumber,
+      flightDate,
+      depAirport,
+      arrAirport,
+      airline,
+      reason,
+      language,
+      email,
+      handleOption,
+      donation,
+      createdAt: serverTimestamp()
+    };
+
+    try {
+      await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+      if (handleOption === "pdf") {
+        generatePDF(claimData);
+      } else if (handleOption === "email") {
+        await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(claimData)
+        });
+        alert("✅ Your letter has been emailed!");
+      } else if (handleOption === "quaerens") {
+        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+      }
+
+      document.getElementById("claim-letter-result").classList.remove("hidden");
+    } catch (err) {
+      console.error("Error saving claim:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+
+  function generatePDF(data) {
+    const content = `
+      Dear ${data.airline},
+
+      I am writing to claim compensation under EU Regulation 261/2004 for flight ${data.flightNumber} on ${data.flightDate},
+      from ${data.depAirport} to ${data.arrAirport}. The flight was delayed/cancelled and I arrived more than 3 hours late.
+
+      Passenger: ${data.fullName}
+      Email: ${data.email}
+      Delay Reason: ${data.reason || "Not specified"}
+
+      According to EC261, I am entitled to compensation of up to €600. Please respond within 14 days.
+
+      Kind regards,
+      ${data.fullName}
+    `;
+
+    const blob = new Blob([content], { type: "application/pdf" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `EC261-Claim-${data.flightNumber}.pdf`;
+    link.click();
+  }
+</script>
 </body>
 </html>
