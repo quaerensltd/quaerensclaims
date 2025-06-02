@@ -58,8 +58,9 @@
       location.reload();
     }
   </script>
-  
-</head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  </head>
+
 <body class="bg-gray-50 text-gray-800">
   <div id="google_translate_element" style="display: none;"></div>
   <!-- Header -->
@@ -577,28 +578,31 @@
   });
 
   function generatePDF(data) {
-    const content = `
-      Dear ${data.airline},
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-      I am writing to claim compensation under EU Regulation 261/2004 for flight ${data.flightNumber} on ${data.flightDate},
-      from ${data.depAirport} to ${data.arrAirport}. The flight was delayed/cancelled and I arrived more than 3 hours late.
+  const content = `
+Claim under EC Regulation 261/2004
 
-      Passenger: ${data.fullName}
-      Email: ${data.email}
-      Delay Reason: ${data.reason || "Not specified"}
+Passenger: ${data.fullName}
+Email: ${data.email}
 
-      According to EC261, I am entitled to compensation of up to €600. Please respond within 14 days.
+Flight: ${data.flightNumber} on ${data.flightDate}
+From: ${data.depAirport}
+To: ${data.arrAirport}
+Airline: ${data.airline}
+Reason (if given): ${data.reason || "Not specified"}
 
-      Kind regards,
-      ${data.fullName}
-    `;
+Request: Compensation of up to €600 due to delay/cancellation.
+`;
 
-    const blob = new Blob([content], { type: "application/pdf" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `EC261-Claim-${data.flightNumber}.pdf`;
-    link.click();
-  }
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  const lines = doc.splitTextToSize(content, 180);
+  doc.text(lines, 10, 20);
+  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+}
+
 </script>
 </body>
 </html>
