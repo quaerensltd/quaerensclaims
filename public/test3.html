@@ -181,20 +181,46 @@
       </div>
 
       <div>
-        <label class="font-semibold">Airline</label>
-        <select id="airline" required class="w-full border p-2 rounded">
-          <option value="">Select Airline</option>
-          <option>Ryanair</option>
-          <option>easyJet</option>
-          <option>Lufthansa</option>
-          <option>Vueling</option>
-          <option>British Airways</option>
-          <option>KLM</option>
-          <option>Transavia</option>
-          <option>Air France</option>
-          <option>Other</option>
-        </select>
-      </div>
+        <div>
+          <label class="font-semibold">Airline</label>
+          <input list="airlineList" id="airline" placeholder="Start typing airline name" required class="w-full border p-2 rounded">
+          <datalist id="airlineList">
+            <div id="airlineLogoPreview" class="mt-4 text-center"></div>
+            <option value="Ryanair">
+            <option value="easyJet">
+            <option value="Lufthansa">
+            <option value="Vueling">
+            <option value="British Airways">
+            <option value="KLM">
+            <option value="Transavia">
+            <option value="Air France">
+            <option value="Iberia">
+            <option value="Jet2">
+            <option value="Wizz Air">
+            <option value="TUI Airways">
+            <option value="Norwegian">
+            <option value="Aer Lingus">
+            <option value="Brussels Airlines">
+            <option value="Swiss International Air Lines">
+            <option value="Eurowings">
+            <option value="TAP Air Portugal">
+            <option value="Finnair">
+            <option value="SAS Scandinavian Airlines">
+            <option value="Aegean Airlines">
+            <option value="LOT Polish Airlines">
+            <option value="Air Malta">
+            <option value="Corendon Airlines">
+            <option value="SunExpress">
+            <option value="Blue Air">
+            <option value="Volotea">
+            <option value="Lauda Europe">
+            <option value="Widerøe">
+            <option value="Croatia Airlines">
+            <option value="Alitalia (ITA Airways)">
+            <option value="Condor">
+          </datalist>
+        </div>
+        
 
       <div>
         <label class="font-semibold">Delay Reason (optional)</label>
@@ -239,7 +265,9 @@
           <option value="split">Split between Quaerens and charity</option>
         </select>
       </div>
-
+      <label class="font-semibold">Upload Boarding Pass or Document (optional)</label>
+      <input type="file" id="fileUpload" class="w-full border p-2 rounded" accept=".pdf,.jpg,.jpeg,.png">
+    </div>
       <div class="text-center">
         <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700 transition">
           Generate My Claim Letter
@@ -505,23 +533,106 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
+  
   const firebaseConfig = {
-  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-  authDomain: "quaerensclaims.firebaseapp.com",
-  projectId: "quaerensclaims",
-  storageBucket: "quaerensclaims.appspot.com",
-  messagingSenderId: "57715464932",
-  appId: "1:57715464932:web:a69a4949f36c2ad214eaf1",
-  measurementId: "G-GRT3XKF4KS"
-};
-
+    apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+    authDomain: "quaerensclaims.firebaseapp.com",
+    projectId: "quaerensclaims",
+    storageBucket: "quaerensclaims.appspot.com",
+    messagingSenderId: "57715464932",
+    appId: "1:57715464932:web:a69a4949f36c2ad214eaf1",
+    measurementId: "G-GRT3XKF4KS"
+  };
+  
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  
+  const airlineEmails = {
+  "Ryanair": "claims@ryanair.com",
+  "easyJet": "customer.support@easyjet.com",
+  "Lufthansa": "customer.relations@lufthansa.com",
+  "Vueling": "atencion.clientes@vueling.com",
+  "British Airways": "customer.relations@ba.com",
+  "KLM": "mail@klm.nl",
+  "Transavia": "servicecentre@transavia.com",
+  "Air France": "mail.afklmplc@airfrance.fr",
+  "Iberia": "clasica@iberia.es",
+  "Jet2": "customer.service@jet2.com",
+  "Wizz Air": "claim@wizzair.com",
+  "TUI Airways": "aftertravel@tui.co.uk",
+  "Norwegian": "complaints@norwegian.com",
+  "Aer Lingus": "customerqueries@aerlingus.com",
+  "Brussels Airlines": "claim@brusselsairlines.com",
+  "Swiss International Air Lines": "contact@swiss.com",
+  "Eurowings": "customercare@eurowings.com",
+  "TAP Air Portugal": "customer@tap.pt",
+  "Finnair": "feedback@finnair.com",
+  "SAS Scandinavian Airlines": "customercare@sas.se",
+  "Aegean Airlines": "customercare@aegeanair.com",
+  "LOT Polish Airlines": "contact@lot.pl",
+  "Air Malta": "customer.relations@airmalta.com",
+  "Corendon Airlines": "info@corendon-airlines.com",
+  "SunExpress": "customer.service@sunexpress.com",
+  "Blue Air": "support@blueairweb.com",
+  "Volotea": "support@volotea.com",
+  "Lauda Europe": "assistance@laudamotion.com",
+  "Widerøe": "info@wideroe.no",
+  "Croatia Airlines": "contact@croatiaairlines.hr",
+  "Alitalia (ITA Airways)": "customer.relations@itaspa.com",
+  "Condor": "service@condor.com"
+};
+
+const airlineLogos = {
+  "Ryanair": "images/logos/ryanair.png",
+  "easyJet": "images/logos/easyjet.png",
+  "Lufthansa": "images/logos/lufthansa.png",
+  "Vueling": "images/logos/vueling.png",
+  "British Airways": "images/logos/britishairways.png",
+  "KLM": "images/logos/klm.png",
+  "Transavia": "images/logos/transavia.png",
+  "Air France": "images/logos/airfrance.png",
+  "Iberia": "images/logos/iberia.png",
+  "Jet2": "images/logos/jet2.png",
+  "Wizz Air": "images/logos/wizzair.png",
+  "TUI Airways": "images/logos/tuiairways.png",
+  "Norwegian": "images/logos/norwegian.png",
+  "Aer Lingus": "images/logos/aerlingus.png",
+  "Brussels Airlines": "images/logos/brusselsairlines.png",
+  "Swiss International Air Lines": "images/logos/swissinternationalairlines.png",
+  "Eurowings": "images/logos/eurowings.png",
+  "TAP Air Portugal": "images/logos/tapairportugal.png",
+  "Finnair": "images/logos/finnair.png",
+  "SAS Scandinavian Airlines": "images/logos/sasscandinavianairlines.png",
+  "Aegean Airlines": "images/logos/aegeanairlines.png",
+  "LOT Polish Airlines": "images/logos/lotpolishairlines.png",
+  "Air Malta": "images/logos/airmalta.png",
+  "Corendon Airlines": "images/logos/corendonairlines.png",
+  "SunExpress": "images/logos/sunexpress.png",
+  "Blue Air": "images/logos/blueair.png",
+  "Volotea": "images/logos/volotea.png",
+  "Lauda Europe": "images/logos/laudaeurope.png",
+  "Widerøe": "images/logos/wideroe.png",
+  "Croatia Airlines": "images/logos/croatiaairlines.png",
+  "Alitalia (ITA Airways)": "images/logos/italiaitaairways.png",
+  "Condor": "images/logos/condor.png"
+};
+
+document.getElementById("airline").addEventListener("input", function () {
+  const airlineName = this.value;
+  const logoPath = airlineLogos[airlineName];
+
+  const previewContainer = document.getElementById("airlineLogoPreview");
+  if (logoPath) {
+    previewContainer.innerHTML = `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`;
+  } else {
+    previewContainer.innerHTML = "";
+  }
+});
 
   document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
     e.preventDefault();
-
+  
     const fullName = document.getElementById("fullName").value.trim();
     const flightNumber = document.getElementById("flightNumber").value.trim();
     const flightDate = document.getElementById("flightDate").value;
@@ -533,12 +644,22 @@
     const email = document.getElementById("email").value.trim();
     const handleOption = document.getElementById("handleOption").value;
     const donation = document.getElementById("donation").value;
-
+  
     if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
       alert("Please fill in all required fields.");
       return;
     }
-
+  
+    const file = document.getElementById("fileUpload").files[0];
+    let fileURL = "";
+  
+    if (file) {
+      const storage = getStorage(app);
+      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+      const uploadSnapshot = await uploadBytes(storageRef, file);
+      fileURL = await getDownloadURL(uploadSnapshot.ref);
+    }
+  
     const claimData = {
       fullName,
       flightNumber,
@@ -551,12 +672,14 @@
       email,
       handleOption,
       donation,
-      createdAt: serverTimestamp()
+      fileURL,
+      createdAt: serverTimestamp(),
+      airlineEmail: airlineEmails[airline] || ""
     };
-
+  
     try {
       await addDoc(collection(db, "flightClaimLetters"), claimData);
-
+  
       if (handleOption === "pdf") {
         generatePDF(claimData);
       } else if (handleOption === "email") {
@@ -569,40 +692,78 @@
       } else if (handleOption === "quaerens") {
         alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
       }
-
+  
       document.getElementById("claim-letter-result").classList.remove("hidden");
     } catch (err) {
       console.error("Error saving claim:", err);
       alert("Something went wrong. Please try again.");
     }
   });
-
+  
   function generatePDF(data) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+  
+    const today = new Date().toLocaleDateString();
+  // Try to include airline logo if available
+const logoPath = airlineLogos[data.airline];
+if (logoPath) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = logoPath;
 
+  img.onload = function () {
+    doc.addImage(img, "PNG", 150, 10, 40, 15); // Adjust placement & size as needed
+    finishPDF(); // Continue PDF after image is added
+  };
+
+  img.onerror = function () {
+    finishPDF(); // Skip image if it fails to load
+  };
+} else {
+  finishPDF(); // No logo? Just continue
+}
+
+function finishPDF() {
   const content = `
-Claim under EC Regulation 261/2004
+${today}
 
-Passenger: ${data.fullName}
+To: ${data.airline}
+${data.airlineEmail ? "Email: " + data.airlineEmail : ""}
+Subject: Compensation Request under EC Regulation 261/2004
+
+Dear Sir/Madam,
+
+I am writing to formally request compensation under EC Regulation 261/2004 for flight ${data.flightNumber} on ${data.flightDate}, operated by ${data.airline}, from ${data.depAirport} to ${data.arrAirport}.
+
+This flight was delayed and arrived at the destination more than 3 hours later than scheduled. The reason for the delay was: ${data.reason || "not specified"}.
+
+According to EC Regulation 261/2004, I am entitled to compensation of up to €600, based on the flight distance and the delay experienced. 
+
+Passenger details:
+Name: ${data.fullName}
 Email: ${data.email}
 
-Flight: ${data.flightNumber} on ${data.flightDate}
-From: ${data.depAirport}
-To: ${data.arrAirport}
-Airline: ${data.airline}
-Reason (if given): ${data.reason || "Not specified"}
+Please process this claim within 14 days. If I do not receive a satisfactory response, I reserve the right to escalate the matter to the relevant enforcement body or take legal action.
 
-Request: Compensation of up to €600 due to delay/cancellation.
-`;
+Thank you for your cooperation.
+
+Sincerely,
+
+${data.fullName}
+  `;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  const lines = doc.splitTextToSize(content, 180);
-  doc.text(lines, 10, 20);
+  const lines = doc.splitTextToSize(content.trim(), 180);
+  doc.text(lines, 10, 30); // moved down to avoid overlapping logo
+  doc.setFontSize(10);
+  doc.setTextColor(150);
+  doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
   doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
 }
 
-</script>
+  </script>
+  
 </body>
 </html>
