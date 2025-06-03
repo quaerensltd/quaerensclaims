@@ -704,62 +704,80 @@ document.getElementById("airline").addEventListener("input", function () {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const today = new Date().toLocaleDateString();
+  const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
+  const logoPath = airlineLogos[data.airline];
 
-  function finishPDF() {
-    const content = `
-${today}
+  // Add Logo if available
+  function insertHeader() {
+    if (logoPath) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = logoPath;
+      img.onload = () => {
+        doc.addImage(img, "PNG", 150, 8, 40, 15);
+        insertContent();
+      };
+      img.onerror = insertContent;
+    } else {
+      insertContent();
+    }
+  }
 
-To: ${data.airline}
-${data.airlineEmail ? "Email: " + data.airlineEmail : ""}
+  function insertContent() {
+    let y = 30;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    doc.text(today, 10, y);
+    y += 8;
+    doc.text(`Claim Reference: ${claimRef}`, 10, y);
+    y += 10;
+
+    const intro = `
+To:
+${airlineContact}
+
 Subject: Compensation Request under EC Regulation 261/2004
 
 Dear Sir/Madam,
 
-I am writing to formally request compensation under EC Regulation 261/2004 for flight ${data.flightNumber} on ${data.flightDate}, operated by ${data.airline}, from ${data.depAirport} to ${data.arrAirport}.
+I am writing to formally request compensation under EC Regulation 261/2004 for the following flight:
+    `.trim();
 
-This flight was delayed and arrived at the destination more than 3 hours later than scheduled. The reason for the delay was: ${data.reason || "not specified"}.
+    const details = `
+- Passenger Name: ${data.fullName}
+- Email: ${data.email}
+- Flight Number: ${data.flightNumber}
+- Date of Flight: ${data.flightDate}
+- Departure Airport: ${data.depAirport}
+- Arrival Airport: ${data.arrAirport}
+- Airline: ${data.airline}
+- Reason for Delay: ${data.reason || "Not specified"}
 
-According to EC Regulation 261/2004, I am entitled to compensation of up to €600, based on the flight distance and the delay experienced.
+The flight was delayed by over 3 hours on arrival. According to EC Regulation 261/2004, I am entitled to compensation of up to €600 depending on distance and circumstances.
 
-Passenger details:
-Name: ${data.fullName}
-Email: ${data.email}
-
-Please process this claim within 14 days. If I do not receive a satisfactory response, I reserve the right to escalate the matter to the relevant enforcement body or take legal action.
-
-Thank you for your cooperation.
+Please process this claim within 14 days. I reserve the right to escalate the matter to enforcement bodies or legal proceedings if no resolution is provided.
 
 Sincerely,
 
 ${data.fullName}
-    `;
+    `.trim();
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    const lines = doc.splitTextToSize(content.trim(), 180);
-    doc.text(lines, 10, 30);
+    const lines = doc.splitTextToSize(`${intro}\n\n${details}`, 180);
+    doc.text(lines, 10, y + 5);
+
+    // Footer
     doc.setFontSize(10);
-    doc.setTextColor(150);
+    doc.setTextColor(120);
     doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+
+    // Save
     doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
   }
 
-  const logoPath = airlineLogos[data.airline];
-  if (logoPath) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = logoPath;
-    img.onload = function () {
-      doc.addImage(img, "PNG", 150, 10, 40, 15);
-      finishPDF();
-    };
-    img.onerror = function () {
-      console.warn("Logo failed to load, continuing without it.");
-      finishPDF();
-    };
-  } else {
-    finishPDF();
-  }
+  insertHeader();
 }
 
 
