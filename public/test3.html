@@ -76,16 +76,26 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="relative bg-blue-600 text-white py-16" style="background-image: url('images/hero-flight.jpg'); background-size: cover; background-position: center;">
-  <div class="absolute inset-0 bg-blue-900 bg-opacity-60"></div>
-  <div class="max-w-4xl mx-auto text-center relative z-10">
-    <h1 class="text-4xl font-extrabold mb-4">Flight Delayed or Cancelled?</h1>
-    <p class="text-xl mb-6">You could be entitled to up to €600 in compensation under EU Regulation EC 261/2004.</p>
-    <div class="mt-8 bg-white text-blue-700 text-xl font-bold px-6 py-5 rounded shadow-md max-w-3xl mx-auto text-center">
-  <span class="block text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">Delayed or cancelled flight?</span>
-  <span class="block text-xl md:text-2xl text-gray-800">We fight to get you the compensation you deserve — <span style="display: inline-block; font-size: 1.8rem; color: black; font-weight: 800; background: #fef3c7; padding: 0.4rem 1rem; border-radius: 1rem;">no win, no fee!</span></span>
-</div>
+<!-- Hero Section -->
+<section class="relative bg-blue-600 text-white py-20" style="background-image: url('images/hero-flight2.jpg'); background-size: cover; background-position: center;">
+  <div class="absolute inset-0 bg-blue-900 bg-opacity-70"></div>
+  <div class="max-w-5xl mx-auto text-center relative z-10 px-4">
+    <h1 class="text-5xl md:text-6xl font-extrabold mb-6 leading-tight drop-shadow-lg">
+      ✈️ Delayed or Cancelled Flight?
+    </h1>
+    <p class="text-2xl md:text-3xl font-semibold mb-8">
+      You could get <span class="bg-yellow-400 text-black px-3 py-1 rounded-full font-extrabold">up to €600</span> back — under EU Law
+    </p>
+
+    <div class="mt-8 bg-white text-blue-800 px-8 py-6 rounded-2xl shadow-2xl max-w-3xl mx-auto text-center border-4 border-yellow-300">
+      <span class="block text-3xl md:text-4xl font-black text-black mb-3 uppercase tracking-wider">Get Your FREE Claim Letter Now</span>
+      <span class="block text-xl md:text-2xl text-gray-800 mb-2">
+        No Lawyer Needed – Just Fill In Your Flight Details
+      </span>
+      <span class="block text-lg text-green-700 font-semibold">
+        💸 Thousands Recovered Every Week – Start Yours Now!
+      </span>
+    </div>
   </div>
 </section>
 
@@ -771,58 +781,84 @@ document.getElementById("airline").addEventListener("input", function () {
   }
 
   function insertContent() {
-    let y = 30;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
+  let y = 20;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
 
-    doc.text(today, 10, y);
-    y += 8;
-    doc.text(`Claim Reference: ${claimRef}`, 10, y);
-    y += 10;
+  // Airline contact and date
+  doc.setFont(undefined, "bold");
+  doc.text(today, 10, y);
+  y += 10;
 
-    const intro = `
-To:
-${airlineContact}
+  doc.setFont(undefined, "normal");
+  doc.text(`Claim Reference: ${claimRef}`, 10, y);
+  y += 12;
 
-Subject: Compensation Request under EC Regulation 261/2004
+  doc.setFont(undefined, "bold");
+  doc.text("To:", 10, y);
+  y += 6;
+  doc.setFont(undefined, "normal");
+  doc.text(airlineContact, 10, y);
+  y += 14;
 
-Dear Sir/Madam,
+  doc.setFont(undefined, "bold");
+  doc.text("Subject:", 10, y);
+  y += 6;
+  doc.setFont(undefined, "normal");
+  doc.text("Compensation Request under EC Regulation 261/2004", 10, y);
+  y += 10;
 
-I am writing to formally request compensation under EC Regulation 261/2004 for the following flight:
-    `.trim();
+  // Intro
+  const intro = `Dear Sir/Madam,
 
-    const details = `
-- Passenger Name: ${data.fullName}
-- Email: ${data.email}
-- Flight Number: ${data.flightNumber}
-- Date of Flight: ${data.flightDate}
-- Departure Airport: ${data.depAirport}
-- Arrival Airport: ${data.arrAirport}
-- Airline: ${data.airline}
-- Reason for Delay: ${data.reason || "Not specified"}
-- Estimated Compensation: €${data.compensation}
+I am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`;
+  const introLines = doc.splitTextToSize(intro, 180);
+  doc.text(introLines, 10, y);
+  y += introLines.length * 6 + 6;
 
-The flight was delayed by over 3 hours on arrival. According to EC Regulation 261/2004, I am entitled to compensation of up to €600 depending on distance and circumstances.
+  // Flight Details
+  doc.setFont(undefined, "bold");
+  doc.text("Flight Details:", 10, y);
+  y += 8;
 
-Please process this claim within 14 days. I reserve the right to escalate the matter to enforcement bodies or legal proceedings if no resolution is provided.
+  doc.setFont(undefined, "normal");
+  const details = [
+    `Passenger Name: ${data.fullName}`,
+    `Email: ${data.email}`,
+    `Flight Number: ${data.flightNumber}`,
+    `Flight Date: ${data.flightDate}`,
+    `Departure Airport: ${data.depAirport}`,
+    `Arrival Airport: ${data.arrAirport}`,
+    `Airline: ${data.airline}`,
+    `Reason for Delay: ${data.reason || "Not specified"}`,
+    `Flight Distance: ${data.distance}`,
+    `Delay Duration: ${data.delayDuration}`,
+    `Estimated Compensation: €${data.compensation}`
+  ];
+  details.forEach(line => {
+    doc.text(line, 10, y);
+    y += 7;
+  });
+
+  y += 4;
+  const closing = `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.
 
 Sincerely,
 
-${data.fullName}
-    `.trim();
+${data.fullName}`;
 
-    const lines = doc.splitTextToSize(`${intro}\n\n${details}`, 180);
-    doc.text(lines, 10, y + 5);
+  const closingLines = doc.splitTextToSize(closing, 180);
+  doc.text(closingLines, 10, y);
+  y += closingLines.length * 6;
 
-    // Footer
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+  // Footer
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
 
-    // Save
-    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-  }
+  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+}
 
   insertHeader();
 }
