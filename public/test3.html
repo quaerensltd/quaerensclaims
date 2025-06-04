@@ -759,107 +759,131 @@ document.getElementById("airline").addEventListener("input", function () {
     }
   });
 
-  function generatePDF(data) {
-    const jsPDF = window.jspdf.jsPDF;
-    const doc = new jsPDF();
-    const today = new Date().toLocaleDateString();
-    const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
-    const logoPath = airlineLogos[data.airline];
+  <script>
+const translations = {
+  en: {
+    intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
+    closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
+    subject: "Compensation Request under EC Regulation 261/2004",
+    to: "To:",
+    detailsTitle: "Flight Details:",
+    paymentLabel: "Preferred Payment Method",
+    claimRef: "Claim Reference",
+    footer: "This document was generated at no cost by Quaerens.co.uk."
+  },
+  fr: {
+    intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
+    closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
+    subject: "Demande d'indemnisation selon le règlement CE 261/2004",
+    to: "À :",
+    detailsTitle: "Détails du vol :",
+    paymentLabel: "Méthode de paiement préférée",
+    claimRef: "Référence du dossier",
+    footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+  },
+  // Add other languages here (de, es, nl)
+};
 
-    function insertHeader() {
-      if (logoPath) {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = logoPath;
-        img.onload = () => {
-          doc.addImage(img, "PNG", 150, 8, 40, 15);
-          insertContent();
-        };
-        img.onerror = insertContent;
-      } else {
+function generatePDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const today = new Date().toLocaleDateString();
+  const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
+  const logoPath = airlineLogos[data.airline];
+
+  function insertHeader() {
+    if (logoPath) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = logoPath;
+      img.onload = () => {
+        doc.addImage(img, "PNG", 150, 8, 40, 15);
         insertContent();
-      }
+      };
+      img.onerror = insertContent;
+    } else {
+      insertContent();
     }
-
-    function insertContent() {
-      let y = 20;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-
-      doc.setFont(undefined, "bold");
-      doc.text(today, 10, y);
-      y += 10;
-
-      doc.setFont(undefined, "normal");
-      doc.text(`Claim Reference: ${claimRef}`, 10, y);
-      y += 12;
-
-      doc.setFont(undefined, "bold");
-      doc.text("To:", 10, y);
-      y += 6;
-      doc.setFont(undefined, "normal");
-      doc.text(airlineContact, 10, y);
-      y += 14;
-
-      doc.setFont(undefined, "bold");
-      doc.text("Subject:", 10, y);
-      y += 6;
-      doc.setFont(undefined, "normal");
-      doc.text("Compensation Request under EC Regulation 261/2004", 10, y);
-      y += 10;
-
-      const intro = `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`;
-      const introLines = doc.splitTextToSize(intro, 180);
-      doc.text(introLines, 10, y);
-      y += introLines.length * 6 + 6;
-
-      doc.setFont(undefined, "bold");
-      doc.text("Flight Details:", 10, y);
-      y += 8;
-
-      doc.setFont(undefined, "normal");
-      const details = [
-        `Passenger Name: ${data.fullName}`,
-        `Email: ${data.email}`,
-        `Flight Number: ${data.flightNumber}`,
-        `Booking Reference: ${data.bookingRef}`,
-        `Flight Date: ${data.flightDate}`,
-        `Departure Airport: ${data.depAirport}`,
-        `Arrival Airport: ${data.arrAirport}`,
-        `Airline: ${data.airline}`,
-        `Reason for Delay: ${data.reason || "Not specified"}`,
-        `Flight Distance: ${data.distance}`,
-        `Delay Duration: ${data.delayDuration}`,
-        `Estimated Compensation: €${data.compensation}`,
-        `Preferred Payment Method: ${data.iban}`
-        `Donation Preference: ${data.donation}`
-      ];
-      details.forEach(line => {
-        doc.text(line, 10, y);
-        y += 7;
-      });
-
-      y += 4;
-      const closing = `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n${data.fullName}`;
-      const closingLines = doc.splitTextToSize(closing, 180);
-      doc.text(closingLines, 10, y);
-      y += closingLines.length * 6;
-
-      doc.setFontSize(10);
-      doc.setTextColor(120);
-      doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
-
-      doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-    }
-
-    insertHeader();
   }
+
+  function insertContent() {
+    let y = 20;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    doc.setFont(undefined, "bold");
+    doc.text(today, 10, y);
+    y += 10;
+
+    doc.setFont(undefined, "normal");
+    doc.text(`Claim Reference: ${claimRef}`, 10, y);
+    y += 12;
+
+    doc.setFont(undefined, "bold");
+    doc.text("To:", 10, y);
+    y += 6;
+    doc.setFont(undefined, "normal");
+    doc.text(airlineContact, 10, y);
+    y += 14;
+
+    doc.setFont(undefined, "bold");
+    doc.text("Subject:", 10, y);
+    y += 6;
+    doc.setFont(undefined, "normal");
+    doc.text("Compensation Request under EC Regulation 261/2004", 10, y);
+    y += 10;
+
+    const intro = `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`;
+    const introLines = doc.splitTextToSize(intro, 180);
+    doc.text(introLines, 10, y);
+    y += introLines.length * 6 + 6;
+
+    doc.setFont(undefined, "bold");
+    doc.text("Flight Details:", 10, y);
+    y += 8;
+
+    doc.setFont(undefined, "normal");
+    const details = [
+      `Passenger Name: ${data.fullName}`,
+      `Email: ${data.email}`,
+      `Flight Number: ${data.flightNumber}`,
+      `Booking Reference: ${data.bookingRef}`,
+      `Flight Date: ${data.flightDate}`,
+      `Departure Airport: ${data.depAirport}`,
+      `Arrival Airport: ${data.arrAirport}`,
+      `Airline: ${data.airline}`,
+      `Reason for Delay: ${data.reason || "Not specified"}`,
+      `Flight Distance: ${data.distance}`,
+      `Delay Duration: ${data.delayDuration}`,
+      `Estimated Compensation: €${data.compensation}`,
+      `Preferred Payment Method: ${data.iban}`
+    ];
+    details.forEach(line => {
+      doc.text(line, 10, y);
+      y += 7;
+    });
+
+    y += 4;
+    const closing = `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n${data.fullName}`;
+    const closingLines = doc.splitTextToSize(closing, 180);
+    doc.text(closingLines, 10, y);
+    y += closingLines.length * 6;
+
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+
+    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+  }
+
+  insertHeader();
+}
+
 </script>
 
 
-  </script>
   
 </body>
 </html>
