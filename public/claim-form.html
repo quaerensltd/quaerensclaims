@@ -53,6 +53,18 @@
       }, 'google_translate_element');
     }
   </script>
+
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+      const lang = match ? match[1] : "en";
+      const selector = document.getElementById("languageDropdown");
+      if (selector) selector.value = `en|${lang}`;
+    });
+  </script>
+
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   <script>
     function setLanguage(lang) {
@@ -62,6 +74,28 @@
       location.reload();
     }
   </script>
+
+<script>
+    function doGTranslate(langPair) {
+      if (langPair === '') return;
+      const lang = langPair.split('|')[1];
+
+      // Store selection in cookies for persistence across pages
+      document.cookie = `googtrans=/en/${lang}; path=/`;
+      document.cookie = `googtrans=/en/${lang}; domain=${location.hostname}; path=/`;
+
+      const select = document.querySelector('select.goog-te-combo');
+      if (select) {
+        select.value = lang;
+        select.dispatchEvent(new Event('change'));
+      }
+
+      // Force reload to apply language
+      location.reload();
+    }
+  </script>
+
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
 
@@ -73,10 +107,19 @@
       <a href="/">
         <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto">
       </a>
-      <nav>
-        <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">More claims</a>
-      </nav>
-      
+      <div class="w-full bg-gray-100 text-right p-2">
+        <select id="languageDropdown" onchange="doGTranslate(this.value)" class="border border-gray-300 rounded px-2 py-1 text-sm">
+          <option value="">🌐 Language</option>
+          <option value="en|en">English</option>
+          <option value="en|fr">Français</option>
+          <option value="en|es">Español</option>
+          <option value="en|de">Deutsch</option>
+          <option value="en|it">Italiano</option>
+          <option value="en|nl">Nederlands</option>
+          <option value="en|sv">Svenska</option>
+          <option value="en|el">Ελληνικά</option>
+        </select>
+      </div>
     </div>
   </header>
 
@@ -169,7 +212,7 @@
     
       <div>
         <label class="font-semibold">Departure Airport</label>
-        <input type="text" id="depAirport" required class="w-full border p-2 rounded" />
+        <input type="text" id="depAirport" list="airports" required class="w-full border p-2 rounded" />    
       </div>
     
       <div>
@@ -252,6 +295,8 @@
       <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
         Generate My Claim Letter
       </button>
+
+      <datalist id="airports"></datalist>    
       
       </form> <!-- ✅ Close form here, only once -->
       
@@ -310,58 +355,29 @@
   <a href="contact.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Contact Us</a>
 </footer>
 
-  <script>
-    document.getElementById('compensation-form').addEventListener('submit', function (e) {
-      e.preventDefault();
+<datalist id="airports"></datalist>
 
-      const delay = parseInt(document.getElementById('delay').value);
-      let compensation = 0;
+  const airportList = [
+    "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
+    "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
+    "London Gatwick (LGW)", "London Heathrow (LHR)", "Madrid Barajas (MAD)", "Malaga (AGP)", "Manchester (MAN)",
+    "Milan Malpensa (MXP)", "Munich (MUC)", "Nice Côte d'Azur (NCE)", "Oslo Gardermoen (OSL)", "Paris Charles de Gaulle (CDG)",
+    "Paris Orly (ORY)", "Porto (OPO)", "Prague Vaclav Havel (PRG)", "Rome Fiumicino (FCO)", "Stockholm Arlanda (ARN)",
+    "Vienna (VIE)", "Warsaw Chopin (WAW)", "Zagreb (ZAG)", "Zurich (ZRH)", "Athens (ATH)", "Palma de Mallorca (PMI)",
+    "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
+    "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
+  ];
 
-      if (delay >= 4) {
-        compensation = 600;
-      } else if (delay >= 3) {
-        compensation = 400;
-      }
-
-      const result = document.getElementById('compensation-result');
-      if (compensation > 0) {
-        result.innerHTML = `✅ You may be entitled to <strong>€${compensation}</strong> in compensation.<br>
-          <a href="claim.html?type=flight-delay" style="color: white; background: #2563eb; padding: 0.6rem 1.2rem; border-radius: 6px; display: inline-block; margin-top: 1rem; text-decoration: none;">Start Your Claim</a>`;
-      } else {
-        result.innerHTML = `ℹ️ Unfortunately, delays under 3 hours don't qualify under EU261 rules.`;
-      }
-    });
-
-    const airportList = [
-      "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
-      "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
-      "London Gatwick (LGW)", "London Heathrow (LHR)", "Madrid Barajas (MAD)", "Malaga (AGP)", "Manchester (MAN)",
-      "Milan Malpensa (MXP)", "Munich (MUC)", "Nice Côte d'Azur (NCE)", "Oslo Gardermoen (OSL)", "Paris Charles de Gaulle (CDG)",
-      "Paris Orly (ORY)", "Porto (OPO)", "Prague Vaclav Havel (PRG)", "Rome Fiumicino (FCO)", "Stockholm Arlanda (ARN)",
-      "Vienna (VIE)", "Warsaw Chopin (WAW)", "Zagreb (ZAG)", "Zurich (ZRH)", "Athens (ATH)", "Palma de Mallorca (PMI)",
-      "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
-      "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
-    ];
-
+  document.addEventListener("DOMContentLoaded", function () {
     const datalist = document.getElementById('airports');
     airportList.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
       datalist.appendChild(option);
     });
-  </script>
-<script type="text/javascript">
-  var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-  (function(){
-    var s1=document.createElement("script"),
-        s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-  })();
+  });
 </script>
+
 <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
   ↑
 </button>
@@ -373,12 +389,13 @@
   scrollBtn.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-</script>
 
-<script type="module" src="firebase-setup.js"></script>
+  <script type="module" src="firebase-setup.js"></script>
+</body>
+</html>
 
 <script>
-  const db = window.firestore;
+  const db = window.db;
   const storage = window.storage;
   const {
     collection,
@@ -388,12 +405,7 @@
     uploadBytes,
     getDownloadURL
   } = window.firebaseUtils;
-
-  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    console.log("Form submitted"); // <--- for debugging
-    // your code to extract values + call generatePDF()
-  });
+</script>
 
 <script>
   const airlineEmails = {
@@ -477,6 +489,7 @@ document.getElementById("airline").addEventListener("input", function () {
   }
 });
 </script>
+
 
 <script>
   // ✅ UPDATED SCRIPT WITH BOOKING REF + IBAN FIELDS INCLUDED IN CLAIM DATA AND PDF
@@ -585,9 +598,27 @@ const translations = {
   // Add other languages here (de, es, nl)
 };
 
+const translations = {
+  en: { ... },
+  fr: { ... },
+  // etc.
+};
+
+// ✅ Compensation calculator
+function calculateCompensation(distance, delayDuration) {
+  if (delayDuration === "4") return 600;
+  if (delayDuration === "3") {
+    return distance === "short" ? 250 : 400;
+  }
+  return 0;
+}
+
+// ✅ PDF generator
 function generatePDF(data) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+
+  const t = translations[data.language] || translations.en;
   const today = new Date().toLocaleDateString();
   const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
@@ -623,7 +654,7 @@ function generatePDF(data) {
     y += 12;
 
     doc.setFont(undefined, "bold");
-    doc.text("To:", 10, y);
+    doc.text(t.to, 10, y);
     y += 6;
     doc.setFont(undefined, "normal");
     doc.text(airlineContact, 10, y);
@@ -633,17 +664,19 @@ function generatePDF(data) {
     doc.text("Subject:", 10, y);
     y += 6;
     doc.setFont(undefined, "normal");
-    doc.text("Compensation Request under EC Regulation 261/2004", 10, y);
+    doc.text(t.subject, 10, y);
     y += 10;
 
-    const intro = `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`;
+    const t = translations[data.language] || translations.en;
+const intro = t.intro;
     const introLines = doc.splitTextToSize(intro, 180);
     doc.text(introLines, 10, y);
     y += introLines.length * 6 + 6;
 
     doc.setFont(undefined, "bold");
-    doc.text("Flight Details:", 10, y);
+    doc.text(t.detailsTitle, 10, y);
     y += 8;
+
 
     doc.setFont(undefined, "normal");
     const details = [
@@ -667,14 +700,14 @@ function generatePDF(data) {
     });
 
     y += 4;
-    const closing = `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n${data.fullName}`;
+    const closing = `${t.closing}${data.fullName}`;
     const closingLines = doc.splitTextToSize(closing, 180);
     doc.text(closingLines, 10, y);
     y += closingLines.length * 6;
 
     doc.setFontSize(10);
     doc.setTextColor(120);
-    doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+    doc.text(t.footer, 10, 290);
 
     doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
   }
@@ -682,7 +715,6 @@ function generatePDF(data) {
   insertHeader();
 }
 
-</script>
 
 
   
