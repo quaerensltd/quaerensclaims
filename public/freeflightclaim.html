@@ -113,35 +113,61 @@
       </ul>
     </div>
 
-    <!-- Right: Calculator -->
-    <div class="bg-white rounded-xl p-6 shadow-md content-box" data-aos="fade-up">
-      <h2>✈️ Check Your Flight Delay Compensation</h2>
-      <p>Enter your flight details to see if you’re entitled to compensation under EU261.</p>
-      <form id="compensation-form">
-        <label for="departure">Departure Airport</label>
-        <input list="airports" id="departure" placeholder="e.g. Amsterdam AMS" required>
+<!-- Right: Calculator -->
+<div class="bg-white rounded-xl shadow-md content-box max-w-xl mx-auto mt-10" data-aos="fade-up">
 
-        <label for="arrival">Arrival Airport</label>
-        <input list="airports" id="arrival" placeholder="e.g. Malaga AGP" required>
-
-        <label for="delay">Delay Duration</label>
-        <select id="delay" required>
-          <option value="">Select Delay Duration</option>
-          <option value="2">Less than 3 hours</option>
-          <option value="3">3 to 4 hours</option>
-          <option value="4">More than 4 hours</option>
-        </select>
-
+    <!-- Yellow Banner Header -->
+    <div class="bg-yellow-300 text-blue-900 px-4 py-3 rounded-t-xl text-center border-b-2 border-yellow-500">
+      <h2 class="text-xl sm:text-2xl font-bold">✈️ Check Your Flight Delay Compensation</h2>
+      <p class="text-sm sm:text-base mt-1">Enter your flight details to see if you’re entitled under EU261.</p>
+    </div>
+  
+    <!-- Calculator Form -->
+    <div class="p-6">
+      <form id="compensation-form" class="space-y-4">
+        <div>
+          <label for="departure" class="block font-semibold">Departure Airport</label>
+          <input list="airports" id="departure" placeholder="e.g. Amsterdam AMS" required
+                 class="w-full border border-gray-300 p-2 rounded" />
+        </div>
+  
+        <div>
+          <label for="arrival" class="block font-semibold">Arrival Airport</label>
+          <input list="airports" id="arrival" placeholder="e.g. Malaga AGP" required
+                 class="w-full border border-gray-300 p-2 rounded" />
+        </div>
+  
+        <div>
+          <label for="delay" class="block font-semibold">Delay Duration</label>
+          <select id="delay" required class="w-full border border-gray-300 p-2 rounded">
+            <option value="">Select Delay Duration</option>
+            <option value="2">Less than 3 hours</option>
+            <option value="3">3 to 4 hours</option>
+            <option value="4">More than 4 hours</option>
+          </select>
+        </div>
+  
+        <!-- Main Check Button -->
         <button type="submit"
-                style="margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition">
           Check Compensation
         </button>
       </form>
-
-      <div id="compensation-result" style="margin-top: 1.5rem; font-size: 1.2rem; font-weight: 500;"></div>
-
-      <datalist id="airports"></datalist>
+  
+      <!-- Compensation Result -->
+      <div id="compensation-result"
+           class="mt-6 text-center text-lg font-semibold text-green-700 hidden"></div>
+  
+      <!-- CTA Button Below -->
+      <a href="claim-form.html" id="claim-button"
+         class="block w-full text-center mt-4 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-2 px-4 rounded transition hidden">
+        File Your Claim Free →
+      </a>
     </div>
+  
+    <datalist id="airports"></datalist>
+  </div>
+  
 
   </div>
 </section>
@@ -443,28 +469,37 @@
   <a href="contact.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Contact Us</a>
 </footer>
 
-  <script>
+<script>
     document.getElementById('compensation-form').addEventListener('submit', function (e) {
       e.preventDefault();
-
+  
       const delay = parseInt(document.getElementById('delay').value);
+      const result = document.getElementById('compensation-result');
+      const claimButton = document.getElementById('claim-button');
+  
       let compensation = 0;
-
+      let message = '';
+  
       if (delay >= 4) {
         compensation = 600;
       } else if (delay >= 3) {
         compensation = 400;
       }
-
-      const result = document.getElementById('compensation-result');
+  
       if (compensation > 0) {
-        result.innerHTML = `✅ You may be entitled to <strong>€${compensation}</strong> in compensation.<br>
-          <a href="claim.html?type=flight-delay" style="color: white; background: #2563eb; padding: 0.6rem 1.2rem; border-radius: 6px; display: inline-block; margin-top: 1rem; text-decoration: none;">Start Your Claim</a>`;
+        message = `✅ You may be entitled to <strong>€${compensation}</strong> in compensation.`;
+        claimButton.textContent = 'File Your Claim Free →';
+        claimButton.classList.remove('hidden');
       } else {
-        result.innerHTML = `ℹ️ Unfortunately, delays under 3 hours don't qualify under EU261 rules.`;
+        message = `ℹ️ Unfortunately, delays under 3 hours don’t qualify under EU261 rules.`;
+        claimButton.classList.add('hidden');
       }
+  
+      result.innerHTML = message;
+      result.classList.remove('hidden');
     });
-
+  
+    // Airport datalist logic
     const airportList = [
       "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
       "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
@@ -477,24 +512,13 @@
     ];
 
     const datalist = document.getElementById('airports');
-    airportList.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      datalist.appendChild(option);
-    });
-  </script>
-<script type="text/javascript">
-  var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-  (function(){
-    var s1=document.createElement("script"),
-        s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-  })();
+  airportList.forEach(name => {
+    const option = document.createElement('option');
+    option.value = name;
+    datalist.appendChild(option);
+  });
 </script>
+
 <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
   ↑
 </button>
