@@ -720,92 +720,88 @@ function generatePDF(data) {
   const logoPath = airlineLogos[data.airline];
 
   function insertHeader() {
-    if (logoPath) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = logoPath;
-      img.onload = () => {
-        doc.addImage(img, "PNG", 150, 8, 40, 15);
-        insertContent();
-      };
-      img.onerror = insertContent;
-    } else {
-      insertContent();
-    }
+  if (logoPath) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = logoPath;
+    img.onload = () => {
+      doc.addImage(img, "PNG", 150, 8, 40, 15);
+      insertContentAndSave();
+    };
+    img.onerror = insertContentAndSave;
+  } else {
+    insertContentAndSave();
   }
+}
 
-  function insertContent() {
-    let y = 20;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
+function insertContentAndSave() {
+  let y = 20;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
 
-    doc.setFont(undefined, "bold");
-    doc.text(today, 10, y);
-    y += 10;
+  doc.setFont(undefined, "bold");
+  doc.text(today, 10, y);
+  y += 10;
 
-    doc.setFont(undefined, "normal");
-    doc.text(`Claim Reference: ${claimRef}`, 10, y);
-    y += 12;
+  doc.setFont(undefined, "normal");
+  doc.text(`Claim Reference: ${claimRef}`, 10, y);
+  y += 12;
 
-    doc.setFont(undefined, "bold");
-    doc.text(t.to, 10, y);
-    y += 6;
-    doc.setFont(undefined, "normal");
-    doc.text(airlineContact, 10, y);
-    y += 14;
+  doc.setFont(undefined, "bold");
+  doc.text(t.to, 10, y);
+  y += 6;
+  doc.setFont(undefined, "normal");
+  doc.text(airlineContact, 10, y);
+  y += 14;
 
-    doc.setFont(undefined, "bold");
-    doc.text("Subject:", 10, y);
-    y += 6;
-    doc.setFont(undefined, "normal");
-    doc.text(t.subject, 10, y);
-    y += 10;
+  doc.setFont(undefined, "bold");
+  doc.text("Subject:", 10, y);
+  y += 6;
+  doc.setFont(undefined, "normal");
+  doc.text(t.subject, 10, y);
+  y += 10;
 
-    const t = translations[data.language] || translations.en;
-const intro = t.intro;
-    const introLines = doc.splitTextToSize(intro, 180);
-    doc.text(introLines, 10, y);
-    y += introLines.length * 6 + 6;
+  const introLines = doc.splitTextToSize(t.intro, 180);
+  doc.text(introLines, 10, y);
+  y += introLines.length * 6 + 6;
 
-    doc.setFont(undefined, "bold");
-    doc.text(t.detailsTitle, 10, y);
-    y += 8;
+  doc.setFont(undefined, "bold");
+  doc.text(t.detailsTitle, 10, y);
+  y += 8;
 
+  doc.setFont(undefined, "normal");
+  const details = [
+    `Passenger Name: ${data.fullName}`,
+    `Email: ${data.email}`,
+    `Flight Number: ${data.flightNumber}`,
+    `Booking Reference: ${data.bookingRef}`,
+    `Flight Date: ${data.flightDate}`,
+    `Departure Airport: ${data.depAirport}`,
+    `Arrival Airport: ${data.arrAirport}`,
+    `Airline: ${data.airline}`,
+    `Reason for Delay: ${data.reason || "Not specified"}`,
+    `Flight Distance: ${data.distance}`,
+    `Delay Duration: ${data.delayDuration}`,
+    `Estimated Compensation: €${data.compensation}`,
+    `Preferred Payment Method: ${data.iban}`
+  ];
+  details.forEach(line => {
+    doc.text(line, 10, y);
+    y += 7;
+  });
 
-    doc.setFont(undefined, "normal");
-    const details = [
-      `Passenger Name: ${data.fullName}`,
-      `Email: ${data.email}`,
-      `Flight Number: ${data.flightNumber}`,
-      `Booking Reference: ${data.bookingRef}`,
-      `Flight Date: ${data.flightDate}`,
-      `Departure Airport: ${data.depAirport}`,
-      `Arrival Airport: ${data.arrAirport}`,
-      `Airline: ${data.airline}`,
-      `Reason for Delay: ${data.reason || "Not specified"}`,
-      `Flight Distance: ${data.distance}`,
-      `Delay Duration: ${data.delayDuration}`,
-      `Estimated Compensation: €${data.compensation}`,
-      `Preferred Payment Method: ${data.iban}`
-    ];
-    details.forEach(line => {
-      doc.text(line, 10, y);
-      y += 7;
-    });
+  y += 4;
+  const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+  doc.text(closingLines, 10, y);
+  y += closingLines.length * 6;
 
-    y += 4;
-    const closing = `${t.closing}${data.fullName}`;
-    const closingLines = doc.splitTextToSize(closing, 180);
-    doc.text(closingLines, 10, y);
-    y += closingLines.length * 6;
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text(t.footer, 10, 290);
 
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text(t.footer, 10, 290);
-
-    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-  }
+  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+}
 
   insertHeader();
 }
