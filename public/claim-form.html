@@ -72,8 +72,6 @@
 </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <!-- Auto-detect language based on IP (only on first visit) -->
 <script>
   if (!document.cookie.includes("googtrans")) {
@@ -283,19 +281,34 @@
         <input type="date" id="flightDate" required class="w-full border p-2 rounded" />
       </div>
     
-      <div>
-        <label class="font-semibold">Departure Airport</label>
-        <input type="text" id="depAirport" list="airports" required class="w-full border p-2 rounded" />    
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label for="depAirport" class="font-semibold">Departure Airport</label>
+            <select id="depAirport" class="w-full border p-2 rounded" required>
+              <option value="">Select a departure airport</option>
+            </select>
       </div>
-    
-      <div>
-        <label class="font-semibold">Arrival Airport</label>
-        <input type="text" id="arrAirport" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Airline</label>
-        <input type="text" id="airline" list="airlines" required class="w-full border p-2 rounded" />
+
+    <div>
+      <label for="arrAirport" class="font-semibold">Arrival Airport</label>
+      <select id="arrAirport" class="w-full border p-2 rounded" required>
+        <option value="">Select an arrival airport</option>
+      </select>
+    </div>
+    <div>
+      <label for="airline" class="font-semibold">Airline</label>
+      <select id="airline" class="w-full border p-2 rounded" required>
+        <option value="">Select an airline</option>
+        <option value="Ryanair">Ryanair</option>
+        <option value="easyJet">easyJet</option>
+        <option value="British Airways">British Airways</option>
+        <option value="KLM">KLM</option>
+        <option value="Lufthansa">Lufthansa</option>
+        <option value="Wizz Air">Wizz Air</option>
+        <option value="Vueling">Vueling</option>
+        <option value="TUI Airways">TUI Airways</option>
+        <option value="Norwegian">Norwegian</option>
+      </select>
         <div id="airlineLogoPreview" class="mt-2"></div>
       </div>
     
@@ -592,7 +605,6 @@ const airlineLogos = {
   
   document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
     e.preventDefault();
-
     const fullName = document.getElementById("fullName").value.trim();
     const flightNumber = document.getElementById("flightNumber").value.trim();
     const flightDate = document.getElementById("flightDate").value;
@@ -806,6 +818,194 @@ function insertContentAndSave() {
   insertHeader();
 }
 </script>
+
+<script>
+  const airportList = [
+  // 🇬🇧 UK
+  "London Heathrow (LHR)",
+  "London Gatwick (LGW)",
+  "London Stansted (STN)",
+  "London Luton (LTN)",
+  "Manchester (MAN)",
+  "Birmingham (BHX)",
+  "Edinburgh (EDI)",
+  "Glasgow (GLA)",
+  "Bristol (BRS)",
+  "Leeds Bradford (LBA)",
+  "Newcastle (NCL)",
+  "East Midlands (EMA)",
+  "Liverpool (LPL)",
+
+  // 🇪🇸 Spain
+  "Madrid Barajas (MAD)",
+  "Barcelona El Prat (BCN)",
+  "Malaga (AGP)",
+  "Palma de Mallorca (PMI)",
+  "Alicante (ALC)",
+  "Gran Canaria (LPA)",
+  "Tenerife South (TFS)",
+  "Tenerife North (TFN)",
+  "Ibiza (IBZ)",
+  "Fuerteventura (FUE)",
+  "Menorca (MAH)",
+  "Bilbao (BIO)",
+
+  // 🇫🇷 France
+  "Paris Charles de Gaulle (CDG)",
+  "Paris Orly (ORY)",
+  "Nice Côte d'Azur (NCE)",
+  "Lyon Saint-Exupéry (LYS)",
+  "Marseille Provence (MRS)",
+  "Toulouse-Blagnac (TLS)",
+  "Nantes Atlantique (NTE)",
+  "Bordeaux Mérignac (BOD)",
+
+  // 🇮🇹 Italy
+  "Rome Fiumicino (FCO)",
+  "Rome Ciampino (CIA)",
+  "Milan Malpensa (MXP)",
+  "Milan Linate (LIN)",
+  "Venice Marco Polo (VCE)",
+  "Naples (NAP)",
+  "Bologna (BLQ)",
+  "Pisa (PSA)",
+  "Florence (FLR)",
+  "Catania (CTA)",
+  "Palermo (PMO)",
+
+  // 🇵🇹 Portugal
+  "Lisbon (LIS)",
+  "Porto (OPO)",
+  "Faro (FAO)",
+  "Madeira Funchal (FNC)",
+  "Ponta Delgada Azores (PDL)",
+
+  // 🇬🇷 Greece
+  "Athens (ATH)",
+  "Thessaloniki (SKG)",
+  "Heraklion (HER)",
+  "Rhodes (RHO)",
+  "Kos (KGS)",
+  "Corfu (CFU)",
+  "Santorini (JTR)",
+  "Mykonos (JMK)",
+  "Zakynthos (ZTH)",
+  "Kefalonia (EFL)",
+
+  // 🇨🇾 Cyprus
+  "Larnaca (LCA)",
+  "Paphos (PFO)",
+
+  // 🇳🇱 Netherlands
+  "Amsterdam Schiphol (AMS)",
+
+  // 🇩🇪 Germany
+  "Frankfurt (FRA)",
+  "Munich (MUC)",
+  "Berlin Brandenburg (BER)",
+  "Düsseldorf (DUS)",
+  "Hamburg (HAM)",
+  "Cologne Bonn (CGN)",
+
+  // 🇧🇪 Belgium
+  "Brussels Zaventem (BRU)",
+
+  // 🇩🇰 Denmark
+  "Copenhagen (CPH)",
+
+  // 🇸🇪 Sweden
+  "Stockholm Arlanda (ARN)",
+  "Gothenburg Landvetter (GOT)",
+
+  // 🇳🇴 Norway
+  "Oslo Gardermoen (OSL)",
+
+  // 🇮🇪 Ireland
+  "Dublin (DUB)",
+  "Cork (ORK)",
+  "Shannon (SNN)",
+
+  // 🇨🇭 Switzerland
+  "Geneva (GVA)",
+  "Zurich (ZRH)",
+
+  // 🌍 Major International
+  "Dubai (DXB)",
+  "Istanbul (IST)",
+  "Doha Hamad (DOH)",
+  "New York JFK (JFK)",
+  "Toronto Pearson (YYZ)",
+  "Bangkok Suvarnabhumi (BKK)",
+  "Singapore Changi (SIN)"
+];
+
+  const depAirport = document.getElementById("depAirport");
+  const arrAirport = document.getElementById("arrAirport");
+
+airportList.forEach((airport) => {
+  const option1 = document.createElement("option");
+  option1.value = airport;
+  option1.textContent = airport;
+  depAirport.appendChild(option1);
+
+  const option2 = document.createElement("option");
+  option2.value = airport;
+  option2.textContent = airport;
+  arrAirport.appendChild(option2);
+});
+</script>
+
+<datalist id="airlines">
+  <!-- Low-cost carriers -->
+  <option value="Ryanair">
+  <option value="easyJet">
+  <option value="Wizz Air">
+  <option value="Vueling">
+  <option value="Jet2.com">
+  <option value="Transavia">
+  <option value="Eurowings">
+  <option value="Volotea">
+  <option value="Play Airlines">
+
+  <!-- Flag carriers -->
+  <option value="British Airways">
+  <option value="KLM">
+  <option value="Lufthansa">
+  <option value="Air France">
+  <option value="Iberia">
+  <option value="TAP Air Portugal">
+  <option value="SAS">
+  <option value="Finnair">
+  <option value="Austrian Airlines">
+  <option value="Swiss International Air Lines">
+  <option value="LOT Polish Airlines">
+
+  <!-- Leisure & holiday airlines -->
+  <option value="TUI Airways">
+  <option value="Condor">
+  <option value="Corendon Airlines">
+  <option value="SunExpress">
+  <option value="Smartwings">
+  <option value="Air Europa">
+  <option value="Neos">
+  <option value="Blue Air">
+
+  <!-- Scandinavia & regional -->
+  <option value="Norwegian">
+  <option value="Braathens Regional Airlines">
+  <option value="Air Baltic">
+  <option value="Luxair">
+
+  <!-- International airlines for long-haul -->
+  <option value="Emirates">
+  <option value="Qatar Airways">
+  <option value="Etihad Airways">
+  <option value="Turkish Airlines">
+  <option value="Singapore Airlines">
+  <option value="Delta Air Lines">
+  <option value="United Airlines">
+  <option value="American Airlines">
+</datalist>
 
 </body>
 </html>
