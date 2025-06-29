@@ -224,285 +224,205 @@
     </div>
   </div>  
 
-  <!-- ─────────────────────────────────────────────────────
-     Firebase setup & full form-submit / PDF logic
+<!-- ─────────────────────────────────────────────────────
+   Firebase setup & full form-submit / PDF logic
 ───────────────────────────────────────────────────── -->
 <script type="module" src="firebase-setup.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // ─── Data / constants ────────────────────────────────
-const airlineEmails = {
-Ryanair: "claims@ryanair.com",
-easyJet: "customer.support@easyjet.com",
-/* …all other mappings… */
-Condor: "service@condor.com"
-};
-const airlineLogos = {
-Ryanair: "images/logos/ryanair.png",
-easyJet: "images/logos/easyjet.png",
-/* …etc… */
-Condor: "images/logos/condor.png"
-};
-const reasonLabels = {
-technical_issue: "Technical issue",
-crew_availability: "Crew availability",
-weather_conditions: "Weather conditions",
-air_traffic_control: "Air traffic control",
-operational_disruption: "Operational disruption",
-late_incoming_aircraft: "Late incoming aircraft",
-other: "Other"
-};
-  
-// 1) Destructure Firebase helpers (must come after firebase-setup.js)
-  const {
-    collection,
-    addDoc,
-    serverTimestamp,
-    ref,
-    uploadBytes,
-    getDownloadURL
-  } = window.firebaseUtils;
-  const db = window.db;
-  const storage = window.storage;
-
-  // 2) Translations for your claim letter footer/intros
-  const translations = {
-    en: {
-      intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
-      closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
-      subject: "Compensation Request under EC Regulation 261/2004",
-      to: "To:",
-      detailsTitle: "Flight Details:",
-      paymentLabel: "Preferred Payment Method",
-      claimRef: "Claim Reference",
-      footer: "This document was generated at no cost by Quaerens.co.uk."
-    },
-    fr: {
-      intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
-      closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
-      subject: "Demande d'indemnisation selon le règlement CE 261/2004",
-      to: "À :",
-      detailsTitle: "Détails du vol :",
-      paymentLabel: "Méthode de paiement préférée",
-      claimRef: "Référence du dossier",
-      footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
-    }
-    // add other languages (de, es, nl, it) as needed
-  };
-
-  // 3) Compensation calculation logic
-  function calculateCompensation(distance, delayDuration) {
-    if (delayDuration === "4") return 600;
-    if (delayDuration === "3") {
-      return distance === "short" ? 250 : 400;
-    }
-    return 0;
-  }
-
-  // 4) PDF generation using jsPDF
-  function generatePDF(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const t = translations[data.language] || translations.en;
-    const today = new Date().toLocaleDateString();
-    const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random()
-      .toString(36)
-      .substring(2, 8)
-      .toUpperCase()}`;
-    const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
-    const logoPath = airlineLogos[data.airline];
-
-    function insertHeader() {
-      if (logoPath) {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = logoPath;
-        img.onload = () => {
-          doc.addImage(img, "PNG", 150, 8, 40, 15);
-          insertContent();
-        };
-        img.onerror = insertContent;
-      } else {
-        insertContent();
-      }
-    }
-
-    function insertContent() {
-      let y = 20;
-      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
-
-      doc.setFont(undefined, "bold").text(today, 10, y);
-      y += 10;
-
-      doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y);
-      y += 12;
-
-      doc.setFont(undefined, "bold").text(t.to, 10, y);
-      y += 6;
-      doc.setFont(undefined, "normal").text(airlineContact, 10, y);
-      y += 14;
-
-      doc.setFont(undefined, "bold").text("Subject:", 10, y);
-      y += 6;
-      doc.setFont(undefined, "normal").text(t.subject, 10, y);
-      y += 10;
-
-      const introLines = doc.splitTextToSize(t.intro, 180);
-      doc.text(introLines, 10, y);
-      y += introLines.length * 6 + 6;
-
-      doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y);
-      y += 8;
-
-      const details = [
-        `Passenger Name: ${data.fullName}`,
-        `Email: ${data.email}`,
-        `Flight Number: ${data.flightNumber}`,
-        `Booking Reference: ${data.bookingRef}`,
-        `Flight Date: ${data.flightDate}`,
-        `Departure Airport: ${data.depAirport}`,
-        `Arrival Airport: ${data.arrAirport}`,
-        `Airline: ${data.airline}`,
-        `Reason for Delay: ${data.reason}`,
-        `Flight Distance: ${data.distance}`,
-        `Delay Duration: ${data.delayDuration}`,
-        `Estimated Compensation: €${data.compensation}`,
-        `Preferred Payment Method: ${data.iban}`
-      ];
-      details.forEach(line => {
-        doc.text(line, 10, y);
-        y += 7;
-      });
-
-      y += 4;
-    const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
-    doc.text(closingLines, 10, y);
-    y += closingLines.length * 6;
-
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text(t.footer, 10, 290);
-
-    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-  }
-
-  insertHeader();
-}
-
-<script>
-  // 6) Form submission
-  document.getElementById("claim-letter-form").addEventListener("submit", async e => {
-    e.preventDefault();
-
-    // 1) Gather form values
-    const fullName      = document.getElementById("fullName").value.trim();
-    const flightNumber  = document.getElementById("flightNumber").value.trim();
-    const bookingRef    = document.getElementById("bookingRef").value.trim();
-    const iban          = document.getElementById("iban").value.trim();
-    const flightDate    = document.getElementById("flightDate").value;
-    const depAirport    = document.getElementById("depAirport").value.trim();
-    const arrAirport    = document.getElementById("arrAirport").value.trim();
-    const airline       = document.getElementById("airline").value;
-    const reasonCode    = document.getElementById("reason").value;
-    const reason        = reasonLabels[reasonCode] || "Other";
-    const distance      = document.getElementById("distance").value;
-    const delayDuration = document.getElementById("delayDuration").value;
-    const compensation  = calculateCompensation(distance, delayDuration);
-    const language      = document.getElementById("language").value;
-    const email         = document.getElementById("email").value.trim();
-    const handleOption  = document.getElementById("handleOption").value;
-    const donation      = document.getElementById("donation").value;
-
-    // 2) Validate required
-    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    // 3) Optional file upload
-    let fileURL = "";
-    const file = document.getElementById("fileUpload").files[0];
-    if (file) {
-      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-      const snap       = await uploadBytes(storageRef, file);
-      fileURL          = await getDownloadURL(snap.ref);
-    }
-
-    // 4) Build the payload
-    const claimData = {
-      fullName,
-      flightNumber,
-      bookingRef,
-      iban,
-      flightDate,
-      depAirport,
-      arrAirport,
-      airline,
-      reason,
-      reasonCode,         // store the raw code too
-      distance,
-      delayDuration,
-      compensation,
-      language,
-      email,
-      handleOption,
-      donation,
-      fileURL,
-      createdAt: serverTimestamp(),
-      airlineEmail: airlineEmails[airline] || ""
+  document.addEventListener('DOMContentLoaded', () => {
+    // ─── Data / constants ────────────────────────────────
+    const airlineEmails = {
+      Ryanair: "claims@ryanair.com",
+      easyJet: "customer.support@easyjet.com",
+      // …all other mappings…
+      Condor: "service@condor.com"
+    };
+    const airlineLogos = {
+      Ryanair: "images/logos/ryanair.png",
+      easyJet: "images/logos/easyjet.png",
+      // …etc…
+      Condor: "images/logos/condor.png"
+    };
+    const reasonLabels = {
+      technical_issue: "Technical issue",
+      crew_availability: "Crew availability",
+      weather_conditions: "Weather conditions",
+      air_traffic_control: "Air traffic control",
+      operational_disruption: "Operational disruption",
+      late_incoming_aircraft: "Late incoming aircraft",
+      other: "Other"
     };
 
-    // 5) Firestore + post‐submit flow
-    <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // ─── Firebase utils ───────────────────────────────
+    // 1) Destructure Firebase helpers (must come after firebase-setup.js)
     const {
-    collection,
-    addDoc,
-    serverTimestamp,
-    ref,
-    uploadBytes,
-    getDownloadURL
-  } = window.firebaseUtils;
+      collection,
+      addDoc,
+      serverTimestamp,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } = window.firebaseUtils;
+    const db = window.db;
+    const storage = window.storage;
 
-  const db = window.db;
-  const form = document.getElementById('claim-letter-form');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    // 2) Translations
+    const translations = {
+      en: {
+        intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
+        closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
+        subject: "Compensation Request under EC Regulation 261/2004",
+        to: "To:",
+        detailsTitle: "Flight Details:",
+        paymentLabel: "Preferred Payment Method",
+        claimRef: "Claim Reference",
+        footer: "This document was generated at no cost by Quaerens.co.uk."
+      },
+      fr: {
+        intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
+        closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
+        subject: "Demande d'indemnisation selon le règlement CE 261/2004",
+        to: "À :",
+        detailsTitle: "Détails du vol :",
+        paymentLabel: "Méthode de paiement préférée",
+        claimRef: "Référence du dossier",
+        footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+      }
+    };
 
-    // …your existing code that gathers all form values into the `claimData` object…
+    // 3) Compensation logic
+    function calculateCompensation(distance, delayDuration) {
+      if (delayDuration === "4") return 600;
+      if (delayDuration === "3") return distance === "short" ? 250 : 400;
+      return 0;
+    }
 
-    // 5) Firestore + post-submit flow
-    try {
-      await addDoc(collection(db, "flightClaimLetters"), claimData);
+    // 4) PDF generation
+    function generatePDF(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const t = translations[data.language] || translations.en;
+      const today = new Date().toLocaleDateString();
+      const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
+      const logoPath = airlineLogos[data.airline];
 
-      switch (claimData.handleOption) {
-        case 'pdf':
-          generatePDF(claimData);
-          break;
-        case 'email':
-          await fetch(
-            "https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail",
-            {
+      function insertHeader() {
+        if (logoPath) {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = logoPath;
+          img.onload = () => {
+            doc.addImage(img, "PNG", 150, 8, 40, 15);
+            insertContent();
+          };
+          img.onerror = insertContent;
+        } else {
+          insertContent();
+        }
+      }
+
+      function insertContent() {
+        let y = 20;
+        doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+        doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+        doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 12;
+        doc.setFont(undefined, "bold").text(t.to, 10, y); y += 6;
+        doc.setFont(undefined, "normal").text(airlineContact, 10, y); y += 14;
+        doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+        doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 10;
+
+        const introLines = doc.splitTextToSize(t.intro, 180);
+        doc.text(introLines, 10, y);
+        y += introLines.length * 6 + 6;
+
+        doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y); y += 8;
+
+        const details = [
+          `Passenger Name: ${data.fullName}`,
+          `Email: ${data.email}`,
+          `Flight Number: ${data.flightNumber}`,
+          `Booking Reference: ${data.bookingRef}`,
+          `Flight Date: ${data.flightDate}`,
+          `Departure Airport: ${data.depAirport}`,
+          `Arrival Airport: ${data.arrAirport}`,
+          `Airline: ${data.airline}`,
+          `Reason for Delay: ${data.reason}`,
+          `Flight Distance: ${data.distance}`,
+          `Delay Duration: ${data.delayDuration}`,
+          `Estimated Compensation: €${data.compensation}`,
+          `Preferred Payment Method: ${data.iban}`
+        ];
+        details.forEach(line => {
+          doc.text(line, 10, y);
+          y += 7;
+        });
+
+        y += 4;
+        const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+        doc.text(closingLines, 10, y);
+        y += closingLines.length * 6;
+
+        doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+        doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+      }
+
+      insertHeader();
+    }
+
+    // 5) Submit handler with Firestore + serverTimestamp
+    const form = document.getElementById('claim-letter-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const claimData = {
+        fullName: formData.get("fullName"),
+        email: formData.get("email"),
+        flightNumber: formData.get("flightNumber"),
+        bookingRef: formData.get("bookingRef"),
+        flightDate: formData.get("flightDate"),
+        depAirport: formData.get("depAirport"),
+        arrAirport: formData.get("arrAirport"),
+        airline: formData.get("airline"),
+        airlineEmail: airlineEmails[formData.get("airline")] || "",
+        reason: reasonLabels[formData.get("delayReason")] || "",
+        delayReason: formData.get("delayReason"),
+        distance: formData.get("distance"),
+        delayDuration: formData.get("delayDuration"),
+        compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
+        iban: formData.get("iban"),
+        handleOption: formData.get("handleOption"),
+        language: formData.get("language"),
+        submittedAt: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+        switch (claimData.handleOption) {
+          case "pdf":
+            generatePDF(claimData);
+            break;
+          case "email":
+            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(claimData)
-            }
-          );
-          alert("✅ Your letter has been emailed!");
-          break;
-        case 'quaerens':
-          alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-          break;
-      }
+            });
+            alert("✅ Your letter has been emailed!");
+            break;
+          case "quaerens":
+            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+            break;
+        }
 
-      document.getElementById("claim-letter-result").classList.remove("hidden");
-    } catch (err) {
-      console.error("Error saving claim:", err);
-      alert("Something went wrong. Please try again.");
-    }
+        document.getElementById("claim-letter-result").classList.remove("hidden");
+
+      } catch (err) {
+        console.error("❌ Error saving claim:", err);
+        alert("Something went wrong. Please try again.");
+      }
+    });
   });
-});
 </script>
 
 <!-- 6) Form submission -->
