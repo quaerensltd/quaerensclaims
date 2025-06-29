@@ -107,6 +107,8 @@
   </head>
 
   <body class="bg-gray-50 text-gray-800">
+
+  
     <div id="google_translate_element" style="display: none;"></div>
   
     <!-- Header -->
@@ -238,9 +240,10 @@
       uploadBytes,
       getDownloadURL
     } = window.firebaseUtils;
+
     const db = window.db;
     const storage = window.storage;
-    // ─── Data / constants ────────────────────────────────
+
     const airlineLogos = {
   "Aegean Airlines": "images/logos/aegean-airlines.png",
   "Aer Lingus": "images/logos/aer-lingus.png",
@@ -317,8 +320,9 @@
   "Yemenia": "images/logos/yemenia.png",
   "Zanzibar Airways": "images/logos/zanzibar-airways.png"
 };
-const airlineEmails = {
-  "Ryanair": "claims@ryanair.com",
+
+    const airlineEmails = {
+      "Ryanair": "claims@ryanair.com",
   "easyJet": "customer.support@easyjet.com",
   "Lufthansa": "customer.relations@lufthansa.com",
   "Vueling": "atencion.clientes@vueling.com",
@@ -360,6 +364,61 @@ const airlineEmails = {
       late_incoming_aircraft: "Late incoming aircraft",
       other: "Other"
     };
+
+    // ✅ Start of form submission logic
+    const form = document.getElementById('claim-letter-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const claimData = {
+        fullName: formData.get("fullName"),
+        email: formData.get("email"),
+        flightNumber: formData.get("flightNumber"),
+        bookingRef: formData.get("bookingRef"),
+        flightDate: formData.get("flightDate"),
+        depAirport: formData.get("depAirport"),
+        arrAirport: formData.get("arrAirport"),
+        airline: formData.get("airline"),
+        airlineEmail: airlineEmails[formData.get("airline")] || "",
+        reason: reasonLabels[formData.get("delayReason")] || "",
+        delayReason: formData.get("delayReason"),
+        distance: formData.get("distance"),
+        delayDuration: formData.get("delayDuration"),
+        compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
+        iban: formData.get("iban"),
+        handleOption: formData.get("handleOption"),
+        language: formData.get("language"),
+        submittedAt: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+        switch (claimData.handleOption) {
+          case "pdf":
+            generatePDF(claimData);
+            break;
+          case "email":
+            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(claimData)
+            });
+            alert("✅ Your letter has been emailed!");
+            break;
+          case "quaerens":
+            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+            break;
+        }
+
+        document.getElementById("claim-letter-result").classList.remove("hidden");
+
+      } catch (err) {
+        console.error("❌ Error saving claim:", err);
+        alert("Something went wrong. Please try again.");
+      }
+    });
+
 
     // 2) Translations
     const translations = {
@@ -464,62 +523,6 @@ const airlineEmails = {
 
       insertHeader();
     }
-
-// 5) Submit handler with Firestore + serverTimestamp
-const form = document.getElementById('claim-letter-form');
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(form);
-  const claimData = {
-    fullName: formData.get("fullName"),
-    email: formData.get("email"),
-    flightNumber: formData.get("flightNumber"),
-    bookingRef: formData.get("bookingRef"),
-    flightDate: formData.get("flightDate"),
-    depAirport: formData.get("depAirport"),
-    arrAirport: formData.get("arrAirport"),
-    airline: formData.get("airline"),
-    airlineEmail: airlineEmails[formData.get("airline")] || "",
-    reason: reasonLabels[formData.get("delayReason")] || "",
-    delayReason: formData.get("delayReason"),
-    distance: formData.get("distance"),
-    delayDuration: formData.get("delayDuration"),
-    compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
-    iban: formData.get("iban"),
-    handleOption: formData.get("handleOption"),
-    language: formData.get("language"),
-    submittedAt: window.firebaseUtils.serverTimestamp()
-  };
-
-      try {
-        await addDoc(collection(db, "flightClaimLetters"), claimData);
-
-        switch (claimData.handleOption) {
-          case "pdf":
-            generatePDF(claimData);
-            break;
-          case "email":
-            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(claimData)
-            });
-            alert("✅ Your letter has been emailed!");
-            break;
-          case "quaerens":
-            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-            break;
-        }
-
-        document.getElementById("claim-letter-result").classList.remove("hidden");
-
-      } catch (err) {
-        console.error("❌ Error saving claim:", err);
-        alert("Something went wrong. Please try again.");
-      }
-    });
-  });
-</script>
 
 <!-- 6) Form submission -->
 <script>
