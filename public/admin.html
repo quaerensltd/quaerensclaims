@@ -291,39 +291,38 @@ function updateHeaderArrows(activeIndex) {
   });
 }
 
-    async function loadClaims() {
-  const filter = document.getElementById("statusFilter").value;
-  const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
-  const claimsQuery = query(collection(db, "claims"), orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(claimsQuery);
-  table.innerHTML = "";
-  let total = 0;
-  let pending = 0;
-  let resolved = 0;
+async function loadClaims() {
+      const filter = document.getElementById("statusFilter").value;
+      const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
+      const claimsQuery = query(collection(db, "claims"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(claimsQuery);
+      table.innerHTML = "";
+      let total = 0;
+      let pending = 0;
+      let resolved = 0;
 
-  snapshot.forEach(docSnap => {
-  const data = docSnap.data();
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
 
-  const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
-  const matchesSearch =
-    (data.name || "").toLowerCase().includes(searchTerm) ||
-    (data.email || "").toLowerCase().includes(searchTerm) ||
-    (data.type || "").toLowerCase().includes(searchTerm);
+        const matchesSearch =
+          (data.name || "").toLowerCase().includes(searchTerm) ||
+          (data.email || "").toLowerCase().includes(searchTerm) ||
+          (data.type || "").toLowerCase().includes(searchTerm);
 
-  // Apply filter by status and search term
-  if (
-    (filter !== "all" && data.status !== filter) ||
-    (searchTerm && !matchesSearch)
-  ) {
-    return;
-  }
+        // Apply filter by status and search term
+        if (
+          (filter !== "all" && data.status !== filter) ||
+          (searchTerm && !matchesSearch)
+        ) {
+          return;
+        }
 
-  total++;
-  if (data.status === "pending") pending++;
-  if (data.status === "resolved") resolved++;
+        total++;
+        if (data.status === "pending") pending++;
+        if (data.status === "resolved") resolved++;
 
-  const row = document.createElement("tr");
-  row.innerHTML = `
+        const row = document.createElement("tr");
+        row.innerHTML = `
 <td>${data.createdAt?.toDate().toLocaleString() || "-"}</td>
 <td>${data.name || "-"}</td>
 <td>${data.email || "-"}</td>
@@ -355,114 +354,105 @@ function updateHeaderArrows(activeIndex) {
   <a href="/claim-detail.html?id=${docSnap.id}&pdf=true" target="_blank">PDF</a>
   <a href="#" onclick="deleteClaim('${docSnap.id}')" style="color:red;">Delete</a>
 </td>
-  `;
-  table.appendChild(row);
-});
-
-// Update the claim summary text
-const summaryElement = document.getElementById("claimSummary");
-if (summaryElement) {
-  summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
-}
-
-window.updateStatus = async function (id, newStatus) {
-  const ref = doc(db, "claims", id);
-  await updateDoc(ref, { status: newStatus });
-  loadClaims();
-};
-
-// Delete claim
-window.deleteClaim = async function (id) {
-  if (confirm("Are you sure you want to delete this claim? This action cannot be undone.")) {
-    await deleteDoc(doc(db, "claims", id));
-    showToast("🗑️ Claim deleted.");
-    loadClaims(); // refresh the list
-  }
-};
-
-// Optional: extract fields from HTML (used if parsing inner HTML or templates)
-function extractField(html, label) {
-  const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
-  return match ? match[1] : "-";
-}
-
-function extractAttachment(html) {
-  const match = html?.match(/<a href="(.*?)".*?>View File<\/a>/i);
-  return match ? `<a href="${match[1]}" target="_blank">Download</a>` : "-";
-}
-
-    window.exportCSV = function () {
-  const rows = [[
-    "Date",
-    "Name",
-    "Email",
-    "Type",
-    "Phone",
-    "Details",
-    "Status",
-    "Attachment URL",
-    "Claim View URL",
-    "PDF URL"
-  ]];
-
-  const tableRows = document.getElementById("claimsBody").querySelectorAll("tr");
-  tableRows.forEach(tr => {
-    const cells = tr.querySelectorAll("td");
-    if (cells.length >= 10) {
-      const clean = text => `"${text?.replace(/\n/g, ' ').replace(/"/g, '""') || "-"}"`;
-
-      const attachmentLink = cells[8].querySelector('a')?.href || "-";
-      const claimLinks = cells[9].querySelectorAll('a');
-      let viewLink = "-", pdfLink = "-";
-
-      claimLinks.forEach(link => {
-        if (link.href.includes("&pdf=true")) pdfLink = link.href;
-        else if (link.href.includes("claim-detail.html")) viewLink = link.href;
+        `;
+        table.appendChild(row);
       });
 
-      rows.push([
-        clean(cells[0].innerText), // Date
-        clean(cells[1].innerText), // Name
-        clean(cells[2].innerText), // Email
-        clean(cells[3].innerText), // Type
-        clean(cells[4].innerText), // Phone
-        clean(cells[5].innerText), // Details
-        clean(cells[6].innerText), // Status
-        clean(attachmentLink),
-        clean(viewLink),
-        clean(pdfLink)
-      ]);
+      const summaryElement = document.getElementById("claimSummary");
+      if (summaryElement) {
+        summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
+      }
     }
-  });
 
-  const csv = rows.map(r => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "claims.csv";
-  a.click();
-  showToast("📄 CSV downloaded");
-  URL.revokeObjectURL(url);
-};
+    window.updateStatus = async function (id, newStatus) {
+      const ref = doc(db, "claims", id);
+      await updateDoc(ref, { status: newStatus });
+      loadClaims();
+    };
 
-window.submitTestClaim = async function () {
-  const random = Math.floor(Math.random() * 10000);
-  await addDoc(collection(db, "claims"), {
-    name: `Test User ${random}`,
-    email: `test${random}@email.com`,
-    phone: "+441234567890",
-    type: "Test Submission",
-    details: "This is a test claim to verify the system end-to-end.",
-    fileUrl: "",
-    createdAt: Timestamp.now(),
-    status: "pending"
-  });
-  showToast("✅ Test claim submitted.");
-  loadClaims();
-};
+    window.deleteClaim = async function (id) {
+      if (confirm("Are you sure you want to delete this claim? This action cannot be undone.")) {
+        await deleteDoc(doc(db, "claims", id));
+        showToast("🗑️ Claim deleted.");
+        loadClaims();
+      }
+    };
 
-loadClaims();
-</script>
+    function extractField(html, label) {
+      const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
+      return match ? match[1] : "-";
+    }
+
+    function extractAttachment(html) {
+      const match = html?.match(/<a href="(.*?)".*?>View File<\/a>/i);
+      return match ? `<a href="${match[1]}" target="_blank">Download</a>` : "-";
+    }
+
+    window.exportCSV = function () {
+      const rows = [[
+        "Date", "Name", "Email", "Type", "Phone", "Details", "Status",
+        "Attachment URL", "Claim View URL", "PDF URL"
+      ]];
+
+      const tableRows = document.getElementById("claimsBody").querySelectorAll("tr");
+      tableRows.forEach(tr => {
+        const cells = tr.querySelectorAll("td");
+        if (cells.length >= 10) {
+          const clean = text => `"${text?.replace(/\n/g, ' ').replace(/"/g, '""') || "-"}"`;
+
+          const attachmentLink = cells[8].querySelector('a')?.href || "-";
+          const claimLinks = cells[9].querySelectorAll('a');
+          let viewLink = "-", pdfLink = "-";
+
+          claimLinks.forEach(link => {
+            if (link.href.includes("&pdf=true")) pdfLink = link.href;
+            else if (link.href.includes("claim-detail.html")) viewLink = link.href;
+          });
+
+          rows.push([
+            clean(cells[0].innerText),
+            clean(cells[1].innerText),
+            clean(cells[2].innerText),
+            clean(cells[3].innerText),
+            clean(cells[4].innerText),
+            clean(cells[5].innerText),
+            clean(cells[6].innerText),
+            clean(attachmentLink),
+            clean(viewLink),
+            clean(pdfLink)
+          ]);
+        }
+      });
+
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "claims.csv";
+      a.click();
+      showToast("📄 CSV downloaded");
+      URL.revokeObjectURL(url);
+    };
+
+    window.submitTestClaim = async function () {
+      const random = Math.floor(Math.random() * 10000);
+      await addDoc(collection(db, "claims"), {
+        name: `Test User ${random}`,
+        email: `test${random}@email.com`,
+        phone: "+441234567890",
+        type: "Test Submission",
+        details: "This is a test claim to verify the system end-to-end.",
+        fileUrl: "",
+        createdAt: Timestamp.now(),
+        status: "pending"
+      });
+      showToast("✅ Test claim submitted.");
+      loadClaims();
+    };
+
+    // Initial call
+    loadClaims();
+  </script>
 </body>
 </html>
