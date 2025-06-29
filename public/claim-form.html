@@ -152,15 +152,6 @@
             if (selector) selector.value = `en|${lang}`;
           });
         </script>
-        <!-- ✅ Place this OUTSIDE the <header> and NOT inside the <head> either -->
-        <script>
-          document.addEventListener("DOMContentLoaded", function () {
-            const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
-            const lang = match ? match[1] : "en";
-            const selector = document.getElementById("languageDropdown");
-            if (selector) selector.value = `en|${lang}`;
-          });
-        </script>
 
 <!-- Google Translate hidden engine (bottom of page) -->
 <div id="google_translate_element2" style="display: none;"></div>
@@ -233,175 +224,493 @@
     </div>
   </div>  
 
-    <!-- Initialize Firebase & grab utilities -->
-    <script type="module" src="firebase-setup.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const {
-          collection,
-          addDoc,
-          serverTimestamp,
-          ref,
-          uploadBytes,
-          getDownloadURL
-        } = window.firebaseUtils;
-        const db = window.db;
-        const storage = window.storage;
+  <!-- ─────────────────────────────────────────────────────
+     Firebase setup & full form-submit / PDF logic
+───────────────────────────────────────────────────── -->
+<script type="module" src="firebase-setup.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // ─── Data / constants ────────────────────────────────
+const airlineEmails = {
+Ryanair: "claims@ryanair.com",
+easyJet: "customer.support@easyjet.com",
+/* …all other mappings… */
+Condor: "service@condor.com"
+};
+const airlineLogos = {
+Ryanair: "images/logos/ryanair.png",
+easyJet: "images/logos/easyjet.png",
+/* …etc… */
+Condor: "images/logos/condor.png"
+};
+const reasonLabels = {
+technical_issue: "Technical issue",
+crew_availability: "Crew availability",
+weather_conditions: "Weather conditions",
+air_traffic_control: "Air traffic control",
+operational_disruption: "Operational disruption",
+late_incoming_aircraft: "Late incoming aircraft",
+other: "Other"
+};
+  
+// 1) Destructure Firebase helpers (must come after firebase-setup.js)
+  const {
+    collection,
+    addDoc,
+    serverTimestamp,
+    ref,
+    uploadBytes,
+    getDownloadURL
+  } = window.firebaseUtils;
+  const db = window.db;
+  const storage = window.storage;
 
-      // ─────────────────────────────────────────────────────
-      // 1) Populate airports
+  // 2) Translations for your claim letter footer/intros
+  const translations = {
+    en: {
+      intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
+      closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
+      subject: "Compensation Request under EC Regulation 261/2004",
+      to: "To:",
+      detailsTitle: "Flight Details:",
+      paymentLabel: "Preferred Payment Method",
+      claimRef: "Claim Reference",
+      footer: "This document was generated at no cost by Quaerens.co.uk."
+    },
+    fr: {
+      intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
+      closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
+      subject: "Demande d'indemnisation selon le règlement CE 261/2004",
+      to: "À :",
+      detailsTitle: "Détails du vol :",
+      paymentLabel: "Méthode de paiement préférée",
+      claimRef: "Référence du dossier",
+      footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+    }
+    // add other languages (de, es, nl, it) as needed
+  };
+
+  // 3) Compensation calculation logic
+  function calculateCompensation(distance, delayDuration) {
+    if (delayDuration === "4") return 600;
+    if (delayDuration === "3") {
+      return distance === "short" ? 250 : 400;
+    }
+    return 0;
+  }
+
+  // 4) PDF generation using jsPDF
+  function generatePDF(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const t = translations[data.language] || translations.en;
+    const today = new Date().toLocaleDateString();
+    const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase()}`;
+    const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
+    const logoPath = airlineLogos[data.airline];
+
+    function insertHeader() {
+      if (logoPath) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = logoPath;
+        img.onload = () => {
+          doc.addImage(img, "PNG", 150, 8, 40, 15);
+          insertContent();
+        };
+        img.onerror = insertContent;
+      } else {
+        insertContent();
+      }
+    }
+
+    function insertContent() {
+      let y = 20;
+      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+
+      doc.setFont(undefined, "bold").text(today, 10, y);
+      y += 10;
+
+      doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y);
+      y += 12;
+
+      doc.setFont(undefined, "bold").text(t.to, 10, y);
+      y += 6;
+      doc.setFont(undefined, "normal").text(airlineContact, 10, y);
+      y += 14;
+
+      doc.setFont(undefined, "bold").text("Subject:", 10, y);
+      y += 6;
+      doc.setFont(undefined, "normal").text(t.subject, 10, y);
+      y += 10;
+
+      const introLines = doc.splitTextToSize(t.intro, 180);
+      doc.text(introLines, 10, y);
+      y += introLines.length * 6 + 6;
+
+      doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y);
+      y += 8;
+
+      const details = [
+        `Passenger Name: ${data.fullName}`,
+        `Email: ${data.email}`,
+        `Flight Number: ${data.flightNumber}`,
+        `Booking Reference: ${data.bookingRef}`,
+        `Flight Date: ${data.flightDate}`,
+        `Departure Airport: ${data.depAirport}`,
+        `Arrival Airport: ${data.arrAirport}`,
+        `Airline: ${data.airline}`,
+        `Reason for Delay: ${data.reason}`,
+        `Flight Distance: ${data.distance}`,
+        `Delay Duration: ${data.delayDuration}`,
+        `Estimated Compensation: €${data.compensation}`,
+        `Preferred Payment Method: ${data.iban}`
+      ];
+      details.forEach(line => {
+        doc.text(line, 10, y);
+        y += 7;
+      });
+
+      y += 4;
+      const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+      doc.text(closingLines, 10, y);
+      y += closingLines.length * 6;
+
+      doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+      doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+    }
+
+    insertHeader();
+  }
+
+  // 5) Logo preview
+  document.getElementById("airline").addEventListener("input", function () {
+    const airlineName = this.value;
+    const logoPath = airlineLogos[airlineName] || "";
+    document.getElementById("airlineLogoPreview").innerHTML =
+      logoPath
+        ? `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`
+        : "";
+  });
+
+    // 5.5) Populate departure & arrival selects
     const airportList = [
-        // 🇬🇧 UK
-  "London Heathrow (LHR)",
-  "London Gatwick (LGW)",
-  "London Stansted (STN)",
-  "London Luton (LTN)",
-  "Manchester (MAN)",
-  "Birmingham (BHX)",
-  "Edinburgh (EDI)",
-  "Glasgow (GLA)",
-  "Bristol (BRS)",
-  "Leeds Bradford (LBA)",
-  "Newcastle (NCL)",
-  "East Midlands (EMA)",
-  "Liverpool (LPL)",
+    "London Heathrow (LHR)",
+        "London Gatwick (LGW)",
+        "London Stansted (STN)",
+        "London Luton (LTN)",
+        "Manchester (MAN)",
+        "Birmingham (BHX)",
+        "Edinburgh (EDI)",
+        "Glasgow (GLA)",
+        "Bristol (BRS)",
+        "Leeds Bradford (LBA)",
+        "Newcastle (NCL)",
+        "East Midlands (EMA)",
+        "Liverpool (LPL)",
+        "Madrid Barajas (MAD)",
+        "Barcelona El Prat (BCN)",
+        "Malaga (AGP)",
+        "Palma de Mallorca (PMI)",
+        "Alicante (ALC)",
+        "Gran Canaria (LPA)",
+        "Tenerife South (TFS)",
+        "Tenerife North (TFN)",
+        "Ibiza (IBZ)",
+        "Fuerteventura (FUE)",
+        "Menorca (MAH)",
+        "Bilbao (BIO)",
+        "Paris Charles de Gaulle (CDG)",
+        "Paris Orly (ORY)",
+        "Nice Côte d'Azur (NCE)",
+        "Lyon Saint-Exupéry (LYS)",
+        "Marseille Provence (MRS)",
+        "Toulouse-Blagnac (TLS)",
+        "Nantes Atlantique (NTE)",
+        "Bordeaux Mérignac (BOD)",
+        "Rome Fiumicino (FCO)",
+        "Rome Ciampino (CIA)",
+        "Milan Malpensa (MXP)",
+        "Milan Linate (LIN)",
+        "Venice Marco Polo (VCE)",
+        "Naples (NAP)",
+        "Bologna (BLQ)",
+        "Pisa (PSA)",
+        "Florence (FLR)",
+        "Catania (CTA)",
+        "Palermo (PMO)",
+        "Lisbon (LIS)",
+        "Porto (OPO)",
+        "Faro (FAO)",
+        "Madeira Funchal (FNC)",
+        "Ponta Delgada Azores (PDL)",
+        "Athens (ATH)",
+        "Thessaloniki (SKG)",
+        "Heraklion (HER)",
+        "Rhodes (RHO)",
+        "Kos (KGS)",
+        "Corfu (CFU)",
+        "Santorini (JTR)",
+        "Mykonos (JMK)",
+        "Zakynthos (ZTH)",
+        "Kefalonia (EFL)",
+        "Larnaca (LCA)",
+        "Paphos (PFO)",
+        "Amsterdam Schiphol (AMS)",
+        "Frankfurt (FRA)",
+        "Munich (MUC)",
+        "Berlin Brandenburg (BER)",
+        "Düsseldorf (DUS)",
+        "Hamburg (HAM)",
+        "Cologne Bonn (CGN)",
+        "Brussels Zaventem (BRU)",
+        "Copenhagen (CPH)",
+        "Stockholm Arlanda (ARN)",
+        "Gothenburg Landvetter (GOT)",
+        "Oslo Gardermoen (OSL)",
+        "Dublin (DUB)",
+        "Cork (ORK)",
+        "Shannon (SNN)",
+        "Geneva (GVA)",
+        "Zurich (ZRH)",
+        "Dubai (DXB)",
+        "Istanbul (IST)",
+        "Doha Hamad (DOH)",
+        "New York JFK (JFK)",
+        "Toronto Pearson (YYZ)",
+        "Bangkok Suvarnabhumi (BKK)",
+        "Singapore Changi (SIN)"
+  ];
+  ['depAirport','arrAirport'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select an airport</option>';
+    airportList.forEach(ap => sel.appendChild(new Option(ap, ap)));
+  });
 
-  // 🇪🇸 Spain
-  "Madrid Barajas (MAD)",
-  "Barcelona El Prat (BCN)",
-  "Malaga (AGP)",
-  "Palma de Mallorca (PMI)",
-  "Alicante (ALC)",
-  "Gran Canaria (LPA)",
-  "Tenerife South (TFS)",
-  "Tenerife North (TFN)",
-  "Ibiza (IBZ)",
-  "Fuerteventura (FUE)",
-  "Menorca (MAH)",
-  "Bilbao (BIO)",
+  // 6) Form submission
+  document.getElementById("claim-letter-form").addEventListener("submit", async e => {
+    e.preventDefault();
 
-  // 🇫🇷 France
-  "Paris Charles de Gaulle (CDG)",
-  "Paris Orly (ORY)",
-  "Nice Côte d'Azur (NCE)",
-  "Lyon Saint-Exupéry (LYS)",
-  "Marseille Provence (MRS)",
-  "Toulouse-Blagnac (TLS)",
-  "Nantes Atlantique (NTE)",
-  "Bordeaux Mérignac (BOD)",
+    // 1) Gather form values
+    const fullName      = document.getElementById("fullName").value.trim();
+    const flightNumber  = document.getElementById("flightNumber").value.trim();
+    const bookingRef    = document.getElementById("bookingRef").value.trim();
+    const iban          = document.getElementById("iban").value.trim();
+    const flightDate    = document.getElementById("flightDate").value;
+    const depAirport    = document.getElementById("depAirport").value.trim();
+    const arrAirport    = document.getElementById("arrAirport").value.trim();
+    const airline       = document.getElementById("airline").value;
+    const reasonCode    = document.getElementById("reason").value;
+    const reason        = reasonLabels[reasonCode] || "Other";
+    const distance      = document.getElementById("distance").value;
+    const delayDuration = document.getElementById("delayDuration").value;
+    const compensation  = calculateCompensation(distance, delayDuration);
+    const language      = document.getElementById("language").value;
+    const email         = document.getElementById("email").value.trim();
+    const handleOption  = document.getElementById("handleOption").value;
+    const donation      = document.getElementById("donation").value;
 
-  // 🇮🇹 Italy
-  "Rome Fiumicino (FCO)",
-  "Rome Ciampino (CIA)",
-  "Milan Malpensa (MXP)",
-  "Milan Linate (LIN)",
-  "Venice Marco Polo (VCE)",
-  "Naples (NAP)",
-  "Bologna (BLQ)",
-  "Pisa (PSA)",
-  "Florence (FLR)",
-  "Catania (CTA)",
-  "Palermo (PMO)",
+    // 2) Validate required
+    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
+      alert("Please fill in all required fields.");
+      return;
+    }
 
-  // 🇵🇹 Portugal
-  "Lisbon (LIS)",
-  "Porto (OPO)",
-  "Faro (FAO)",
-  "Madeira Funchal (FNC)",
-  "Ponta Delgada Azores (PDL)",
+    // 3) Optional file upload
+    let fileURL = "";
+    const file = document.getElementById("fileUpload").files[0];
+    if (file) {
+      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+      const snap       = await uploadBytes(storageRef, file);
+      fileURL          = await getDownloadURL(snap.ref);
+    }
 
-  // 🇬🇷 Greece
-  "Athens (ATH)",
-  "Thessaloniki (SKG)",
-  "Heraklion (HER)",
-  "Rhodes (RHO)",
-  "Kos (KGS)",
-  "Corfu (CFU)",
-  "Santorini (JTR)",
-  "Mykonos (JMK)",
-  "Zakynthos (ZTH)",
-  "Kefalonia (EFL)",
+    // 4) Build the payload
+    const claimData = {
+      fullName,
+      flightNumber,
+      bookingRef,
+      iban,
+      flightDate,
+      depAirport,
+      arrAirport,
+      airline,
+      reason,
+      reasonCode,         // store the raw code too
+      distance,
+      delayDuration,
+      compensation,
+      language,
+      email,
+      handleOption,
+      donation,
+      fileURL,
+      createdAt: serverTimestamp(),
+      airlineEmail: airlineEmails[airline] || ""
+    };
 
-  // 🇨🇾 Cyprus
-  "Larnaca (LCA)",
-  "Paphos (PFO)",
+    // 5) Firestore + post‐submit flow
+    try {
+      await addDoc(collection(db, "flightClaimLetters"), claimData);
 
-  // 🇳🇱 Netherlands
-  "Amsterdam Schiphol (AMS)",
-
-  // 🇩🇪 Germany
-  "Frankfurt (FRA)",
-  "Munich (MUC)",
-  "Berlin Brandenburg (BER)",
-  "Düsseldorf (DUS)",
-  "Hamburg (HAM)",
-  "Cologne Bonn (CGN)",
-
-  // 🇧🇪 Belgium
-  "Brussels Zaventem (BRU)",
-
-  // 🇩🇰 Denmark
-  "Copenhagen (CPH)",
-
-  // 🇸🇪 Sweden
-  "Stockholm Arlanda (ARN)",
-  "Gothenburg Landvetter (GOT)",
-
-  // 🇳🇴 Norway
-  "Oslo Gardermoen (OSL)",
-
-  // 🇮🇪 Ireland
-  "Dublin (DUB)",
-  "Cork (ORK)",
-  "Shannon (SNN)",
-
-  // 🇨🇭 Switzerland
-  "Geneva (GVA)",
-  "Zurich (ZRH)",
-
-  // 🌍 Major International
-  "Dubai (DXB)",
-  "Istanbul (IST)",
-  "Doha Hamad (DOH)",
-  "New York JFK (JFK)",
-  "Toronto Pearson (YYZ)",
-  "Bangkok Suvarnabhumi (BKK)",
-  "Singapore Changi (SIN)"
-    ];
-
-    ["depAirport","arrAirport"].forEach(id => {
-        const sel = document.getElementById(id);
-        sel.innerHTML = `<option value="">Select an airport</option>`;
-        airportList.forEach(airport => {
-          const opt = document.createElement("option");
-          opt.value       = airport;
-          opt.textContent = airport;
-          sel.appendChild(opt);
+      if (handleOption === "pdf") {
+        generatePDF(claimData);
+      } else if (handleOption === "email") {
+        await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(claimData)
         });
+        alert("✅ Your letter has been emailed!");
+      } else if (handleOption === "quaerens") {
+        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+      }
+
+      document.getElementById("claim-letter-result").classList.remove("hidden");
+    } catch (err) {
+      console.error("Error saving claim:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+});
+</script>
+
+      const details = [
+        `Passenger Name: ${data.fullName}`,
+        `Email: ${data.email}`,
+        `Flight Number: ${data.flightNumber}`,
+        `Booking Reference: ${data.bookingRef}`,
+        `Flight Date: ${data.flightDate}`,
+        `Departure Airport: ${data.depAirport}`,
+        `Arrival Airport: ${data.arrAirport}`,
+        `Airline: ${data.airline}`,
+        `Reason for Delay: ${data.reason}`,
+        `Flight Distance: ${data.distance}`,
+        `Delay Duration: ${data.delayDuration}`,
+        `Estimated Compensation: €${data.compensation}`,
+        `Preferred Payment Method: ${data.iban}`
+      ];
+      details.forEach(line => {
+        doc.text(line, 10, y);
+        y += 7;
       });
 
-      // ─────────────────────────────────────────────────────
-      // 2) Logo preview
-      document.getElementById("airline").addEventListener("input", function () {
-        const logoPath = airlineLogos[this.value] || "";
-        document.getElementById("airlineLogoPreview").innerHTML =
-          logoPath ? `<img src="${logoPath}"…>` : "";
-      });
+      y += 4;
+      const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+      doc.text(closingLines, 10, y);
+      y += closingLines.length * 6;
 
-      // ─────────────────────────────────────────────────────
-      // 3) Form submit & PDF/email logic
-      document.getElementById("claim-letter-form").addEventListener("submit", async e => {
-        e.preventDefault();
-        // … all your data gathering, uploadBytes, addDoc, generatePDF, etc. …
-      });
+      doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+      doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+    }
 
-      // ─────────────────────────────────────────────────────
-      // 4) PDF generator, calculateCompensation, translations…
-      function calculateCompensation(…){…}
-      function generatePDF(…){…}
-      const translations = {…};
-    });
-    </script>
+    insertHeader();
+  }
+
+  // 5) Logo preview (kept from Step 1)
+  document.getElementById("airline").addEventListener("input", function () {
+    const airlineName = this.value;
+    const logoPath = airlineLogos[airlineName];
+    const preview = document.getElementById("airlineLogoPreview");
+    preview.innerHTML = logoPath
+      ? `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`
+      : "";
+  });
+
+  // 6) Form submission
+  document.getElementById("claim-letter-form").addEventListener("submit", async e => {
+    e.preventDefault();
+
+    // Gather fields
+    const fullName     = document.getElementById("fullName").value.trim();
+    const flightNumber = document.getElementById("flightNumber").value.trim();
+    const bookingRef   = document.getElementById("bookingRef").value.trim();
+    const iban         = document.getElementById("iban").value.trim();
+    const flightDate   = document.getElementById("flightDate").value;
+    const depAirport   = document.getElementById("depAirport").value.trim();
+    const arrAirport   = document.getElementById("arrAirport").value.trim();
+    const airline      = document.getElementById("airline").value;
+    const reasonCode   = document.getElementById("reason").value;
+    const reason       = reasonLabels[reasonCode] || "Other";
+    const distance     = document.getElementById("distance").value;
+    const delayDuration= document.getElementById("delayDuration").value;
+    const compensation = calculateCompensation(distance, delayDuration);
+    const language     = document.getElementById("language").value;
+    const email        = document.getElementById("email").value.trim();
+    const handleOption = document.getElementById("handleOption").value;
+    const donation     = document.getElementById("donation").value;
+
+    // Validate required
+    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
+      return alert("Please fill in all required fields.");
+    }
+
+    // Upload optional file
+    let fileURL = "";
+    const file = document.getElementById("fileUpload").files[0];
+    if (file) {
+      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+      const snap       = await uploadBytes(storageRef, file);
+      fileURL          = await getDownloadURL(snap.ref);
+    }
+
+    // Build claim data
+    const claimData = {
+      fullName,
+      flightNumber,
+      bookingRef,
+      iban,
+      flightDate,
+      depAirport,
+      arrAirport,
+      airline,
+      reason,
+      reasonCode,
+      distance,
+      delayDuration,
+      compensation,
+      language,
+      email,
+      handleOption,
+      donation,
+      fileURL,
+      createdAt: serverTimestamp(),
+      airlineEmail: airlineEmails[airline] || ""
+    };
+
+    try {
+      // Save to Firestore
+      await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+      // Handle PDF / Email / Quaerens processing
+      if (handleOption === "pdf") {
+        generatePDF(claimData);
+      } else if (handleOption === "email") {
+        await fetch(
+          "https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(claimData)
+          }
+        );
+        alert("✅ Your letter has been emailed!");
+      } else {
+        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+      }
+
+      // Show confirmation message
+      document.getElementById("claim-letter-result").classList.remove("hidden");
+    } catch (err) {
+      console.error("Error saving claim:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+});
 
 <!-- EC261 Claim Letter Generator Heading Only -->
 <section class="bg-blue-50 pt-10 pb-10">
@@ -950,118 +1259,14 @@ function insertContentAndSave() {
   </section>
 
   <!-- Footer Section -->
-<footer class="bg-blue-900 text-white text-center py-6 w-full">
-  <p class="mb-2">© 2025 Quaerens Ltd. All rights reserved.</p>
-  <p>
-    <a href="#" class="underline">Privacy Policy</a> | 
-    <a href="#" class="underline">Terms of Use</a> | 
-    <a href="#" class="underline">GDPR</a> | 
-    <a href="#" class="underline">Contact Us</a>
-  </p>
-</footer>
-<!-- ─────────────────────────────────────────────────────
-       Populate Departure/Arrival selects (independent of Firebase)
-  ───────────────────────────────────────────────────── -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const airportList = [
-        "London Heathrow (LHR)",
-        "London Gatwick (LGW)",
-        "London Stansted (STN)",
-        "London Luton (LTN)",
-        "Manchester (MAN)",
-        "Birmingham (BHX)",
-        "Edinburgh (EDI)",
-        "Glasgow (GLA)",
-        "Bristol (BRS)",
-        "Leeds Bradford (LBA)",
-        "Newcastle (NCL)",
-        "East Midlands (EMA)",
-        "Liverpool (LPL)",
-        "Madrid Barajas (MAD)",
-        "Barcelona El Prat (BCN)",
-        "Malaga (AGP)",
-        "Palma de Mallorca (PMI)",
-        "Alicante (ALC)",
-        "Gran Canaria (LPA)",
-        "Tenerife South (TFS)",
-        "Tenerife North (TFN)",
-        "Ibiza (IBZ)",
-        "Fuerteventura (FUE)",
-        "Menorca (MAH)",
-        "Bilbao (BIO)",
-        "Paris Charles de Gaulle (CDG)",
-        "Paris Orly (ORY)",
-        "Nice Côte d'Azur (NCE)",
-        "Lyon Saint-Exupéry (LYS)",
-        "Marseille Provence (MRS)",
-        "Toulouse-Blagnac (TLS)",
-        "Nantes Atlantique (NTE)",
-        "Bordeaux Mérignac (BOD)",
-        "Rome Fiumicino (FCO)",
-        "Rome Ciampino (CIA)",
-        "Milan Malpensa (MXP)",
-        "Milan Linate (LIN)",
-        "Venice Marco Polo (VCE)",
-        "Naples (NAP)",
-        "Bologna (BLQ)",
-        "Pisa (PSA)",
-        "Florence (FLR)",
-        "Catania (CTA)",
-        "Palermo (PMO)",
-        "Lisbon (LIS)",
-        "Porto (OPO)",
-        "Faro (FAO)",
-        "Madeira Funchal (FNC)",
-        "Ponta Delgada Azores (PDL)",
-        "Athens (ATH)",
-        "Thessaloniki (SKG)",
-        "Heraklion (HER)",
-        "Rhodes (RHO)",
-        "Kos (KGS)",
-        "Corfu (CFU)",
-        "Santorini (JTR)",
-        "Mykonos (JMK)",
-        "Zakynthos (ZTH)",
-        "Kefalonia (EFL)",
-        "Larnaca (LCA)",
-        "Paphos (PFO)",
-        "Amsterdam Schiphol (AMS)",
-        "Frankfurt (FRA)",
-        "Munich (MUC)",
-        "Berlin Brandenburg (BER)",
-        "Düsseldorf (DUS)",
-        "Hamburg (HAM)",
-        "Cologne Bonn (CGN)",
-        "Brussels Zaventem (BRU)",
-        "Copenhagen (CPH)",
-        "Stockholm Arlanda (ARN)",
-        "Gothenburg Landvetter (GOT)",
-        "Oslo Gardermoen (OSL)",
-        "Dublin (DUB)",
-        "Cork (ORK)",
-        "Shannon (SNN)",
-        "Geneva (GVA)",
-        "Zurich (ZRH)",
-        "Dubai (DXB)",
-        "Istanbul (IST)",
-        "Doha Hamad (DOH)",
-        "New York JFK (JFK)",
-        "Toronto Pearson (YYZ)",
-        "Bangkok Suvarnabhumi (BKK)",
-        "Singapore Changi (SIN)"
-      ];
-
-      ['depAirport', 'arrAirport'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (!sel) return;            // skip if element not found
-        sel.innerHTML = '<option value="">Select an airport</option>';
-        airportList.forEach(airport => {
-          sel.appendChild(new Option(airport, airport));
-        });
-      });
-    });
-  </script>
-
+  <footer class="bg-blue-900 text-white text-center py-6 w-full">
+    <p class="mb-2">© 2025 Quaerens Ltd. All rights reserved.</p>
+    <p>
+      <a href="#" class="underline">Privacy Policy</a> |
+      <a href="#" class="underline">Terms of Use</a> |
+      <a href="#" class="underline">GDPR</a> |
+      <a href="#" class="underline">Contact Us</a>
+    </p>
+  </footer>
 </body>
 </html>
