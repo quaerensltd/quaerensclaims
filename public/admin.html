@@ -365,13 +365,14 @@ if (summaryElement) {
   summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
 }
 
-    window.updateStatus = async function (id, newStatus) {
-      const ref = doc(db, "claims", id);
-      await updateDoc(ref, { status: newStatus });
-      loadClaims();
-    };
+window.updateStatus = async function (id, newStatus) {
+  const ref = doc(db, "claims", id);
+  await updateDoc(ref, { status: newStatus });
+  loadClaims();
+};
 
-    window.deleteClaim = async function (id) {
+// Delete claim
+window.deleteClaim = async function (id) {
   if (confirm("Are you sure you want to delete this claim? This action cannot be undone.")) {
     await deleteDoc(doc(db, "claims", id));
     showToast("🗑️ Claim deleted.");
@@ -379,15 +380,16 @@ if (summaryElement) {
   }
 };
 
-    function extractField(html, label) {
-      const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
-      return match ? match[1] : "-";
-    }
+// Optional: extract fields from HTML (used if parsing inner HTML or templates)
+function extractField(html, label) {
+  const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
+  return match ? match[1] : "-";
+}
 
-    function extractAttachment(html) {
-      const match = html?.match(/<a href=\"(.*?)\".*?>View File<\/a>/i);
-      return match ? `<a href="${match[1]}" target="_blank">Download</a>` : "-";
-    }
+function extractAttachment(html) {
+  const match = html?.match(/<a href="(.*?)".*?>View File<\/a>/i);
+  return match ? `<a href="${match[1]}" target="_blank">Download</a>` : "-";
+}
 
     window.exportCSV = function () {
   const rows = [[
