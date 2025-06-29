@@ -632,97 +632,97 @@ document.getElementById("airline").addEventListener("input", function () {
   });
 
   <script>
-    // 6) Form submission
-    document.getElementById("claim-letter-form").addEventListener("submit", async e => {
-      e.preventDefault();
-  
-      // Gather fields
-      const fullName     = document.getElementById("fullName").value.trim();
-      const flightNumber = document.getElementById("flightNumber").value.trim();
-      const bookingRef   = document.getElementById("bookingRef").value.trim();
-      const iban         = document.getElementById("iban").value.trim();
-      const flightDate   = document.getElementById("flightDate").value;
-      const depAirport   = document.getElementById("depAirport").value.trim();
-      const arrAirport   = document.getElementById("arrAirport").value.trim();
-      const airline      = document.getElementById("airline").value;
-      const reasonCode   = document.getElementById("reason").value;
-      const reason       = reasonLabels[reasonCode] || "Other";
-      const distance     = document.getElementById("distance").value;
-      const delayDuration= document.getElementById("delayDuration").value;
-      const compensation = calculateCompensation(distance, delayDuration);
-      const language     = document.getElementById("language").value;
-      const email        = document.getElementById("email").value.trim();
-      const handleOption = document.getElementById("handleOption").value;
-      const donation     = document.getElementById("donation").value;
-  
-      // Validate required
-      if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
-        alert("Please fill in all required fields.");
-        return;
+  // 6) Form submission
+  document.getElementById("claim-letter-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Gather fields
+    const fullName     = document.getElementById("fullName").value.trim();
+    const flightNumber = document.getElementById("flightNumber").value.trim();
+    const bookingRef   = document.getElementById("bookingRef").value.trim();
+    const iban         = document.getElementById("iban").value.trim();
+    const flightDate   = document.getElementById("flightDate").value;
+    const depAirport   = document.getElementById("depAirport").value.trim();
+    const arrAirport   = document.getElementById("arrAirport").value.trim();
+    const airline      = document.getElementById("airline").value;
+    const reasonCode   = document.getElementById("reason").value;
+    const reason       = reasonLabels[reasonCode] || "Other";
+    const distance     = document.getElementById("distance").value;
+    const delayDuration= document.getElementById("delayDuration").value;
+    const compensation = calculateCompensation(distance, delayDuration);
+    const language     = document.getElementById("language").value;
+    const email        = document.getElementById("email").value.trim();
+    const handleOption = document.getElementById("handleOption").value;
+    const donation     = document.getElementById("donation").value;
+
+    // Validate required
+    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    // Upload optional file
+    let fileURL = "";
+    const file = document.getElementById("fileUpload").files[0];
+    if (file) {
+      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+      const snap       = await uploadBytes(storageRef, file);
+      fileURL          = await getDownloadURL(snap.ref);
+    }
+
+    // Build claim data
+    const claimData = {
+      fullName,
+      flightNumber,
+      bookingRef,
+      iban,
+      flightDate,
+      depAirport,
+      arrAirport,
+      airline,
+      reason,
+      reasonCode,
+      distance,
+      delayDuration,
+      compensation,
+      language,
+      email,
+      handleOption,
+      donation,
+      fileURL,
+      createdAt: serverTimestamp(),
+      airlineEmail: airlineEmails[airline] || ""
+    };
+
+    try {
+      // Save to Firestore
+      await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+      // Handle PDF / Email / Quaerens processing
+      if (handleOption === "pdf") {
+        generatePDF(claimData);
+      } else if (handleOption === "email") {
+        await fetch(
+          "https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(claimData)
+          }
+        );
+        alert("✅ Your letter has been emailed!");
+      } else {
+        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
       }
-  
-      // Upload optional file
-      let fileURL = "";
-      const file = document.getElementById("fileUpload").files[0];
-      if (file) {
-        const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-        const snap       = await uploadBytes(storageRef, file);
-        fileURL          = await getDownloadURL(snap.ref);
-      }
-  
-      // Build claim data
-      const claimData = {
-        fullName,
-        flightNumber,
-        bookingRef,
-        iban,
-        flightDate,
-        depAirport,
-        arrAirport,
-        airline,
-        reason,
-        reasonCode,
-        distance,
-        delayDuration,
-        compensation,
-        language,
-        email,
-        handleOption,
-        donation,
-        fileURL,
-        createdAt: serverTimestamp(),
-        airlineEmail: airlineEmails[airline] || ""
-      };
-  
-      try {
-        // Save to Firestore
-        await addDoc(collection(db, "flightClaimLetters"), claimData);
-  
-        // Handle PDF / Email / Quaerens processing
-        if (handleOption === "pdf") {
-          generatePDF(claimData);
-        } else if (handleOption === "email") {
-          await fetch(
-            "https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(claimData)
-            }
-          );
-          alert("✅ Your letter has been emailed!");
-        } else {
-          alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-        }
-  
-        // Show confirmation message
-        document.getElementById("claim-letter-result").classList.remove("hidden");
-      } catch (err) {
-        console.error("Error saving claim:", err);
-        alert("Something went wrong. Please try again.");
-      }
-    });
-  </script>  
+
+      // Show confirmation message
+      document.getElementById("claim-letter-result").classList.remove("hidden");
+    } catch (err) {
+      console.error("Error saving claim:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+</script>
 
 <!-- EC261 Claim Letter Generator Heading Only -->
 <section class="bg-blue-50 pt-10 pb-10">
