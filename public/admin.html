@@ -141,15 +141,34 @@
     <div>
       <div class="sticky-bar">
         <div>
+          <label for="collectionSelector">Select Collection:</label>
+          <select id="collectionSelector" onchange="loadClaims()">
+            <option value="claims">Flight Claims</option>
+            <option value="fullServiceRequests">Full Service</option>
+            <option value="checkout">DIY Kit Checkouts</option>
+          </select>
+        
           <button class="button" onclick="submitTestClaim()">Submit Test Claim</button>
           <button class="button" onclick="exportCSV()">📄 Export CSV</button>
           <button class="button" onclick="logout()">Logout</button>
+        
+          <!-- ✅ New: Collection Selector Dropdown -->
+          <label for="collectionSelector">Claim type:</label>
+          <select id="collectionSelector" onchange="loadClaims()" style="margin-right: 1rem;">
+            <option value="claims">General</option>
+            <option value="fullServiceRequests">Full Service</option>
+            <option value="flightClaims">Flight</option>
+          </select>
+        
+          <!-- Existing: Status Filter -->
           <label for="statusFilter">Filter by status:</label>
           <select id="statusFilter" onchange="loadClaims()">
             <option value="all">All</option>
             <option value="pending">Pending</option>
             <option value="resolved">Resolved</option>
           </select>
+        
+          <!-- Search Input + Summary -->
           <div style="margin: 1rem 0;">
             <input
               type="text"
@@ -160,22 +179,12 @@
             />
             <p id="claimSummary" style="margin: 0; font-weight: 500;"></p>
           </div>
+        </div>        
 
           <div class="table-container">
             <table>
-              <thead>
-                <tr>
-                  <th onclick="sortTable(0)" style="cursor:pointer;">Date</th>
-                  <th onclick="sortTable(1)" style="cursor:pointer;">Name</th>
-                  <th onclick="sortTable(2)" style="cursor:pointer;">Email</th>
-                  <th onclick="sortTable(3)" style="cursor:pointer;">Type</th>
-                  <th onclick="sortTable(4)" style="cursor:pointer;">Phone</th>
-                  <th onclick="sortTable(5)" style="cursor:pointer;">Details</th>
-                  <th onclick="sortTable(6)" style="cursor:pointer;">Status</th>
-                  <th>Change</th>
-                  <th>Attachment</th>
-                  <th>Actions</th>
-                </tr>
+              <thead id="claimsHeader">
+                <!-- Header will be injected dynamically -->
               </thead>
               <tbody id="claimsBody"></tbody>
             </table>
@@ -279,6 +288,29 @@ window.sortTable = function (columnIndex) {
   updateHeaderArrows(columnIndex);
 };
 
+function updateTableHeader(collection) {
+  const header = document.getElementById("claimsHeader");
+  if (!header) return;
+
+  let headers = [];
+
+  if (collection === "claims") {
+    headers = ["Date", "Name", "Email", "Type", "Phone", "Details", "Status", "Change", "Attachment", "Actions"];
+  } else if (collection === "checkout") {
+    headers = ["Date", "Name", "Email", "Country", "Phone", "Details", "Status", "Change", "Attachment", "Actions"];
+  } else if (collection === "fullServiceRequests") {
+    headers = ["Date", "Title", "Name", "Email", "Phone", "Resort", "Details", "Status", "Change", "Attachment", "Actions"];
+  } else {
+    headers = ["Date", "Name", "Email", "Type", "Phone", "Details", "Status", "Change", "Attachment", "Actions"];
+  }
+
+  header.innerHTML = `
+    <tr>
+      ${headers.map(h => `<th onclick="sortTable(${headers.indexOf(h)})" style="cursor:pointer;">${h}</th>`).join("")}
+    </tr>
+  `;
+}
+
 function updateHeaderArrows(activeIndex) {
   const headers = document.querySelectorAll("thead th");
   headers.forEach((th, i) => {
@@ -292,41 +324,45 @@ function updateHeaderArrows(activeIndex) {
 }
 
 async function loadClaims() {
-      const filter = document.getElementById("statusFilter").value;
-      const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
-      const claimsQuery = query(collection(db, "claims"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(claimsQuery);
-      table.innerHTML = "";
-      let total = 0;
-      let pending = 0;
-      let resolved = 0;
+  updateTableHeader(document.getElementById("collectionSelector").value || "claims");
+  
+  const filter = document.getElementById("statusFilter").value;
+  const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
+  const selectedCollection = document.getElementById("collectionSelector").value || "claims";
 
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
+  const claimsQuery = query(collection(db, selectedCollection), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(claimsQuery);
 
-        const matchesSearch =
-          (data.name || "").toLowerCase().includes(searchTerm) ||
-          (data.email || "").toLowerCase().includes(searchTerm) ||
-          (data.type || "").toLowerCase().includes(searchTerm);
+  table.innerHTML = "";
+  let total = 0;
+  let pending = 0;
+  let resolved = 0;
 
-        // Apply filter by status and search term
-        if (
-          (filter !== "all" && data.status !== filter) ||
-          (searchTerm && !matchesSearch)
-        ) {
-          return;
-        }
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
 
-        total++;
-        if (data.status === "pending") pending++;
-        if (data.status === "resolved") resolved++;
+    const matchesSearch =
+      (data.name || "").toLowerCase().includes(searchTerm) ||
+      (data.email || "").toLowerCase().includes(searchTerm) ||
+      (data.type || "").toLowerCase().includes(searchTerm);
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
+    if (
+      (filter !== "all" && data.status !== filter) ||
+      (searchTerm && !matchesSearch)
+    ) {
+      return;
+    }
+
+    total++;
+    if (data.status === "pending") pending++;
+    if (data.status === "resolved") resolved++;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
 <td>${data.createdAt?.toDate().toLocaleString() || "-"}</td>
 <td>${data.name || "-"}</td>
 <td>${data.email || "-"}</td>
-<td>${data.type || "-"}</td>
+<td>${data.type || data.resort || "-"}</td>
 <td>${data.phone || "-"}</td>
 <td>${data.details || "-"}</td>
 <td>
@@ -354,29 +390,29 @@ async function loadClaims() {
   <a href="/claim-detail.html?id=${docSnap.id}&pdf=true" target="_blank">PDF</a>
   <a href="#" onclick="deleteClaim('${docSnap.id}')" style="color:red;">Delete</a>
 </td>
-        `;
-        table.appendChild(row);
-      });
+    `;
+    table.appendChild(row);
+  });
 
-      const summaryElement = document.getElementById("claimSummary");
-      if (summaryElement) {
-        summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
-      }
-    }
+  const summaryElement = document.getElementById("claimSummary");
+  if (summaryElement) {
+    summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
+  }
 
-    window.updateStatus = async function (id, newStatus) {
-      const ref = doc(db, "claims", id);
-      await updateDoc(ref, { status: newStatus });
+  window.updateStatus = async function (id, newStatus) {
+    const ref = doc(db, selectedCollection, id);
+    await updateDoc(ref, { status: newStatus });
+    loadClaims();
+  };
+
+  window.deleteClaim = async function (id) {
+    if (confirm("Are you sure you want to delete this claim?")) {
+      await deleteDoc(doc(db, selectedCollection, id));
+      showToast("🗑️ Claim deleted.");
       loadClaims();
-    };
-
-    window.deleteClaim = async function (id) {
-      if (confirm("Are you sure you want to delete this claim? This action cannot be undone.")) {
-        await deleteDoc(doc(db, "claims", id));
-        showToast("🗑️ Claim deleted.");
-        loadClaims();
-      }
-    };
+    }
+  };
+}
 
     function extractField(html, label) {
       const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
