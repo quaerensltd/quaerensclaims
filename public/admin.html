@@ -198,7 +198,41 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     let currentSortField = 'createdAt';
-let currentSortDirection = 'desc'; 
+    let currentSortDirection = 'desc'; 
+
+    window.login = function () {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      document.getElementById("loginStatus").innerText = "✅ Logged in.";
+    })
+    .catch(error => {
+      document.getElementById("loginStatus").innerText = "❌ " + (error.message || "Login failed.");
+    });
+};
+
+onAuthStateChanged(auth, user => {
+  const loginForm = document.getElementById("loginForm");
+  const adminContent = document.getElementById("adminContent");
+
+  if (user) {
+    loginForm.style.display = "none";
+    adminContent.style.display = "block";
+    loadClaims(); // Only load data if user is logged in
+  } else {
+    loginForm.style.display = "block";
+    adminContent.style.display = "none";
+  }
+});
+window.logout = function () {
+  signOut(auth).then(() => {
+    console.log("Signed out successfully.");
+  }).catch((error) => {
+    console.error("Error signing out:", error);
+  });
+};
 
     const loginForm = document.getElementById("loginForm");
     const adminContent = document.getElementById("adminContent");
