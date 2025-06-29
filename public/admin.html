@@ -19,18 +19,29 @@
       margin-bottom: 1.5rem;
     }
     table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.table-container {
+  overflow-x: auto;
+  max-height: 70vh;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+}
     th, td {
       border: 1px solid #e5e7eb;
       padding: 0.75rem;
       text-align: left;
     }
     th {
-      background-color: #f9fafb;
-    }
+  background-color: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
     tr:nth-child(even) {
       background-color: #f3f4f6;
     }
@@ -101,6 +112,15 @@
     .logo {
       height: 40px;
     }
+    .sticky-bar {
+  position: sticky;
+  top: 0;
+  background: #f3f4f6;
+  z-index: 10;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
   </style>
 </head>
 <body>
@@ -119,33 +139,47 @@
 
   <div style="display:none" id="adminContent">
     <div>
-      <button class="button" onclick="submitTestClaim()">Submit Test Claim</button>
-      <button class="button" onclick="exportCSV()">Export CSV</button>
-      <button class="button" onclick="logout()">Logout</button>
-      <label for="statusFilter">Filter by status:</label>
-      <select id="statusFilter" onchange="loadClaims()">
-        <option value="all">All</option>
-        <option value="pending">Pending</option>
-        <option value="resolved">Resolved</option>
-      </select>
-    </div>
+      <div class="sticky-bar">
+        <div>
+          <button class="button" onclick="submitTestClaim()">Submit Test Claim</button>
+          <button class="button" onclick="exportCSV()">📄 Export CSV</button>
+          <button class="button" onclick="logout()">Logout</button>
+          <label for="statusFilter">Filter by status:</label>
+          <select id="statusFilter" onchange="loadClaims()">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <div style="margin: 1rem 0;">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search name, email, or type..."
+              style="padding: 0.5rem; width: 100%; max-width: 300px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 0.5rem;"
+              oninput="loadClaims()"
+            />
+            <p id="claimSummary" style="margin: 0; font-weight: 500;"></p>
+          </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Type</th>
-          <th>Status</th>
-          <th>Change</th>
-          <th>Attachment</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="claimsBody"></tbody>
-    </table>
-  </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0)" style="cursor:pointer;">Date</th>
+                  <th onclick="sortTable(1)" style="cursor:pointer;">Name</th>
+                  <th onclick="sortTable(2)" style="cursor:pointer;">Email</th>
+                  <th onclick="sortTable(3)" style="cursor:pointer;">Type</th>
+                  <th onclick="sortTable(4)" style="cursor:pointer;">Phone</th>
+                  <th onclick="sortTable(5)" style="cursor:pointer;">Details</th>
+                  <th onclick="sortTable(6)" style="cursor:pointer;">Status</th>
+                  <th>Change</th>
+                  <th>Attachment</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="claimsBody"></tbody>
+            </table>
+          </div>
 
   <div id="toast"></div>
 
@@ -163,6 +197,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    let currentSortField = 'createdAt';
+let currentSortDirection = 'desc'; 
 
     const loginForm = document.getElementById("loginForm");
     const adminContent = document.getElementById("adminContent");
@@ -187,6 +223,28 @@
       }
     });
 
+    window.sortTable = function (columnIndex) {
+  const table = document.querySelector("table");
+  const tbody = table.querySelector("tbody");
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+
+  const sortedRows = rows.sort((a, b) => {
+    const aText = a.children[columnIndex].textContent.trim().toLowerCase();
+    const bText = b.children[columnIndex].textContent.trim().toLowerCase();
+
+    // Special case: sort by date (column 0)
+    if (columnIndex === 0) {
+      return new Date(bText) - new Date(aText);
+    }
+
+    return aText.localeCompare(bText);
+  });
+
+  tbody.innerHTML = "";
+  sortedRows.forEach(row => tbody.appendChild(row));
+};
+
+
     window.login = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
@@ -203,39 +261,128 @@
       });
     };
 
+    let currentSortColumn = null;
+let currentSortDirection = "asc";
+
+window.sortTable = function (columnIndex) {
+  const table = document.querySelector("table");
+  const rows = Array.from(table.rows).slice(1); // exclude header row
+
+  const type = table.rows[0].cells[columnIndex].textContent.trim();
+  const isDate = type === "Date";
+
+  rows.sort((a, b) => {
+    const aText = a.cells[columnIndex].textContent.trim();
+    const bText = b.cells[columnIndex].textContent.trim();
+
+    if (isDate) {
+      return new Date(aText) - new Date(bText);
+    } else {
+      return aText.localeCompare(bText, undefined, { numeric: true });
+    }
+  });
+
+  if (currentSortColumn === columnIndex && currentSortDirection === "asc") {
+    rows.reverse();
+    currentSortDirection = "desc";
+  } else {
+    currentSortDirection = "asc";
+  }
+
+  currentSortColumn = columnIndex;
+
+  const tbody = table.querySelector("tbody");
+  tbody.innerHTML = "";
+  rows.forEach(row => tbody.appendChild(row));
+
+  updateHeaderArrows(columnIndex);
+};
+
+function updateHeaderArrows(activeIndex) {
+  const headers = document.querySelectorAll("thead th");
+  headers.forEach((th, i) => {
+    const baseText = th.textContent.replace(/[\u25B2\u25BC]/g, "").trim(); // remove old arrows
+    if (i === activeIndex) {
+      th.innerHTML = baseText + (currentSortDirection === "asc" ? " ▲" : " ▼");
+    } else {
+      th.innerHTML = baseText;
+    }
+  });
+}
+
     async function loadClaims() {
-      const filter = document.getElementById("statusFilter").value;
-      const claimsQuery = query(collection(db, "claims"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(claimsQuery);
-      table.innerHTML = "";
+  const filter = document.getElementById("statusFilter").value;
+  const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
+  const claimsQuery = query(collection(db, "claims"), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(claimsQuery);
+  table.innerHTML = "";
+  let total = 0;
+  let pending = 0;
+  let resolved = 0;
 
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (filter !== "all" && data.status !== filter) return;
+  snapshot.forEach(docSnap => {
+  const data = docSnap.data();
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${data.createdAt?.toDate().toLocaleString() || "-"}</td>
-          <td>${extractField(data.html, "Name")}</td>
-          <td>${data.to}</td>
-          <td>${extractField(data.html, "Claim Type")}</td>
-          <td>${data.status || "pending"}</td>
-          <td>
-            <select class="status-select" onchange="updateStatus('${docSnap.id}', this.value)">
-              <option value="pending" ${data.status === "pending" ? "selected" : ""}>Pending</option>
-              <option value="resolved" ${data.status === "resolved" ? "selected" : ""}>Resolved</option>
-            </select>
-          </td>
-          <td>${extractAttachment(data.html)}</td>
-          <td>
+  const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
+  const matchesSearch =
+    (data.name || "").toLowerCase().includes(searchTerm) ||
+    (data.email || "").toLowerCase().includes(searchTerm) ||
+    (data.type || "").toLowerCase().includes(searchTerm);
+
+  // Apply filter by status and search term
+  if (
+    (filter !== "all" && data.status !== filter) ||
+    (searchTerm && !matchesSearch)
+  ) {
+    return;
+  }
+
+  total++;
+  if (data.status === "pending") pending++;
+  if (data.status === "resolved") resolved++;
+
+  const row = document.createElement("tr");
+  row.innerHTML = `
+<td>${data.createdAt?.toDate().toLocaleString() || "-"}</td>
+<td>${data.name || "-"}</td>
+<td>${data.email || "-"}</td>
+<td>${data.type || "-"}</td>
+<td>${data.phone || "-"}</td>
+<td>${data.details || "-"}</td>
+<td>
+  <span style="
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    background-color: ${data.status === 'resolved' ? '#10b981' : '#f59e0b'};
+  ">
+    ${data.status === 'resolved' ? 'Resolved' : 'Pending'}
+  </span>
+</td>
+<td>
+  <select class="status-select" onchange="updateStatus('${docSnap.id}', this.value)">
+    <option value="pending" ${data.status === "pending" ? "selected" : ""}>Pending</option>
+    <option value="resolved" ${data.status === "resolved" ? "selected" : ""}>Resolved</option>
+  </select>
+</td>
+<td>${data.fileUrl ? `<a href="${data.fileUrl}" target="_blank">Download</a>` : "-"}</td>
+<td>
   <a href="/claim-detail.html?id=${docSnap.id}" target="_blank">View</a>
   <a href="/claim-detail.html?id=${docSnap.id}&pdf=true" target="_blank">PDF</a>
   <a href="#" onclick="deleteClaim('${docSnap.id}')" style="color:red;">Delete</a>
 </td>
-        `;
-        table.appendChild(row);
-      });
-    }
+  `;
+  table.appendChild(row);
+});
+
+// Update the claim summary text
+const summaryElement = document.getElementById("claimSummary");
+if (summaryElement) {
+  summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
+}
 
     window.updateStatus = async function (id, newStatus) {
       const ref = doc(db, "claims", id);
@@ -262,48 +409,75 @@
     }
 
     window.exportCSV = function () {
-      const rows = [["Date", "Name", "Email", "Type", "Status"]];
-      const tableRows = document.getElementById("claimsBody").querySelectorAll("tr");
-      tableRows.forEach(tr => {
-        const cells = tr.querySelectorAll("td");
-        if (cells.length >= 5) {
-          rows.push([
-            cells[0].innerText,
-            cells[1].innerText,
-            cells[2].innerText,
-            cells[3].innerText,
-            cells[4].innerText
-          ]);
-        }
-      });
-      const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "claims.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    };
+  const rows = [[
+    "Date",
+    "Name",
+    "Email",
+    "Type",
+    "Phone",
+    "Details",
+    "Status",
+    "Attachment URL",
+    "Claim View URL",
+    "PDF URL"
+  ]];
 
-    window.submitTestClaim = async function () {
-      const random = Math.floor(Math.random() * 10000);
-      const html = `
-        <p><strong>Name:</strong> Test User ${random}</p>
-        <p><strong>Phone:</strong> +441234567890</p>
-        <p><strong>Claim Type:</strong> Test Submission</p>
-        <p><strong>Details:</strong> This is a test claim to verify the system end-to-end.</p>
-      `;
-      await addDoc(collection(db, "claims"), {
-        to: "test@quaerens.co.uk",
-        subject: "Test Claim Submission",
-        html,
-        createdAt: Timestamp.now(),
-        status: "pending"
+  const tableRows = document.getElementById("claimsBody").querySelectorAll("tr");
+  tableRows.forEach(tr => {
+    const cells = tr.querySelectorAll("td");
+    if (cells.length >= 10) {
+      const clean = text => `"${text?.replace(/\n/g, ' ').replace(/"/g, '""') || "-"}"`;
+
+      const attachmentLink = cells[8].querySelector('a')?.href || "-";
+      const claimLinks = cells[9].querySelectorAll('a');
+      let viewLink = "-", pdfLink = "-";
+
+      claimLinks.forEach(link => {
+        if (link.href.includes("&pdf=true")) pdfLink = link.href;
+        else if (link.href.includes("claim-detail.html")) viewLink = link.href;
       });
-      showToast("✅ Test claim submitted.");
-      loadClaims();
-    };
+
+      rows.push([
+        clean(cells[0].innerText), // Date
+        clean(cells[1].innerText), // Name
+        clean(cells[2].innerText), // Email
+        clean(cells[3].innerText), // Type
+        clean(cells[4].innerText), // Phone
+        clean(cells[5].innerText), // Details
+        clean(cells[6].innerText), // Status
+        clean(attachmentLink),
+        clean(viewLink),
+        clean(pdfLink)
+      ]);
+    }
+  });
+
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "claims.csv";
+  a.click();
+  showToast("📄 CSV downloaded");
+  URL.revokeObjectURL(url);
+};
+
+window.submitTestClaim = async function () {
+  const random = Math.floor(Math.random() * 10000);
+  await addDoc(collection(db, "claims"), {
+    name: `Test User ${random}`,
+    email: `test${random}@email.com`,
+    phone: "+441234567890",
+    type: "Test Submission",
+    details: "This is a test claim to verify the system end-to-end.",
+    fileUrl: "",
+    createdAt: Timestamp.now(),
+    status: "pending"
+  });
+  showToast("✅ Test claim submitted.");
+  loadClaims();
+};
 
     loadClaims();
   </script>
