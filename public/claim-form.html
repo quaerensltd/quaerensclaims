@@ -375,132 +375,19 @@ other: "Other"
       });
 
       y += 4;
-      const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
-      doc.text(closingLines, 10, y);
-      y += closingLines.length * 6;
+    const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+    doc.text(closingLines, 10, y);
+    y += closingLines.length * 6;
 
-      doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
-      doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-    }
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text(t.footer, 10, 290);
 
-    insertHeader();
+    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
   }
 
-  <script>
-// 5) Logo preview
-document.getElementById("airline").addEventListener("input", function () {
-  const airlineName = this.value;
-  const logoPath = airlineLogos[airlineName] || "";
-  const preview = document.getElementById("airlineLogoPreview");
-  if (logoPath) {
-    preview.innerHTML = '<img src="' + logoPath + '" alt="' + airlineName + ' Logo" class="mx-auto h-12 md:h-16 mt-2">';
-  } else {
-    preview.innerHTML = '';
-  }
-});
-</script>
-
-<script>
-  // 5.5) Populate departure & arrival selects
-  document.addEventListener('DOMContentLoaded', () => {
-    const airportList = [
-      "London Heathrow (LHR)",
-      "London Gatwick (LGW)",
-      "London Stansted (STN)",
-      "London Luton (LTN)",
-      "Manchester (MAN)",
-      "Birmingham (BHX)",
-      "Edinburgh (EDI)",
-      "Glasgow (GLA)",
-      "Bristol (BRS)",
-      "Leeds Bradford (LBA)",
-      "Newcastle (NCL)",
-      "East Midlands (EMA)",
-      "Liverpool (LPL)",
-      "Madrid Barajas (MAD)",
-      "Barcelona El Prat (BCN)",
-      "Malaga (AGP)",
-      "Palma de Mallorca (PMI)",
-      "Alicante (ALC)",
-      "Gran Canaria (LPA)",
-      "Tenerife South (TFS)",
-      "Tenerife North (TFN)",
-      "Ibiza (IBZ)",
-      "Fuerteventura (FUE)",
-      "Menorca (MAH)",
-      "Bilbao (BIO)",
-      "Paris Charles de Gaulle (CDG)",
-      "Paris Orly (ORY)",
-      "Nice Côte d'Azur (NCE)",
-      "Lyon Saint-Exupéry (LYS)",
-      "Marseille Provence (MRS)",
-      "Toulouse-Blagnac (TLS)",
-      "Nantes Atlantique (NTE)",
-      "Bordeaux Mérignac (BOD)",
-      "Rome Fiumicino (FCO)",
-      "Rome Ciampino (CIA)",
-      "Milan Malpensa (MXP)",
-      "Milan Linate (LIN)",
-      "Venice Marco Polo (VCE)",
-      "Naples (NAP)",
-      "Bologna (BLQ)",
-      "Pisa (PSA)",
-      "Florence (FLR)",
-      "Catania (CTA)",
-      "Palermo (PMO)",
-      "Lisbon (LIS)",
-      "Porto (OPO)",
-      "Faro (FAO)",
-      "Madeira Funchal (FNC)",
-      "Ponta Delgada Azores (PDL)",
-      "Athens (ATH)",
-      "Thessaloniki (SKG)",
-      "Heraklion (HER)",
-      "Rhodes (RHO)",
-      "Kos (KGS)",
-      "Corfu (CFU)",
-      "Santorini (JTR)",
-      "Mykonos (JMK)",
-      "Zakynthos (ZTH)",
-      "Kefalonia (EFL)",
-      "Larnaca (LCA)",
-      "Paphos (PFO)",
-      "Amsterdam Schiphol (AMS)",
-      "Frankfurt (FRA)",
-      "Munich (MUC)",
-      "Berlin Brandenburg (BER)",
-      "Düsseldorf (DUS)",
-      "Hamburg (HAM)",
-      "Cologne Bonn (CGN)",
-      "Brussels Zaventem (BRU)",
-      "Copenhagen (CPH)",
-      "Stockholm Arlanda (ARN)",
-      "Gothenburg Landvetter (GOT)",
-      "Oslo Gardermoen (OSL)",
-      "Dublin (DUB)",
-      "Cork (ORK)",
-      "Shannon (SNN)",
-      "Geneva (GVA)",
-      "Zurich (ZRH)",
-      "Dubai (DXB)",
-      "Istanbul (IST)",
-      "Doha Hamad (DOH)",
-      "New York JFK (JFK)",
-      "Toronto Pearson (YYZ)",
-      "Bangkok Suvarnabhumi (BKK)",
-      "Singapore Changi (SIN)"
-    ];
-
-    ['depAirport', 'arrAirport'].forEach(id => {
-      const sel = document.getElementById(id);
-      if (!sel) return;
-      sel.innerHTML = '<option value="">Select an airport</option>';
-      airportList.forEach(ap => {
-        sel.appendChild(new Option(ap, ap));
-      });
-    });
-  });
-</script>
+  insertHeader();
+}
 
 <script>
   // 6) Form submission
@@ -566,20 +453,36 @@ document.getElementById("airline").addEventListener("input", function () {
     };
 
     // 5) Firestore + post‐submit flow
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('claim-letter-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // …your existing code that gathers all form values into the `claimData` object…
+
+    // 5) Firestore + post-submit flow
     try {
       await addDoc(collection(db, "flightClaimLetters"), claimData);
 
-      if (handleOption === "pdf") {
-        generatePDF(claimData);
-      } else if (handleOption === "email") {
-        await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(claimData)
-        });
-        alert("✅ Your letter has been emailed!");
-      } else if (handleOption === "quaerens") {
-        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+      switch (claimData.handleOption) {
+        case 'pdf':
+          generatePDF(claimData);
+          break;
+        case 'email':
+          await fetch(
+            "https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(claimData)
+            }
+          );
+          alert("✅ Your letter has been emailed!");
+          break;
+        case 'quaerens':
+          alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+          break;
       }
 
       document.getElementById("claim-letter-result").classList.remove("hidden");
@@ -589,19 +492,10 @@ document.getElementById("airline").addEventListener("input", function () {
     }
   });
 });
+</script>
 
+<!-- 6) Form submission -->
 <script>
-  // 5) Logo preview (kept from Step 1)
-  document.getElementById("airline").addEventListener("input", function () {
-    const airlineName = this.value;
-    const logoPath = airlineLogos[airlineName];
-    const preview = document.getElementById("airlineLogoPreview");
-    preview.innerHTML = logoPath
-      ? `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`
-      : "";
-  });
-
-  <script>
 document.addEventListener('DOMContentLoaded', () => {
   // 6) Form submission
   const form = document.getElementById("claim-letter-form");
@@ -755,11 +649,160 @@ document.addEventListener('DOMContentLoaded', () => {
       <select id="arrAirport" class="w-full border p-2 rounded" required>
         <option value="">Select an arrival airport</option>
       </select>
+
     </div>
-    <div>
-      <label for="airline" class="font-semibold">Airline</label>
-      <select id="airline" class="w-full border p-2 rounded" required>
-  <option value="">Select an airline</option>
+
+<!-- 5.5) Populate departure & arrival selects -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const airportList = [
+      "London Heathrow (LHR)",
+      "London Gatwick (LGW)",
+      "London Stansted (STN)",
+      "London Luton (LTN)",
+      "Manchester (MAN)",
+      "Birmingham (BHX)",
+      "Edinburgh (EDI)",
+      "Glasgow (GLA)",
+      "Bristol (BRS)",
+      "Leeds Bradford (LBA)",
+      "Newcastle (NCL)",
+      "East Midlands (EMA)",
+      "Liverpool (LPL)",
+      "Madrid Barajas (MAD)",
+      "Barcelona El Prat (BCN)",
+      "Malaga (AGP)",
+      "Palma de Mallorca (PMI)",
+      "Alicante (ALC)",
+      "Gran Canaria (LPA)",
+      "Tenerife South (TFS)",
+      "Tenerife North (TFN)",
+      "Ibiza (IBZ)",
+      "Fuerteventura (FUE)",
+      "Menorca (MAH)",
+      "Bilbao (BIO)",
+      "Paris Charles de Gaulle (CDG)",
+      "Paris Orly (ORY)",
+      "Nice Côte d'Azur (NCE)",
+      "Lyon Saint-Exupéry (LYS)",
+      "Marseille Provence (MRS)",
+      "Toulouse-Blagnac (TLS)",
+      "Nantes Atlantique (NTE)",
+      "Bordeaux Mérignac (BOD)",
+      "Rome Fiumicino (FCO)",
+      "Rome Ciampino (CIA)",
+      "Milan Malpensa (MXP)",
+      "Milan Linate (LIN)",
+      "Venice Marco Polo (VCE)",
+      "Naples (NAP)",
+      "Bologna (BLQ)",
+      "Pisa (PSA)",
+      "Florence (FLR)",
+      "Catania (CTA)",
+      "Palermo (PMO)",
+      "Lisbon (LIS)",
+      "Porto (OPO)",
+      "Faro (FAO)",
+      "Madeira Funchal (FNC)",
+      "Ponta Delgada Azores (PDL)",
+      "Athens (ATH)",
+      "Thessaloniki (SKG)",
+      "Heraklion (HER)",
+      "Rhodes (RHO)",
+      "Kos (KGS)",
+      "Corfu (CFU)",
+      "Santorini (JTR)",
+      "Mykonos (JMK)",
+      "Zakynthos (ZTH)",
+      "Kefalonia (EFL)",
+      "Larnaca (LCA)",
+      "Paphos (PFO)",
+      "Amsterdam Schiphol (AMS)",
+      "Frankfurt (FRA)",
+      "Munich (MUC)",
+      "Berlin Brandenburg (BER)",
+      "Düsseldorf (DUS)",
+      "Hamburg (HAM)",
+      "Cologne Bonn (CGN)",
+      "Brussels Zaventem (BRU)",
+      "Copenhagen (CPH)",
+      "Stockholm Arlanda (ARN)",
+      "Gothenburg Landvetter (GOT)",
+      "Oslo Gardermoen (OSL)",
+      "Dublin (DUB)",
+      "Cork (ORK)",
+      "Shannon (SNN)",
+      "Geneva (GVA)",
+      "Zurich (ZRH)",
+      "Dubai (DXB)",
+      "Istanbul (IST)",
+      "Doha Hamad (DOH)",
+      "New York JFK (JFK)",
+      "Toronto Pearson (YYZ)",
+      "Bangkok Suvarnabhumi (BKK)",
+      "Singapore Changi (SIN)"
+    ];
+
+    ['depAirport','arrAirport'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.innerHTML = '<option value="">Select an airport</option>';
+      airportList.forEach(ap => sel.appendChild(new Option(ap, ap)));
+    });
+  });
+</script>
+
+<!-- 6) Form submission handler -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById("claim-letter-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const claimData = {
+        fullName: document.getElementById("fullName").value,
+        email: document.getElementById("email").value,
+        flightNumber: document.getElementById("flightNumber").value,
+        depAirport: document.getElementById("depAirport").value,
+        arrAirport: document.getElementById("arrAirport").value,
+        airline: document.getElementById("airline").value,
+        handleOption: document.querySelector('input[name="handleOption"]:checked')?.value || "pdf",
+        timestamp: firebaseUtils.serverTimestamp()
+      };
+
+      try {
+        await firebaseUtils.addDoc(firebaseUtils.collection(db, "flightClaimLetters"), claimData);
+
+        switch (claimData.handleOption) {
+          case 'pdf':
+            generatePDF(claimData);
+            break;
+          case 'email':
+            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(claimData)
+            });
+            alert("✅ Your letter has been emailed!");
+            break;
+          case 'quaerens':
+            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+            break;
+        }
+
+        document.getElementById("claim-letter-result").classList.remove("hidden");
+      } catch (err) {
+        console.error("Error saving claim:", err);
+        alert("Something went wrong. Please try again.");
+      }
+    });
+  });
+</script>
+
+<div>
+  <label for="airline" class="font-semibold">Airline</label>
+  <select id="airline" class="w-full border p-2 rounded" required>
+    <option value="">Select an airline</option>
 
   <!-- A -->
   <option value="Aegean Airlines">Aegean Airlines</option>
@@ -805,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <option value="El Al Israel Airlines">El Al Israel Airlines</option>
   <option value="Emirates">Emirates</option>
   <option value="Etihad Airways">Etihad Airways</option>
-  <option value="EVA Air">EVA Air>"
+  <option value="EVA Air">EVA Air</option>
 
   <!-- F -->
   <option value="Finnair">Finnair</option>
@@ -1312,6 +1355,20 @@ function insertContentAndSave() {
 
   insertHeader();
 }
+</script>
+
+// —————————————————————————————————————————————————
+// 5) Logo preview (keep this **after** airlineLogos is defined)
+// —————————————————————————————————————————————————
+document.getElementById("airline").addEventListener("input", () => {
+  const airlineName = document.getElementById("airline").value;
+  const logoPath    = airlineLogos[airlineName] || "";
+  const preview     = document.getElementById("airlineLogoPreview");
+
+  preview.innerHTML = logoPath
+    ? `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`
+    : "";
+});
 </script>
 
 <!-- Testimonials Section -->
