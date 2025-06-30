@@ -85,22 +85,32 @@
   <script>
 function setLanguage(langPair) {
   if (!langPair) return;
-  var d = window.location.hostname;
 
-  // Clear existing cookies
-  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
-  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + d + '; path=/;';
-  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=.' + d + '; path=/;';
+  var domain = window.location.hostname;
+  var baseDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
+
+  // Clear existing cookies on all domain variations
+  var expireDate = 'Thu, 01 Jan 1970 00:00:01 GMT';
+  document.cookie = 'googtrans=; expires=' + expireDate + '; path=/;';
+  document.cookie = 'googtrans=; expires=' + expireDate + '; domain=' + domain + '; path=/;';
+  document.cookie = 'googtrans=; expires=' + expireDate + '; domain=.' + domain + '; path=/;';
+  document.cookie = 'googtrans=; expires=' + expireDate + '; domain=' + baseDomain + '; path=/;';
+  document.cookie = 'googtrans=; expires=' + expireDate + '; domain=.' + baseDomain + '; path=/;';
 
   var parts = langPair.split('|');
-  var sourceLang = 'auto'; // Always use auto as source to match IP detection
+  var sourceLang = 'auto';
   var targetLang = parts[1];
 
   var newLang = `/${sourceLang}/${targetLang}`;
-  document.cookie = `googtrans=${newLang}; path=/;`;
-  document.cookie = `googtrans=${newLang}; domain=${d}; path=/;`;
-  document.cookie = `googtrans=${newLang}; domain=.${d}; path=/;`;
 
+  // Set cookie on all domain variations
+  document.cookie = `googtrans=${newLang}; path=/;`;
+  document.cookie = `googtrans=${newLang}; domain=${domain}; path=/;`;
+  document.cookie = `googtrans=${newLang}; domain=.${domain}; path=/;`;
+  document.cookie = `googtrans=${newLang}; domain=${baseDomain}; path=/;`;
+  document.cookie = `googtrans=${newLang}; domain=.${baseDomain}; path=/;`;
+
+  // Reload the page after cookies are set
   window.location.reload();
 }
   </script>  
