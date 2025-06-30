@@ -7,9 +7,8 @@
   <title>Flight Delay Compensation | Quaerens</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- ✅ Add Alpine.js here -->
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     body {
@@ -17,11 +16,9 @@
       top: 0px !important;
       position: static !important;
     }
-  
     html {
       margin-top: 0 !important;
     }
-  
     .content-box {
       max-width: 600px;
       margin: 0 auto;
@@ -30,8 +27,7 @@
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
     }
-  
-    /* ✅ HIDE the Google Translate top banner */
+    /* Hide Google Translate top banner and branding */
     .goog-te-banner-frame.skiptranslate,
     .goog-te-gadget-icon,
     .goog-logo-link,
@@ -39,17 +35,14 @@
     body > .skiptranslate {
       display: none !important;
     }
-  
     .goog-te-gadget {
       font-size: 0 !important;
     }
-  
     form label {
       display: block;
       margin-top: 1rem;
       font-weight: 600;
     }
-  
     form input,
     form select {
       width: 100%;
@@ -58,117 +51,107 @@
       border-radius: 6px;
       margin-top: 0.5rem;
     }
-  </style>  
+  </style>
   
-<script>
-  function setLanguage(langPair) {
-    if (!langPair) return;
-    const lang = langPair.split('|')[1];
-    const newLang = '/en/' + lang;
-    document.cookie = 'googtrans=' + newLang + '; path=/';
-    document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
-    location.reload();
-  }
-</script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    function setLanguage(langPair) {
+      if (!langPair) return;
+      const lang = langPair.split('|')[1];
+      const newLang = '/en/' + lang;
+      document.cookie = 'googtrans=' + newLang + '; path=/';
+      document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
+      location.reload();
+    }
+  </script>
 
-<!-- Auto-detect language based on IP (only on first visit) -->
-<script>
-  if (!document.cookie.includes("googtrans")) {
-    fetch("https://ipapi.co/json/")
-      .then(response => response.json())
-      .then(data => {
-        const country = data.country_code;
+  <!-- Auto-detect language based on IP (only on first visit) -->
+  <script>
+    if (!document.cookie.includes("googtrans")) {
+      fetch("https://ipapi.co/json/")
+        .then(response => response.json())
+        .then(data => {
+          const country = data.country_code;
+          const countryLangMap = {
+            FR: "fr",
+            ES: "es",
+            DE: "de",
+            IT: "it",
+            NL: "nl",
+            SE: "sv",
+            GR: "el",
+            DEFAULT: "en"
+          };
+          const lang = countryLangMap[country] || countryLangMap.DEFAULT;
+          const cookieValue = "/en/" + lang;
+          document.cookie = `googtrans=${cookieValue}; path=/`;
+          document.cookie = `googtrans=${cookieValue}; domain=${location.hostname}; path=/`;
+          location.reload();
+        })
+        .catch(error => {
+          console.error("IP geolocation failed:", error);
+        });
+    }
+  </script>
+</head>
 
-        const countryLangMap = {
-          FR: "fr",
-          ES: "es",
-          DE: "de",
-          IT: "it",
-          NL: "nl",
-          SE: "sv",
-          GR: "el",
-          DEFAULT: "en"
-        };
+<body class="bg-gray-50 text-gray-800">
+  <div id="google_translate_element" style="display: none;"></div>
 
-        const lang = countryLangMap[country] || countryLangMap.DEFAULT;
-        const cookieValue = "/en/" + lang;
-
-        document.cookie = `googtrans=${cookieValue}; path=/`;
-        document.cookie = `googtrans=${cookieValue}; domain=${location.hostname}; path=/`;
-
-        location.reload();
-      })
-      .catch(error => {
-        console.error("IP geolocation failed:", error);
-      });
-  }
-</script>
-  </head>
-
-  <body class="bg-gray-50 text-gray-800">
-
-  
-    <div id="google_translate_element" style="display: none;"></div>
-  
-    <!-- Header -->
-    <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-        <a href="/">
-          <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto">
-        </a>
-        <nav>
-
-          <div class="w-full bg-gray-100 text-right p-2">
-            <div x-data="{ open: false }" class="relative inline-block text-left">
-              <button @click="open = !open"
-                      class="inline-flex items-center justify-center rounded border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none">
-                🌐 Language
-                <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l5 5 5-5" />
-                </svg>
-              </button>
-          
-              <div x-show="open" @click.outside="open = false"
-                   class="absolute right-0 mt-2 w-48 rounded-md shadow bg-white text-sm text-gray-700 z-50">
-                <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
-                <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
-                <a href="#" onclick="setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
-                <a href="#" onclick="setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
-                <a href="#" onclick="setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
-                <a href="#" onclick="setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
-                <a href="#" onclick="setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
-                <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
-              </div>
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="/">
+        <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto">
+      </a>
+      <nav>
+        <div class="w-full bg-gray-100 text-right p-2">
+          <div x-data="{ open: false }" class="relative inline-block text-left">
+            <button @click="open = !open"
+                    class="inline-flex items-center justify-center rounded border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none">
+              🌐 Language
+              <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l5 5 5-5" />
+              </svg>
+            </button>
+            <div x-show="open" @click.outside="open = false"
+                 class="absolute right-0 mt-2 w-48 rounded-md shadow bg-white text-sm text-gray-700 z-50">
+              <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
+              <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
+              <a href="#" onclick="setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
+              <a href="#" onclick="setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
+              <a href="#" onclick="setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
+              <a href="#" onclick="setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
+              <a href="#" onclick="setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
+              <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
             </div>
           </div>
-        </nav>
-      </div>
-    </header>
-    
-        <script>
-          document.addEventListener("DOMContentLoaded", function () {
-            const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
-            const lang = match ? match[1] : "en";
-            const selector = document.getElementById("languageDropdown");
-            if (selector) selector.value = `en|${lang}`;
-          });
-        </script>
+        </div>
+      </nav>
+    </div>
+  </header>
 
-<!-- Google Translate hidden engine (bottom of page) -->
-<div id="google_translate_element2" style="display: none;"></div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+      const lang = match ? match[1] : "en";
+      const selector = document.getElementById("languageDropdown");
+      if (selector) selector.value = `en|${lang}`;
+    });
+  </script>
 
-<script type="text/javascript">
-  function doGTranslate(lang_pair) {
-    if (!lang_pair) return;
-    var lang = lang_pair.split('|')[1];
-    var select = document.querySelector('select.goog-te-combo');
-    if (select && select.options) {
-      select.value = lang;
-      select.dispatchEvent(new Event('change'));
+  <!-- Google Translate hidden engine (bottom of page) -->
+  <div id="google_translate_element2" style="display: none;"></div>
+  <script type="text/javascript">
+    function doGTranslate(lang_pair) {
+      if (!lang_pair) return;
+      var lang = lang_pair.split('|')[1];
+      var select = document.querySelector('select.goog-te-combo');
+      if (select && select.options) {
+        select.value = lang;
+        select.dispatchEvent(new Event('change'));
+      }
     }
-  }
-</script>
+  </script>
 
 <script type="text/javascript">
   function googleTranslateElementInit2() {
@@ -180,9 +163,7 @@
     }, 'google_translate_element2');
   }
 </script>
-
 <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
-
 
 <!-- Hero Section -->
 <section class="relative w-full overflow-hidden">
@@ -192,352 +173,195 @@
 
 <!-- Why Trust Us Image -->
 <div class="max-w-3xl mx-auto px-4 mt-12 mb-4" data-aos="fade-up">
-    <img src="images/why-trust-us-badges.png"
-         alt="Why Trust Us Badges"
-         class="mx-auto w-full max-w-xl rounded-lg shadow" />
-  </div>
+  <img src="images/why-trust-us-badges.png"
+       alt="Why Trust Us Badges"
+       class="mx-auto w-full max-w-xl rounded-lg shadow" />
+</div>
 
 <!-- Main Explainer Box (No Floating Badge) -->
 <div class="max-w-3xl mx-auto px-4 mt-12 mb-8" data-aos="fade-up">
-    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-900 p-6 rounded-xl shadow text-left">
-      <h3 class="text-lg font-bold mb-3">How This Works – It's 100% Free</h3>
-      <ul class="space-y-3 text-sm sm:text-base">
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-1">✔</span>
-          <span>Fill in your details and we’ll generate the correct claim form <strong>completely FREE of charge</strong>.</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-1">✔</span>
-          <span>We can send the letter directly to the airline — you’ll also receive a copy by email.</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-1">✔</span>
-          <span>Prefer to send it yourself? We give you a printable PDF, ready to go.</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-1">✔</span>
-          <span>Then just sit back and wait for your compensation. We’ve made it that simple.</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-1">✔</span>
-          <span>If you're happy with our free service, please tell your friends and family. 😊</span>
-        </li>
-      </ul>
-    </div>
-  </div>  
+  <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-900 p-6 rounded-xl shadow text-left">
+    <h3 class="text-lg font-bold mb-3">How This Works – It's 100% Free</h3>
+    <ul class="space-y-3 text-sm sm:text-base">
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>Fill in your details and we’ll generate the correct claim form <strong>completely FREE of charge</strong>.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>We can send the letter directly to the airline — you’ll also receive a copy by email.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>Prefer to send it yourself? We give you a printable PDF, ready to go.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>Then just sit back and wait for your compensation. We’ve made it that simple.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>If you're happy with our free service, please tell your friends and family. 😊</span>
+      </li>
+    </ul>
+  </div>
+</div>
 
-<!-- Main logic (no duplicate import) -->
-<script type="module">
-  document.addEventListener('DOMContentLoaded', () => {
-    const {
-      collection,
-      addDoc,
-      serverTimestamp,
-      ref,
-      uploadBytes,
-      getDownloadURL
-    } = window.firebaseUtils;
-
-    const db = window.db;
-    const storage = window.storage;
-
-    const airlineLogos = window.airlineLogos;
-    const airlineEmails = window.airlineEmails;
-
-    <!-- Define global airline logos BEFORE the module script -->
+<!-- Airline Emails (used in form logic) -->
 <script>
-  window.airlineLogos = {
-  "Aegean Airlines": "images/logos/aegean-airlines.png",
-  "Aer Lingus": "images/logos/aer-lingus.png",
-  "Aeroflot": "images/logos/aeroflot.png",
-  "Air Arabia": "images/logos/air-arabia.png",
-  "Air Baltic": "images/logos/air-baltic.png",
-  "Air Canada": "images/logos/air-canada.png",
-  "Air China": "images/logos/air-china.png",
-  "Air Europa": "images/logos/air-europa.png",
-  "Air France": "images/logos/air-france.png",
-  "Air India": "images/logos/air-india.png",
-  "Air Italy": "images/logos/air-italy.png",
-  "Air Malta": "images/logos/air-malta.png",
-  "Air New Zealand": "images/logos/air-new-zealand.png",
-  "Air Serbia": "images/logos/air-serbia.png",
-  "Air Transat": "images/logos/air-transat.png",
-  "Alaska Airlines": "images/logos/alaska-airlines.png",
-  "All Nippon Airways (ANA)": "images/logos/all-nippon-airways-ana.png",
-  "Allegiant Air": "images/logos/allegiant-air.png",
-  "Alitalia (ITA Airways)": "images/logos/alitalia-ita-airways.png",
-  "American Airlines": "images/logos/american-airlines.png",
-  "Anaheim Airlines": "images/logos/anaheim-airlines.png",
-  "Austrian Airlines": "images/logos/austrian-airlines.png",
-  "British Airways": "images/logos/british-airways.png",
-  "Brussels Airlines": "images/logos/brussels-airlines.png",
-  "Cathay Pacific": "images/logos/cathay-pacific.png",
-  "China Airlines": "images/logos/china-airlines.png",
-  "China Eastern Airlines": "images/logos/china-eastern-airlines.png",
-  "China Southern Airlines": "images/logos/china-southern-airlines.png",
-  "Copa Airlines": "images/logos/copa-airlines.png",
-  "Delta Air Lines": "images/logos/delta-air-lines.png",
-  "easyJet": "images/logos/easyjet.png",
-  "Edelweiss Air": "images/logos/edelweiss-air.png",
-  "El Al Israel Airlines": "images/logos/el-al-israel-airlines.png",
-  "Emirates": "images/logos/emirates.png",
-  "Etihad Airways": "images/logos/etihad-airways.png",
-  "EVA Air": "images/logos/eva-air.png",
-  "Finnair": "images/logos/finnair.png",
-  "Frontier Airlines": "images/logos/frontier-airlines.png",
-  "Gulf Air": "images/logos/gulf-air.png",
-  "Hainan Airlines": "images/logos/hainan-airlines.png",
-  "Iberia": "images/logos/iberia.png",
-  "Indonesia AirAsia": "images/logos/indonesia-airasia.png",
-  "Icelandair": "images/logos/icelandair.png",
-  "Japan Airlines (JAL)": "images/logos/japan-airlines-jal.png",
-  "Jet2": "images/logos/jet2.png",
-  "JetBlue": "images/logos/jetblue.png",
-  "KLM": "images/logos/klm.png",
-  "Korean Air": "images/logos/korean-air.png",
-  "LATAM Airlines": "images/logos/latam-airlines.png",
-  "Lufthansa": "images/logos/lufthansa.png",
-  "Malaysia Airlines": "images/logos/malaysia-airlines.png",
-  "Norwegian": "images/logos/norwegian.png",
-  "Olympic Air": "images/logos/olympic-air.png",
-  "Oman Air": "images/logos/oman-air.png",
-  "Qantas": "images/logos/qantas.png",
-  "Qatar Airways": "images/logos/qatar-airways.png",
-  "Ryanair": "images/logos/ryanair.png",
-  "SAS Scandinavian Airlines": "images/logos/sas-scandinavian-airlines.png",
-  "Singapore Airlines": "images/logos/singapore-airlines.png",
-  "Spirit Airlines": "images/logos/spirit-airlines.png",
-  "Swiss International Air Lines": "images/logos/swiss-international-air-lines.png",
-  "TAP Air Portugal": "images/logos/tap-air-portugal.png",
-  "Thai Airways": "images/logos/thai-airways.png",
-  "Transavia": "images/logos/transavia.png",
-  "Transavia France": "images/logos/transavia-france.png",
-  "Turkish Airlines": "images/logos/turkish-airlines.png",
-  "United Airlines": "images/logos/united-airlines.png",
-  "Vueling": "images/logos/vueling.png",
-  "Volotea": "images/logos/volotea.png",
-  "Widerøe": "images/logos/widerøe.png",
-  "Wizz Air": "images/logos/wizz-air.png",
-  "Xiamen Airlines": "images/logos/xiamen-airlines.png",
-  "Yemenia": "images/logos/yemenia.png",
-  "Zanzibar Airways": "images/logos/zanzibar-airways.png"
-};
-
-<!-- ✅ Define global airline emails -->
   window.airlineEmails = {
-      "Ryanair": "claims@ryanair.com",
-  "easyJet": "customer.support@easyjet.com",
-  "Lufthansa": "customer.relations@lufthansa.com",
-  "Vueling": "atencion.clientes@vueling.com",
-  "British Airways": "customer.relations@ba.com",
-  "KLM": "mail@klm.nl",
-  "Transavia": "servicecentre@transavia.com",
-  "Air France": "mail.afklmplc@airfrance.fr",
-  "Iberia": "clasica@iberia.es",
-  "Jet2": "customer.service@jet2.com",
-  "Wizz Air": "claim@wizzair.com",
-  "TUI Airways": "aftertravel@tui.co.uk",
-  "Norwegian": "complaints@norwegian.com",
-  "Aer Lingus": "customerqueries@aerlingus.com",
-  "Brussels Airlines": "claim@brusselsairlines.com",
-  "Swiss International Air Lines": "contact@swiss.com",
-  "Eurowings": "customercare@eurowings.com",
-  "TAP Air Portugal": "customer@tap.pt",
-  "Finnair": "feedback@finnair.com",
-  "SAS Scandinavian Airlines": "customercare@sas.se",
-  "Aegean Airlines": "customercare@aegeanair.com",
-  "LOT Polish Airlines": "contact@lot.pl",
-  "Air Malta": "customer.relations@airmalta.com",
-  "Corendon Airlines": "info@corendon-airlines.com",
-  "SunExpress": "customer.service@sunexpress.com",
-  "Blue Air": "support@blueairweb.com",
-  "Volotea": "support@volotea.com",
-  "Lauda Europe": "assistance@laudamotion.com",
-  "Widerøe": "info@wideroe.no",
-  "Croatia Airlines": "contact@croatiaairlines.hr",
-  "Alitalia (ITA Airways)": "customer.relations@itaspa.com",
-  "Condor": "service@condor.com"
+    "Ryanair": "claims@ryanair.com",
+    "easyJet": "customer.support@easyjet.com",
+    "Lufthansa": "customer.relations@lufthansa.com",
+    "Vueling": "atencion.clientes@vueling.com",
+    "British Airways": "customer.relations@ba.com",
+    "KLM": "mail@klm.nl",
+    "Transavia": "servicecentre@transavia.com",
+    "Air France": "mail.afklmplc@airfrance.fr",
+    "Iberia": "clasica@iberia.es",
+    "Jet2": "customer.service@jet2.com",
+    "Wizz Air": "claim@wizzair.com",
+    "TUI Airways": "aftertravel@tui.co.uk",
+    "Norwegian": "complaints@norwegian.com",
+    "Aer Lingus": "customerqueries@aerlingus.com",
+    "Brussels Airlines": "claim@brusselsairlines.com",
+    "Swiss International Air Lines": "contact@swiss.com",
+    "Eurowings": "customercare@eurowings.com",
+    "TAP Air Portugal": "customer@tap.pt",
+    "Finnair": "feedback@finnair.com",
+    "SAS Scandinavian Airlines": "customercare@sas.se",
+    "Aegean Airlines": "customercare@aegeanair.com",
+    "LOT Polish Airlines": "contact@lot.pl",
+    "Air Malta": "customer.relations@airmalta.com",
+    "Corendon Airlines": "info@corendon-airlines.com",
+    "SunExpress": "customer.service@sunexpress.com",
+    "Blue Air": "support@blueairweb.com",
+    "Volotea": "support@volotea.com",
+    "Lauda Europe": "assistance@laudamotion.com",
+    "Widerøe": "info@wideroe.no",
+    "Croatia Airlines": "contact@croatiaairlines.hr",
+    "Alitalia (ITA Airways)": "customer.relations@itaspa.com",
+    "Condor": "service@condor.com"
   };
 </script>
 
 <!-- ✅ Firebase Setup -->
 <script type="module" src="firebase-setup.js"></script>
 
-    const reasonLabels = {
-      technical_issue: "Technical issue",
-      crew_availability: "Crew availability",
-      weather_conditions: "Weather conditions",
-      air_traffic_control: "Air traffic control",
-      operational_disruption: "Operational disruption",
-      late_incoming_aircraft: "Late incoming aircraft",
-      other: "Other"
-    };
-
-    // ✅ Start of form submission logic
-    const form = document.getElementById('claim-letter-form');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const claimData = {
-        fullName: formData.get("fullName"),
-        email: formData.get("email"),
-        flightNumber: formData.get("flightNumber"),
-        bookingRef: formData.get("bookingRef"),
-        flightDate: formData.get("flightDate"),
-        depAirport: formData.get("depAirport"),
-        arrAirport: formData.get("arrAirport"),
-        airline: formData.get("airline"),
-        airlineEmail: airlineEmails[formData.get("airline")] || "",
-        reason: reasonLabels[formData.get("delayReason")] || "",
-        delayReason: formData.get("delayReason"),
-        distance: formData.get("distance"),
-        delayDuration: formData.get("delayDuration"),
-        compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
-        iban: formData.get("iban"),
-        handleOption: formData.get("handleOption"),
-        language: formData.get("language"),
-        submittedAt: serverTimestamp()
-      };
-
-      try {
-        await addDoc(collection(db, "flightClaimLetters"), claimData);
-
-        switch (claimData.handleOption) {
-          case "pdf":
-            generatePDF(claimData);
-            break;
-          case "email":
-            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(claimData)
-            });
-            alert("✅ Your letter has been emailed!");
-            break;
-          case "quaerens":
-            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-            break;
-        }
-
-        document.getElementById("claim-letter-result").classList.remove("hidden");
-
-      } catch (err) {
-        console.error("❌ Error saving claim:", err);
-        alert("Something went wrong. Please try again.");
-      }
-    });
-
-
-    // 2) Translations
-    const translations = {
-      en: {
-        intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
-        closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
-        subject: "Compensation Request under EC Regulation 261/2004",
-        to: "To:",
-        detailsTitle: "Flight Details:",
-        paymentLabel: "Preferred Payment Method",
-        claimRef: "Claim Reference",
-        footer: "This document was generated at no cost by Quaerens.co.uk."
-      },
-      fr: {
-        intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
-        closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
-        subject: "Demande d'indemnisation selon le règlement CE 261/2004",
-        to: "À :",
-        detailsTitle: "Détails du vol :",
-        paymentLabel: "Méthode de paiement préférée",
-        claimRef: "Référence du dossier",
-        footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
-      }
-    };
-
-    // 3) Compensation logic
-    function calculateCompensation(distance, delayDuration) {
-      if (delayDuration === "4") return 600;
-      if (delayDuration === "3") return distance === "short" ? 250 : 400;
-      return 0;
-    }
-
-    // 4) PDF generation
-    function generatePDF(data) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const t = translations[data.language] || translations.en;
-      const today = new Date().toLocaleDateString();
-      const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
-      const logoPath = airlineLogos[data.airline];
-
-      function insertHeader() {
-        if (logoPath) {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = logoPath;
-          img.onload = () => {
-            doc.addImage(img, "PNG", 150, 8, 40, 15);
-            insertContent();
-          };
-          img.onerror = insertContent;
-        } else {
-          insertContent();
-        }
-      }
-
-      function insertContent() {
-        let y = 20;
-        doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
-        doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
-        doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 12;
-        doc.setFont(undefined, "bold").text(t.to, 10, y); y += 6;
-        doc.setFont(undefined, "normal").text(airlineContact, 10, y); y += 14;
-        doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
-        doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 10;
-
-        const introLines = doc.splitTextToSize(t.intro, 180);
-        doc.text(introLines, 10, y);
-        y += introLines.length * 6 + 6;
-
-        doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y); y += 8;
-
-        const details = [
-          `Passenger Name: ${data.fullName}`,
-          `Email: ${data.email}`,
-          `Flight Number: ${data.flightNumber}`,
-          `Booking Reference: ${data.bookingRef}`,
-          `Flight Date: ${data.flightDate}`,
-          `Departure Airport: ${data.depAirport}`,
-          `Arrival Airport: ${data.arrAirport}`,
-          `Airline: ${data.airline}`,
-          `Reason for Delay: ${data.reason}`,
-          `Flight Distance: ${data.distance}`,
-          `Delay Duration: ${data.delayDuration}`,
-          `Estimated Compensation: €${data.compensation}`,
-          `Preferred Payment Method: ${data.iban}`
-        ];
-        details.forEach(line => {
-          doc.text(line, 10, y);
-          y += 7;
-        });
-
-        y += 4;
-        const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
-        doc.text(closingLines, 10, y);
-        y += closingLines.length * 6;
-
-        doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
-        doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-      }
-
-      insertHeader();
-    }
-
-    <!-- ✅ Start form logic script -->
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById("claim-letter-form");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+// --- REASON LABELS ---
+const reasonLabels = {
+  technical_issue: "Technical issue",
+  crew_availability: "Crew availability",
+  weather_conditions: "Weather conditions",
+  air_traffic_control: "Air traffic control",
+  operational_disruption: "Operational disruption",
+  late_incoming_aircraft: "Late incoming aircraft",
+  other: "Other"
+};
+
+// --- TRANSLATIONS (Add more languages as needed) ---
+const translations = {
+  en: {
+    intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
+    closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
+    subject: "Compensation Request under EC Regulation 261/2004",
+    to: "To:",
+    detailsTitle: "Flight Details:",
+    paymentLabel: "Preferred Payment Method",
+    claimRef: "Claim Reference",
+    footer: "This document was generated at no cost by Quaerens.co.uk."
+  },
+  fr: {
+    intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
+    closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
+    subject: "Demande d'indemnisation selon le règlement CE 261/2004",
+    to: "À :",
+    detailsTitle: "Détails du vol :",
+    paymentLabel: "Méthode de paiement préférée",
+    claimRef: "Référence du dossier",
+    footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+  }
+};
+
+// --- COMPENSATION LOGIC ---
+function calculateCompensation(distance, delayDuration) {
+  if (delayDuration === "4") return 600;
+  if (delayDuration === "3") return distance === "short" ? 250 : 400;
+  return 0;
+}
+
+// --- PDF GENERATION (NO LOGO) ---
+function generatePDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const t = translations[data.language] || translations.en;
+  const today = new Date().toLocaleDateString();
+  const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
+
+  let y = 20;
+  doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+  doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+  doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 12;
+  doc.setFont(undefined, "bold").text(t.to, 10, y); y += 6;
+  doc.setFont(undefined, "normal").text(airlineContact, 10, y); y += 14;
+  doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+  doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 10;
+
+  const introLines = doc.splitTextToSize(t.intro, 180);
+  doc.text(introLines, 10, y);
+  y += introLines.length * 6 + 6;
+
+  doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y); y += 8;
+
+  const details = [
+    `Passenger Name: ${data.fullName}`,
+    `Email: ${data.email}`,
+    `Flight Number: ${data.flightNumber}`,
+    `Booking Reference: ${data.bookingRef}`,
+    `Flight Date: ${data.flightDate}`,
+    `Departure Airport: ${data.depAirport}`,
+    `Arrival Airport: ${data.arrAirport}`,
+    `Airline: ${data.airline}`,
+    `Reason for Delay: ${data.reason || "Not specified"}`,
+    `Flight Distance: ${data.distance}`,
+    `Delay Duration: ${data.delayDuration}`,
+    `Estimated Compensation: €${data.compensation}`,
+    `Preferred Payment Method: ${data.iban}`
+  ];
+  details.forEach(line => {
+    doc.text(line, 10, y);
+    y += 7;
+  });
+
+  y += 4;
+  const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+  doc.text(closingLines, 10, y);
+  y += closingLines.length * 6;
+
+  doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+}
+
+// --- MAIN FORM LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+  const {
+    collection,
+    addDoc,
+    serverTimestamp,
+    ref,
+    uploadBytes,
+    getDownloadURL
+  } = window.firebaseUtils;
+
+  const db = window.db;
+  const storage = window.storage;
+  const airlineEmails = window.airlineEmails;
+
+  const form = document.getElementById("claim-letter-form");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
     // Gather fields
     const fullName     = document.getElementById("fullName").value.trim();
@@ -630,737 +454,507 @@
 
 <!-- EC261 Claim Letter Generator Heading Only -->
 <section class="bg-blue-50 pt-10 pb-10">
-    <div class="max-w-3xl mx-auto px-4 text-center">
-      <div class="bg-yellow-300 text-blue-900 px-6 py-6 rounded-xl shadow-lg border-2 border-yellow-500">
-        <h2 class="text-3xl sm:text-4xl font-extrabold uppercase tracking-wide">
-          Generate Your Free EC261 Claim Letter
-        </h2>
-        <p class="text-lg sm:text-xl font-semibold mt-2">
-          No lawyers, no fees — just fill in your flight details!
-        </p>
-      </div>
+  <div class="max-w-3xl mx-auto px-4 text-center">
+    <div class="bg-yellow-300 text-blue-900 px-6 py-6 rounded-xl shadow-lg border-2 border-yellow-500">
+      <h2 class="text-3xl sm:text-4xl font-extrabold uppercase tracking-wide">
+        Generate Your Free EC261 Claim Letter
+      </h2>
+      <p class="text-lg sm:text-xl font-semibold mt-2">
+        No lawyers, no fees — just fill in your flight details!
+      </p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow-md">
-    <p class="text-gray-700 text-center mb-6">
-      Fill in your flight and contact details to get a free compensation claim letter (PDF or email). No lawyer needed.
-    </p>
-  
-    <form id="claim-letter-form" class="bg-white p-6 rounded shadow-md space-y-4">
-      <div>
-        <label class="font-semibold">Full Name</label>
-        <input type="text" id="fullName" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Flight Number</label>
-        <input type="text" id="flightNumber" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Booking Reference</label>
-        <input type="text" id="bookingRef" class="w-full border p-2 rounded" required />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Preferred Payment Method (e.g. IBAN, PayPal)</label>
-        <input type="text" id="iban" class="w-full border p-2 rounded" required />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Flight Date</label>
-        <input type="date" id="flightDate" required class="w-full border p-2 rounded" />
-      </div>
-    
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label for="depAirport" class="font-semibold">Departure Airport</label>
-            <select id="depAirport" class="w-full border p-2 rounded" required>
-              <option value="">Select a departure airport</option>
-            </select>
-      </div>
+<div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow-md">
+  <p class="text-gray-700 text-center mb-6">
+    Fill in your flight and contact details to get a free compensation claim letter (PDF or email). No lawyer needed.
+  </p>
+
+  <form id="claim-letter-form" class="bg-white p-6 rounded shadow-md space-y-4">
+    <div>
+      <label class="font-semibold">Full Name</label>
+      <input type="text" id="fullName" required class="w-full border p-2 rounded" />
+    </div>
 
     <div>
-      <label for="arrAirport" class="font-semibold">Arrival Airport</label>
-      <select id="arrAirport" class="w-full border p-2 rounded" required>
-        <option value="">Select an arrival airport</option>
-      </select>
-
+      <label class="font-semibold">Flight Number</label>
+      <input type="text" id="flightNumber" required class="w-full border p-2 rounded" />
     </div>
+
+    <div>
+      <label class="font-semibold">Booking Reference</label>
+      <input type="text" id="bookingRef" class="w-full border p-2 rounded" required />
+    </div>
+
+    <div>
+      <label class="font-semibold">Preferred Payment Method (e.g. IBAN, PayPal)</label>
+      <input type="text" id="iban" class="w-full border p-2 rounded" required />
+    </div>
+
+    <div>
+      <label class="font-semibold">Flight Date</label>
+      <input type="date" id="flightDate" required class="w-full border p-2 rounded" />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div>
+        <label for="depAirport" class="font-semibold">Departure Airport</label>
+        <select id="depAirport" class="w-full border p-2 rounded" required>
+          <option value="">Select a departure airport</option>
+        </select>
+      </div>
+      <div>
+        <label for="arrAirport" class="font-semibold">Arrival Airport</label>
+        <select id="arrAirport" class="w-full border p-2 rounded" required>
+          <option value="">Select an arrival airport</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label for="airline" class="font-semibold">Airline</label>
+      <select id="airline" class="w-full border p-2 rounded" required>
+        <option value="">Select an airline</option>
+        <!-- Your airline options go here -->
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Reason for Delay</label>
+      <select id="reason" class="w-full border p-2 rounded" required>
+        <option value="">Select a reason</option>
+        <option value="technical_issue">Technical issue</option>
+        <option value="crew_availability">Crew availability</option>
+        <option value="weather_conditions">Weather conditions</option>
+        <option value="air_traffic_control">Air traffic control</option>
+        <option value="operational_disruption">Operational disruption</option>
+        <option value="late_incoming_aircraft">Late incoming aircraft</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Flight Distance</label>
+      <select id="distance" required class="w-full border p-2 rounded">
+        <option value="">Select distance</option>
+        <option value="short">Under 1500 km</option>
+        <option value="medium">1500–3500 km</option>
+        <option value="long">Over 3500 km</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Delay Duration</label>
+      <select id="delayDuration" required class="w-full border p-2 rounded">
+        <option value="">Select duration</option>
+        <option value="2">2 hours</option>
+        <option value="3">3 hours</option>
+        <option value="4">4+ hours</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Preferred Language</label>
+      <select id="language" required class="w-full border p-2 rounded">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+        <option value="fr">French</option>
+        <option value="nl">Dutch</option>
+        <option value="it">Italian</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Email Address</label>
+      <input type="email" id="email" required class="w-full border p-2 rounded" />
+    </div>
+
+    <div>
+      <label class="font-semibold">Would you like us to handle it for you?</label>
+      <select id="handleOption" class="w-full border p-2 rounded">
+        <option value="pdf">No thanks – just give me the PDF letter</option>
+        <option value="email">Email me the letter</option>
+        <option value="quaerens">Let Quaerens handle the claim for me (no win, no fee)</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Would you like to donate?</label>
+      <select id="donation" class="w-full border p-2 rounded">
+        <option value="none">No donation</option>
+        <option value="quaerens">Support Quaerens</option>
+        <option value="charity">Donate to charity</option>
+        <option value="split">Split between both</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Upload Boarding Pass or Document (optional)</label>
+      <input type="file" id="fileUpload" class="w-full border p-2 rounded" />
+    </div>
+
+    <div class="mt-6 text-center">
+      <button type="submit"
+              class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">
+        Generate My Claim Letter
+      </button>
+    </div>
+
+    <div id="claim-letter-result" class="hidden text-green-600 mt-4 font-semibold">
+      ✅ Your letter is being prepared...
+    </div>
+  </form>
+</div>
 
 <!-- 5.5) Populate departure & arrival selects -->
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const airportList = [
-      "London Heathrow (LHR)",
-      "London Gatwick (LGW)",
-      "London Stansted (STN)",
-      "London Luton (LTN)",
-      "Manchester (MAN)",
-      "Birmingham (BHX)",
-      "Edinburgh (EDI)",
-      "Glasgow (GLA)",
-      "Bristol (BRS)",
-      "Leeds Bradford (LBA)",
-      "Newcastle (NCL)",
-      "East Midlands (EMA)",
-      "Liverpool (LPL)",
-      "Madrid Barajas (MAD)",
-      "Barcelona El Prat (BCN)",
-      "Malaga (AGP)",
-      "Palma de Mallorca (PMI)",
-      "Alicante (ALC)",
-      "Gran Canaria (LPA)",
-      "Tenerife South (TFS)",
-      "Tenerife North (TFN)",
-      "Ibiza (IBZ)",
-      "Fuerteventura (FUE)",
-      "Menorca (MAH)",
-      "Bilbao (BIO)",
-      "Paris Charles de Gaulle (CDG)",
-      "Paris Orly (ORY)",
-      "Nice Côte d'Azur (NCE)",
-      "Lyon Saint-Exupéry (LYS)",
-      "Marseille Provence (MRS)",
-      "Toulouse-Blagnac (TLS)",
-      "Nantes Atlantique (NTE)",
-      "Bordeaux Mérignac (BOD)",
-      "Rome Fiumicino (FCO)",
-      "Rome Ciampino (CIA)",
-      "Milan Malpensa (MXP)",
-      "Milan Linate (LIN)",
-      "Venice Marco Polo (VCE)",
-      "Naples (NAP)",
-      "Bologna (BLQ)",
-      "Pisa (PSA)",
-      "Florence (FLR)",
-      "Catania (CTA)",
-      "Palermo (PMO)",
-      "Lisbon (LIS)",
-      "Porto (OPO)",
-      "Faro (FAO)",
-      "Madeira Funchal (FNC)",
-      "Ponta Delgada Azores (PDL)",
-      "Athens (ATH)",
-      "Thessaloniki (SKG)",
-      "Heraklion (HER)",
-      "Rhodes (RHO)",
-      "Kos (KGS)",
-      "Corfu (CFU)",
-      "Santorini (JTR)",
-      "Mykonos (JMK)",
-      "Zakynthos (ZTH)",
-      "Kefalonia (EFL)",
-      "Larnaca (LCA)",
-      "Paphos (PFO)",
-      "Amsterdam Schiphol (AMS)",
-      "Frankfurt (FRA)",
-      "Munich (MUC)",
-      "Berlin Brandenburg (BER)",
-      "Düsseldorf (DUS)",
-      "Hamburg (HAM)",
-      "Cologne Bonn (CGN)",
-      "Brussels Zaventem (BRU)",
-      "Copenhagen (CPH)",
-      "Stockholm Arlanda (ARN)",
-      "Gothenburg Landvetter (GOT)",
-      "Oslo Gardermoen (OSL)",
-      "Dublin (DUB)",
-      "Cork (ORK)",
-      "Shannon (SNN)",
-      "Geneva (GVA)",
-      "Zurich (ZRH)",
-      "Dubai (DXB)",
-      "Istanbul (IST)",
-      "Doha Hamad (DOH)",
-      "New York JFK (JFK)",
-      "Toronto Pearson (YYZ)",
-      "Bangkok Suvarnabhumi (BKK)",
-      "Singapore Changi (SIN)"
-    ];
+document.addEventListener('DOMContentLoaded', () => {
+  const airportList = [
+    "London Heathrow (LHR)", "London Gatwick (LGW)", "London Stansted (STN)", "London Luton (LTN)",
+    "Manchester (MAN)", "Birmingham (BHX)", "Edinburgh (EDI)", "Glasgow (GLA)", "Bristol (BRS)",
+    "Leeds Bradford (LBA)", "Newcastle (NCL)", "East Midlands (EMA)", "Liverpool (LPL)",
+    "Madrid Barajas (MAD)", "Barcelona El Prat (BCN)", "Malaga (AGP)", "Palma de Mallorca (PMI)",
+    "Alicante (ALC)", "Gran Canaria (LPA)", "Tenerife South (TFS)", "Tenerife North (TFN)",
+    "Ibiza (IBZ)", "Fuerteventura (FUE)", "Menorca (MAH)", "Bilbao (BIO)", "Paris Charles de Gaulle (CDG)",
+    "Paris Orly (ORY)", "Nice Côte d'Azur (NCE)", "Lyon Saint-Exupéry (LYS)", "Marseille Provence (MRS)",
+    "Toulouse-Blagnac (TLS)", "Nantes Atlantique (NTE)", "Bordeaux Mérignac (BOD)", "Rome Fiumicino (FCO)",
+    "Rome Ciampino (CIA)", "Milan Malpensa (MXP)", "Milan Linate (LIN)", "Venice Marco Polo (VCE)",
+    "Naples (NAP)", "Bologna (BLQ)", "Pisa (PSA)", "Florence (FLR)", "Catania (CTA)", "Palermo (PMO)",
+    "Lisbon (LIS)", "Porto (OPO)", "Faro (FAO)", "Madeira Funchal (FNC)", "Ponta Delgada Azores (PDL)",
+    "Athens (ATH)", "Thessaloniki (SKG)", "Heraklion (HER)", "Rhodes (RHO)", "Kos (KGS)", "Corfu (CFU)",
+    "Santorini (JTR)", "Mykonos (JMK)", "Zakynthos (ZTH)", "Kefalonia (EFL)", "Larnaca (LCA)", "Paphos (PFO)",
+    "Amsterdam Schiphol (AMS)", "Frankfurt (FRA)", "Munich (MUC)", "Berlin Brandenburg (BER)",
+    "Düsseldorf (DUS)", "Hamburg (HAM)", "Cologne Bonn (CGN)", "Brussels Zaventem (BRU)",
+    "Copenhagen (CPH)", "Stockholm Arlanda (ARN)", "Gothenburg Landvetter (GOT)", "Oslo Gardermoen (OSL)",
+    "Dublin (DUB)", "Cork (ORK)", "Shannon (SNN)", "Geneva (GVA)", "Zurich (ZRH)", "Dubai (DXB)",
+    "Istanbul (IST)", "Doha Hamad (DOH)", "New York JFK (JFK)", "Toronto Pearson (YYZ)", "Bangkok Suvarnabhumi (BKK)",
+    "Singapore Changi (SIN)"
+  ];
 
-    ['depAirport','arrAirport'].forEach(id => {
-      const sel = document.getElementById(id);
-      if (!sel) return;
-      sel.innerHTML = '<option value="">Select an airport</option>';
-      airportList.forEach(ap => sel.appendChild(new Option(ap, ap)));
-    });
+  ['depAirport','arrAirport'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select an airport</option>';
+    airportList.forEach(ap => sel.appendChild(new Option(ap, ap)));
   });
-</script>
-
-<script type="module">
-  // 6) Form submission handler
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById("claim-letter-form");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const claimData = {
-        fullName: document.getElementById("fullName").value,
-        email: document.getElementById("email").value,
-        flightNumber: document.getElementById("flightNumber").value,
-        depAirport: document.getElementById("depAirport").value,
-        arrAirport: document.getElementById("arrAirport").value,
-        airline: document.getElementById("airline").value,
-        handleOption: document.querySelector('input[name="handleOption"]:checked')?.value || "pdf",
-        timestamp: firebaseUtils.serverTimestamp()
-      };
-
-      try {
-        await firebaseUtils.addDoc(firebaseUtils.collection(db, "flightClaimLetters"), claimData);
-
-        switch (claimData.handleOption) {
-          case 'pdf':
-            generatePDF(claimData);
-            break;
-          case 'email':
-            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(claimData)
-            });
-            alert("✅ Your letter has been emailed!");
-            break;
-          case 'quaerens':
-            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-            break;
-        }
-
-        document.getElementById("claim-letter-result").classList.remove("hidden");
-      } catch (err) {
-        console.error("Error saving claim:", err);
-        alert("Something went wrong. Please try again.");
-      }
-    });
-  });
+});
 </script>
 
 <div>
   <label for="airline" class="font-semibold">Airline</label>
   <select id="airline" class="w-full border p-2 rounded" required>
     <option value="">Select an airline</option>
+    <!-- (A-Z, see your list) -->
+    <option value="Aegean Airlines">Aegean Airlines</option>
+    <option value="Aer Lingus">Aer Lingus</option>
+    <option value="Aeroflot">Aeroflot</option>
+    <option value="Air Arabia">Air Arabia</option>
+    <option value="Air Baltic">Air Baltic</option>
+    <option value="Air Canada">Air Canada</option>
+    <option value="Air China">Air China</option>
+    <option value="Air Europa">Air Europa</option>
+    <option value="Air France">Air France</option>
+    <option value="Air India">Air India</option>
+    <option value="Air Italy">Air Italy</option>
+    <option value="Air Malta">Air Malta</option>
+    <option value="Air New Zealand">Air New Zealand</option>
+    <option value="Air Serbia">Air Serbia</option>
+    <option value="Air Transat">Air Transat</option>
+    <option value="Alaska Airlines">Alaska Airlines</option>
+    <option value="All Nippon Airways (ANA)">All Nippon Airways (ANA)</option>
+    <option value="Allegiant Air">Allegiant Air</option>
+    <option value="Alitalia (ITA Airways)">Alitalia (ITA Airways)</option>
+    <option value="American Airlines">American Airlines</option>
+    <option value="Anaheim Airlines">Anaheim Airlines</option>  
+    <option value="Austrian Airlines">Austrian Airlines</option>
+    <option value="British Airways">British Airways</option>
+    <option value="Brussels Airlines">Brussels Airlines</option>
+    <option value="Cathay Pacific">Cathay Pacific</option>
+    <option value="China Airlines">China Airlines</option>
+    <option value="China Eastern Airlines">China Eastern Airlines</option>
+    <option value="China Southern Airlines">China Southern Airlines</option>
+    <option value="Copa Airlines">Copa Airlines</option>
+    <option value="Delta Air Lines">Delta Air Lines</option>
+    <option value="easyJet">easyJet</option>
+    <option value="Edelweiss Air">Edelweiss Air</option>
+    <option value="El Al Israel Airlines">El Al Israel Airlines</option>
+    <option value="Emirates">Emirates</option>
+    <option value="Etihad Airways">Etihad Airways</option>
+    <option value="EVA Air">EVA Air</option>
+    <option value="Finnair">Finnair</option>
+    <option value="Frontier Airlines">Frontier Airlines</option>
+    <option value="Gulf Air">Gulf Air</option>
+    <option value="Hainan Airlines">Hainan Airlines</option>
+    <option value="Iberia">Iberia</option>
+    <option value="Indonesia AirAsia">Indonesia AirAsia</option>
+    <option value="Icelandair">Icelandair</option>
+    <option value="Japan Airlines (JAL)">Japan Airlines (JAL)</option>
+    <option value="Jet2">Jet2</option>
+    <option value="JetBlue">JetBlue</option>
+    <option value="KLM">KLM</option>
+    <option value="Korean Air">Korean Air</option>
+    <option value="LATAM Airlines">LATAM Airlines</option>
+    <option value="Lufthansa">Lufthansa</option>
+    <option value="Malaysia Airlines">Malaysia Airlines</option>
+    <option value="Norwegian">Norwegian Air Shuttle</option>
+    <option value="Olympic Air">Olympic Air</option>
+    <option value="Oman Air">Oman Air</option>
+    <option value="Qantas">Qantas</option>
+    <option value="Qatar Airways">Qatar Airways</option>
+    <option value="Ryanair">Ryanair</option>
+    <option value="SAS Scandinavian Airlines">SAS Scandinavian Airlines</option>
+    <option value="Singapore Airlines">Singapore Airlines</option>
+    <option value="Spirit Airlines">Spirit Airlines</option>
+    <option value="Swiss International Air Lines">Swiss International Air Lines</option>
+    <option value="TAP Air Portugal">TAP Air Portugal</option>
+    <option value="Thai Airways">Thai Airways</option>
+    <option value="Transavia">Transavia</option>
+    <option value="Transavia France">Transavia France</option>
+    <option value="Turkish Airlines">Turkish Airlines</option>
+    <option value="United Airlines">United Airlines</option>
+    <option value="Vueling">Vueling</option>
+    <option value="Volotea">Volotea</option>
+    <option value="Widerøe">Widerøe</option>
+    <option value="Wizz Air">Wizz Air</option>
+    <option value="Xiamen Airlines">Xiamen Airlines</option>
+    <option value="Yemenia">Yemenia</option>
+    <option value="Zanzibar Airways">Zanzibar Airways</option>
+  </select>
+</div>
 
-  <!-- A -->
-  <option value="Aegean Airlines">Aegean Airlines</option>
-  <option value="Aer Lingus">Aer Lingus</option>
-  <option value="Aeroflot">Aeroflot</option>
-  <option value="Air Arabia">Air Arabia</option>
-  <option value="Air Baltic">Air Baltic</option>
-  <option value="Air Canada">Air Canada</option>
-  <option value="Air China">Air China</option>
-  <option value="Air Europa">Air Europa</option>
-  <option value="Air France">Air France</option>
-  <option value="Air India">Air India</option>
-  <option value="Air Italy">Air Italy</option>
-  <option value="Air Malta">Air Malta</option>
-  <option value="Air New Zealand">Air New Zealand</option>
-  <option value="Air Serbia">Air Serbia</option>
-  <option value="Air Transat">Air Transat</option>
-  <option value="Alaska Airlines">Alaska Airlines</option>
-  <option value="All Nippon Airways (ANA)">All Nippon Airways (ANA)</option>
-  <option value="Allegiant Air">Allegiant Air</option>
-  <option value="Alitalia (ITA Airways)">Alitalia (ITA Airways)</option>
-  <option value="American Airlines">American Airlines</option>
-  <option value="Anaheim Airlines">Anaheim Airlines</option>  
-  <option value="Austrian Airlines">Austrian Airlines</option>
+<div>
+  <label class="font-semibold">Reason for Delay</label>
+  <select id="reason" class="w-full border p-2 rounded" required>
+    <option value="">Select a reason</option>
+    <option value="technical_issue">Technical issue</option>
+    <option value="crew_availability">Crew availability</option>
+    <option value="weather_conditions">Weather conditions</option>
+    <option value="air_traffic_control">Air traffic control</option>
+    <option value="operational_disruption">Operational disruption</option>
+    <option value="late_incoming_aircraft">Late incoming aircraft</option>
+    <option value="other">Other</option>
+  </select>
+</div>
 
-  <!-- B -->
-  <option value="British Airways">British Airways</option>
-  <option value="Brussels Airlines">Brussels Airlines</option>
+<div>
+  <label class="font-semibold">Flight Distance</label>
+  <select id="distance" required class="w-full border p-2 rounded">
+    <option value="">Select distance</option>
+    <option value="short">Under 1500 km</option>
+    <option value="medium">1500–3500 km</option>
+    <option value="long">Over 3500 km</option>
+  </select>
+</div>
 
-  <!-- C -->
-  <option value="Cathay Pacific">Cathay Pacific</option>
-  <option value="China Airlines">China Airlines</option>
-  <option value="China Eastern Airlines">China Eastern Airlines</option>
-  <option value="China Southern Airlines">China Southern Airlines</option>
-  <option value="Copa Airlines">Copa Airlines</option>
+<div>
+  <label class="font-semibold">Delay Duration</label>
+  <select id="delayDuration" required class="w-full border p-2 rounded">
+    <option value="">Select duration</option>
+    <option value="2">2 hours</option>
+    <option value="3">3 hours</option>
+    <option value="4">4+ hours</option>
+  </select>
+</div>
 
-  <!-- D -->
-  <option value="Delta Air Lines">Delta Air Lines</option>
+<div>
+  <label class="font-semibold">Preferred Language</label>
+  <select id="language" required class="w-full border p-2 rounded">
+    <option value="en">English</option>
+    <option value="es">Spanish</option>
+    <option value="de">German</option>
+    <option value="fr">French</option>
+    <option value="nl">Dutch</option>
+    <option value="it">Italian</option>
+  </select>
+</div>
 
-  <!-- E -->
-  <option value="easyJet">easyJet</option>
-  <option value="Edelweiss Air">Edelweiss Air</option>
-  <option value="El Al Israel Airlines">El Al Israel Airlines</option>
-  <option value="Emirates">Emirates</option>
-  <option value="Etihad Airways">Etihad Airways</option>
-  <option value="EVA Air">EVA Air</option>
+<div>
+  <label class="font-semibold">Email Address</label>
+  <input type="email" id="email" required class="w-full border p-2 rounded" />
+</div>
 
-  <!-- F -->
-  <option value="Finnair">Finnair</option>
-  <option value="Frontier Airlines">Frontier Airlines</option>
+<div>
+  <label class="font-semibold">Would you like us to handle it for you?</label>
+  <select id="handleOption" class="w-full border p-2 rounded">
+    <option value="pdf">No thanks – just give me the PDF letter</option>
+    <option value="email">Email me the letter</option>
+    <option value="quaerens">Let Quaerens handle the claim for me (no win, no fee)</option>
+  </select>
+</div>
 
-  <!-- G -->
-  <option value="Gulf Air">Gulf Air</option>
+<div>
+  <label class="font-semibold">Would you like to donate?</label>
+  <select id="donation" class="w-full border p-2 rounded">
+    <option value="none">No donation</option>
+    <option value="quaerens">Support Quaerens</option>
+    <option value="charity">Donate to charity</option>
+    <option value="split">Split between both</option>
+  </select>
+</div>
 
-  <!-- H -->
-  <option value="Hainan Airlines">Hainan Airlines</option>
+<div>
+  <label class="font-semibold">Upload Boarding Pass or Document (optional)</label>
+  <input type="file" id="fileUpload" class="w-full border p-2 rounded" />
+</div>
 
-  <!-- I -->
-  <option value="Iberia">Iberia</option>
-  <option value="Indonesia AirAsia">Indonesia AirAsia</option>
-  <option value="Icelandair">Icelandair</option>
+<div class="mt-6 text-center">
+  <button type="submit"
+          class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">
+    Generate My Claim Letter
+  </button>
+</div>
 
-  <!-- J -->
-  <option value="Japan Airlines (JAL)">Japan Airlines (JAL)</option>
-  <option value="Jet2">Jet2</option>
-  <option value="JetBlue">JetBlue</option>
+<div id="claim-letter-result" class="hidden text-green-600 mt-4 font-semibold">
+  ✅ Your letter is being prepared...
+</div>
 
-  <!-- K -->
-  <option value="KLM">KLM</option>
-  <option value="Korean Air">Korean Air</option>
-
-  <!-- L -->
-  <option value="LATAM Airlines">LATAM Airlines</option>
-  <option value="Lufthansa">Lufthansa</option>
-
-  <!-- M -->
-  <option value="Malaysia Airlines">Malaysia Airlines</option>
-  <option value="Norwegian">Norwegian Air Shuttle</option>
-
-  <!-- O -->
-  <option value="Olympic Air">Olympic Air</option>
-  <option value="Oman Air">Oman Air</option>
-
-  <!-- Q -->
-  <option value="Qantas">Qantas</option>
-  <option value="Qatar Airways">Qatar Airways</option>
-
-  <!-- R -->
-  <option value="Ryanair">Ryanair</option>
-
-  <!-- S -->
-  <option value="SAS Scandinavian Airlines">SAS Scandinavian Airlines</option>
-  <option value="Singapore Airlines">Singapore Airlines</option>
-  <option value="Spirit Airlines">Spirit Airlines</option>
-  <option value="Swiss International Air Lines">Swiss International Air Lines</option>
-
-  <!-- T -->
-  <option value="TAP Air Portugal">TAP Air Portugal</option>
-  <option value="Thai Airways">Thai Airways</option>
-  <option value="Transavia">Transavia</option>
-  <option value="Transavia France">Transavia France</option>
-  <option value="Turkish Airlines">Turkish Airlines</option>
-
-  <!-- U -->
-  <option value="United Airlines">United Airlines</option>
-
-  <!-- V -->
-  <option value="Vueling">Vueling</option>
-  <option value="Volotea">Volotea</option>
-
-  <!-- W -->
-  <option value="Widerøe">Widerøe</option>
-  <option value="Wizz Air">Wizz Air</option>
-
-  <!-- X, Y, Z -->
-  <option value="Xiamen Airlines">Xiamen Airlines</option>
-  <option value="Yemenia">Yemenia</option>
-  <option value="Zanzibar Airways">Zanzibar Airways</option>
-</select>
-
-        <div id="airlineLogoPreview" class="mt-2"></div>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Reason for Delay</label>
-        <select id="reason" class="w-full border p-2 rounded" required>
-          <option value="">Select a reason</option>
-          <option value="technical_issue">Technical issue</option>
-          <option value="crew_availability">Crew availability</option>
-          <option value="weather_conditions">Weather conditions</option>
-          <option value="air_traffic_control">Air traffic control</option>
-          <option value="operational_disruption">Operational disruption</option>
-          <option value="late_incoming_aircraft">Late incoming aircraft</option>
-          <option value="other">Other</option>
-        </select>
-      </div>      
-    
-      <div>
-        <label class="font-semibold">Flight Distance</label>
-        <select id="distance" required class="w-full border p-2 rounded">
-          <option value="">Select distance</option>
-          <option value="short">Under 1500 km</option>
-          <option value="medium">1500–3500 km</option>
-          <option value="long">Over 3500 km</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Delay Duration</label>
-        <select id="delayDuration" required class="w-full border p-2 rounded">
-          <option value="">Select duration</option>
-          <option value="2">2 hours</option>
-          <option value="3">3 hours</option>
-          <option value="4">4+ hours</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Preferred Language</label>
-        <select id="language" required class="w-full border p-2 rounded">
-          <option value="en">English</option>
-          <option value="es">Spanish</option>
-          <option value="de">German</option>
-          <option value="fr">French</option>
-          <option value="nl">Dutch</option>
-          <option value="it">Italian</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Email Address</label>
-        <input type="email" id="email" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Would you like us to handle it for you?</label>
-        <select id="handleOption" class="w-full border p-2 rounded">
-          <option value="pdf">No thanks – just give me the PDF letter</option>
-          <option value="email">Email me the letter</option>
-          <option value="quaerens">Let Quaerens handle the claim for me (no win, no fee)</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Would you like to donate?</label>
-        <select id="donation" class="w-full border p-2 rounded">
-          <option value="none">No donation</option>
-          <option value="quaerens">Support Quaerens</option>
-          <option value="charity">Donate to charity</option>
-          <option value="split">Split between both</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Upload Boarding Pass or Document (optional)</label>
-        <input type="file" id="fileUpload" class="w-full border p-2 rounded" />
-      </div>
-      
-      <div class="mt-6 text-center">
-        <button type="submit"
-                class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">
-          Generate My Claim Letter
-        </button>
-      </div>
-    </form>
-  </div>
-      
-      <div id="claim-letter-result" class="hidden text-green-600 mt-4 font-semibold">
-        ✅ Your letter is being prepared...
-      </div>   
-
-      <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
-        ↑
-      </button>
-      <script>
-        const scrollBtn = document.getElementById("scrollTopBtn");
-        window.addEventListener("scroll", () => {
-          scrollBtn.classList.toggle("hidden", window.scrollY < 300);
-        });
-        scrollBtn.addEventListener("click", () => {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      </script>
-
-</body>
-</html>
-
-<!-- ✅ LOGO DISPLAY SCRIPT -->
+<button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
+  ↑
+</button>
 <script>
-  document.getElementById("airline").addEventListener("input", function () {
-    const airlineName = this.value;
-    const logoPath = airlineLogos[airlineName];
-    const previewContainer = document.getElementById("airlineLogoPreview");
-    if (logoPath) {
-      previewContainer.innerHTML = `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`;
-    } else {
-      previewContainer.innerHTML = "";
-    }
+  const scrollBtn = document.getElementById("scrollTopBtn");
+  window.addEventListener("scroll", () => {
+    scrollBtn.classList.toggle("hidden", window.scrollY < 300);
+  });
+  scrollBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 </script>
 
-<!-- ✅ MAIN FORM SUBMIT SCRIPT -->
 <script>
-  const reasonLabels = {
-    technical_issue: "Technical issue",
-    crew_availability: "Crew availability",
-    weather_conditions: "Weather conditions",
-    air_traffic_control: "Air traffic control",
-    operational_disruption: "Operational disruption",
-    late_incoming_aircraft: "Late incoming aircraft",
-    other: "Other"
+  const translations = {
+    en: {
+      intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
+      closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
+      subject: "Compensation Request under EC Regulation 261/2004",
+      to: "To:",
+      detailsTitle: "Flight Details:",
+      paymentLabel: "Preferred Payment Method",
+      claimRef: "Claim Reference",
+      footer: "This document was generated at no cost by Quaerens.co.uk."
+    },
+    fr: {
+      intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
+      closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
+      subject: "Demande d'indemnisation selon le règlement CE 261/2004",
+      to: "À :",
+      detailsTitle: "Détails du vol :",
+      paymentLabel: "Méthode de paiement préférée",
+      claimRef: "Référence du dossier",
+      footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+    }
+    // You can add: de, es, nl, etc.
   };
+  </script>
   
-  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const fullName = document.getElementById("fullName").value.trim();
-    const flightNumber = document.getElementById("flightNumber").value.trim();
-    const flightDate = document.getElementById("flightDate").value;
-    const bookingRef = document.getElementById("bookingRef").value.trim();
-    const iban = document.getElementById("iban").value.trim();
-    const depAirport = document.getElementById("depAirport").value.trim();
-    const arrAirport = document.getElementById("arrAirport").value.trim();
-    const airline = document.getElementById("airline").value;
-    const reasonValue = document.getElementById("reason").value.trim();
-    const language = document.getElementById("language").value;
-    const email = document.getElementById("email").value.trim();
-    const handleOption = document.getElementById("handleOption").value;
-    const donation = document.getElementById("donation").value;
-    const distance = document.getElementById("distance").value;
-    const delayDuration = document.getElementById("delayDuration").value;
-    const compensation = calculateCompensation(distance, delayDuration);
-
-    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    const file = document.getElementById("fileUpload").files[0];
-    let fileURL = "";
-
-    if (file) {
-      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-      const uploadSnapshot = await uploadBytes(storageRef, file);
-      fileURL = await getDownloadURL(uploadSnapshot.ref);
-    }
-
-    const claimData = {
-      fullName,
-      flightNumber,
-      flightDate,
-      depAirport,
-      arrAirport,
-      airline,
-      reason: reasonLabels[reasonValue] || "Other",
-      reasonCode: reasonValue,
-      distance,
-      delayDuration,
-      compensation,
-      language,
-      email,
-      handleOption,
-      donation,
-      bookingRef,
-      iban,
-      fileURL,
-      createdAt: serverTimestamp(),
-      airlineEmail: airlineEmails[airline] || ""
-    };
-
-    try {
-      await addDoc(collection(db, "flightClaimLetters"), claimData);
-
-      if (handleOption === "pdf") {
-        generatePDF(claimData);
-      } else if (handleOption === "email") {
-        await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(claimData)
-        });
-        alert("✅ Your letter has been emailed!");
-      } else if (handleOption === "quaerens") {
-        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-      }
-
-      document.getElementById("claim-letter-result").classList.remove("hidden");
-    } catch (err) {
-      console.error("Error saving claim:", err);
-      alert("Something went wrong. Please try again.");
-    }
-  });
-</script>
-
-<script>
-const translations = {
-  en: {
-    intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
-    closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
-    subject: "Compensation Request under EC Regulation 261/2004",
-    to: "To:",
-    detailsTitle: "Flight Details:",
-    paymentLabel: "Preferred Payment Method",
-    claimRef: "Claim Reference",
-    footer: "This document was generated at no cost by Quaerens.co.uk."
-  },
-  fr: {
-    intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
-    closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
-    subject: "Demande d'indemnisation selon le règlement CE 261/2004",
-    to: "À :",
-    detailsTitle: "Détails du vol :",
-    paymentLabel: "Méthode de paiement préférée",
-    claimRef: "Référence du dossier",
-    footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
-  },
-  // Add other languages here (de, es, nl)
-};
-</script>
-
-<script>
+  <script>
   function calculateCompensation(distance, delayDuration) {
     if (delayDuration === "4") return 600;
-    if (delayDuration === "3") {
-      return distance === "short" ? 250 : 400;
-    }
+    if (delayDuration === "3") return distance === "short" ? 250 : 400;
     return 0;
   }
-</script>
-
-<script>
-// ✅ PDF generator
-function generatePDF(data) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const t = translations[data.language] || translations.en;
-  const today = new Date().toLocaleDateString();
-  const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
-  const logoPath = airlineLogos[data.airline];
-
-  function insertHeader() {
-  if (logoPath) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = logoPath;
-    img.onload = () => {
-      doc.addImage(img, "PNG", 150, 8, 40, 15);
-      insertContentAndSave();
-    };
-    img.onerror = insertContentAndSave;
-  } else {
-    insertContentAndSave();
-  }
-}
-
-function insertContentAndSave() {
-  let y = 20;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-
-  doc.setFont(undefined, "bold");
-  doc.text(today, 10, y);
-  y += 10;
-
-  doc.setFont(undefined, "normal");
-  doc.text(`Claim Reference: ${claimRef}`, 10, y);
-  y += 12;
-
-  doc.setFont(undefined, "bold");
-  doc.text(t.to, 10, y);
-  y += 6;
-  doc.setFont(undefined, "normal");
-  doc.text(airlineContact, 10, y);
-  y += 14;
-
-  doc.setFont(undefined, "bold");
-  doc.text("Subject:", 10, y);
-  y += 6;
-  doc.setFont(undefined, "normal");
-  doc.text(t.subject, 10, y);
-  y += 10;
-
-  const introLines = doc.splitTextToSize(t.intro, 180);
-  doc.text(introLines, 10, y);
-  y += introLines.length * 6 + 6;
-
-  doc.setFont(undefined, "bold");
-  doc.text(t.detailsTitle, 10, y);
-  y += 8;
-
-  doc.setFont(undefined, "normal");
-  const details = [
-    `Passenger Name: ${data.fullName}`,
-    `Email: ${data.email}`,
-    `Flight Number: ${data.flightNumber}`,
-    `Booking Reference: ${data.bookingRef}`,
-    `Flight Date: ${data.flightDate}`,
-    `Departure Airport: ${data.depAirport}`,
-    `Arrival Airport: ${data.arrAirport}`,
-    `Airline: ${data.airline}`,
-    `Reason for Delay: ${data.reason || "Not specified"}`,
-    `Flight Distance: ${data.distance}`,
-    `Delay Duration: ${data.delayDuration}`,
-    `Estimated Compensation: €${data.compensation}`,
-    `Preferred Payment Method: ${data.iban}`
-  ];
-  details.forEach(line => {
-    doc.text(line, 10, y);
-    y += 7;
-  });
-
-  y += 4;
-  const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
-  doc.text(closingLines, 10, y);
-  y += closingLines.length * 6;
-
-  doc.setFontSize(10);
-  doc.setTextColor(120);
-  doc.text(t.footer, 10, 290);
-
-  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-}
-
-  insertHeader();
-}
-</script>
-
-<!-- ✅ Logo Preview Script -->
-<script>
-  document.getElementById("airline").addEventListener("input", () => {
-    const airlineName = document.getElementById("airline").value;
-    const logoPath    = airlineLogos[airlineName] || "";
-    const preview     = document.getElementById("airlineLogoPreview");
-
-    preview.innerHTML = logoPath
-      ? `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`
-      : "";
-  });
-</script>
-
-<!-- Testimonials Section -->
-<section class="py-16 bg-white w-full">
-  <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-3xl font-extrabold text-center text-blue-800 mb-12" data-aos="fade-up">What Our Clients Say</h2>
+  </script>
   
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Testimonial Card -->
-        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
-          <p class="italic text-blue-900">“Quaerens got me €400 for my cancelled flight from Madrid – super easy!”</p>
-          <p class="font-semibold text-blue-800 mt-4">– Laura P.</p>
-        </div>
+  <script>
+    // ✅ PDF generator (CLEAN, no logo, no airlineLogos)
+    function generatePDF(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
   
-        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
-          <p class="italic text-blue-900">“I didn’t even know I had a right to claim. Thank you for making it simple!”</p>
-          <p class="font-semibold text-blue-800 mt-4">– Marc V.</p>
-        </div>
+      const t = translations[data.language] || translations.en;
+      const today = new Date().toLocaleDateString();
+      const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
   
-        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
-          <p class="italic text-blue-900">“Very professional team. Highly recommended for any flight issues.”</p>
-          <p class="font-semibold text-blue-800 mt-4">– Sofia R.</p>
-        </div>
+      let y = 20;
+      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
   
-        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
-          <p class="italic text-blue-900">“So grateful I found this service — my claim was accepted within weeks!”</p>
-          <p class="font-semibold text-blue-800 mt-4">– Daniel H.</p>
-        </div>
+      doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+      doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 12;
+      doc.setFont(undefined, "bold").text(t.to, 10, y); y += 6;
+      doc.setFont(undefined, "normal").text(airlineContact, 10, y); y += 14;
+      doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+      doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 10;
   
-        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
-          <p class="italic text-blue-900">“No lawyer, no drama. Just a proper letter and compensation!”</p>
-          <p class="font-semibold text-blue-800 mt-4">– Emma J.</p>
-        </div>
+      const introLines = doc.splitTextToSize(t.intro, 180);
+      doc.text(introLines, 10, y);
+      y += introLines.length * 6 + 6;
   
-        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
-          <p class="italic text-blue-900">“Easy to use, quick result, and totally free. Would recommend to anyone.”</p>
-          <p class="font-semibold text-blue-800 mt-4">– Johan M.</p>
-        </div>
+      doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y); y += 8;
+  
+      const details = [
+        `Passenger Name: ${data.fullName}`,
+        `Email: ${data.email}`,
+        `Flight Number: ${data.flightNumber}`,
+        `Booking Reference: ${data.bookingRef}`,
+        `Flight Date: ${data.flightDate}`,
+        `Departure Airport: ${data.depAirport}`,
+        `Arrival Airport: ${data.arrAirport}`,
+        `Airline: ${data.airline}`,
+        `Reason for Delay: ${data.reason || "Not specified"}`,
+        `Flight Distance: ${data.distance}`,
+        `Delay Duration: ${data.delayDuration}`,
+        `Estimated Compensation: €${data.compensation}`,
+        `Preferred Payment Method: ${data.iban}`
+      ];
+      details.forEach(line => {
+        doc.text(line, 10, y);
+        y += 7;
+      });
+  
+      y += 4;
+      const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
+      doc.text(closingLines, 10, y);
+      y += closingLines.length * 6;
+  
+      doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+  
+      doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+    }
+  </script>  
+  
+  <!-- Testimonials Section -->
+  <section class="py-16 bg-white w-full">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-3xl font-extrabold text-center text-blue-800 mb-12" data-aos="fade-up">What Our Clients Say</h2>
+    
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Testimonial Card -->
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
+            <p class="italic text-blue-900">“Quaerens got me €400 for my cancelled flight from Madrid – super easy!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Laura P.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
+            <p class="italic text-blue-900">“I didn’t even know I had a right to claim. Thank you for making it simple!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Marc V.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
+            <p class="italic text-blue-900">“Very professional team. Highly recommended for any flight issues.”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Sofia R.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
+            <p class="italic text-blue-900">“So grateful I found this service — my claim was accepted within weeks!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Daniel H.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
+            <p class="italic text-blue-900">“No lawyer, no drama. Just a proper letter and compensation!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Emma J.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
+            <p class="italic text-blue-900">“Easy to use, quick result, and totally free. Would recommend to anyone.”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Johan M.</p>
+          </div>
+      </div>
     </div>
   </section>
-
+  
   <!-- Footer Section -->
   <footer class="bg-blue-900 text-white text-center py-6 w-full">
     <p class="mb-2">© 2025 Quaerens Ltd. All rights reserved.</p>
@@ -1372,7 +966,7 @@ function insertContentAndSave() {
     </p>
   </footer>
   
-  <!-- ✅ Main form logic -->
+<!-- ✅ Main form logic (final, no logos) -->
 <script type="module">
   document.addEventListener('DOMContentLoaded', () => {
     const {
@@ -1386,7 +980,6 @@ function insertContentAndSave() {
 
     const db = window.db;
     const storage = window.storage;
-    const airlineLogos = window.airlineLogos;
     const airlineEmails = window.airlineEmails;
 
     const reasonLabels = {
@@ -1404,6 +997,16 @@ function insertContentAndSave() {
       e.preventDefault();
 
       const formData = new FormData(form);
+
+      // Optional file upload
+      let fileURL = "";
+      const file = form.querySelector("#fileUpload")?.files?.[0];
+      if (file) {
+        const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+        const uploadSnapshot = await uploadBytes(storageRef, file);
+        fileURL = await getDownloadURL(uploadSnapshot.ref);
+      }
+
       const claimData = {
         fullName: formData.get("fullName"),
         email: formData.get("email"),
@@ -1414,14 +1017,16 @@ function insertContentAndSave() {
         arrAirport: formData.get("arrAirport"),
         airline: formData.get("airline"),
         airlineEmail: airlineEmails[formData.get("airline")] || "",
-        reason: reasonLabels[formData.get("delayReason")] || "",
-        delayReason: formData.get("delayReason"),
+        reason: reasonLabels[formData.get("reason")] || "",
+        reasonCode: formData.get("reason"),
         distance: formData.get("distance"),
         delayDuration: formData.get("delayDuration"),
         compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
         iban: formData.get("iban"),
         handleOption: formData.get("handleOption"),
         language: formData.get("language"),
+        donation: formData.get("donation"),
+        fileURL,
         submittedAt: serverTimestamp()
       };
 
@@ -1454,6 +1059,5 @@ function insertContentAndSave() {
     });
   });
 </script>
-
 </body>
 </html>
