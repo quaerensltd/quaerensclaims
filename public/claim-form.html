@@ -245,6 +245,46 @@
   };
 </script>
 
+<script>
+  window.airlineLangMap = {
+    "Air France": "fr",
+    "Transavia France": "fr",
+    "Vueling": "es",
+    "Iberia": "es",
+    "Air Europa": "es",
+    "Binter Canarias": "es",
+    "Alitalia (ITA Airways)": "it",
+    "ITA Airways": "it",
+    "TAP Air Portugal": "pt",
+    "Azores Airlines": "pt",
+    "Aegean Airlines": "el",
+    "Olympic Air": "el",
+    "SAS Scandinavian Airlines": "sv",
+    "Norwegian": "sv",
+    "Widerøe": "sv",
+    "Lufthansa": "de",
+    "Swiss International Air Lines": "de",
+    "Austrian Airlines": "de",
+    "Brussels Airlines": "fr", // or "nl"
+    "KLM": "nl",
+    "Transavia": "nl",
+    "Finnair": "fi",
+    "LOT Polish Airlines": "pl",
+    "Czech Airlines": "cs",
+    "Croatia Airlines": "hr",
+    "Air Malta": "en",
+    "Luxair": "fr",
+    "Volotea": "es",
+    "Condor": "de",
+    "easyJet": "en",
+    "British Airways": "en",
+    "Jet2": "en",
+    "TUI Airways": "en",
+    "Ryanair": "en"
+    // Add more as needed!
+  };
+  </script>  
+
 <!-- ✅ Firebase Setup -->
 <script type="module" src="firebase-setup.js"></script>
 
@@ -291,56 +331,300 @@ function calculateCompensation(distance, delayDuration) {
   return 0;
 }
 
-// --- PDF GENERATION (NO LOGO) ---
 function generatePDF(data) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const t = translations[data.language] || translations.en;
+
+  // Utility for distance
+  function readableDistance(dist) {
+    if (dist === "short") return "Up to 1,500 km";
+    if (dist === "medium") return "1,500–3,500 km";
+    if (dist === "long") return "Over 3,500 km";
+    return dist || "";
+  }
+
+  // === 1. English Letter ===
   const today = new Date().toLocaleDateString();
   const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
+  const amount = data.compensation || 0;
 
   let y = 20;
   doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+
   doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
-  doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 12;
-  doc.setFont(undefined, "bold").text(t.to, 10, y); y += 6;
-  doc.setFont(undefined, "normal").text(airlineContact, 10, y); y += 14;
+  doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
+  doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
+  doc.setFont(undefined, "normal").text(
+    `${data.airline}${data.airlineEmail ? "\nEmail: " + data.airlineEmail : ""}`,
+    10, y
+  );
+  y += 14;
   doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
-  doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 10;
+  doc.setFont(undefined, "normal").text("Compensation Request under EC Regulation 261/2004, Article 7", 10, y); y += 12;
+  doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
 
-  const introLines = doc.splitTextToSize(t.intro, 180);
-  doc.text(introLines, 10, y);
-  y += introLines.length * 6 + 6;
+  // Main body (English)
+  const introEn = `I am writing to formally request compensation for the following disrupted flight, under Article 7 of EC Regulation 261/2004 (“the Regulation”). My claim is supported by the European Court of Justice decisions in Sturgeon (C-402/07), Nelson (C-581/10), and Wallentin-Hermann (C-549/07).
 
-  doc.setFont(undefined, "bold").text(t.detailsTitle, 10, y); y += 8;
+According to Article 7(1) of the Regulation and consistent CJEU case law, passengers are entitled to fixed compensation where a flight arrives at its final destination three hours or more after the scheduled time, except in cases of extraordinary circumstances as strictly defined by Article 5(3) and clarified by the CJEU.
 
-  const details = [
-    `Passenger Name: ${data.fullName}`,
-    `Email: ${data.email}`,
-    `Flight Number: ${data.flightNumber}`,
-    `Booking Reference: ${data.bookingRef}`,
-    `Flight Date: ${data.flightDate}`,
-    `Departure Airport: ${data.depAirport}`,
-    `Arrival Airport: ${data.arrAirport}`,
-    `Airline: ${data.airline}`,
-    `Reason for Delay: ${data.reason || "Not specified"}`,
-    `Flight Distance: ${data.distance}`,
-    `Delay Duration: ${data.delayDuration}`,
-    `Estimated Compensation: €${data.compensation}`,
-    `Preferred Payment Method: ${data.iban}`
-  ];
-  details.forEach(line => {
-    doc.text(line, 10, y);
-    y += 7;
-  });
+My flight, detailed below, was delayed over ${data.delayDuration || "N/A"} hours, and no extraordinary circumstances have been evidenced by the carrier. I therefore request immediate payment of the statutory compensation, as required by law.`;
 
-  y += 4;
-  const closingLines = doc.splitTextToSize(`${t.closing}${data.fullName}`, 180);
-  doc.text(closingLines, 10, y);
-  y += closingLines.length * 6;
+  const introLinesEn = doc.splitTextToSize(introEn, 180);
+  doc.text(introLinesEn, 10, y);
+  y += introLinesEn.length * 6 + 2;
 
-  doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+  doc.setFont(undefined, "bold").text("Flight Details:", 10, y); y += 8;
+  [
+    `Passenger Name: ${data.fullName || ""}`,
+    `Flight Number: ${data.flightNumber || ""}`,
+    `Booking Reference: ${data.bookingRef || ""}`,
+    `Flight Date: ${data.flightDate || ""}`,
+    `Departure Airport: ${data.depAirport || ""}`,
+    `Arrival Airport: ${data.arrAirport || ""}`,
+    `Airline: ${data.airline || ""}`,
+    `Reason for Delay: ${data.reason || ""}`,
+    `Flight Distance: ${readableDistance(data.distance)}`,
+    `Delay Duration: ${data.delayDuration || ""} hours`
+  ].forEach(line => { doc.text(line, 10, y); y += 7; });
+
+  y += 2;
+  doc.setFont(undefined, "bold").text("Amount Claimed:", 10, y); y += 7;
+  doc.setFont(undefined, "normal").text(`€${amount} (Article 7, EC 261/2004)`, 10, y); y += 10;
+
+  doc.setFont(undefined, "bold").text("Preferred Payment Method:", 10, y); y += 7;
+  doc.setFont(undefined, "normal").text(`IBAN/PayPal: ${data.iban || ""}`, 10, y); y += 10;
+
+  // Closing (English)
+  const closingEn = `Please process this claim and arrange payment to the account above within 14 days of receipt. If you believe extraordinary circumstances apply, you must provide detailed documentary evidence as required by Article 5(3) and Wallentin-Hermann.
+
+If full payment or a legally valid response is not received within 14 days, I reserve the right to escalate this matter to the National Enforcement Body, pursue legal recovery through the European Small Claims Procedure, and claim statutory interest and legal costs.
+
+This claim is made with reference to EC Regulation 261/2004, CJEU Cases C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann), and all relevant national enforcement measures. Supporting documents are available upon request.
+
+Please confirm receipt of this claim and your proposed actions in writing.`;
+
+  const closingLinesEn = doc.splitTextToSize(closingEn, 180);
+  doc.text(closingLinesEn, 10, y);
+  y += closingLinesEn.length * 6 + 2;
+
+  doc.text("Thank you for your cooperation.", 10, y); y += 8;
+  doc.text("Yours faithfully,", 10, y); y += 8;
+  doc.text(data.fullName || "", 10, y); y += 8;
+  doc.setFontSize(10).setTextColor(120).text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+
+  // === 2. Airline Local Language ===
+  // Select language based on airline (default to English if unknown)
+  const airlineLangMap = {
+    "Air France": "fr",
+    "Transavia France": "fr",
+    "Vueling": "es",
+    "Iberia": "es",
+    "Air Europa": "es",
+    "Alitalia (ITA Airways)": "it",
+    "ITA Airways": "it",
+    "TAP Air Portugal": "pt",
+    "Aegean Airlines": "el",
+    "Olympic Air": "el",
+    "SAS Scandinavian Airlines": "sv",
+    "Norwegian": "sv",
+    "Widerøe": "sv",
+    // Add more mappings if needed
+  };
+  // Use code from airlineLangMap or default to English
+  const airlineLang = airlineLangMap[data.airline] || data.language || "en";
+  const translations = {
+    // ENGLISH omitted (already above)
+    fr: {
+      subject: "Demande d'indemnisation selon le règlement CE 261/2004, Article 7",
+      greeting: "Madame, Monsieur,",
+      intro: `Je vous écris pour demander une indemnisation concernant le vol perturbé ci-dessous, conformément à l'article 7 du règlement CE 261/2004 ("le Règlement"). Ma demande est étayée par la jurisprudence de la Cour de justice de l'Union européenne, notamment Sturgeon (C-402/07), Nelson (C-581/10) et Wallentin-Hermann (C-549/07).
+
+Selon l'article 7(1) du Règlement et la jurisprudence constante, les passagers ont droit à une indemnisation forfaitaire lorsque leur vol arrive à destination avec un retard de trois heures ou plus, sauf en cas de circonstances extraordinaires telles que définies strictement à l'article 5(3) et précisées par la CJUE.
+
+Mon vol, détaillé ci-dessous, a été retardé de plus de ${data.delayDuration || "N/A"} heures, et aucune circonstance extraordinaire n'a été démontrée par le transporteur. Je demande donc le paiement immédiat de l'indemnisation légale.`,
+      flightDetails: "Détails du vol :",
+      amountClaimed: "Montant réclamé :",
+      paymentMethod: "Méthode de paiement préférée :",
+      closing: `Veuillez traiter cette réclamation et effectuer le paiement sur le compte ci-dessus dans un délai de 14 jours. Si vous estimez que des circonstances extraordinaires s'appliquent, vous devez fournir les preuves documentaires détaillées requises par l'article 5(3) et Wallentin-Hermann.
+
+Sans règlement ou réponse juridiquement valable sous 14 jours, je me réserve le droit de saisir l’Autorité nationale compétente, d’engager une procédure européenne de règlement des petits litiges et de réclamer les intérêts et frais prévus par la loi.
+
+Cette réclamation est fondée sur le règlement CE 261/2004, les arrêts C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) et toutes mesures nationales applicables. Les justificatifs sont disponibles sur demande.
+
+Merci de confirmer la réception de cette réclamation et les suites que vous envisagez d’y donner par écrit.`,
+      thanks: "Merci de votre coopération.",
+      signoff: "Cordialement,",
+      footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+    },
+    es: {
+      subject: "Solicitud de indemnización bajo el Reglamento CE 261/2004, Artículo 7",
+      greeting: "Estimados señores:",
+      intro: `Me dirijo a ustedes para solicitar formalmente la compensación correspondiente por el siguiente vuelo perturbado, conforme al artículo 7 del Reglamento CE 261/2004 (“el Reglamento”). Mi reclamación está respaldada por las sentencias del Tribunal de Justicia de la Unión Europea en Sturgeon (C-402/07), Nelson (C-581/10) y Wallentin-Hermann (C-549/07).
+
+Según el artículo 7(1) del Reglamento y la jurisprudencia constante del TJUE, los pasajeros tienen derecho a una compensación fija cuando el vuelo llega a su destino final con un retraso de tres horas o más, salvo en casos de circunstancias extraordinarias estrictamente definidas en el artículo 5(3) y aclaradas por el TJUE.
+
+Mi vuelo, detallado a continuación, sufrió un retraso superior a ${data.delayDuration || "N/A"} horas y la compañía no ha aportado prueba de circunstancias extraordinarias. Por ello, solicito el pago inmediato de la compensación legal.`,
+      flightDetails: "Datos del vuelo:",
+      amountClaimed: "Cantidad reclamada:",
+      paymentMethod: "Método de pago preferido:",
+      closing: `Por favor, tramiten esta reclamación y abonen el importe indicado en el plazo de 14 días. Si consideran que existen circunstancias extraordinarias, deben aportar la documentación exigida por el artículo 5(3) y Wallentin-Hermann.
+
+Si no recibo el pago completo o una respuesta jurídicamente válida en el plazo indicado, me reservo el derecho de acudir a la Autoridad Nacional competente, iniciar un procedimiento monitorio europeo y reclamar intereses y costes legales.
+
+Esta reclamación se realiza conforme al Reglamento CE 261/2004, las sentencias C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) y la normativa nacional correspondiente. Los documentos justificativos están disponibles si los requieren.
+
+Agradezco confirmen la recepción de esta reclamación y el trámite que le vayan a dar por escrito.`,
+      thanks: "Gracias por su colaboración.",
+      signoff: "Atentamente,",
+      footer: "Este documento ha sido generado gratuitamente por Quaerens.co.uk."
+    },
+    it: {
+      subject: "Richiesta di compensazione ai sensi del Regolamento CE 261/2004, Articolo 7",
+      greeting: "Spettabile Compagnia,",
+      intro: `Con la presente richiedo formalmente la compensazione prevista per il volo sottostante ai sensi dell’articolo 7 del Regolamento CE 261/2004 (“il Regolamento”). La mia richiesta si basa sulle sentenze della Corte di Giustizia dell’Unione Europea Sturgeon (C-402/07), Nelson (C-581/10) e Wallentin-Hermann (C-549/07).
+
+Ai sensi dell’articolo 7(1) del Regolamento e della costante giurisprudenza della CGUE, i passeggeri hanno diritto a una compensazione forfettaria quando il volo arriva a destinazione con un ritardo di tre ore o più, salvo circostanze eccezionali rigorosamente definite dall’articolo 5(3) e chiarite dalla Corte.
+
+Il mio volo, dettagliato sotto, ha subito un ritardo superiore a ${data.delayDuration || "N/A"} ore e la compagnia non ha fornito alcuna prova di circostanze eccezionali. Chiedo quindi il pagamento immediato della compensazione prevista dalla legge.`,
+      flightDetails: "Dettagli del volo:",
+      amountClaimed: "Importo richiesto:",
+      paymentMethod: "Metodo di pagamento preferito:",
+      closing: `Vi invito a processare la presente richiesta e a effettuare il pagamento entro 14 giorni. In caso di asserite circostanze eccezionali, siete tenuti a fornire prova documentale come richiesto dall’articolo 5(3) e Wallentin-Hermann.
+
+Qualora il pagamento o una risposta giuridicamente valida non pervengano entro 14 giorni, mi riservo di investire l’Autorità Nazionale competente, avviare una procedura europea per le controversie di modesta entità e richiedere interessi e spese legali.
+
+La presente si fonda sul Regolamento CE 261/2004, le sentenze C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) e la normativa nazionale pertinente. Documentazione a supporto disponibile su richiesta.
+
+Vi prego di confermare per iscritto la ricezione della presente e le azioni che intendete intraprendere.`,
+      thanks: "Grazie per la collaborazione.",
+      signoff: "Distinti saluti,",
+      footer: "Questo documento è stato generato gratuitamente da Quaerens.co.uk."
+    },
+    pt: {
+      subject: "Pedido de indemnização ao abrigo do Regulamento CE 261/2004, Artigo 7",
+      greeting: "Exmos. Senhores,",
+      intro: `Venho por este meio solicitar formalmente a compensação pelo voo abaixo referido, nos termos do artigo 7.º do Regulamento CE 261/2004 (“o Regulamento”). O meu pedido é sustentado pela jurisprudência do Tribunal de Justiça da União Europeia, nomeadamente Sturgeon (C-402/07), Nelson (C-581/10) e Wallentin-Hermann (C-549/07).
+
+De acordo com o artigo 7.º(1) do Regulamento e com a jurisprudência constante do TJUE, os passageiros têm direito a uma compensação fixa quando o voo chega ao destino final com um atraso de três horas ou mais, salvo em casos de circunstâncias extraordinárias, estritamente definidos no artigo 5.º(3) e esclarecidos pelo TJUE.
+
+O meu voo, detalhado abaixo, teve um atraso superior a ${data.delayDuration || "N/A"} horas e a transportadora não apresentou qualquer prova de circunstâncias extraordinárias. Solicito, assim, o pagamento imediato da compensação legalmente devida.`,
+      flightDetails: "Dados do voo:",
+      amountClaimed: "Valor reclamado:",
+      paymentMethod: "Método de pagamento preferido:",
+      closing: `Solicito o processamento deste pedido e o pagamento para a conta acima indicada no prazo de 14 dias. Caso entendam que existem circunstâncias extraordinárias, devem apresentar prova documental detalhada, conforme exigido pelo artigo 5.º(3) e Wallentin-Hermann.
+
+Se não receber o pagamento integral ou uma resposta juridicamente válida no prazo referido, reservo-me o direito de recorrer à Autoridade Nacional competente, iniciar um processo europeu para pequenas causas e reclamar juros e custas legais.
+
+Este pedido é feito ao abrigo do Regulamento CE 261/2004, Acórdãos C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) e legislação nacional aplicável. Documentos comprovativos disponíveis a pedido.
+
+Agradeço a confirmação da receção deste pedido e das medidas que pretendem adotar, por escrito.`,
+      thanks: "Agradeço a vossa colaboração.",
+      signoff: "Com os melhores cumprimentos,",
+      footer: "Este documento foi gerado gratuitamente por Quaerens.co.uk."
+    },
+    el: {
+      subject: "Αίτημα αποζημίωσης βάσει του Κανονισμού ΕΚ 261/2004, Άρθρο 7",
+      greeting: "Αξιότιμοι κύριοι,",
+      intro: `Σας απευθύνω το παρόν αίτημα αποζημίωσης για την παρακάτω διαταραγμένη πτήση, σύμφωνα με το άρθρο 7 του Κανονισμού ΕΚ 261/2004 ("ο Κανονισμός"). Η αξίωσή μου στηρίζεται στη νομολογία του Δικαστηρίου της Ευρωπαϊκής Ένωσης (υποθέσεις Sturgeon C-402/07, Nelson C-581/10, Wallentin-Hermann C-549/07).
+
+Σύμφωνα με το άρθρο 7(1) του Κανονισμού και τη σταθερή νομολογία, οι επιβάτες δικαιούνται σταθερή αποζημίωση όταν η πτήση φτάνει στον τελικό προορισμό της με καθυστέρηση τριών ωρών ή περισσότερο, εκτός εάν υφίστανται έκτακτες περιστάσεις αυστηρά οριζόμενες στο άρθρο 5(3) και ερμηνευόμενες από το ΔΕΕ.
+
+Η πτήση μου, που αναφέρεται παρακάτω, καθυστέρησε πάνω από ${data.delayDuration || "N/A"} ώρες και δεν έχουν παρουσιαστεί έκτακτες περιστάσεις. Ζητώ επομένως την άμεση καταβολή της νόμιμης αποζημίωσης.`,
+      flightDetails: "Στοιχεία πτήσης:",
+      amountClaimed: "Αξιούμενο ποσό:",
+      paymentMethod: "Προτιμώμενος τρόπος πληρωμής:",
+      closing: `Παρακαλώ επεξεργαστείτε το αίτημα και καταβάλετε το ποσό εντός 14 ημερών. Σε περίπτωση που επικαλείστε έκτακτες περιστάσεις, οφείλετε να προσκομίσετε λεπτομερή αποδεικτικά έγγραφα σύμφωνα με το άρθρο 5(3) και την υπόθεση Wallentin-Hermann.
+
+Εάν δεν λάβω πλήρη εξόφληση ή νομικά αιτιολογημένη απάντηση εντός 14 ημερών, διατηρώ το δικαίωμα να προσφύγω στην Εθνική Αρχή, να κινήσω ευρωπαϊκή διαδικασία μικροδιαφορών και να διεκδικήσω νόμιμους τόκους και δικαστικά έξοδα.
+
+Το παρόν αίτημα υποβάλλεται με βάση τον Κανονισμό ΕΚ 261/2004, τις υποθέσεις C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) και την εθνική νομοθεσία. Υποστηρικτικά έγγραφα διαθέσιμα κατόπιν αιτήματος.
+
+Παρακαλώ επιβεβαιώστε γραπτώς την παραλαβή και τις ενέργειές σας.`,
+      thanks: "Σας ευχαριστώ για τη συνεργασία.",
+      signoff: "Με εκτίμηση,",
+      footer: "Το παρόν έγγραφο δημιουργήθηκε δωρεάν από το Quaerens.co.uk."
+    },
+    sv: {
+      subject: "Begäran om ersättning enligt EU-förordning 261/2004, Artikel 7",
+      greeting: "Bästa kundtjänst,",
+      intro: `Jag skriver för att formellt begära ersättning för nedanstående försenade flyg, enligt artikel 7 i EU-förordning 261/2004 (“förordningen”). Min begäran stöds av EU-domstolens avgöranden i Sturgeon (C-402/07), Nelson (C-581/10) och Wallentin-Hermann (C-549/07).
+
+Enligt artikel 7(1) och domstolspraxis har passagerare rätt till schablonersättning när ett flyg når slutdestinationen tre timmar eller mer efter utsatt tid, utom vid extraordinära omständigheter strikt definierade i artikel 5(3) och förtydligade av EU-domstolen.
+
+Mitt flyg, specificerat nedan, anlände med över ${data.delayDuration || "N/A"} timmars försening och inget sådant undantag har visats av flygbolaget. Jag begär därmed omedelbar utbetalning av lagstadgad ersättning.`,
+      flightDetails: "Flyguppgifter:",
+      amountClaimed: "Begärt belopp:",
+      paymentMethod: "Önskad betalningsmetod:",
+      closing: `Vänligen behandla detta anspråk och utbetala ersättningen till ovanstående konto inom 14 dagar. Om ni hävdar extraordinära omständigheter måste ni tillhandahålla full dokumentation enligt artikel 5(3) och Wallentin-Hermann.
+
+Om full ersättning eller ett juridiskt motiverat svar inte mottas inom 14 dagar, förbehåller jag mig rätten att vända mig till nationell tillsynsmyndighet, inleda europeiskt småmålsförfarande och kräva ränta och kostnader.
+
+Anspråket grundas på EU-förordning 261/2004, rättsfall C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) och tillämplig nationell lagstiftning. Underlag finns på begäran.
+
+Bekräfta vänligen skriftligt att ni mottagit detta krav och hur ni avser agera.`,
+      thanks: "Tack för ert samarbete.",
+      signoff: "Med vänlig hälsning,",
+      footer: "Detta dokument har genererats kostnadsfritt av Quaerens.co.uk."
+    }
+  };
+
+  if (airlineLang !== "en" && translations[airlineLang]) {
+    doc.addPage();
+    y = 20;
+    const t = translations[airlineLang];
+
+    doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+
+    doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+    doc.setFont(undefined, "normal").text(`Referencia de reclamación: ${claimRef}`, 10, y); y += 10;
+    doc.setFont(undefined, "bold").text("A:", 10, y); y += 6;
+    doc.setFont(undefined, "normal").text(
+      `${data.airline}${data.airlineEmail ? "\nEmail: " + data.airlineEmail : ""}`,
+      10, y
+    );
+    y += 14;
+    doc.setFont(undefined, "bold").text("Asunto:", 10, y); y += 6;
+    doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 12;
+    doc.setFont(undefined, "normal").text(t.greeting, 10, y); y += 10;
+
+    // Main body
+    const introLines = doc.splitTextToSize(t.intro, 180);
+    doc.text(introLines, 10, y);
+    y += introLines.length * 6 + 2;
+
+    doc.setFont(undefined, "bold").text(t.flightDetails, 10, y); y += 8;
+    [
+      `${t.flightDetails} ${data.fullName || ""}`,
+      `Flight Number: ${data.flightNumber || ""}`,
+      `Booking Reference: ${data.bookingRef || ""}`,
+      `Flight Date: ${data.flightDate || ""}`,
+      `Departure Airport: ${data.depAirport || ""}`,
+      `Arrival Airport: ${data.arrAirport || ""}`,
+      `Airline: ${data.airline || ""}`,
+      `Reason for Delay: ${data.reason || ""}`,
+      `Flight Distance: ${readableDistance(data.distance)}`,
+      `Delay Duration: ${data.delayDuration || ""} hours`
+    ].forEach(line => { doc.text(line, 10, y); y += 7; });
+
+    y += 2;
+    doc.setFont(undefined, "bold").text(t.amountClaimed, 10, y); y += 7;
+    doc.setFont(undefined, "normal").text(`€${amount} (Art. 7, CE 261/2004)`, 10, y); y += 10;
+
+    doc.setFont(undefined, "bold").text(t.paymentMethod, 10, y); y += 7;
+    doc.setFont(undefined, "normal").text(`${data.iban || ""}`, 10, y); y += 10;
+
+    const closingLines = doc.splitTextToSize(t.closing, 180);
+    doc.text(closingLines, 10, y);
+    y += closingLines.length * 6 + 2;
+
+    doc.text(t.thanks, 10, y); y += 8;
+    doc.text(t.signoff, 10, y); y += 8;
+    doc.text(data.fullName || "", 10, y); y += 8;
+
+    doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
+  }
+
   doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
 }
 
@@ -680,6 +964,22 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </form>
 </div>
+
+<!-- Airline auto-select language script goes here -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const airlineSelect = document.getElementById("airline");
+    const languageSelect = document.getElementById("language");
+  
+    airlineSelect.addEventListener("change", function () {
+      const selected = this.value;
+      const lang = window.airlineLangMap[selected];
+      if (lang && languageSelect) {
+        languageSelect.value = lang;
+      }
+    });
+  });
+  </script>
 
 <!-- 5.5) Populate departure & arrival selects -->
 <script>
