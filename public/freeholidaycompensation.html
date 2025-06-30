@@ -208,6 +208,14 @@ function setLanguage(langPair) {
       <div class="p-6">
         <form id="compensation-form" class="space-y-4">
           <div>
+            <label for="currency" class="block font-semibold">Currency</label>
+            <select id="currency" class="w-full border border-gray-300 p-2 rounded">
+              <option value="eur" selected>€ Euro (EUR)</option>
+              <option value="gbp">£ Pound Sterling (GBP)</option>
+            </select>
+          </div>
+
+          <div>
             <label for="claimType" class="block font-semibold">Claim Type</label>
             <select id="claimType" required class="w-full border border-gray-300 p-2 rounded">
               <option value="">Select Claim Type</option>
@@ -219,7 +227,7 @@ function setLanguage(langPair) {
 
           <!-- Common inputs -->
           <div>
-            <label for="totalPrice" class="block font-semibold">Total Holiday Price (€)</label>
+            <label for="totalPrice" class="block font-semibold">Total Holiday Price</label>
             <input type="number" id="totalPrice" min="0" step="0.01" placeholder="E.g. 1500" required
               class="w-full border border-gray-300 p-2 rounded" />
           </div>
@@ -227,15 +235,15 @@ function setLanguage(langPair) {
           <div id="packageFields" class="hidden space-y-4">
             <label for="daysDelayed" class="block font-semibold">Days Delayed or Cancelled</label>
             <input type="number" id="daysDelayed" min="0" step="1" placeholder="E.g. 2" class="w-full border border-gray-300 p-2 rounded" />
-            <p class="text-sm text-gray-600">Compensation approx. €50 per disrupted day plus refund.</p>
+            <p class="text-sm text-gray-600">Compensation approx. 50 per disrupted day plus refund.</p>
           </div>
 
           <div id="hotelFields" class="hidden space-y-4">
             <label for="nightsDowngraded" class="block font-semibold">Nights Downgraded or Overbooked</label>
             <input type="number" id="nightsDowngraded" min="0" step="1" placeholder="E.g. 3" class="w-full border border-gray-300 p-2 rounded" />
-            <label for="hotelPriceDiff" class="block font-semibold">Price Difference per Night (€)</label>
+            <label for="hotelPriceDiff" class="block font-semibold">Price Difference per Night</label>
             <input type="number" id="hotelPriceDiff" min="0" step="0.01" placeholder="E.g. 30" class="w-full border border-gray-300 p-2 rounded" />
-            <p class="text-sm text-gray-600">Refund of price difference plus €30 per night compensation.</p>
+            <p class="text-sm text-gray-600">Refund of price difference plus 30 per night compensation.</p>
           </div>
 
           <div id="cruiseFields" class="hidden space-y-4">
@@ -278,6 +286,7 @@ function setLanguage(langPair) {
   const packageFields = document.getElementById('packageFields');
   const hotelFields = document.getElementById('hotelFields');
   const cruiseFields = document.getElementById('cruiseFields');
+  const currencySelect = document.getElementById('currency');
 
   claimTypeSelect.addEventListener('change', () => {
     packageFields.classList.add('hidden');
@@ -301,30 +310,42 @@ function setLanguage(langPair) {
     e.preventDefault();
 
     const claimType = claimTypeSelect.value;
-    const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const totalPriceRaw = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const currency = currencySelect.value;
 
-    let compensation = 0;
+    // Convert to euros if GBP selected, assuming 1 GBP = 1.15 EUR (adjust as needed)
+    let totalPriceEUR = currency === 'gbp' ? totalPriceRaw * 1.15 : totalPriceRaw;
+
+    let compensationEUR = 0;
 
     if (claimType === 'package') {
       const daysDelayed = parseInt(document.getElementById('daysDelayed').value) || 0;
       // Estimate: refund + €50 per delayed day
-      compensation = totalPrice + (daysDelayed * 50);
+      compensationEUR = totalPriceEUR + (daysDelayed * 50);
     } else if (claimType === 'hotel') {
       const nightsDowngraded = parseInt(document.getElementById('nightsDowngraded').value) || 0;
-      const priceDiff = parseFloat(document.getElementById('hotelPriceDiff').value) || 0;
+      const priceDiffRaw = parseFloat(document.getElementById('hotelPriceDiff').value) || 0;
+      const priceDiffEUR = currency === 'gbp' ? priceDiffRaw * 1.15 : priceDiffRaw;
       // Estimate: (price diff * nights) + €30 per night compensation
-      compensation = (priceDiff * nightsDowngraded) + (30 * nightsDowngraded);
+      compensationEUR = (priceDiffEUR * nightsDowngraded) + (30 * nightsDowngraded);
     } else if (claimType === 'cruise') {
       const cruiseDaysMissed = parseInt(document.getElementById('cruiseDaysMissed').value) || 0;
-      // Estimate: prorated refund + fixed extra €100 per disrupted day
-      const dailyCost = totalPrice / 7; // assuming 7-day cruise typical
-      compensation = (dailyCost * cruiseDaysMissed) + (100 * cruiseDaysMissed);
+      const dailyCostEUR = totalPriceEUR / 7; // assuming 7-day cruise typical
+      compensationEUR = (dailyCostEUR * cruiseDaysMissed) + (100 * cruiseDaysMissed);
     }
 
-    compensation = compensation.toFixed(2);
+    // Convert compensation back to selected currency for display
+    let compensationDisplay = compensationEUR;
+    if (currency === 'gbp') {
+      compensationDisplay = compensationEUR / 1.15;
+    }
+    compensationDisplay = compensationDisplay.toFixed(2);
 
-    if (compensation > 0) {
-      resultDiv.textContent = `Estimated compensation: €${compensation}`;
+    // Display currency symbol
+    const currencySymbol = currency === 'gbp' ? '£' : '€';
+
+    if (compensationDisplay > 0) {
+      resultDiv.textContent = `Estimated compensation: ${currencySymbol}${compensationDisplay}`;
       resultDiv.classList.remove('hidden');
       claimBtn.classList.remove('hidden');
     } else {
