@@ -56,11 +56,15 @@
   <script>
     function setLanguage(langPair) {
       if (!langPair) return;
+      // Remove any previous googtrans cookies (for path and for domain)
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + window.location.hostname + '; path=/';
       const lang = langPair.split('|')[1];
       const newLang = '/en/' + lang;
       document.cookie = 'googtrans=' + newLang + '; path=/';
       document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
-      location.reload();
+      // Force reload (hard reload)
+      window.location.reload(true);
     }
   </script>
 
@@ -411,10 +415,14 @@ Please confirm receipt of this claim and your proposed actions in writing.`;
   doc.text("Thank you for your cooperation.", 10, y); y += 8;
   doc.text("Yours faithfully,", 10, y); y += 8;
   doc.text(data.fullName || "", 10, y); y += 8;
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const footerY = Math.min(pageHeight - 10, y + 12); // always 10mm from bottom, or 12mm below last line, whichever is higher
-  doc.setFontSize(10).setTextColor(120).text("This document was generated at no cost by Quaerens.co.uk.", 10, footerY);
 
+  // Always place the footer 10mm from the bottom of the page
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(10).setTextColor(120).text(
+    "This document was generated at no cost by Quaerens.co.uk.", 
+    10, 
+    pageHeight - 10
+  );
 
 
   // === 2. Airline Local Language ===
@@ -625,9 +633,15 @@ Bekräfta vänligen skriftligt att ni mottagit detta krav och hur ni avser agera
     doc.text(t.thanks, 10, y); y += 8;
 doc.text(t.signoff, 10, y); y += 8;
 doc.text(data.fullName || "", 10, y); y += 8;
+
+// Always place the footer 10mm from the bottom of the page
 const pageHeight = doc.internal.pageSize.getHeight();
-const footerY = Math.min(pageHeight - 10, y + 12); // 10mm from bottom or 12mm below last line, whichever is higher
-doc.setFontSize(10).setTextColor(120).text(t.footer, 10, footerY);
+doc.setFontSize(10).setTextColor(120).text(
+  t.footer,
+  10,
+  pageHeight - 10
+);
+
 
   }
 
