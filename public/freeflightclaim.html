@@ -83,21 +83,26 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    function setLanguage(langPair) {
-      if (!langPair) return;
-      var d = window.location.hostname;
-  
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + d + '; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=.' + d + '; path=/;';
-  
-      var lang = langPair.split('|')[1];
-      var newLang = '/en/' + lang;
-      document.cookie = 'googtrans=' + newLang + '; path=/;';
-      document.cookie = 'googtrans=' + newLang + '; domain=' + d + '; path=/;';
-  
-      window.location.reload();
-    }
+function setLanguage(langPair) {
+  if (!langPair) return;
+  var d = window.location.hostname;
+
+  // Clear existing cookies
+  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
+  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + d + '; path=/;';
+  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=.' + d + '; path=/;';
+
+  var parts = langPair.split('|');
+  var sourceLang = 'auto'; // Always use auto as source to match IP detection
+  var targetLang = parts[1];
+
+  var newLang = `/${sourceLang}/${targetLang}`;
+  document.cookie = `googtrans=${newLang}; path=/;`;
+  document.cookie = `googtrans=${newLang}; domain=${d}; path=/;`;
+  document.cookie = `googtrans=${newLang}; domain=.${d}; path=/;`;
+
+  window.location.reload();
+}
   </script>  
 </head>
 
@@ -836,6 +841,23 @@ function generatePDF(data) {
 </script>
 <div id="google_translate_element" style="display:none;"></div>
 
+<script>
+  (function() {
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    if (!getCookie('googtrans')) {
+      var domain = window.location.hostname;
+      document.cookie = 'googtrans=/auto/en;path=/;domain=' + domain + ';';
+      document.cookie = 'googtrans=/auto/en;path=/;domain=.' + domain + ';';
+    }
+  })();
+</script>
+
 <script type="text/javascript">
   function googleTranslateElementInit() {
     new google.translate.TranslateElement({
@@ -848,5 +870,14 @@ function generatePDF(data) {
 </script>
 
 <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<script>
+  window.onload = function() {
+    var gtFrame = document.querySelector('.goog-te-banner-frame.skiptranslate');
+    if (gtFrame) {
+      gtFrame.style.display = 'none';
+    }
+  };
+</script>
 </body>
 </html>
