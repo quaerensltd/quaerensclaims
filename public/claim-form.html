@@ -56,15 +56,19 @@
   <script>
     function setLanguage(langPair) {
       if (!langPair) return;
-      // Remove any previous googtrans cookies (for path and for domain)
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + window.location.hostname + '; path=/';
-      const lang = langPair.split('|')[1];
-      const newLang = '/en/' + lang;
-      document.cookie = 'googtrans=' + newLang + '; path=/';
-      document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
-      // Force reload (hard reload)
-      window.location.reload(true);
+      // Remove all possible googtrans cookies for root and current subdomain
+      var d = window.location.hostname;
+      // Remove from current domain and .domain
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + d + '; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      // Set new language
+      var lang = langPair.split('|')[1];
+      var newLang = '/en/' + lang;
+      document.cookie = 'googtrans=' + newLang + '; path=/;';
+      document.cookie = 'googtrans=' + newLang + '; domain=' + d + '; path=/;';
+      // Try force reload by changing href (not just reload), and clear hash
+      window.location.href = window.location.pathname + window.location.search;
     }
   </script>
 
