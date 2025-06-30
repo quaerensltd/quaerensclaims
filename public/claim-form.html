@@ -112,7 +112,7 @@
           const langCode = langPair.split('|')[1];
       
           // Set cookie for Google Translate
-          document.cookie = `googtrans=/en/${langCode};path=/;domain=${location.hostname};max-age=31536000`;
+          document.cookie = `googtrans=/en/${langCode};path=/;max-age=31536000`;
       
           // Trigger change on Google Translate iframe select
           const googleSelect = document.querySelector('select.goog-te-combo');
@@ -130,33 +130,54 @@
   </header>
 
   <script>
-    // On page load, read the cookie and set the language select value
+    // On page load, read the lang from URL or cookie and set Google Translate + dropdown
     document.addEventListener("DOMContentLoaded", function () {
-      const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
-      const lang = match ? match[1] : "en";
+      // Helper to get URL query param
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+  
+      // Get lang from URL param 'lang' or fallback to cookie or 'en'
+      const langFromUrl = getQueryParam('lang');
+      const cookieMatch = document.cookie.match(/googtrans=\/en\/(\w+)/);
+      const langFromCookie = cookieMatch ? cookieMatch[1] : null;
+      const lang = langFromUrl || langFromCookie || 'en';
+  
+      // Set Google Translate cookie
+      document.cookie = `googtrans=/en/${lang};path=/;domain=${location.hostname};max-age=31536000`;
+  
+      // Set dropdown value
       const languageSelect = document.getElementById("language");
       if (languageSelect) languageSelect.value = lang;
+  
+      // Trigger Google Translate select to change language
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = lang;
+        googleSelect.dispatchEvent(new Event('change'));
+      }
     });
   
     // Function to set language: update cookie, trigger Google Translate, update dropdown UI
     function setLanguage(langPair) {
       if (!langPair) return;
   
-      // Set the Google Translate cookie to remember language choice
+      // Set Google Translate cookie
       document.cookie = `googtrans=/en/${langPair.split('|')[1]};path=/;domain=${location.hostname};max-age=31536000`;
   
-      // Change the Google Translate select to trigger language change
+      // Trigger Google Translate select change
       const googleSelect = document.querySelector('select.goog-te-combo');
       if (googleSelect && googleSelect.options) {
         googleSelect.value = langPair.split('|')[1];
         googleSelect.dispatchEvent(new Event('change'));
       }
   
-      // Update your own dropdown UI (optional)
+      // Update dropdown UI
       const languageSelect = document.getElementById("language");
       if (languageSelect) languageSelect.value = langPair.split('|')[1];
     }
-  </script>  
+  </script>
   
   <!-- Google Translate hidden engine (bottom of page) -->
   <div id="google_translate_element2" style="display: none;"></div>
@@ -170,19 +191,20 @@
         select.dispatchEvent(new Event('change'));
       }
     }
-  </script>  
-
-<script type="text/javascript">
-  function googleTranslateElementInit2() {
-    new google.translate.TranslateElement({
-      pageLanguage: 'en',
-      includedLanguages: 'en,fr,es,de,nl,it,sv,da,pl,cs,ro,bg,el,pt',
-      layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-      autoDisplay: false
-    }, 'google_translate_element2');
-  }
-</script>
-<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
+  </script>
+  
+  <script type="text/javascript">
+    function googleTranslateElementInit2() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,fr,es,de,nl,it,sv,da,pl,cs,ro,bg,el,pt',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element2');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
+  
 
 <!-- Hero Section -->
 <section class="relative w-full overflow-hidden">
@@ -1211,6 +1233,21 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Something went wrong. Please try again.");
       }
     });
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("startClaimBtn");
+    const langSelect = document.getElementById("language"); // your language dropdown ID
+
+    if (btn && langSelect) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const selectedLang = langSelect.value || "en";
+        // Append lang param and navigate
+        window.location.href = `claim-form.html?lang=${selectedLang}`;
+      });
+    }
   });
 </script>
 </body>
