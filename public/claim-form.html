@@ -411,7 +411,11 @@ Please confirm receipt of this claim and your proposed actions in writing.`;
   doc.text("Thank you for your cooperation.", 10, y); y += 8;
   doc.text("Yours faithfully,", 10, y); y += 8;
   doc.text(data.fullName || "", 10, y); y += 8;
-  doc.setFontSize(10).setTextColor(120).text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const footerY = Math.min(pageHeight - 10, y + 12); // always 10mm from bottom, or 12mm below last line, whichever is higher
+  doc.setFontSize(10).setTextColor(120).text("This document was generated at no cost by Quaerens.co.uk.", 10, footerY);
+
+
 
   // === 2. Airline Local Language ===
   // Select language based on airline (default to English if unknown)
@@ -619,10 +623,12 @@ Bekräfta vänligen skriftligt att ni mottagit detta krav och hur ni avser agera
     y += closingLines.length * 6 + 2;
 
     doc.text(t.thanks, 10, y); y += 8;
-    doc.text(t.signoff, 10, y); y += 8;
-    doc.text(data.fullName || "", 10, y); y += 8;
+doc.text(t.signoff, 10, y); y += 8;
+doc.text(data.fullName || "", 10, y); y += 8;
+const pageHeight = doc.internal.pageSize.getHeight();
+const footerY = Math.min(pageHeight - 10, y + 12); // 10mm from bottom or 12mm below last line, whichever is higher
+doc.setFontSize(10).setTextColor(120).text(t.footer, 10, footerY);
 
-    doc.setFontSize(10).setTextColor(120).text(t.footer, 10, 290);
   }
 
   doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
