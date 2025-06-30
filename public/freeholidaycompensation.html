@@ -162,7 +162,7 @@ function setLanguage(langPair) {
     </div>
   </header>
 
-  <!-- Hero Section -->
+<!-- Hero Section -->
 <section class="relative w-full overflow-hidden">
   <img src="images/hero-holidaycompensation1.jpg" alt="Free Flight Delay Legal Help Banner"
     class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
@@ -201,32 +201,47 @@ function setLanguage(langPair) {
       <!-- Yellow Banner Header -->
       <div class="bg-yellow-300 text-blue-900 px-4 py-3 rounded-t-xl text-center border-b-2 border-yellow-500">
         <h2 class="text-xl sm:text-2xl font-bold">✈️ Check Your Holiday Compensation</h2>
-        <p class="text-sm sm:text-base mt-1">Enter your flight details to see if you’re entitled under EU261.</p>
+        <p class="text-sm sm:text-base mt-1">Enter your details to see if you’re entitled to compensation.</p>
       </div>
 
       <!-- Calculator Form -->
       <div class="p-6">
         <form id="compensation-form" class="space-y-4">
           <div>
-            <label for="departure" class="block font-semibold">Departure Airport</label>
-            <input list="airports" id="departure" placeholder="e.g. Amsterdam AMS" required
-              class="w-full border border-gray-300 p-2 rounded" />
-          </div>
-
-          <div>
-            <label for="arrival" class="block font-semibold">Arrival Airport</label>
-            <input list="airports" id="arrival" placeholder="e.g. Malaga AGP" required
-              class="w-full border border-gray-300 p-2 rounded" />
-          </div>
-
-          <div>
-            <label for="delay" class="block font-semibold">Delay Duration</label>
-            <select id="delay" required class="w-full border border-gray-300 p-2 rounded">
-              <option value="">Select Delay Duration</option>
-              <option value="2">Less than 3 hours</option>
-              <option value="3">3 to 4 hours</option>
-              <option value="4">More than 4 hours</option>
+            <label for="claimType" class="block font-semibold">Claim Type</label>
+            <select id="claimType" required class="w-full border border-gray-300 p-2 rounded">
+              <option value="">Select Claim Type</option>
+              <option value="package">Package Holiday Cancellation/Delay</option>
+              <option value="hotel">Hotel Overbooking or Downgrade</option>
+              <option value="cruise">Cruise Issues</option>
             </select>
+          </div>
+
+          <!-- Common inputs -->
+          <div>
+            <label for="totalPrice" class="block font-semibold">Total Holiday Price (€)</label>
+            <input type="number" id="totalPrice" min="0" step="0.01" placeholder="E.g. 1500" required
+              class="w-full border border-gray-300 p-2 rounded" />
+          </div>
+
+          <div id="packageFields" class="hidden space-y-4">
+            <label for="daysDelayed" class="block font-semibold">Days Delayed or Cancelled</label>
+            <input type="number" id="daysDelayed" min="0" step="1" placeholder="E.g. 2" class="w-full border border-gray-300 p-2 rounded" />
+            <p class="text-sm text-gray-600">Compensation approx. €50 per disrupted day plus refund.</p>
+          </div>
+
+          <div id="hotelFields" class="hidden space-y-4">
+            <label for="nightsDowngraded" class="block font-semibold">Nights Downgraded or Overbooked</label>
+            <input type="number" id="nightsDowngraded" min="0" step="1" placeholder="E.g. 3" class="w-full border border-gray-300 p-2 rounded" />
+            <label for="hotelPriceDiff" class="block font-semibold">Price Difference per Night (€)</label>
+            <input type="number" id="hotelPriceDiff" min="0" step="0.01" placeholder="E.g. 30" class="w-full border border-gray-300 p-2 rounded" />
+            <p class="text-sm text-gray-600">Refund of price difference plus €30 per night compensation.</p>
+          </div>
+
+          <div id="cruiseFields" class="hidden space-y-4">
+            <label for="cruiseDaysMissed" class="block font-semibold">Cruise Days Missed or Disrupted</label>
+            <input type="number" id="cruiseDaysMissed" min="0" step="1" placeholder="E.g. 1" class="w-full border border-gray-300 p-2 rounded" />
+            <p class="text-sm text-gray-600">Pro-rated refund based on days missed plus extras.</p>
           </div>
 
           <!-- Main Check Button -->
@@ -247,7 +262,6 @@ function setLanguage(langPair) {
         </a>
       </div>
 
-      <datalist id="airports"></datalist>
     </div>
 
   </div>
@@ -258,6 +272,68 @@ function setLanguage(langPair) {
   <img src="images/happy-travelers-hero.jpg" alt="Happy travelers hero banner"
     class="w-full h-auto object-cover object-center max-h-[500px] sm:max-h-[600px]" loading="eager" />
 </section>
+
+<script>
+  const claimTypeSelect = document.getElementById('claimType');
+  const packageFields = document.getElementById('packageFields');
+  const hotelFields = document.getElementById('hotelFields');
+  const cruiseFields = document.getElementById('cruiseFields');
+
+  claimTypeSelect.addEventListener('change', () => {
+    packageFields.classList.add('hidden');
+    hotelFields.classList.add('hidden');
+    cruiseFields.classList.add('hidden');
+
+    if (claimTypeSelect.value === 'package') {
+      packageFields.classList.remove('hidden');
+    } else if (claimTypeSelect.value === 'hotel') {
+      hotelFields.classList.remove('hidden');
+    } else if (claimTypeSelect.value === 'cruise') {
+      cruiseFields.classList.remove('hidden');
+    }
+  });
+
+  const form = document.getElementById('compensation-form');
+  const resultDiv = document.getElementById('compensation-result');
+  const claimBtn = document.getElementById('claim-button');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const claimType = claimTypeSelect.value;
+    const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
+
+    let compensation = 0;
+
+    if (claimType === 'package') {
+      const daysDelayed = parseInt(document.getElementById('daysDelayed').value) || 0;
+      // Estimate: refund + €50 per delayed day
+      compensation = totalPrice + (daysDelayed * 50);
+    } else if (claimType === 'hotel') {
+      const nightsDowngraded = parseInt(document.getElementById('nightsDowngraded').value) || 0;
+      const priceDiff = parseFloat(document.getElementById('hotelPriceDiff').value) || 0;
+      // Estimate: (price diff * nights) + €30 per night compensation
+      compensation = (priceDiff * nightsDowngraded) + (30 * nightsDowngraded);
+    } else if (claimType === 'cruise') {
+      const cruiseDaysMissed = parseInt(document.getElementById('cruiseDaysMissed').value) || 0;
+      // Estimate: prorated refund + fixed extra €100 per disrupted day
+      const dailyCost = totalPrice / 7; // assuming 7-day cruise typical
+      compensation = (dailyCost * cruiseDaysMissed) + (100 * cruiseDaysMissed);
+    }
+
+    compensation = compensation.toFixed(2);
+
+    if (compensation > 0) {
+      resultDiv.textContent = `Estimated compensation: €${compensation}`;
+      resultDiv.classList.remove('hidden');
+      claimBtn.classList.remove('hidden');
+    } else {
+      resultDiv.textContent = "Please fill in all required fields for your claim type.";
+      resultDiv.classList.remove('hidden');
+      claimBtn.classList.add('hidden');
+    }
+  });
+</script>
 
   <!-- News Testimonials Section -->
   <div class="mt-10 bg-white border border-gray-200 rounded-xl p-6 shadow-md">
