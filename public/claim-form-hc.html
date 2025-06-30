@@ -5,27 +5,15 @@
   <link rel="icon" type="image/png" href="images/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Holiday Compensation Claims | Quaerens</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
+    /* Remove conflicting CSS, keep font consistent */
     body {
       font-family: 'Inter', sans-serif;
-      top: 0px !important;
-      position: static !important;
-    }
-    html {
-      margin-top: 0 !important;
-    }
-    .content-box {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 2rem;
-      background: #f9fafb;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
     }
     /* Hide Google Translate top banner and branding */
     .goog-te-banner-frame.skiptranslate,
@@ -38,21 +26,7 @@
     .goog-te-gadget {
       font-size: 0 !important;
     }
-    form label {
-      display: block;
-      margin-top: 1rem;
-      font-weight: 600;
-    }
-    form input,
-    form select {
-      width: 100%;
-      padding: 0.6rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-top: 0.5rem;
-    }
   </style>
-
 </head>
 
 <body class="bg-gray-50 text-gray-800">
@@ -62,19 +36,20 @@
   <header class="bg-white shadow">
     <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
       <a href="/">
-        <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto">
+        <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto" />
       </a>
       <nav>
         <div class="w-full bg-gray-100 text-right p-2">
           <div x-data="{ open: false }" class="relative inline-block text-left">
             <button @click="open = !open"
-                    class="inline-flex items-center justify-center rounded border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none">
+              class="inline-flex items-center justify-center rounded border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none">
               🌐 Language
               <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l5 5 5-5" />
               </svg>
+            </button>
 
-              <div x-show="open" @click.outside="open = false"
+            <div x-show="open" @click.outside="open = false"
               class="absolute right-0 mt-2 w-48 rounded-md shadow bg-white text-sm text-gray-700 z-50">
               <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
               <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
@@ -89,112 +64,97 @@
               <a href="#" onclick="setLanguage('en|ro')" class="block px-4 py-2 hover:bg-gray-100">🇷🇴 Română</a>
               <a href="#" onclick="setLanguage('en|bg')" class="block px-4 py-2 hover:bg-gray-100">🇧🇬 Български</a>
               <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
-              <a href="#" onclick="setLanguage('en|pt')" class="block px-4 py-2 hover:bg-gray-100">🇵🇹 Português</a>                 
-         </div>
-       </div>
-     </div>
-   </nav>
-   <script>
-     // Read googtrans cookie on load and set dropdown
-     document.addEventListener("DOMContentLoaded", () => {
-       const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
-       const lang = match ? match[1] : "en";
-   
-       // Set the language selector dropdown (form)
-       const languageSelect = document.getElementById("language");
-       if (languageSelect) languageSelect.value = lang;
-     });
-   
-     // Change language function called by header dropdown
-     function setLanguage(langPair) {
-       if (!langPair) return;
-   
-       const langCode = langPair.split('|')[1];
-   
-       // Set cookie for Google Translate
-       document.cookie = `googtrans=/en/${langCode};path=/;max-age=31536000`;
-   
-       // Trigger change on Google Translate iframe select
-       const googleSelect = document.querySelector('select.goog-te-combo');
-       if (googleSelect && googleSelect.options) {
-         googleSelect.value = langCode;
-         googleSelect.dispatchEvent(new Event('change'));
-       }
-   
-       // Update your own language dropdown in form (if present)
-       const languageSelect = document.getElementById("language");
-       if (languageSelect) languageSelect.value = langCode;
-     }
-   </script>      
- </div>
-</header>
+              <a href="#" onclick="setLanguage('en|pt')" class="block px-4 py-2 hover:bg-gray-100">🇵🇹 Português</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
 
-<script>
- // On page load, read the lang from URL or cookie and set Google Translate + dropdown
- document.addEventListener("DOMContentLoaded", function () {
-   // Helper to get URL query param
-   function getQueryParam(name) {
-     const params = new URLSearchParams(window.location.search);
-     return params.get(name);
-   }
+  <script>
+    // Read googtrans cookie on load and set dropdown
+    document.addEventListener("DOMContentLoaded", () => {
+      const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+      const lang = match ? match[1] : "en";
 
-   // Get lang from URL param 'lang' or fallback to cookie or 'en'
-   const langFromUrl = getQueryParam('lang');
-   const cookieMatch = document.cookie.match(/googtrans=\/en\/(\w+)/);
-   const langFromCookie = cookieMatch ? cookieMatch[1] : null;
-   const lang = langFromUrl || langFromCookie || 'en';
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = lang;
+    });
 
-   // Set Google Translate cookie
-   document.cookie = `googtrans=/en/${lang};path=/;domain=${location.hostname};max-age=31536000`;
+    function setLanguage(langPair) {
+      if (!langPair) return;
 
-   // Set dropdown value
-   const languageSelect = document.getElementById("language");
-   if (languageSelect) languageSelect.value = lang;
+      const langCode = langPair.split('|')[1];
 
-   // Trigger Google Translate select to change language
-   const googleSelect = document.querySelector('select.goog-te-combo');
-   if (googleSelect && googleSelect.options) {
-     googleSelect.value = lang;
-     googleSelect.dispatchEvent(new Event('change'));
-   }
- });
+      document.cookie = `googtrans=/en/${langCode};path=/;max-age=31536000`;
 
- // Function to set language: update cookie, trigger Google Translate, update dropdown UI
- function setLanguage(langPair) {
-   if (!langPair) return;
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = langCode;
+        googleSelect.dispatchEvent(new Event('change'));
+      }
 
-   // Set Google Translate cookie
-   document.cookie = `googtrans=/en/${langPair.split('|')[1]};path=/;domain=${location.hostname};max-age=31536000`;
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = langCode;
+    }
+  </script>
 
-   // Trigger Google Translate select change
-   const googleSelect = document.querySelector('select.goog-te-combo');
-   if (googleSelect && googleSelect.options) {
-     googleSelect.value = langPair.split('|')[1];
-     googleSelect.dispatchEvent(new Event('change'));
-   }
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
 
-   // Update dropdown UI
-   const languageSelect = document.getElementById("language");
-   if (languageSelect) languageSelect.value = langPair.split('|')[1];
- }
-</script>
+      const langFromUrl = getQueryParam('lang');
+      const cookieMatch = document.cookie.match(/googtrans=\/en\/(\w+)/);
+      const langFromCookie = cookieMatch ? cookieMatch[1] : null;
+      const lang = langFromUrl || langFromCookie || 'en';
 
-<!-- Google Translate hidden engine (bottom of page) -->
-<div id="google_translate_element2" style="display: none;"></div>
-<script type="text/javascript">
- function doGTranslate(lang_pair) {
-   if (!lang_pair) return;
-   var lang = lang_pair.split('|')[1];
-   var select = document.querySelector('select.goog-te-combo');
-   if (select && select.options) {
-     select.value = lang;
-     select.dispatchEvent(new Event('change'));
-   }
- }
-</script>
+      document.cookie = `googtrans=/en/${lang};path=/;domain=${location.hostname};max-age=31536000`;
 
-  
-<script type="text/javascript">
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = lang;
+
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = lang;
+        googleSelect.dispatchEvent(new Event('change'));
+      }
+    });
+
+    function setLanguage(langPair) {
+      if (!langPair) return;
+
+      document.cookie = `googtrans=/en/${langPair.split('|')[1]};path=/;domain=${location.hostname};max-age=31536000`;
+
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = langPair.split('|')[1];
+        googleSelect.dispatchEvent(new Event('change'));
+      }
+
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = langPair.split('|')[1];
+    }
+  </script>
+
+  <!-- Google Translate hidden engine (bottom of page) -->
+  <div id="google_translate_element2" style="display: none;"></div>
+  <script type="text/javascript">
+    function doGTranslate(lang_pair) {
+      if (!lang_pair) return;
+      var lang = lang_pair.split('|')[1];
+      var select = document.querySelector('select.goog-te-combo');
+      if (select && select.options) {
+        select.value = lang;
+        select.dispatchEvent(new Event('change'));
+      }
+    }
+  </script>
+
+  <script type="text/javascript">
     function googleTranslateElementInit2() {
       new google.translate.TranslateElement({
         pageLanguage: 'en',
@@ -205,21 +165,20 @@
     }
   </script>
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
-  
+
   <!-- Hero Section -->
   <section class="relative w-full overflow-hidden">
     <img src="images/hero-holiday.png" alt="Free Holiday Compensation Legal Help Banner"
-         class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
+      class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
   </section>
-  
+
   <!-- Why Trust Us Image -->
   <div class="max-w-3xl mx-auto px-4 mt-12 mb-4" data-aos="fade-up">
-    <img src="images/why-trust-us-badges.png"
-         alt="Why Trust Us Badges"
-         class="mx-auto w-full max-w-xl rounded-lg shadow" />
+    <img src="images/why-trust-us-badges.png" alt="Why Trust Us Badges"
+      class="mx-auto w-full max-w-xl rounded-lg shadow" />
   </div>
-  
-  <!-- Main Explainer Box (No Floating Badge) -->
+
+  <!-- Main Explainer Box -->
   <div class="max-w-3xl mx-auto px-4 mt-12 mb-8" data-aos="fade-up">
     <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-900 p-6 rounded-xl shadow text-left">
       <h3 class="text-lg font-bold mb-3">How This Works – It's 100% Free</h3>
@@ -247,376 +206,257 @@
       </ul>
     </div>
   </div>
-  
-  <!-- ✅ Firebase Setup -->
-  <script type="module" src="firebase-setup.js"></script>
-  
-  <script>
-  // --- REASON LABELS FOR HOLIDAY COMPENSATION ---
-  const reasonLabels = {
-    cancellation: "Holiday cancellation",
-    significant_change: "Significant change in holiday",
-    accommodation_issue: "Accommodation problem",
-    transport_issue: "Transport problem",
-    overbooking: "Overbooking",
-    other: "Other"
-  };
-  
-  // --- TRANSLATIONS (Add more languages as needed) ---
-  const translations = {
-    en: {
-      intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under the Package Travel Directive 2015/2302 for the following disrupted holiday booking:`,
-      closing: `According to the Package Travel Directive and related EU consumer protection laws, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate this matter if not resolved in time.\n\nSincerely,\n\n`,
-      subject: "Holiday Compensation Claim",
-      to: "To:",
-      detailsTitle: "Holiday Booking Details:",
-      paymentLabel: "Preferred Payment Method",
-      claimRef: "Claim Reference",
-      footer: "This document was generated at no cost by Quaerens.co.uk."
-    },
-    fr: {
-      intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation conformément à la Directive sur les voyages à forfait 2015/2302 pour la réservation de vacances suivante :`,
-      closing: `Conformément à la Directive sur les voyages à forfait et aux lois européennes de protection des consommateurs, j'ai droit à cette indemnisation selon les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit d'escalader cette affaire si elle n'est pas résolue dans les délais.\n\nCordialement,\n\n`,
-      subject: "Réclamation d'indemnisation de vacances",
-      to: "À :",
-      detailsTitle: "Détails de la réservation :",
-      paymentLabel: "Méthode de paiement préférée",
-      claimRef: "Référence du dossier",
-      footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
-    }
-    // Add other languages similarly
-  };
-  
-  // --- COMPENSATION LOGIC ---
-  // This would be adapted to your holiday compensation calculator logic
-  function calculateCompensation(issueType, severity) {
-    // Placeholder example: adjust as per your real rules
-    if(issueType === "cancellation") return 500;
-    if(issueType === "significant_change") return 350;
-    if(issueType === "accommodation_issue") return 250;
-    if(issueType === "transport_issue") return 200;
-    if(issueType === "overbooking") return 300;
-    return 0;
-  }
-  
-  function generatePDF(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-  
-    // === 1. English Letter ===
-    const today = new Date().toLocaleDateString();
-    const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const amount = data.compensation || 0;
-  
-    let y = 20;
-    doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
-  
-    doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
-    doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
-    doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
-    doc.setFont(undefined, "normal").text(
-      `${data.operator}${data.operatorEmail ? "\nEmail: " + data.operatorEmail : ""}`,
-      10, y
-    );
-    y += 14;
-    doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
-    doc.setFont(undefined, "normal").text("Holiday Compensation Claim under Package Travel Directive", 10, y); y += 12;
-    doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
-  
-    // Main body (English)
-    const introEn = `I am writing to formally request compensation for the following disrupted holiday booking under the Package Travel Directive 2015/2302 and relevant consumer protection legislation.
-  
-  My holiday, detailed below, was affected by a ${data.reason || "N/A"} resulting in significant inconvenience and financial loss. I therefore request payment of the statutory compensation as required by law.`;
-  
-    const introLinesEn = doc.splitTextToSize(introEn, 180);
-    doc.text(introLinesEn, 10, y);
-    y += introLinesEn.length * 6 + 2;
-  
-    doc.setFont(undefined, "bold").text("Holiday Booking Details:", 10, y); y += 8;
-    [
-      `Passenger Name: ${data.fullName || ""}`,
-      `Booking Reference: ${data.bookingRef || ""}`,
-      `Holiday Start Date: ${data.holidayStartDate || ""}`,
-      `Holiday End Date: ${data.holidayEndDate || ""}`,
-      `Destination: ${data.destination || ""}`,
-      `Operator: ${data.operator || ""}`,
-      `Reason for Claim: ${data.reason || ""}`,
-    ].forEach(line => { doc.text(line, 10, y); y += 7; });
-  
-    y += 2;
-    doc.setFont(undefined, "bold").text("Amount Claimed:", 10, y); y += 7;
-    doc.setFont(undefined, "normal").text(`€${amount} (Package Travel Directive)`, 10, y); y += 10;
-  
-    doc.setFont(undefined, "bold").text("Preferred Payment Method:", 10, y); y += 7;
-    doc.setFont(undefined, "normal").text(`${data.paymentMethod || ""}`, 10, y); y += 10;
-  
-    // Closing (English)
-    const closingEn = `Please process this claim and arrange payment within 14 days of receipt. Failure to do so will leave me no option but to pursue legal remedies including referral to relevant consumer protection authorities.
-  
-  Supporting documents can be provided upon request.
-  
-  Please confirm receipt of this claim and your intended course of action in writing.`;
-  
-    const closingLinesEn = doc.splitTextToSize(closingEn, 180);
-    doc.text(closingLinesEn, 10, y);
-    y += closingLinesEn.length * 6 + 2;
-  
-    doc.text("Thank you for your cooperation.", 10, y); y += 8;
-    doc.text("Yours faithfully,", 10, y); y += 8;
-    doc.text(data.fullName || "", 10, y); y += 8;
-  
-    // Footer
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(10).setTextColor(120).text(
-      "This document was generated at no cost by Quaerens.co.uk.",
-      10,
-      pageHeight - 10
-    );
-  
-    // === 2. Local Language Version (if applicable) ===
-    // You can add multi-language support similarly to the original flight delay example,
-    // adapting the text to holiday compensation legal terms per language.
-  
-    // For brevity, only English and French shown here (expand as needed)
-    const localLangMap = {
-      "French Operator": "fr",
-      // Add your operator-to-language mapping here
-    };
-    const localLang = localLangMap[data.operator] || data.language || "en";
-    const localTranslations = {
-      fr: {
-        subject: "Réclamation d'indemnisation de vacances selon la Directive sur les voyages à forfait",
-        greeting: "Madame, Monsieur,",
-        intro: `Je vous écris pour demander une indemnisation concernant la réservation de vacances perturbée ci-dessous, conformément à la Directive sur les voyages à forfait 2015/2302 et à la législation européenne de protection des consommateurs.
-  
-  Mes vacances, détaillées ci-dessous, ont été affectées par un(e) ${data.reason || "N/A"} causant des désagréments et pertes financières importantes. Je demande donc le paiement de l’indemnisation légale.`,
-  
-        bookingDetails: "Détails de la réservation :",
-        amountClaimed: "Montant réclamé :",
-        paymentMethod: "Méthode de paiement préférée :",
-        closing: `Veuillez traiter cette réclamation et effectuer le paiement dans un délai de 14 jours. En cas de non-paiement, je me réserve le droit d'engager des poursuites judiciaires, y compris le recours aux autorités de protection des consommateurs.
-  
-  Les documents justificatifs sont disponibles sur demande.
-  
-  Merci de confirmer la réception de cette réclamation et les suites que vous envisagez d’y donner par écrit.`,
-        thanks: "Merci de votre coopération.",
-        signoff: "Cordialement,",
-        footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
-      }
-    };
-  
-    if (localLang !== "en" && localTranslations[localLang]) {
-      doc.addPage();
-      y = 20;
-      const t = localTranslations[localLang];
-  
-      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
-  
-      doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
-      doc.setFont(undefined, "normal").text(`Référence de réclamation: ${claimRef}`, 10, y); y += 10;
-      doc.setFont(undefined, "bold").text(t.to || "À :", 10, y); y += 6;
-      doc.setFont(undefined, "normal").text(
-        `${data.operator}${data.operatorEmail ? "\nEmail: " + data.operatorEmail : ""}`,
-        10, y
-      );
-      y += 14;
-      doc.setFont(undefined, "bold").text("Objet :", 10, y); y += 6;
-      doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 12;
-      doc.setFont(undefined, "normal").text(t.greeting, 10, y); y += 10;
-  
-      // Main body
-      const introLines = doc.splitTextToSize(t.intro, 180);
-      doc.text(introLines, 10, y);
-      y += introLines.length * 6 + 2;
-  
-      doc.setFont(undefined, "bold").text(t.bookingDetails, 10, y); y += 8;
-      [
-        `Nom du passager : ${data.fullName || ""}`,
-        `Référence de réservation : ${data.bookingRef || ""}`,
-        `Date de début des vacances : ${data.holidayStartDate || ""}`,
-        `Date de fin des vacances : ${data.holidayEndDate || ""}`,
-        `Destination : ${data.destination || ""}`,
-        `Opérateur : ${data.operator || ""}`,
-        `Motif de la réclamation : ${data.reason || ""}`
-      ].forEach(line => { doc.text(line, 10, y); y += 7; });
-  
-      y += 2;
-      doc.setFont(undefined, "bold").text(t.amountClaimed, 10, y); y += 7;
-      doc.setFont(undefined, "normal").text(`€${amount} (Directive sur les voyages à forfait)`, 10, y); y += 10;
-  
-      doc.setFont(undefined, "bold").text(t.paymentMethod, 10, y); y += 7;
-      doc.setFont(undefined, "normal").text(`${data.paymentMethod || ""}`, 10, y); y += 10;
-  
-      const closingLines = doc.splitTextToSize(t.closing, 180);
-      doc.text(closingLines, 10, y);
-      y += closingLines.length * 6 + 2;
-  
-      doc.text(t.thanks, 10, y); y += 8;
-      doc.text(t.signoff, 10, y); y += 8;
-      doc.text(data.fullName || "", 10, y); y += 8;
-  
-      // Footer
-      doc.setFontSize(10).setTextColor(120).text(
-        t.footer,
-        10,
-        doc.internal.pageSize.getHeight() - 10
-      );
-    }
-  
-    doc.save(`Holiday-Claim-${data.bookingRef || "unknown"}.pdf`);
-  }
-  </script>
-  
-  // --- MAIN FORM LOGIC ---
-  document.addEventListener('DOMContentLoaded', () => {
-    const {
-      collection,
-      addDoc,
-      serverTimestamp,
-      ref,
-      uploadBytes,
-      getDownloadURL
-    } = window.firebaseUtils;
-  
-    const db = window.db;
-    const storage = window.storage;
-  
-    const form = document.getElementById("claim-letter-form");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-  
-      // Gather fields
-      const fullName           = document.getElementById("fullName").value.trim();
-      const email              = document.getElementById("email").value.trim();
-      const phone              = document.getElementById("phone").value.trim();
-      const bookingRef         = document.getElementById("bookingRef").value.trim();
-      const provider           = document.getElementById("provider").value.trim();
-      const startDate          = document.getElementById("startDate").value;
-      const endDate            = document.getElementById("endDate").value;
-      const destination        = document.getElementById("destination").value.trim();
-      const claimType          = document.getElementById("claimType").value;
-      const issueDescription   = document.getElementById("issueDescription").value.trim();
-      const compensationClaimed= parseFloat(document.getElementById("compensationClaimed").value) || 0;
-      const preferredContact   = document.getElementById("preferredContact").value;
-      const handleOption       = document.getElementById("handleOption").value;
-      const donation           = document.getElementById("donation").value;
-  
-      // Validate required fields
-      if (!fullName || !email || !provider || !claimType || !issueDescription) {
-        alert("Please fill in all required fields marked with *.");
-        return;
-      }
-  
-      // Upload multiple optional evidence files
-      const files = document.getElementById("evidenceFiles").files;
-      let fileURLs = [];
-      if (files.length > 0) {
-        for (const file of files) {
-          const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-          try {
-            const snap = await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(snap.ref);
-            fileURLs.push(url);
-          } catch (uploadErr) {
-            console.error("Error uploading file:", uploadErr);
-            alert("Error uploading one of your files. Please try again.");
-            return;
-          }
-        }
-      }
-  
-      // Build claim data object
-      const claimData = {
-        fullName,
-        email,
-        phone,
-        bookingRef,
-        provider,
-        startDate,
-        endDate,
-        destination,
-        claimType,
-        issueDescription,
-        compensationClaimed,
-        preferredContact,
-        handleOption,
-        donation,
-        fileURLs, // Array of uploaded file URLs
-        createdAt: serverTimestamp()
-      };
-  
-      try {
-        // Save claim data to Firestore collection 'holidayClaims'
-        await addDoc(collection(db, "holidayClaims"), claimData);
-  
-        // Handle PDF / Email / Quaerens processing based on user choice
-        if (handleOption === "no") {
-          generatePDF(claimData);
-        } else if (handleOption === "yes") {
-          await fetch(
-            "https://us-central1-quaerensclaims.cloudfunctions.net/sendHolidayClaimEmail",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(claimData)
-            }
-          );
-          alert("✅ Your claim letter has been emailed!");
-        }
-  
-        // Show confirmation message
-        document.getElementById("claim-letter-result").classList.remove("hidden");
-  
-        // Optionally, reset form
-        // form.reset();
-  
-      } catch (err) {
-        console.error("Error saving claim:", err);
-        alert("Something went wrong while submitting your claim. Please try again.");
-      }
-    });
-  });
-  
- <!-- Testimonials Section -->
-<section class="py-16 bg-white w-full">
+
+  <!-- Main Form Container -->
+  <div class="max-w-3xl mx-auto bg-white rounded-lg shadow p-6 mb-12">
+    <form id="claim-letter-form" class="space-y-6" enctype="multipart/form-data" novalidate>
+      <!-- Full Name -->
+      <div>
+        <label for="fullName" class="block text-sm font-semibold text-gray-700">Full Name *</label>
+        <input
+          type="text"
+          id="fullName"
+          name="fullName"
+          required
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label for="email" class="block text-sm font-semibold text-gray-700">Email Address *</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Phone -->
+      <div>
+        <label for="phone" class="block text-sm font-semibold text-gray-700">Phone Number</label>
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Booking Reference -->
+      <div>
+        <label for="bookingRef" class="block text-sm font-semibold text-gray-700">Booking Reference</label>
+        <input
+          type="text"
+          id="bookingRef"
+          name="bookingRef"
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Provider -->
+      <div>
+        <label for="provider" class="block text-sm font-semibold text-gray-700">Tour Operator / Provider *</label>
+        <input
+          type="text"
+          id="provider"
+          name="provider"
+          required
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Holiday Start Date -->
+      <div>
+        <label for="startDate" class="block text-sm font-semibold text-gray-700">Holiday Start Date</label>
+        <input
+          type="date"
+          id="startDate"
+          name="startDate"
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Holiday End Date -->
+      <div>
+        <label for="endDate" class="block text-sm font-semibold text-gray-700">Holiday End Date</label>
+        <input
+          type="date"
+          id="endDate"
+          name="endDate"
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Destination -->
+      <div>
+        <label for="destination" class="block text-sm font-semibold text-gray-700">Holiday Destination</label>
+        <input
+          type="text"
+          id="destination"
+          name="destination"
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Claim Type -->
+      <div>
+        <label for="claimType" class="block text-sm font-semibold text-gray-700">Reason for Claim *</label>
+        <select
+          id="claimType"
+          name="claimType"
+          required
+          class="w-full border border-gray-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="" disabled selected>Select reason</option>
+          <option value="cancellation">Holiday cancellation</option>
+          <option value="significant_change">Significant change in holiday</option>
+          <option value="accommodation_issue">Accommodation problem</option>
+          <option value="transport_issue">Transport problem</option>
+          <option value="overbooking">Overbooking</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <!-- Issue Description -->
+      <div>
+        <label for="issueDescription" class="block text-sm font-semibold text-gray-700">Describe the Issue *</label>
+        <textarea
+          id="issueDescription"
+          name="issueDescription"
+          rows="4"
+          required
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        ></textarea>
+      </div>
+
+      <!-- Compensation Claimed -->
+      <div>
+        <label for="compensationClaimed" class="block text-sm font-semibold text-gray-700">Amount Claimed (€)</label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          id="compensationClaimed"
+          name="compensationClaimed"
+          class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Preferred Contact -->
+      <div>
+        <label for="preferredContact" class="block text-sm font-semibold text-gray-700">Preferred Contact Method</label>
+        <select
+          id="preferredContact"
+          name="preferredContact"
+          class="w-full border border-gray-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="email">Email</option>
+          <option value="phone">Phone</option>
+        </select>
+      </div>
+
+      <!-- Handle Option -->
+      <div>
+        <label for="handleOption" class="block text-sm font-semibold text-gray-700">Should Quaerens handle your claim?</label>
+        <select
+          id="handleOption"
+          name="handleOption"
+          class="w-full border border-gray-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="no" selected>Generate claim letter only (DIY)</option>
+          <option value="yes">Yes, please send on my behalf (No Win, No Fee)</option>
+        </select>
+      </div>
+
+      <!-- Donation -->
+      <div>
+        <label for="donation" class="block text-sm font-semibold text-gray-700">Donation (optional)</label>
+        <select
+          id="donation"
+          name="donation"
+          class="w-full border border-gray-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="0" selected>None</option>
+          <option value="5">€5</option>
+          <option value="10">€10</option>
+          <option value="20">€20</option>
+        </select>
+      </div>
+
+      <!-- Evidence Files -->
+      <div>
+        <label for="evidenceFiles" class="block text-sm font-semibold text-gray-700">Upload Evidence Files (optional)</label>
+        <input
+          type="file"
+          id="evidenceFiles"
+          name="evidenceFiles"
+          multiple
+          class="w-full"
+        />
+      </div>
+
+      <!-- Submit Button -->
+      <div class="text-center pt-4">
+        <button
+          type="submit"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition"
+        >
+          Submit My Holiday Claim
+        </button>
+      </div>
+
+      <!-- Confirmation message -->
+      <div
+        id="claim-letter-result"
+        class="hidden mt-6 text-green-700 font-semibold text-center"
+      >
+        ✅ Your claim has been submitted. We’ll be in touch soon.
+      </div>
+    </form>
+  </div>
+
+  <!-- Testimonials Section -->
+  <section class="py-16 bg-white w-full">
     <div class="max-w-6xl mx-auto px-4">
-        <h2 class="text-3xl font-extrabold text-center text-blue-800 mb-12" data-aos="fade-up">What Our Clients Say</h2>
-    
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Testimonial Card -->
-          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
-            <p class="italic text-blue-900">“Quaerens helped me get €1,200 compensation for my holiday cancellation – fast and easy!”</p>
-            <p class="font-semibold text-blue-800 mt-4">– Laura P.</p>
-          </div>
-    
-          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
-            <p class="italic text-blue-900">“I didn’t know I could claim for my ruined holiday. Thanks for making it simple!”</p>
-            <p class="font-semibold text-blue-800 mt-4">– Marc V.</p>
-          </div>
-    
-          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
-            <p class="italic text-blue-900">“Professional team. Highly recommended for holiday compensation claims.”</p>
-            <p class="font-semibold text-blue-800 mt-4">– Sofia R.</p>
-          </div>
-    
-          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
-            <p class="italic text-blue-900">“Grateful I found Quaerens — my claim was successful and quick!”</p>
-            <p class="font-semibold text-blue-800 mt-4">– Daniel H.</p>
-          </div>
-    
-          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
-            <p class="italic text-blue-900">“No lawyer needed, just clear documents and results.”</p>
-            <p class="font-semibold text-blue-800 mt-4">– Emma J.</p>
-          </div>
-    
-          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
-            <p class="italic text-blue-900">“Easy to use, fast response, and completely free to start.”</p>
-            <p class="font-semibold text-blue-800 mt-4">– Johan M.</p>
-          </div>
+      <h2 class="text-3xl font-extrabold text-center text-blue-800 mb-12" data-aos="fade-up">What Our Clients Say</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
+          <p class="italic text-blue-900">“Quaerens helped me get €1,200 compensation for my holiday cancellation – fast and easy!”</p>
+          <p class="font-semibold text-blue-800 mt-4">– Laura P.</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
+          <p class="italic text-blue-900">“I didn’t know I could claim for my ruined holiday. Thanks for making it simple!”</p>
+          <p class="font-semibold text-blue-800 mt-4">– Marc V.</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
+          <p class="italic text-blue-900">“Professional team. Highly recommended for holiday compensation claims.”</p>
+          <p class="font-semibold text-blue-800 mt-4">– Sofia R.</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
+          <p class="italic text-blue-900">“Grateful I found Quaerens — my claim was successful and quick!”</p>
+          <p class="font-semibold text-blue-800 mt-4">– Daniel H.</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
+          <p class="italic text-blue-900">“No lawyer needed, just clear documents and results.”</p>
+          <p class="font-semibold text-blue-800 mt-4">– Emma J.</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
+          <p class="italic text-blue-900">“Easy to use, fast response, and completely free to start.”</p>
+          <p class="font-semibold text-blue-800 mt-4">– Johan M.</p>
+        </div>
       </div>
     </div>
   </section>
-  
+
   <!-- Footer Section -->
   <footer class="bg-blue-900 text-white text-center py-6 w-full">
     <p class="mb-2">© 2025 Quaerens Ltd. All rights reserved.</p>
@@ -627,9 +467,103 @@
       <a href="#" class="underline">Contact Us</a>
     </p>
   </footer>
-  
-  <!-- ✅ Main form logic (holiday claims) -->
-  <script type="module">
+
+  <!-- Firebase Setup -->
+  <script type="module" src="firebase-setup.js"></script>
+
+  <!-- Main form logic -->
+  <script>
+    const reasonLabels = {
+      cancellation: "Holiday cancellation",
+      significant_change: "Significant change in holiday",
+      accommodation_issue: "Accommodation problem",
+      transport_issue: "Transport problem",
+      overbooking: "Overbooking",
+      other: "Other"
+    };
+
+    function calculateCompensation(issueType, severity) {
+      if(issueType === "cancellation") return 500;
+      if(issueType === "significant_change") return 350;
+      if(issueType === "accommodation_issue") return 250;
+      if(issueType === "transport_issue") return 200;
+      if(issueType === "overbooking") return 300;
+      return 0;
+    }
+
+    function generatePDF(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const today = new Date().toLocaleDateString();
+      const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const amount = data.compensation || 0;
+
+      let y = 20;
+      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+
+      doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+      doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
+      doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
+      doc.setFont(undefined, "normal").text(
+        `${data.operator}${data.operatorEmail ? "\nEmail: " + data.operatorEmail : ""}`,
+        10, y
+      );
+      y += 14;
+      doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+      doc.setFont(undefined, "normal").text("Holiday Compensation Claim under Package Travel Directive", 10, y); y += 12;
+      doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
+
+      const introEn = `I am writing to formally request compensation for the following disrupted holiday booking under the Package Travel Directive 2015/2302 and relevant consumer protection legislation.
+
+My holiday, detailed below, was affected by a ${data.reason || "N/A"} resulting in significant inconvenience and financial loss. I therefore request payment of the statutory compensation as required by law.`;
+
+      const introLinesEn = doc.splitTextToSize(introEn, 180);
+      doc.text(introLinesEn, 10, y);
+      y += introLinesEn.length * 6 + 2;
+
+      doc.setFont(undefined, "bold").text("Holiday Booking Details:", 10, y); y += 8;
+      [
+        `Passenger Name: ${data.fullName || ""}`,
+        `Booking Reference: ${data.bookingRef || ""}`,
+        `Holiday Start Date: ${data.holidayStartDate || ""}`,
+        `Holiday End Date: ${data.holidayEndDate || ""}`,
+        `Destination: ${data.destination || ""}`,
+        `Operator: ${data.operator || ""}`,
+        `Reason for Claim: ${data.reason || ""}`,
+      ].forEach(line => { doc.text(line, 10, y); y += 7; });
+
+      y += 2;
+      doc.setFont(undefined, "bold").text("Amount Claimed:", 10, y); y += 7;
+      doc.setFont(undefined, "normal").text(`€${amount} (Package Travel Directive)`, 10, y); y += 10;
+
+      doc.setFont(undefined, "bold").text("Preferred Payment Method:", 10, y); y += 7;
+      doc.setFont(undefined, "normal").text(`${data.paymentMethod || ""}`, 10, y); y += 10;
+
+      const closingEn = `Please process this claim and arrange payment within 14 days of receipt. Failure to do so will leave me no option but to pursue legal remedies including referral to relevant consumer protection authorities.
+
+Supporting documents can be provided upon request.
+
+Please confirm receipt of this claim and your intended course of action in writing.`;
+
+      const closingLinesEn = doc.splitTextToSize(closingEn, 180);
+      doc.text(closingLinesEn, 10, y);
+      y += closingLinesEn.length * 6 + 2;
+
+      doc.text("Thank you for your cooperation.", 10, y); y += 8;
+      doc.text("Yours faithfully,", 10, y); y += 8;
+      doc.text(data.fullName || "", 10, y); y += 8;
+
+      const pageHeight = doc.internal.pageSize.getHeight();
+      doc.setFontSize(10).setTextColor(120).text(
+        "This document was generated at no cost by Quaerens.co.uk.",
+        10,
+        pageHeight - 10
+      );
+
+      doc.save(`Holiday-Claim-${data.bookingRef || "unknown"}.pdf`);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const {
         collection,
@@ -639,83 +573,113 @@
         uploadBytes,
         getDownloadURL
       } = window.firebaseUtils;
-  
+
       const db = window.db;
       const storage = window.storage;
-  
+
       const form = document.getElementById("claim-letter-form");
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-  
-        const formData = new FormData(form);
-  
-        // Upload multiple files (evidence)
-        const files = form.querySelector("#evidenceFiles")?.files || [];
-        let fileURLs = [];
-        for (const file of files) {
-          const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-          const uploadSnapshot = await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(uploadSnapshot.ref);
-          fileURLs.push(url);
+
+        // Gather fields
+        const fullName = document.getElementById("fullName").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const bookingRef = document.getElementById("bookingRef").value.trim();
+        const provider = document.getElementById("provider").value.trim();
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+        const destination = document.getElementById("destination").value.trim();
+        const claimType = document.getElementById("claimType").value;
+        const issueDescription = document.getElementById("issueDescription").value.trim();
+        const compensationClaimed = parseFloat(document.getElementById("compensationClaimed").value) || 0;
+        const preferredContact = document.getElementById("preferredContact").value;
+        const handleOption = document.getElementById("handleOption").value;
+        const donation = document.getElementById("donation").value;
+
+        if (!fullName || !email || !provider || !claimType || !issueDescription) {
+          alert("Please fill in all required fields marked with *.");
+          return;
         }
-  
+
+        // Upload files
+        const files = document.getElementById("evidenceFiles").files;
+        let fileURLs = [];
+        if (files.length > 0) {
+          for (const file of files) {
+            const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+            try {
+              const snap = await uploadBytes(storageRef, file);
+              const url = await getDownloadURL(snap.ref);
+              fileURLs.push(url);
+            } catch (uploadErr) {
+              console.error("Error uploading file:", uploadErr);
+              alert("Error uploading one of your files. Please try again.");
+              return;
+            }
+          }
+        }
+
+        // Build data object
         const claimData = {
-          fullName: formData.get("fullName"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          bookingRef: formData.get("bookingRef"),
-          provider: formData.get("provider"),
-          startDate: formData.get("startDate"),
-          endDate: formData.get("endDate"),
-          destination: formData.get("destination"),
-          claimType: formData.get("claimType"),
-          issueDescription: formData.get("issueDescription"),
-          compensationClaimed: parseFloat(formData.get("compensationClaimed")) || 0,
-          preferredContact: formData.get("preferredContact"),
-          handleOption: formData.get("handleOption"),
-          donation: formData.get("donation"),
+          fullName,
+          email,
+          phone,
+          bookingRef,
+          provider,
+          startDate,
+          endDate,
+          destination,
+          claimType,
+          issueDescription,
+          compensationClaimed,
+          preferredContact,
+          handleOption,
+          donation,
           fileURLs,
-          submittedAt: serverTimestamp()
+          createdAt: serverTimestamp()
         };
-  
+
         try {
           await addDoc(collection(db, "holidayClaims"), claimData);
-  
-          if (claimData.handleOption === "no") {
+
+          if (handleOption === "no") {
             generatePDF(claimData);
-          } else if (claimData.handleOption === "yes") {
-            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendHolidayClaimEmail", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(claimData)
-            });
+          } else if (handleOption === "yes") {
+            await fetch(
+              "https://us-central1-quaerensclaims.cloudfunctions.net/sendHolidayClaimEmail",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(claimData)
+              }
+            );
             alert("✅ Your claim letter has been emailed!");
           }
-  
+
           document.getElementById("claim-letter-result").classList.remove("hidden");
-  
+
         } catch (err) {
-          console.error("❌ Error saving claim:", err);
-          alert("Something went wrong. Please try again.");
+          console.error("Error saving claim:", err);
+          alert("Something went wrong while submitting your claim. Please try again.");
         }
       });
     });
   </script>
-  
+
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("startClaimBtn");
-      const langSelect = document.getElementById("language"); // your language dropdown ID
-  
+      const langSelect = document.getElementById("language");
+
       if (btn && langSelect) {
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           const selectedLang = langSelect.value || "en";
-          // Append lang param and navigate
           window.location.href = `claim-form.html?lang=${selectedLang}`;
         });
       }
     });
   </script>
-  </body>
-  </html>  
+</body>
+</html>
