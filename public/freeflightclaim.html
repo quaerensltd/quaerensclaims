@@ -582,33 +582,42 @@ function setLanguage(langPair) {
 </button>
 <script>
   const scrollBtn = document.getElementById("scrollTopBtn");
-  window.addEventListener("scroll", () => {
-    scrollBtn.classList.toggle("hidden", window.scrollY < 300);
-  });
-  scrollBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
+  if (scrollBtn) {
+    window.addEventListener("scroll", () => {
+      scrollBtn.classList.toggle("hidden", window.scrollY < 300);
+    });
+    scrollBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
 </script>
 
 <script type="module" src="firebase-setup.js"></script>
 
 <script>
-  const db = window.firestore;
-  const storage = window.storage;
-  const {
-    collection,
-    addDoc,
-    serverTimestamp,
-    ref,
-    uploadBytes,
-    getDownloadURL
-  } = window.firebaseUtils;
+  if (window.firebaseUtils && window.firestore && window.storage) {
+    const db = window.firestore;
+    const storage = window.storage;
+    const {
+      collection,
+      addDoc,
+      serverTimestamp,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } = window.firebaseUtils;
 
-  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    console.log("Form submitted"); // <--- for debugging
-    // your code to extract values + call generatePDF()
-  });
+    const claimForm = document.getElementById("claim-letter-form");
+    if (claimForm) {
+      claimForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        console.log("Form submitted"); // <--- for debugging
+        // your code to extract values + call generatePDF()
+      });
+    }
+  } else {
+    console.warn("Firebase not initialized yet or firebaseUtils missing");
+  }
 </script>
 
 <script>
@@ -650,25 +659,27 @@ function setLanguage(langPair) {
 
 <script>
   // ✅ UPDATED SCRIPT WITH BOOKING REF + IBAN FIELDS INCLUDED IN CLAIM DATA AND PDF
-  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
+  const claimForm = document.getElementById("claim-letter-form");
+  if (claimForm) {
+    claimForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
 
-    const fullName = document.getElementById("fullName").value.trim();
-    const flightNumber = document.getElementById("flightNumber").value.trim();
-    const flightDate = document.getElementById("flightDate").value;
-    const bookingRef = document.getElementById("bookingRef").value.trim();
-    const iban = document.getElementById("iban").value.trim();
-    const depAirport = document.getElementById("depAirport").value.trim();
-    const arrAirport = document.getElementById("arrAirport").value.trim();
-    const airline = document.getElementById("airline").value;
-    const reason = document.getElementById("reason").value.trim();
-    const language = document.getElementById("language").value;
-    const email = document.getElementById("email").value.trim();
-    const handleOption = document.getElementById("handleOption").value;
-    const donation = document.getElementById("donation").value;
-    const distance = document.getElementById("distance").value;
-    const delayDuration = document.getElementById("delayDuration").value;
-    const compensation = calculateCompensation(distance, delayDuration);
+      const fullName = document.getElementById("fullName").value.trim();
+      const flightNumber = document.getElementById("flightNumber").value.trim();
+      const flightDate = document.getElementById("flightDate").value;
+      const bookingRef = document.getElementById("bookingRef").value.trim();
+      const iban = document.getElementById("iban").value.trim();
+      const depAirport = document.getElementById("depAirport").value.trim();
+      const arrAirport = document.getElementById("arrAirport").value.trim();
+      const airline = document.getElementById("airline").value;
+      const reason = document.getElementById("reason").value.trim();
+      const language = document.getElementById("language").value;
+      const email = document.getElementById("email").value.trim();
+      const handleOption = document.getElementById("handleOption").value;
+      const donation = document.getElementById("donation").value;
+      const distance = document.getElementById("distance").value;
+      const delayDuration = document.getElementById("delayDuration").value;
+      const compensation = calculateCompensation(distance, delayDuration);
 
     if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
       alert("Please fill in all required fields.");
@@ -852,8 +863,12 @@ function generatePDF(data) {
 
     if (!getCookie('googtrans')) {
       var domain = window.location.hostname;
-      document.cookie = 'googtrans=/auto/en;path=/;domain=' + domain + ';';
-      document.cookie = 'googtrans=/auto/en;path=/;domain=.' + domain + ';';
+      var baseDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
+document.cookie = 'googtrans=/auto/en;path=/;domain=' + domain + ';';
+document.cookie = 'googtrans=/auto/en;path=/;domain=.' + domain + ';';
+document.cookie = 'googtrans=/auto/en;path=/;domain=' + baseDomain + ';';
+document.cookie = 'googtrans=/auto/en;path=/;domain=.' + baseDomain + ';';
+
     }
   })();
 </script>
