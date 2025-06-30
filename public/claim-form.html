@@ -226,9 +226,6 @@
     </div>
   </div>  
 
-<!-- ✅ Firebase Setup -->
-<script type="module" src="firebase-setup.js"></script>
-
 <!-- Main logic (no duplicate import) -->
 <script type="module">
   document.addEventListener('DOMContentLoaded', () => {
@@ -362,6 +359,9 @@
   "Condor": "service@condor.com"
   };
 </script>
+
+<!-- ✅ Firebase Setup -->
+<script type="module" src="firebase-setup.js"></script>
 
     const reasonLabels = {
       technical_issue: "Technical issue",
@@ -1371,5 +1371,88 @@ function insertContentAndSave() {
       <a href="#" class="underline">Contact Us</a>
     </p>
   </footer>
+  <!-- ✅ Main form logic -->
+<script type="module">
+  document.addEventListener('DOMContentLoaded', () => {
+    const {
+      collection,
+      addDoc,
+      serverTimestamp,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } = window.firebaseUtils;
+
+    const db = window.db;
+    const storage = window.storage;
+    const airlineLogos = window.airlineLogos;
+    const airlineEmails = window.airlineEmails;
+
+    const reasonLabels = {
+      technical_issue: "Technical issue",
+      crew_availability: "Crew availability",
+      weather_conditions: "Weather conditions",
+      air_traffic_control: "Air traffic control",
+      operational_disruption: "Operational disruption",
+      late_incoming_aircraft: "Late incoming aircraft",
+      other: "Other"
+    };
+
+    const form = document.getElementById("claim-letter-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const claimData = {
+        fullName: formData.get("fullName"),
+        email: formData.get("email"),
+        flightNumber: formData.get("flightNumber"),
+        bookingRef: formData.get("bookingRef"),
+        flightDate: formData.get("flightDate"),
+        depAirport: formData.get("depAirport"),
+        arrAirport: formData.get("arrAirport"),
+        airline: formData.get("airline"),
+        airlineEmail: airlineEmails[formData.get("airline")] || "",
+        reason: reasonLabels[formData.get("delayReason")] || "",
+        delayReason: formData.get("delayReason"),
+        distance: formData.get("distance"),
+        delayDuration: formData.get("delayDuration"),
+        compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
+        iban: formData.get("iban"),
+        handleOption: formData.get("handleOption"),
+        language: formData.get("language"),
+        submittedAt: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+        switch (claimData.handleOption) {
+          case "pdf":
+            generatePDF(claimData);
+            break;
+          case "email":
+            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(claimData)
+            });
+            alert("✅ Your letter has been emailed!");
+            break;
+          case "quaerens":
+            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+            break;
+        }
+
+        document.getElementById("claim-letter-result").classList.remove("hidden");
+
+      } catch (err) {
+        console.error("❌ Error saving claim:", err);
+        alert("Something went wrong. Please try again.");
+      }
+    });
+  });
+</script>
+
 </body>
 </html>
