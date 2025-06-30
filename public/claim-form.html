@@ -52,58 +52,7 @@
       margin-top: 0.5rem;
     }
   </style>
-  
-  <script>
-    function setLanguage(langPair) {
-      if (!langPair) return;
-      var d = window.location.hostname;
-  
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + d + '; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=.' + d + '; path=/;';
-  
-      var lang = langPair.split('|')[1];
-      var newLang = '/en/' + lang;
-      document.cookie = 'googtrans=' + newLang + '; path=/;';
-      document.cookie = 'googtrans=' + newLang + '; domain=' + d + '; path=/;';
-  
-      window.location.href = window.location.pathname + window.location.search;
-    }
-  </script>
 
-  <!-- Auto-detect language based on IP (only on first visit) -->
-  <script>
-    if (!document.cookie.includes("googtrans")) {
-      fetch("https://ipapi.co/json/")
-        .then(response => response.json())
-        .then(data => {
-          const country = data.country_code;
-          const countryLangMap = {
-            FR: "fr",
-            ES: "es",
-            DE: "de",
-            IT: "it",
-            NL: "nl",
-            SE: "sv",
-            DK: "da", 
-            GR: "el",
-            PT: "pt",
-            BG: "bg",
-            PL: "pl",
-            CZ: "cs",
-            DEFAULT: "en"
-          };
-          const lang = countryLangMap[country] || countryLangMap.DEFAULT;
-          const cookieValue = "/en/" + lang;
-          document.cookie = `googtrans=${cookieValue}; path=/`;
-          document.cookie = `googtrans=${cookieValue}; domain=${location.hostname}; path=/`;
-          location.reload();
-        })
-        .catch(error => {
-          console.error("IP geolocation failed:", error);
-        });
-    }
-  </script>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
@@ -145,18 +94,70 @@
           </div>
         </div>
       </nav>
+      <script>
+        // Read googtrans cookie on load and set dropdown
+        document.addEventListener("DOMContentLoaded", () => {
+          const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+          const lang = match ? match[1] : "en";
+      
+          // Set the language selector dropdown (form)
+          const languageSelect = document.getElementById("language");
+          if (languageSelect) languageSelect.value = lang;
+        });
+      
+        // Change language function called by header dropdown
+        function setLanguage(langPair) {
+          if (!langPair) return;
+      
+          const langCode = langPair.split('|')[1];
+      
+          // Set cookie for Google Translate
+          document.cookie = `googtrans=/en/${langCode};path=/;domain=${location.hostname};max-age=31536000`;
+      
+          // Trigger change on Google Translate iframe select
+          const googleSelect = document.querySelector('select.goog-te-combo');
+          if (googleSelect && googleSelect.options) {
+            googleSelect.value = langCode;
+            googleSelect.dispatchEvent(new Event('change'));
+          }
+      
+          // Update your own language dropdown in form (if present)
+          const languageSelect = document.getElementById("language");
+          if (languageSelect) languageSelect.value = langCode;
+        }
+      </script>      
     </div>
   </header>
 
   <script>
+    // On page load, read the cookie and set the language select value
     document.addEventListener("DOMContentLoaded", function () {
       const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
       const lang = match ? match[1] : "en";
-      const selector = document.getElementById("language");
-      if (selector) selector.value = `en|${lang}`;
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = lang;
     });
-  </script>
-
+  
+    // Function to set language: update cookie, trigger Google Translate, update dropdown UI
+    function setLanguage(langPair) {
+      if (!langPair) return;
+  
+      // Set the Google Translate cookie to remember language choice
+      document.cookie = `googtrans=/en/${langPair.split('|')[1]};path=/;domain=${location.hostname};max-age=31536000`;
+  
+      // Change the Google Translate select to trigger language change
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = langPair.split('|')[1];
+        googleSelect.dispatchEvent(new Event('change'));
+      }
+  
+      // Update your own dropdown UI (optional)
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = langPair.split('|')[1];
+    }
+  </script>  
+  
   <!-- Google Translate hidden engine (bottom of page) -->
   <div id="google_translate_element2" style="display: none;"></div>
   <script type="text/javascript">
@@ -169,7 +170,7 @@
         select.dispatchEvent(new Event('change'));
       }
     }
-  </script>
+  </script>  
 
 <script type="text/javascript">
   function googleTranslateElementInit2() {
