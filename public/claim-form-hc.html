@@ -386,18 +386,7 @@
           <option value="20">€20</option>
         </select>
       </div>
-      <!-- Evidence Files -->
-      <div>
-        <label for="evidenceFiles" class="block text-sm font-semibold text-gray-700">Upload Evidence Files (optional)</label>
-        <input
-          type="file"
-          id="evidenceFiles"
-          name="evidenceFiles"
-          multiple
-          class="w-full"
-        />
-        <p class="text-xs text-gray-500 mt-1">Attach scanned documents, screenshots, PDFs, etc.</p>
-      </div>
+
       <!-- Submit Button -->
       <div class="text-center pt-4">
         <button
@@ -627,22 +616,22 @@ if (!fullName || !email || !provider || !claimType || !issueDescription) {
   return;
 }
 
-    // File upload (Firebase Storage)
-    const files = document.getElementById("evidenceFiles").files;
-    let fileURLs = [];
-    if (window.firebaseUtils && files.length > 0) {
-      for (const file of files) {
-        const storageRef = ref(window.storage, `holidayclaims/${Date.now()}-${file.name}`);
-        try {
-          const snap = await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(snap.ref);
-          fileURLs.push(url);
-        } catch (uploadErr) {
-          alert("Error uploading one of your files. Please try again.");
-          return;
-        }
-      }
+// File upload (Firebase Storage)
+const files = document.getElementById("evidenceFiles").files;
+let fileURLs = [];
+if (window.firebaseUtils && files.length > 0) {
+  for (const file of files) {
+    const storageRef = ref(window.storage, `holidayclaims/${Date.now()}-${file.name}`);
+    try {
+      const snap = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snap.ref);
+      fileURLs.push(url);
+    } catch (uploadErr) {
+      alert("Error uploading one of your files. Please try again.");
+      return;
     }
+  }
+}
 
     const claimData = {
       fullName,
