@@ -358,19 +358,6 @@
         </select>
       </div>
 
-      <!-- Handle Option -->
-      <div>
-        <label for="handleOption" class="block text-sm font-semibold text-gray-700">Should Quaerens handle your claim?</label>
-        <select
-          id="handleOption"
-          name="handleOption"
-          class="w-full border border-gray-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="no" selected>Generate claim letter only (DIY)</option>
-          <option value="yes">Yes, please send on my behalf (No Win, No Fee)</option>
-        </select>
-      </div>
-
       <!-- Donation -->
       <div>
         <label for="donation" class="block text-sm font-semibold text-gray-700">Donation (optional)</label>
@@ -498,6 +485,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     getDownloadURL
   } = window.firebaseUtils || {};
 
+  // Add this above generatePDF()
+const legalJustification = {
+  cancellation: `Under Article 12 of the Package Travel Directive (EU 2015/2302), if your holiday is cancelled, you are entitled to a full refund or suitable alternative, plus compensation for inconvenience or extra costs incurred.`,
+  significant_change: `Under Article 11 of the Package Travel Directive, you are entitled to compensation if significant changes are made to your holiday after booking, such as major alterations to accommodation or travel times.`,
+  accommodation_issue: `Article 13 of the Directive provides that if the accommodation is not as agreed (e.g. lower standard, uninhabitable, unavailable), you are entitled to a price reduction and/or compensation.`,
+  transport_issue: `If transport is disrupted or not provided as booked, Article 13 and 14 of the Directive guarantee your right to alternative arrangements and compensation where applicable.`,
+  overbooking: `EU law forbids overbooking. If your holiday was affected due to overbooking, you are entitled to alternative arrangements or full refund and additional compensation (Directive 2015/2302, Article 13).`,
+  other: `As a consumer under the Package Travel Directive (EU 2015/2302), you are protected against various breaches of contract or substandard services and entitled to appropriate remedies including compensation.`
+};
+
   // PDF for DIY claims
   function generatePDF(data) {
     const { jsPDF } = window.jspdf;
@@ -523,6 +520,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 My holiday, detailed below, was affected by a ${reasonText} resulting in significant inconvenience and/or financial loss. I therefore request payment of the statutory compensation as required by law.`;
     const introLines = doc.splitTextToSize(intro, 180);
     doc.text(introLines, 10, y); y += introLines.length * 6 + 2;
+    // Insert dynamic legal justification
+    const legalText = legalJustification[data.claimType] || legalJustification.other;
+    const legalLines = doc.splitTextToSize(legalText, 180);
+    doc.setFont(undefined, "italic");
+    doc.text(legalLines, 10, y); y += legalLines.length * 6 + 4;
+    doc.setFont(undefined, "normal");
 
     doc.setFont(undefined, "bold").text("Holiday Booking Details:", 10, y); y += 8;
     [
@@ -586,7 +589,6 @@ My holiday, detailed below, was affected by a ${reasonText} resulting in signifi
     const issueDescription = document.getElementById("issueDescription").value.trim();
     const compensationClaimed = parseFloat(document.getElementById("compensationClaimed").value) || 0;
     const preferredContact = document.getElementById("preferredContact").value;
-    const handleOption = document.getElementById("handleOption").value;
     const donation = document.getElementById("donation").value;
 
     if (!fullName || !email || !provider || !claimType || !issueDescription) {
@@ -625,35 +627,21 @@ My holiday, detailed below, was affected by a ${reasonText} resulting in signifi
       issueDescription,
       compensationClaimed,
       preferredContact,
-      handleOption,
       donation,
       fileURLs,
       createdAt: window.firebaseUtils ? serverTimestamp() : new Date().toISOString()
     };
 
     try {
-      // Firestore
+      // Firestore: save claim data only
       if (window.firebaseUtils) await addDoc(collection(window.db, "holidayClaims"), claimData);
 
-      if (handleOption === "no") {
-        generatePDF(claimData);
-        disableForm(form);
-        resultDiv.textContent = "✅ Your claim letter has been generated as a PDF. Please send it to your tour operator. (A copy was saved in our system.)";
-        resultDiv.classList.remove("hidden");
-      } else {
-        // Full Service – send email
-        await fetch(
-          "https://us-central1-quaerensclaims.cloudfunctions.net/sendHolidayClaimEmail",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(claimData)
-          }
-        );
-        disableForm(form);
-        resultDiv.textContent = "✅ Your claim has been submitted and will be sent by our team. You will receive confirmation by email.";
-        resultDiv.classList.remove("hidden");
-      }
+      // Generate PDF for user to send themselves
+      generatePDF(claimData);
+      disableForm(form);
+      resultDiv.textContent = "✅ Your claim letter has been generated as a PDF. Please send it to your tour operator. (A copy was saved in our system.)";
+      resultDiv.classList.remove("hidden");
+
     } catch (err) {
       alert("Something went wrong while submitting your claim. Please try again or contact support.");
     }
