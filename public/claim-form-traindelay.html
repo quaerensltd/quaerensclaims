@@ -86,6 +86,14 @@
       <input type="time" id="scheduledTime" name="scheduledTime" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500" />
     </div>
     <div>
+      <label for="region" class="block text-sm font-semibold text-gray-700">Region *</label>
+      <select id="region" name="region" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500">
+        <option value="uk">United Kingdom (Delay Repay)</option>
+        <option value="eu">European Union (EU 1371/2007)</option>
+      </select>
+      <p class="text-xs text-gray-500 mt-1">Choose the scheme that applies to your journey.</p>
+    </div>
+    <div>
       <label for="delayMinutes" class="block text-sm font-semibold text-gray-700">Delay Duration (Minutes) *</label>
       <input type="number" min="1" id="delayMinutes" name="delayMinutes" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500" />
     </div>
@@ -94,10 +102,10 @@
       <input type="number" min="1" id="ticketPrice" name="ticketPrice" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500" />
     </div>
     <div>
-      <label for="compensationClaimed" class="block text-sm font-semibold text-gray-700">Amount Claimed (€)</label>
+      <label for="compensationClaimed" class="block text-sm font-semibold text-gray-700">Compensation Amount (Prefilled or Estimate) (€ or £)</label>
       <input type="number" min="0" step="0.01" id="compensationClaimed" name="compensationClaimed" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500" />
-      <p class="text-xs text-gray-500 mt-1">Prefilled based on calculator. Edit if you need to claim a different amount.</p>
-    </div>
+      <p class="text-xs text-gray-500 mt-1">This will be prefilled from the calculator if you used it. Edit if you need to claim a different amount.</p>
+    </div>    
     <div>
       <label for="issueDescription" class="block text-sm font-semibold text-gray-700">What Happened? *</label>
       <textarea id="issueDescription" name="issueDescription" rows="3" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
@@ -152,134 +160,154 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- PDF GENERATOR -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const form = document.getElementById("claim-letter-form");
-  const resultDiv = document.getElementById("claim-letter-result");
-
-  function generatePDF(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y = 20;
-    const today = new Date().toLocaleDateString();
-    const claimRef = `TR-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const amount = data.compensationClaimed || 0;
-
-    doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
-    doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
-    doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
-    doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
-    doc.setFont(undefined, "normal").text(`${data.operator || ""}`, 10, y); y += 14;
-    doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
-    doc.setFont(undefined, "normal").text("Train Delay Compensation Claim", 10, y); y += 12;
-    doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
-
-    // LEGAL EXPLANATION
-    const intro = `I am writing to request compensation for a train delay in accordance with ${
-      data.region === "uk"
-        ? "the UK Delay Repay scheme"
-        : "EU Regulation 1371/2007"
-    }. My journey details and the basis for my claim are provided below.`;
-    const introLines = doc.splitTextToSize(intro, 180);
-    doc.text(introLines, 10, y); y += introLines.length * 6 + 2;
-
-    // Details
-    doc.setFont(undefined, "bold").text("Journey Details:", 10, y); y += 8;
-    [
-      `Full Name: ${data.fullName || ""}`,
-      `Train Operator: ${data.operator || ""}`,
-      `Journey: ${data.journey || ""}`,
-      `Date of Travel: ${data.travelDate || ""}`,
-      `Scheduled Departure: ${data.scheduledTime || ""}`,
-      `Delay Duration: ${data.delayMinutes || ""} minutes`,
-      `Ticket Price: €${data.ticketPrice || ""}`,
-      `Amount Claimed: €${amount}`
-    ].forEach(line => { doc.setFont(undefined, "normal").text(line, 10, y); y += 7; });
-
-    if (data.issueDescription) {
-      doc.setFont(undefined, "bold").text("What happened:", 10, y); y += 7;
-      const issueLines = doc.splitTextToSize(data.issueDescription, 180);
-      doc.setFont(undefined, "normal").text(issueLines, 10, y); y += issueLines.length * 6 + 2;
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("claim-letter-form");
+    const resultDiv = document.getElementById("claim-letter-result");
+  
+    // Prefill from query params
+    const params = new URLSearchParams(window.location.search);
+    ["compensationClaimed", "region", "ticketPrice", "delayMinutes", "claimType"].forEach(f => {
+      if (params.has(f)) {
+        const el = document.getElementById(f);
+        if (el) el.value = params.get(f);
+      }
+    });
+  
+    function generatePDF(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+      const today = new Date().toLocaleDateString();
+      const claimRef = `TR-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const amount = data.compensationClaimed || 0;
+  
+      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+      doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+      doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
+      doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
+      doc.setFont(undefined, "normal").text(`${data.operator || ""}`, 10, y); y += 14;
+      doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+      doc.setFont(undefined, "normal").text("Train Delay Compensation Claim", 10, y); y += 12;
+      doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
+  
+      // Region-specific compensation explanation
+      let regionText = "";
+      if (data.region === "uk") {
+        regionText =
+          "UK Delay Repay: You are entitled to 25% (15–29 min), 50% (30–119 min), or 100% (120+ min) of the ticket price for eligible delays.";
+      } else {
+        regionText =
+          "EU Regulation 1371/2007: You are entitled to 25% (60–119 min) or 50% (120+ min) of the ticket price for eligible delays.";
+      }
+      doc.setFont(undefined, "italic");
+      const regionLines = doc.splitTextToSize(regionText, 180);
+      doc.text(regionLines, 10, y); y += regionLines.length * 6 + 4;
+      doc.setFont(undefined, "normal");
+  
+      // Legal intro
+      const intro = `I am writing to request compensation for a train delay in accordance with ${
+        data.region === "uk"
+          ? "the UK Delay Repay scheme"
+          : "EU Regulation 1371/2007"
+      }. My journey details and the basis for my claim are provided below.`;
+      const introLines = doc.splitTextToSize(intro, 180);
+      doc.text(introLines, 10, y); y += introLines.length * 6 + 2;
+  
+      // Details
+      doc.setFont(undefined, "bold").text("Journey Details:", 10, y); y += 8;
+      [
+        `Full Name: ${data.fullName || ""}`,
+        `Train Operator: ${data.operator || ""}`,
+        `Journey: ${data.journey || ""}`,
+        `Date of Travel: ${data.travelDate || ""}`,
+        `Scheduled Departure: ${data.scheduledTime || ""}`,
+        `Delay Duration: ${data.delayMinutes || ""} minutes`,
+        `Ticket Price: €${data.ticketPrice || ""}`,
+        `Amount Claimed: €${amount}`
+      ].forEach(line => { doc.setFont(undefined, "normal").text(line, 10, y); y += 7; });
+  
+      if (data.issueDescription) {
+        doc.setFont(undefined, "bold").text("What happened:", 10, y); y += 7;
+        const issueLines = doc.splitTextToSize(data.issueDescription, 180);
+        doc.setFont(undefined, "normal").text(issueLines, 10, y); y += issueLines.length * 6 + 2;
+      }
+  
+      // Evidence section
+      if (data.evidenceList && data.evidenceList.length > 0) {
+        doc.setFont(undefined, "bold").text("Included/Available Evidence:", 10, y); y += 8;
+        data.evidenceList.forEach(item => {
+          doc.setFont(undefined, "normal").text("- " + item, 14, y); y += 7;
+        });
+        y += 2;
+      }
+  
+      // Legal basis block
+      y += 4;
+      doc.setFont(undefined, "bold").text("Legal Basis:", 10, y); y += 7;
+      const legalText = data.region === "uk"
+        ? "UK: Delay Repay – You are entitled to compensation of up to 100% of the ticket price depending on delay length."
+        : "EU: Regulation 1371/2007 – You are entitled to 25% (60–119 min) or 50% (120+ min) of the ticket price for eligible delays.";
+      const legalLines = doc.splitTextToSize(legalText, 180);
+      doc.setFont(undefined, "italic").text(legalLines, 10, y); y += legalLines.length * 6 + 4;
+      doc.setFont(undefined, "normal");
+  
+      // Footer
+      const pageHeight = doc.internal.pageSize.getHeight();
+      doc.setFontSize(10).setTextColor(120).text(
+        "This document was generated at no cost by Quaerens.co.uk.",
+        10,
+        pageHeight - 10
+      );
+  
+      doc.save(`Train-Delay-Claim-${claimRef}.pdf`);
     }
-
-    // Evidence section
-    if (data.evidenceList && data.evidenceList.length > 0) {
-      doc.setFont(undefined, "bold").text("Included/Available Evidence:", 10, y); y += 8;
-      data.evidenceList.forEach(item => {
-        doc.setFont(undefined, "normal").text("- " + item, 14, y); y += 7;
-      });
-      y += 2;
-    }
-
-    // Legal basis block
-    y += 4;
-    doc.setFont(undefined, "bold").text("Legal Basis:", 10, y); y += 7;
-    const legalText = data.region === "uk"
-      ? "UK: Delay Repay – You are entitled to compensation of up to 100% of the ticket price depending on delay length."
-      : "EU: Regulation 1371/2007 – You are entitled to 25% (60–119 min) or 50% (120+ min) of the ticket price for eligible delays.";
-    const legalLines = doc.splitTextToSize(legalText, 180);
-    doc.setFont(undefined, "italic").text(legalLines, 10, y); y += legalLines.length * 6 + 4;
-    doc.setFont(undefined, "normal");
-
-    // Footer
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(10).setTextColor(120).text(
-      "This document was generated at no cost by Quaerens.co.uk.",
-      10,
-      pageHeight - 10
-    );
-
-    doc.save(`Train-Delay-Claim-${claimRef}.pdf`);
-  }
-
-  // Form submit
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    resultDiv.classList.add("hidden");
-
-    // Gather fields
-    const data = {
-      fullName: document.getElementById("fullName").value.trim(),
-      email: document.getElementById("email").value.trim(),
-      phone: document.getElementById("phone").value.trim(),
-      operator: document.getElementById("operator").value.trim(),
-      journey: document.getElementById("journey").value.trim(),
-      travelDate: document.getElementById("travelDate").value,
-      scheduledTime: document.getElementById("scheduledTime").value,
-      delayMinutes: document.getElementById("delayMinutes").value,
-      ticketPrice: document.getElementById("ticketPrice").value,
-      compensationClaimed: parseFloat(document.getElementById("compensationClaimed").value) || 0,
-      issueDescription: document.getElementById("issueDescription").value.trim(),
-      region: "eu", // default, can set dynamically if you add region field
-      evidenceList: (() => {
-        const checked = document.querySelectorAll('input[name="evidence"]:checked');
-        const otherText = document.getElementById('evidenceOtherText').value.trim();
-        let out = Array.from(checked).map(el => el.value);
-        if (out.includes("Other") && otherText) {
-          out[out.indexOf("Other")] = "Other: " + otherText;
-        }
-        return out;
-      })()
-    };
-
-    // TODO: Save to Firebase if you want – add code here
-
-    // Generate PDF
-    generatePDF(data);
-
-    // Confirmation message
-    let msg = "✅ Your claim letter has been generated as a PDF. Please send it to your train operator.<br><br>";
-    if (data.evidenceList.length > 0) {
-      msg += "<strong>Evidence you indicated:</strong><ul style='margin-left:1em'>";
-      data.evidenceList.forEach(ev => msg += "<li>" + ev + "</li>");
-      msg += "</ul><br>";
-    }
-    msg += "<strong>How to use your claim letter:</strong><ol style='margin-left:1em'><li>Download and review your letter</li><li>Attach your evidence documents</li><li>Email or post your letter and evidence to the operator’s claims department</li><li>Wait for a response (usually 2–4 weeks)</li></ol>";
-    resultDiv.innerHTML = msg;
-    resultDiv.classList.remove("hidden");
+  
+    // Form submit
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      resultDiv.classList.add("hidden");
+  
+      // Gather fields
+      const data = {
+        fullName: document.getElementById("fullName").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        operator: document.getElementById("operator") ? document.getElementById("operator").value.trim() : "",
+        journey: document.getElementById("journey") ? document.getElementById("journey").value.trim() : "",
+        travelDate: document.getElementById("travelDate") ? document.getElementById("travelDate").value : "",
+        scheduledTime: document.getElementById("scheduledTime") ? document.getElementById("scheduledTime").value : "",
+        delayMinutes: document.getElementById("delayMinutes") ? document.getElementById("delayMinutes").value : "",
+        ticketPrice: document.getElementById("ticketPrice") ? document.getElementById("ticketPrice").value : "",
+        compensationClaimed: parseFloat(document.getElementById("compensationClaimed").value) || 0,
+        issueDescription: document.getElementById("issueDescription") ? document.getElementById("issueDescription").value.trim() : "",
+        region: document.getElementById("region") ? document.getElementById("region").value : (params.get("region") || "eu"),
+        evidenceList: (() => {
+          const checked = document.querySelectorAll('input[name="evidence"]:checked');
+          const otherText = document.getElementById('evidenceOtherText') ? document.getElementById('evidenceOtherText').value.trim() : "";
+          let out = Array.from(checked).map(el => el.value);
+          if (out.includes("Other") && otherText) {
+            out[out.indexOf("Other")] = "Other: " + otherText;
+          }
+          return out;
+        })()
+      };
+  
+      // Generate PDF
+      generatePDF(data);
+  
+      // Confirmation message
+      let msg = "✅ Your claim letter has been generated as a PDF. Please send it to your train operator.<br><br>";
+      if (data.evidenceList.length > 0) {
+        msg += "<strong>Evidence you indicated:</strong><ul style='margin-left:1em'>";
+        data.evidenceList.forEach(ev => msg += "<li>" + ev + "</li>");
+        msg += "</ul><br>";
+      }
+      msg += "<strong>How to use your claim letter:</strong><ol style='margin-left:1em'><li>Download and review your letter</li><li>Attach your evidence documents</li><li>Email or post your letter and evidence to the operator’s claims department</li><li>Wait for a response (usually 2–4 weeks)</li></ol>";
+      resultDiv.innerHTML = msg;
+      resultDiv.classList.remove("hidden");
+    });
   });
-});
-</script>
+  </script>  
 </body>
 </html>
