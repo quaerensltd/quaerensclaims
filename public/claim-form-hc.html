@@ -468,218 +468,197 @@
     </p>
   </footer>
 
-  <!-- Firebase Setup -->
-  <script type="module" src="firebase-setup.js"></script>
+<!-- Firebase Setup -->
+<script type="module" src="firebase-setup.js"></script>
 
-  <!-- Main form logic -->
-  <script>
-    const reasonLabels = {
-      cancellation: "Holiday cancellation",
-      significant_change: "Significant change in holiday",
-      accommodation_issue: "Accommodation problem",
-      transport_issue: "Transport problem",
-      overbooking: "Overbooking",
-      other: "Other"
-    };
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Prefill fields from query params (extend as needed)
+  const params = new URLSearchParams(window.location.search);
+  const prefillFields = [
+    "claimType", "compensationClaimed", "estimate", "destination", "fullName", "email", "phone"
+  ];
+  prefillFields.forEach(f => {
+    if (params.has(f)) {
+      const el = document.getElementById(f);
+      if (el) el.value = params.get(f);
+    }
+  });
 
-    function calculateCompensation(issueType, severity) {
-      if(issueType === "cancellation") return 500;
-      if(issueType === "significant_change") return 350;
-      if(issueType === "accommodation_issue") return 250;
-      if(issueType === "transport_issue") return 200;
-      if(issueType === "overbooking") return 300;
-      return 0;
+  const form = document.getElementById("claim-letter-form");
+  const resultDiv = document.getElementById("claim-letter-result");
+
+  // Firebase helpers
+  const {
+    collection,
+    addDoc,
+    serverTimestamp,
+    ref,
+    uploadBytes,
+    getDownloadURL
+  } = window.firebaseUtils || {};
+
+  // PDF for DIY claims
+  function generatePDF(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const today = new Date().toLocaleDateString();
+    const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const amount = data.compensationClaimed || 0;
+    let y = 20;
+
+    doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+    doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+    doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
+    doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
+    doc.setFont(undefined, "normal").text(`${data.provider || ""}`, 10, y); y += 14;
+    doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+    doc.setFont(undefined, "normal").text("Holiday Compensation Claim under Package Travel Directive", 10, y); y += 12;
+    doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
+
+    const reasonText = data.claimType ? document.querySelector(`#claimType option[value="${data.claimType}"]`).textContent : "N/A";
+    const intro = `I am writing to formally request compensation for the following disrupted holiday booking under the Package Travel Directive 2015/2302 and relevant consumer protection legislation.
+
+My holiday, detailed below, was affected by a ${reasonText} resulting in significant inconvenience and/or financial loss. I therefore request payment of the statutory compensation as required by law.`;
+    const introLines = doc.splitTextToSize(intro, 180);
+    doc.text(introLines, 10, y); y += introLines.length * 6 + 2;
+
+    doc.setFont(undefined, "bold").text("Holiday Booking Details:", 10, y); y += 8;
+    [
+      `Full Name: ${data.fullName || ""}`,
+      `Booking Reference: ${data.bookingRef || ""}`,
+      `Holiday Start Date: ${data.startDate || ""}`,
+      `Holiday End Date: ${data.endDate || ""}`,
+      `Destination: ${data.destination || ""}`,
+      `Operator: ${data.provider || ""}`,
+      `Reason for Claim: ${reasonText}`,
+      `Issue: ${data.issueDescription || ""}`,
+    ].forEach(line => { doc.text(line, 10, y); y += 7; });
+
+    y += 2;
+    doc.setFont(undefined, "bold").text("Amount Claimed:", 10, y); y += 7;
+    doc.setFont(undefined, "normal").text(`€${amount}`, 10, y); y += 10;
+
+    doc.setFont(undefined, "bold").text("Preferred Contact Method:", 10, y); y += 7;
+    doc.setFont(undefined, "normal").text(`${data.preferredContact || ""}`, 10, y); y += 10;
+
+    const closing = `Please process this claim and arrange payment within 14 days of receipt. Supporting documents can be provided upon request. Please confirm receipt of this claim and your intended course of action.`;
+    const closingLines = doc.splitTextToSize(closing, 180);
+    doc.text(closingLines, 10, y); y += closingLines.length * 6 + 2;
+
+    doc.text("Thank you for your cooperation.", 10, y); y += 8;
+    doc.text("Yours faithfully,", 10, y); y += 8;
+    doc.text(data.fullName || "", 10, y); y += 8;
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(10).setTextColor(120).text(
+      "This document was generated at no cost by Quaerens.co.uk.",
+      10,
+      pageHeight - 10
+    );
+
+    doc.save(`Holiday-Claim-${data.bookingRef || "unknown"}.pdf`);
+  }
+
+  // Disable form after submit
+  function disableForm(form) {
+    if (!form) return;
+    [...form.elements].forEach(el => el.disabled = true);
+  }
+
+  // Form submit
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    resultDiv.classList.add("hidden");
+
+    // Gather fields
+    const fullName = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const bookingRef = document.getElementById("bookingRef").value.trim();
+    const provider = document.getElementById("provider").value.trim();
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const destination = document.getElementById("destination").value.trim();
+    const claimType = document.getElementById("claimType").value;
+    const issueDescription = document.getElementById("issueDescription").value.trim();
+    const compensationClaimed = parseFloat(document.getElementById("compensationClaimed").value) || 0;
+    const preferredContact = document.getElementById("preferredContact").value;
+    const handleOption = document.getElementById("handleOption").value;
+    const donation = document.getElementById("donation").value;
+
+    if (!fullName || !email || !provider || !claimType || !issueDescription) {
+      alert("Please fill in all required fields marked with *.");
+      return;
     }
 
-    function generatePDF(data) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const today = new Date().toLocaleDateString();
-      const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const amount = data.compensation || 0;
-
-      let y = 20;
-      doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
-
-      doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
-      doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
-      doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
-      doc.setFont(undefined, "normal").text(
-        `${data.operator}${data.operatorEmail ? "\nEmail: " + data.operatorEmail : ""}`,
-        10, y
-      );
-      y += 14;
-      doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
-      doc.setFont(undefined, "normal").text("Holiday Compensation Claim under Package Travel Directive", 10, y); y += 12;
-      doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
-
-      const introEn = `I am writing to formally request compensation for the following disrupted holiday booking under the Package Travel Directive 2015/2302 and relevant consumer protection legislation.
-
-My holiday, detailed below, was affected by a ${data.reason || "N/A"} resulting in significant inconvenience and financial loss. I therefore request payment of the statutory compensation as required by law.`;
-
-      const introLinesEn = doc.splitTextToSize(introEn, 180);
-      doc.text(introLinesEn, 10, y);
-      y += introLinesEn.length * 6 + 2;
-
-      doc.setFont(undefined, "bold").text("Holiday Booking Details:", 10, y); y += 8;
-      [
-        `Passenger Name: ${data.fullName || ""}`,
-        `Booking Reference: ${data.bookingRef || ""}`,
-        `Holiday Start Date: ${data.holidayStartDate || ""}`,
-        `Holiday End Date: ${data.holidayEndDate || ""}`,
-        `Destination: ${data.destination || ""}`,
-        `Operator: ${data.operator || ""}`,
-        `Reason for Claim: ${data.reason || ""}`,
-      ].forEach(line => { doc.text(line, 10, y); y += 7; });
-
-      y += 2;
-      doc.setFont(undefined, "bold").text("Amount Claimed:", 10, y); y += 7;
-      doc.setFont(undefined, "normal").text(`€${amount} (Package Travel Directive)`, 10, y); y += 10;
-
-      doc.setFont(undefined, "bold").text("Preferred Payment Method:", 10, y); y += 7;
-      doc.setFont(undefined, "normal").text(`${data.paymentMethod || ""}`, 10, y); y += 10;
-
-      const closingEn = `Please process this claim and arrange payment within 14 days of receipt. Failure to do so will leave me no option but to pursue legal remedies including referral to relevant consumer protection authorities.
-
-Supporting documents can be provided upon request.
-
-Please confirm receipt of this claim and your intended course of action in writing.`;
-
-      const closingLinesEn = doc.splitTextToSize(closingEn, 180);
-      doc.text(closingLinesEn, 10, y);
-      y += closingLinesEn.length * 6 + 2;
-
-      doc.text("Thank you for your cooperation.", 10, y); y += 8;
-      doc.text("Yours faithfully,", 10, y); y += 8;
-      doc.text(data.fullName || "", 10, y); y += 8;
-
-      const pageHeight = doc.internal.pageSize.getHeight();
-      doc.setFontSize(10).setTextColor(120).text(
-        "This document was generated at no cost by Quaerens.co.uk.",
-        10,
-        pageHeight - 10
-      );
-
-      doc.save(`Holiday-Claim-${data.bookingRef || "unknown"}.pdf`);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const {
-        collection,
-        addDoc,
-        serverTimestamp,
-        ref,
-        uploadBytes,
-        getDownloadURL
-      } = window.firebaseUtils;
-
-      const db = window.db;
-      const storage = window.storage;
-
-      const form = document.getElementById("claim-letter-form");
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        // Gather fields
-        const fullName = document.getElementById("fullName").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const phone = document.getElementById("phone").value.trim();
-        const bookingRef = document.getElementById("bookingRef").value.trim();
-        const provider = document.getElementById("provider").value.trim();
-        const startDate = document.getElementById("startDate").value;
-        const endDate = document.getElementById("endDate").value;
-        const destination = document.getElementById("destination").value.trim();
-        const claimType = document.getElementById("claimType").value;
-        const issueDescription = document.getElementById("issueDescription").value.trim();
-        const compensationClaimed = parseFloat(document.getElementById("compensationClaimed").value) || 0;
-        const preferredContact = document.getElementById("preferredContact").value;
-        const handleOption = document.getElementById("handleOption").value;
-        const donation = document.getElementById("donation").value;
-
-        if (!fullName || !email || !provider || !claimType || !issueDescription) {
-          alert("Please fill in all required fields marked with *.");
+    // File upload (Firebase Storage)
+    const files = document.getElementById("evidenceFiles").files;
+    let fileURLs = [];
+    if (window.firebaseUtils && files.length > 0) {
+      for (const file of files) {
+        const storageRef = ref(window.storage, `holidayclaims/${Date.now()}-${file.name}`);
+        try {
+          const snap = await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(snap.ref);
+          fileURLs.push(url);
+        } catch (uploadErr) {
+          alert("Error uploading one of your files. Please try again.");
           return;
         }
-
-        // Upload files
-        const files = document.getElementById("evidenceFiles").files;
-        let fileURLs = [];
-        if (files.length > 0) {
-          for (const file of files) {
-            const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-            try {
-              const snap = await uploadBytes(storageRef, file);
-              const url = await getDownloadURL(snap.ref);
-              fileURLs.push(url);
-            } catch (uploadErr) {
-              console.error("Error uploading file:", uploadErr);
-              alert("Error uploading one of your files. Please try again.");
-              return;
-            }
-          }
-        }
-
-        // Build data object
-        const claimData = {
-          fullName,
-          email,
-          phone,
-          bookingRef,
-          provider,
-          startDate,
-          endDate,
-          destination,
-          claimType,
-          issueDescription,
-          compensationClaimed,
-          preferredContact,
-          handleOption,
-          donation,
-          fileURLs,
-          createdAt: serverTimestamp()
-        };
-
-        try {
-          await addDoc(collection(db, "holidayClaims"), claimData);
-
-          if (handleOption === "no") {
-            generatePDF(claimData);
-          } else if (handleOption === "yes") {
-            await fetch(
-              "https://us-central1-quaerensclaims.cloudfunctions.net/sendHolidayClaimEmail",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(claimData)
-              }
-            );
-            alert("✅ Your claim letter has been emailed!");
-          }
-
-          document.getElementById("claim-letter-result").classList.remove("hidden");
-
-        } catch (err) {
-          console.error("Error saving claim:", err);
-          alert("Something went wrong while submitting your claim. Please try again.");
-        }
-      });
-    });
-  </script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const btn = document.getElementById("startClaimBtn");
-      const langSelect = document.getElementById("language");
-
-      if (btn && langSelect) {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          const selectedLang = langSelect.value || "en";
-          window.location.href = `claim-form.html?lang=${selectedLang}`;
-        });
       }
-    });
-  </script>
+    }
+
+    // Data object
+    const claimData = {
+      fullName,
+      email,
+      phone,
+      bookingRef,
+      provider,
+      startDate,
+      endDate,
+      destination,
+      claimType,
+      issueDescription,
+      compensationClaimed,
+      preferredContact,
+      handleOption,
+      donation,
+      fileURLs,
+      createdAt: window.firebaseUtils ? serverTimestamp() : new Date().toISOString()
+    };
+
+    try {
+      // Firestore
+      if (window.firebaseUtils) await addDoc(collection(window.db, "holidayClaims"), claimData);
+
+      if (handleOption === "no") {
+        generatePDF(claimData);
+        disableForm(form);
+        resultDiv.textContent = "✅ Your claim letter has been generated as a PDF. Please send it to your tour operator. (A copy was saved in our system.)";
+        resultDiv.classList.remove("hidden");
+      } else {
+        // Full Service – send email
+        await fetch(
+          "https://us-central1-quaerensclaims.cloudfunctions.net/sendHolidayClaimEmail",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(claimData)
+          }
+        );
+        disableForm(form);
+        resultDiv.textContent = "✅ Your claim has been submitted and will be sent by our team. You will receive confirmation by email.";
+        resultDiv.classList.remove("hidden");
+      }
+    } catch (err) {
+      alert("Something went wrong while submitting your claim. Please try again or contact support.");
+    }
+  });
+});
+</script>
 </body>
 </html>
