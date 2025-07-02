@@ -60,16 +60,16 @@
     <p class="mt-3">All you need: flight & bag details, and proof of loss or delay. We'll generate a complete, lawyer-quality claim letter—<b>free of any charge</b>. Keep 100% of your refund or payout.</p>
   </div>
 
-  <div class="info-box bg-yellow-50 border-yellow-400">
+  <div class="info-box" style="background:#fffbe6;border:2px solid #fbbf24;">
     <h2 class="text-xl font-bold mb-2 text-yellow-900">Lost Luggage Compensation Calculator</h2>
     <form id="llCalc" class="space-y-4">
       <div>
-        <label class="block font-medium">Value of Lost/Damaged Items (€ or £)</label>
-        <input type="number" min="0" step="0.01" id="itemValue" class="w-full border rounded p-2" required>
+        <label class="block font-medium">Value of Lost or Damaged Items</label>
+        <input type="number" min="0" step="0.01" id="itemValue" class="w-full border rounded p-2" required placeholder="e.g. 850">
       </div>
       <div>
-        <label class="block font-medium">Essentials Purchased (toiletries, clothes, etc)</label>
-        <input type="number" min="0" step="0.01" id="essentialsValue" class="w-full border rounded p-2" placeholder="0">
+        <label class="block font-medium">Essentials Purchased (toiletries, clothes, etc.)</label>
+        <input type="number" min="0" step="0.01" id="essentialsValue" class="w-full border rounded p-2" placeholder="e.g. 150">
       </div>
       <div>
         <label class="block font-medium">Currency</label>
@@ -78,31 +78,58 @@
           <option value="£">£ GBP</option>
         </select>
       </div>
-      <button type="submit" class="claim-btn">Calculate Total Claim</button>
+      <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-5 py-2 rounded shadow w-full">Calculate Compensation</button>
     </form>
-    <div id="llCalcResult" class="mt-4 text-green-700 font-semibold hidden"></div>
-    <div class="text-xs mt-2 text-gray-500">
-      * Maximum airline liability: approx €1,600 / £1,350 under the Montreal Convention. <br>
-      Receipts are recommended for all claimed amounts.
+    <div id="llCalcResult" class="mt-4 hidden">
+      <!-- Result appears here -->
+    </div>
+    <div class="text-xs mt-2 text-gray-600">
+      * Most airlines are liable up to approx <b>€1,600 / £1,350</b> under the Montreal Convention.<br>
+      Receipts increase your chance but are not always required for basic essentials.
     </div>
   </div>
   
   <script>
   document.getElementById('llCalc').addEventListener('submit', function(e) {
     e.preventDefault();
+    // Get values
     const itemValue = parseFloat(document.getElementById('itemValue').value) || 0;
     const essentials = parseFloat(document.getElementById('essentialsValue').value) || 0;
     const currency = document.getElementById('llCurrency').value;
     const cap = currency === '£' ? 1350 : 1600;
     const total = itemValue + essentials;
-    let message = `<span>Your total claim: <strong>${currency}${total.toFixed(2)}</strong></span>`;
+  
+    let summary = `
+      <span class="text-lg font-semibold">Estimated Compensation: ${currency}${total.toFixed(2)}</span><br>
+      <span class="text-sm">Items: ${currency}${itemValue.toFixed(2)} + Essentials: ${currency}${essentials.toFixed(2)}</span>
+    `;
+  
     if (total > cap) {
-      message += `<br><span class="text-red-600">Note: The airline’s maximum liability is ${currency}${cap} under the Montreal Convention. You can claim above this, but payouts are usually capped.</span>`;
+      summary += `<br><span class="text-red-600">Note: The airline's liability is usually capped at about ${currency}${cap}. If your claim is above this, you may still submit for the full amount (especially with strong receipts).</span>`;
     }
-    document.getElementById('llCalcResult').innerHTML = message;
-    document.getElementById('llCalcResult').classList.remove('hidden');
+  
+    // Build query string for prefill
+    const params = new URLSearchParams({
+      compensationClaimed: total.toFixed(2),
+      currency: currency,
+      itemValue: itemValue,
+      essentialsValue: essentials
+    });
+  
+    summary += `
+      <br>
+      <a href="claim-form-ll.html?${params.toString()}"
+         class="inline-block mt-4 bg-yellow-600 text-white font-bold px-6 py-3 rounded-lg shadow hover:bg-yellow-700 transition text-lg">
+        File My Claim 100% Free
+      </a>
+      <div class="text-xs mt-2 text-gray-700">You’ll be taken to the free claim form with your details filled in.</div>
+    `;
+  
+    const resultBox = document.getElementById('llCalcResult');
+    resultBox.innerHTML = summary;
+    resultBox.classList.remove('hidden');
   });
-  </script>
+  </script>  
   
   <div class="info-box bg-blue-50 border-blue-400">
     <h2 class="text-xl font-bold mb-2 text-blue-900">How It Works</h2>
