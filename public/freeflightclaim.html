@@ -691,64 +691,65 @@ function setLanguage(langPair) {
       const delayDuration = document.getElementById("delayDuration").value;
       const compensation = calculateCompensation(distance, delayDuration);
 
-    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    const file = document.getElementById("fileUpload").files[0];
-    let fileURL = "";
-
-    if (file) {
-      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-      const uploadSnapshot = await uploadBytes(storageRef, file);
-      fileURL = await getDownloadURL(uploadSnapshot.ref);
-    }
-
-    const claimData = {
-      fullName,
-      flightNumber,
-      flightDate,
-      depAirport,
-      arrAirport,
-      airline,
-      reason,
-      distance,
-      delayDuration,
-      compensation,
-      language,
-      email,
-      handleOption,
-      donation,
-      bookingRef,
-      iban,
-      fileURL,
-      createdAt: serverTimestamp(),
-      airlineEmail: airlineEmails[airline] || ""
-    };
-
-    try {
-      await addDoc(collection(db, "flightClaimLetters"), claimData);
-
-      if (handleOption === "pdf") {
-        generatePDF(claimData);
-      } else if (handleOption === "email") {
-        await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(claimData)
-        });
-        alert("✅ Your letter has been emailed!");
-      } else if (handleOption === "quaerens") {
-        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+      if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
+        alert("Please fill in all required fields.");
+        return;
       }
 
-      document.getElementById("claim-letter-result").classList.remove("hidden");
-    } catch (err) {
-      console.error("Error saving claim:", err);
-      alert("Something went wrong. Please try again.");
-    }
-  });
+      const file = document.getElementById("fileUpload").files[0];
+      let fileURL = "";
+
+      if (file) {
+        const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+        const uploadSnapshot = await uploadBytes(storageRef, file);
+        fileURL = await getDownloadURL(uploadSnapshot.ref);
+      }
+
+      const claimData = {
+        fullName,
+        flightNumber,
+        flightDate,
+        depAirport,
+        arrAirport,
+        airline,
+        reason,
+        distance,
+        delayDuration,
+        compensation,
+        language,
+        email,
+        handleOption,
+        donation,
+        bookingRef,
+        iban,
+        fileURL,
+        createdAt: serverTimestamp(),
+        airlineEmail: airlineEmails[airline] || ""
+      };
+
+      try {
+        await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+        if (handleOption === "pdf") {
+          generatePDF(claimData);
+        } else if (handleOption === "email") {
+          await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(claimData)
+          });
+          alert("✅ Your letter has been emailed!");
+        } else if (handleOption === "quaerens") {
+          alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+        }
+
+        document.getElementById("claim-letter-result").classList.remove("hidden");
+      } catch (err) {
+        console.error("Error saving claim:", err);
+        alert("Something went wrong. Please try again.");
+      }
+    }); // closes addEventListener
+  }    // <-- ADD THIS TO CLOSE if (claimForm)
 </script>
 
 <script>
