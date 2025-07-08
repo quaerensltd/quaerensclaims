@@ -173,28 +173,36 @@ function setLanguage(langPair) {
   <section id="calculator" class="py-16 bg-white">
     <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
-      <!-- Left: Legal Info -->
-      <div class="bg-blue-50 rounded-xl p-6 shadow-md h-full" data-aos="fade-up">
-        <h2 class="text-xl font-bold mb-4 text-blue-800">Whys You’re Entitled to Compensation</h2>
-        <p class="text-gray-700 mb-3">
-          Under <strong>EU Regulation 261/2004</strong>, you can claim up to <strong>€600</strong> if your flight was delayed,
-          cancelled, or overbooked — and the airline was at fault. This includes technical issues, crew shortages, and more.
-        </p>
-        <p class="text-gray-600">
-          If your flight arrived more than 3 hours late, and it wasn’t due to extraordinary circumstances (like extreme weather),
-          you may have a valid claim. Our experts handle the process — <strong>no win, no fee</strong>.
-        </p>
-        <hr class="my-4" />
-        <h3 class="text-xl font-bold text-blue-800 mb-2">Why should you choose us?</h3>
-        <ul class="list-disc list-inside text-gray-700 space-y-2">
-          <li>We prepare and send your legal claim letter to the airline — at no cost.</li>
-          <li>No fees. No waiting lists. No hidden catches.</li>
-          <li>Save hours of your time — we’ve automated the process for you.</li>
-          <li>Just enter your flight details and relax.</li>
-          <li>Did I forget to mention that this service is FREE!</li>
-          <li>Support our work with an optional donation if you’re happy.</li>
-        </ul>
-      </div>
+<!-- Left: Legal Info -->
+<div class="bg-blue-50 rounded-xl p-6 shadow-md h-full" data-aos="fade-up">
+  <h2 class="text-xl font-bold mb-4 text-blue-800">Why You’re Entitled to Compensation</h2>
+  <p class="text-gray-700 mb-3">
+    Under <strong>EU Regulation 261/2004</strong>, you can claim up to <strong>€600</strong> if your flight was delayed,
+    cancelled, or overbooked — and the airline was at fault. This includes technical issues, crew shortages, and more.
+  </p>
+  <p class="text-gray-600">
+    If your flight arrived more than 3 hours late, and it wasn’t due to extraordinary circumstances (like extreme weather),
+    you may have a valid claim. Our experts handle the process — <strong>no win, no fee</strong>.
+  </p>
+  <hr class="my-4" />
+  <h3 class="text-xl font-bold text-blue-800 mb-2">Why should you choose us?</h3>
+  <ul class="list-disc list-inside text-gray-700 space-y-2">
+    <li>We prepare and send your legal claim letter to the airline — at no cost.</li>
+    <li>No fees. No waiting lists. No hidden catches.</li>
+    <li>Save hours of your time — we’ve automated the process for you.</li>
+    <li>Just enter your flight details and relax.</li>
+    <li>Did I forget to mention that this service is FREE!</li>
+    <li>Support our work with an optional donation if you’re happy.</li>
+  </ul>
+
+  <!-- Delayed Flights Info Box (inside legal info block) -->
+  <div id="claimable-flights-box" class="mt-6 rounded-lg p-4 bg-blue-100 shadow-inner">
+    <h2 class="text-lg font-bold text-blue-700 mb-2">Live: Major Delays Today</h2>
+    <div id="flights-list">
+      <em>Loading…</em>
+    </div>
+  </div>
+</div>
 
       <!-- Right: Calculator -->
       <div class="bg-white rounded-xl shadow-md content-box h-full" data-aos="fade-up">
@@ -904,5 +912,30 @@ document.cookie = 'googtrans=/auto/en;path=/;domain=.' + baseDomain + ';';
     }
   };
 </script>
+<script>
+fetch('flights-today.json')
+  .then(r => r.json())
+  .then(data => {
+    const flights = data.flights;
+    if (!flights || flights.length === 0) {
+      document.getElementById('flights-list').innerHTML = "<b>No delayed flights over 3 hours today at this airport.</b>";
+      return;
+    }
+    let html = "<ul class='list-disc pl-4'>";
+    flights.forEach(f => {
+      html += `<li class="mb-2">
+        <strong>Flight:</strong> ${f.flightNumber || "N/A"}<br>
+        <strong>Scheduled:</strong> ${f.scheduledTimeUtc || "N/A"}<br>
+        <strong>Delay:</strong> ${f.averageDelay} minutes
+      </li>`;
+    });
+    html += "</ul>";
+    document.getElementById('flights-list').innerHTML = html;
+  })
+  .catch(err => {
+    document.getElementById('flights-list').innerHTML = "<span class='text-red-500'>Could not load delayed flights data.</span>";
+  });
+</script>
+
 </body>
 </html>
