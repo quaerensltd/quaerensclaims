@@ -4,24 +4,38 @@ import fs from 'fs';
 const RAPIDAPI_KEY = 'b9f581fa45mshcc8f922b0357e3bp1e979djsn3d1facad7035';
 
 const AIRPORTS = [
-  { icao: 'EHAM', name: 'Amsterdam Schiphol' },
   { icao: 'EGLL', name: 'London Heathrow' },
-  { icao: 'EGKK', name: 'London Gatwick' },
-  { icao: 'EGSS', name: 'London Stansted' },
-  { icao: 'EGGW', name: 'London Luton' },
-  { icao: 'EGLC', name: 'London City' },
-  { icao: 'EGMC', name: 'London Southend' },
-  { icao: 'EDDB', name: 'Berlin Brandenburg' },
-  { icao: 'EBBR', name: 'Brussels Airport' },
-  { icao: 'EGCC', name: 'Manchester' },
-  { icao: 'EGBB', name: 'Birmingham' },
-  { icao: 'EGGP', name: 'Liverpool John Lennon' },
-  { icao: 'LFPG', name: 'Paris CDG' },
+  { icao: 'LFPG', name: 'Paris Charles de Gaulle' },
+  { icao: 'EHAM', name: 'Amsterdam Schiphol' },
   { icao: 'EDDF', name: 'Frankfurt' },
-  { icao: 'LEMD', name: 'Madrid' },
-  { icao: 'LEBL', name: 'Barcelona' },
-  { icao: 'LIRF', name: 'Rome Fiumicino' }
+  { icao: 'LEMD', name: 'Madrid Barajas' },
+  { icao: 'LEBL', name: 'Barcelona El Prat' },
+  { icao: 'EGKK', name: 'London Gatwick' },
+  { icao: 'LSZH', name: 'Zurich' },
+  { icao: 'LIRF', name: 'Rome Fiumicino' },
+  { icao: 'EDDM', name: 'Munich' },
+  { icao: 'EBBR', name: 'Brussels' },
+  { icao: 'LTBA', name: 'Istanbul Atatürk' },
+  { icao: 'EGSS', name: 'London Stansted' },
+  { icao: 'UUEE', name: 'Moscow Sheremetyevo' },
+  { icao: 'LFMN', name: 'Nice Côte d\'Azur' },
+  { icao: 'LFPO', name: 'Paris Orly' },
+  { icao: 'LOWW', name: 'Vienna' },
+  { icao: 'LGAV', name: 'Athens' },
+  { icao: 'EDDB', name: 'Berlin Brandenburg' },
+  { icao: 'LGRP', name: 'Rhodes Diagoras' },
+  { icao: 'EKCH', name: 'Copenhagen' },
+  { icao: 'ESSA', name: 'Stockholm Arlanda' },
+  { icao: 'ENGM', name: 'Oslo Gardermoen' },
+  { icao: 'LIMC', name: 'Milan Malpensa' },
+  { icao: 'LSGG', name: 'Geneva' },
+  { icao: 'EIDW', name: 'Dublin' },
+  { icao: 'EGCC', name: 'Manchester' },
+  { icao: 'LIPZ', name: 'Venice Marco Polo' },
+  { icao: 'EDDS', name: 'Stuttgart' },
+  { icao: 'LEPA', name: 'Palma de Mallorca' }
 ];
+
 
 async function getDelays(airport) {
   const url = `https://aerodatabox.p.rapidapi.com/airports/icao/${airport.icao}/delays`;
