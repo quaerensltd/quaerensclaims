@@ -275,6 +275,40 @@ nav a:hover {
   }
 }
 
+.typing {
+  border-right: 2px solid white;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: blink 0.7s step-end infinite;
+}
+
+/* 📱 Sticky CTA on mobile only */
+.mobile-cta {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-cta {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #2563eb;
+    text-align: center;
+    padding: 0.75rem;
+    z-index: 999;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+  }
+
+  .mobile-cta a {
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-decoration: none;
+  }
+}
+
+
 
 .claim-box:hover {
    transform: translateY(-8px) scale(1.02);
@@ -474,6 +508,50 @@ nav a:hover {
   transform: translateY(-2px);
 }
 
+.filter-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.filter-btn.active {
+  background-color: #2563eb;
+  color: white;
+  border-color: #1d4ed8;
+}
+
+.search-input {
+  padding: 0.6rem 1.2rem;
+  width: 90%;
+  max-width: 400px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  border-color: #2563eb;
+}
+
   .chat-box {
     background: #fff;
     padding: 1rem 2rem;
@@ -656,6 +734,15 @@ nav a:hover {
   </style>
   
 <main>
+<input type="text" id="claimSearch" class="search-input" placeholder="Search claims..." />
+  <!-- 🔍 Filter Buttons (All / DIY / Free Assessment) -->
+  <div class="filter-buttons" style="text-align: center; margin-bottom: 1rem;">
+    <button class="filter-btn active" data-type="all">All</button>
+    <button class="filter-btn" data-type="diy">DIY Only</button>
+    <button class="filter-btn" data-type="assessment">Free Assessment</button><div style="text-align: center; margin-bottom: 1.5rem;">
+  <input type="text" id="claimSearch" placeholder="Search claims..." class="search-input">
+</div>
+
   <div class="grid">
     <div class="claim-box" data-aos="fade-up" data-aos-delay="100">
       <img src="/images/flight-delay.png" alt="Flight Delay" loading="lazy">
@@ -924,6 +1011,129 @@ nav a:hover {
     once: true, // animation only happens once when scrolling down
     offset: 100,
   });
+</script>
+<div class="mobile-cta">
+  <a href="submit-form.html">Free Claim Check →</a>
+</div>
+<script>
+  // 🔍 Live Search Filter
+  document.getElementById('claimSearch').addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    const boxes = document.querySelectorAll('.claim-box');
+
+    boxes.forEach(box => {
+      const text = box.innerText.toLowerCase();
+      box.style.display = text.includes(query) ? 'flex' : 'none';
+    });
+  });
+</script>
+<script>
+  // 🧭 Filter claim types by button
+  document.querySelectorAll('.filter-btn').forEach(button => {
+    button.addEventListener('click', function () {
+      // Remove 'active' class from all buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+
+      const type = this.getAttribute('data-type');
+      const boxes = document.querySelectorAll('.claim-box');
+
+      boxes.forEach(box => {
+        const isDIY = box.querySelector('.claim-free-btn') !== null;
+        const isAssessment = box.querySelector('.claim-blue-btn') !== null;
+
+        if (type === 'all' ||
+            (type === 'diy' && isDIY) ||
+            (type === 'assessment' && isAssessment)) {
+          box.style.display = 'flex';
+        } else {
+          box.style.display = 'none';
+        }
+      });
+
+      // Also clear search bar
+      document.getElementById('claimSearch').value = '';
+    });
+  });
+</script>
+<script>
+  // Filter logic
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const claimBoxes = document.querySelectorAll('.claim-box');
+
+  filterButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Remove active class from all buttons
+      filterButtons.forEach(btn => btn.classList.remove('active'));
+      // Add active class to clicked button
+      button.classList.add('active');
+
+      const selectedType = button.getAttribute('data-type');
+
+      claimBoxes.forEach(box => {
+        const type = box.getAttribute('data-type');
+        if (selectedType === 'all' || selectedType === type) {
+          box.style.display = 'flex';
+        } else {
+          box.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
+<script>
+  // Search logic
+  const searchInput = document.getElementById('claimSearch');
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase();
+
+    document.querySelectorAll('.claim-box').forEach(box => {
+      const title = box.querySelector('h3').textContent.toLowerCase();
+      if (title.includes(query)) {
+        box.style.display = 'flex';
+      } else {
+        box.style.display = 'none';
+      }
+    });
+  });
+</script>
+<script>
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const searchInput = document.getElementById('claimSearch');
+  const claimBoxes = document.querySelectorAll('.claim-box');
+
+  let currentFilter = 'all';
+  let currentSearch = '';
+
+  function updateClaims() {
+    claimBoxes.forEach(box => {
+      const type = box.querySelector('a').classList.contains('claim-free-btn') ? 'diy' : 'assessment';
+      const title = box.querySelector('h3').textContent.toLowerCase();
+
+      const matchesFilter = currentFilter === 'all' || currentFilter === type;
+      const matchesSearch = title.includes(currentSearch);
+
+      box.style.display = matchesFilter && matchesSearch ? 'flex' : 'none';
+    });
+  }
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.type;
+      updateClaims();
+    });
+  });
+
+  searchInput.addEventListener('input', () => {
+    currentSearch = searchInput.value.toLowerCase();
+    updateClaims();
+  });
+
+  // Initial display
+  updateClaims();
 </script>
 </body>
 </html>
