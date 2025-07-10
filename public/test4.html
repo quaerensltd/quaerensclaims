@@ -836,29 +836,30 @@ footer {
 
   <!-- Language dropdown logic -->
 <script>
-  function setLanguage(langPair) {
-    if (!langPair) return;
-    const lang = langPair.split('|')[1];
-    const newLang = '/en/' + lang;
+function setLanguage(langPair) {
+  if (!langPair) return;
+  const lang = langPair.split('|')[1];
+  const newLang = '/en/' + lang;
 
-    // Set Google Translate cookie for all relevant domains
-    document.cookie = 'googtrans=' + newLang + '; path=/';
-    document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
+  // Set cookie for Google Translate
+  document.cookie = 'googtrans=' + newLang + '; path=/';
+  document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
 
-    // Try to trigger Google Translate's internal API if loaded (no flicker)
-    if (window.google && window.google.translate && typeof window.google.translate.TranslateElement === 'function') {
-      // This works if the Google widget has been rendered at least once
-      var select = document.querySelector('select.goog-te-combo');
-      if (select) {
-        select.value = lang;
-        select.dispatchEvent(new Event('change'));
-        return; // No reload needed, translation should apply instantly
-      }
+  // Try to set via hidden select, retrying if needed
+  function trySetSelect(attempts) {
+    var select = document.querySelector('select.goog-te-combo');
+    if (select) {
+      select.value = lang;
+      select.dispatchEvent(new Event('change'));
+    } else if (attempts < 10) {
+      setTimeout(() => trySetSelect(attempts + 1), 300);
+    } else {
+      // Fallback: reload if select never appeared after 3 seconds
+      location.reload();
     }
-
-    // If not possible, fallback to reload (will apply via cookie)
-    location.reload();
   }
+  trySetSelect(0);
+}
 </script>
 
   <!-- Auto-detect language on first visit -->
