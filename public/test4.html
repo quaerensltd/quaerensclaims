@@ -835,16 +835,31 @@ footer {
   </script>
 
   <!-- Language dropdown logic -->
-  <script>
-    function setLanguage(langPair) {
-      if (!langPair) return;
-      const lang = langPair.split('|')[1];
-      const newLang = '/en/' + lang;
-      document.cookie = 'googtrans=' + newLang + '; path=/';
-      document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
-      location.reload();
+<script>
+  function setLanguage(langPair) {
+    if (!langPair) return;
+    const lang = langPair.split('|')[1];
+    const newLang = '/en/' + lang;
+
+    // Set Google Translate cookie for all relevant domains
+    document.cookie = 'googtrans=' + newLang + '; path=/';
+    document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
+
+    // Try to trigger Google Translate's internal API if loaded (no flicker)
+    if (window.google && window.google.translate && typeof window.google.translate.TranslateElement === 'function') {
+      // This works if the Google widget has been rendered at least once
+      var select = document.querySelector('select.goog-te-combo');
+      if (select) {
+        select.value = lang;
+        select.dispatchEvent(new Event('change'));
+        return; // No reload needed, translation should apply instantly
+      }
     }
-  </script>
+
+    // If not possible, fallback to reload (will apply via cookie)
+    location.reload();
+  }
+</script>
 
   <!-- Auto-detect language on first visit -->
   <script>
