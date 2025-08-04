@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Claim Details | Quaerens Ltd</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      color: #111827;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 50px;
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin: 1.5rem 0 0.5rem;
+    }
+    .content {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
+    .field {
+      margin-bottom: 1rem;
+    }
+    .field strong {
+      display: inline-block;
+      width: 140px;
+    }
+    select {
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .message {
+      margin-top: 1rem;
+      color: green;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Claim Details</h1>
+    <img src="/quaerens-logo.png" alt="Quaerens Logo" />
+  </header>
+
+  <div class="content">
+    <div id="claimDetails">Loading claim details...</div>
+
+    <div id="statusControls" style="display:none">
+      <label for="status"><strong>Update Status:</strong></label>
+      <select id="status">
+        <option value="pending">Pending</option>
+        <option value="in-review">In Review</option>
+        <option value="resolved">Resolved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <br />
+      <button onclick="updateStatus()">Save Status</button>
+      <div class="message" id="statusMessage"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const claimId = params.get("id");
+    const claimDetails = document.getElementById("claimDetails");
+    const statusSelect = document.getElementById("status");
+    const statusControls = document.getElementById("statusControls");
+    const statusMessage = document.getElementById("statusMessage");
+
+    if (!claimId) {
+      claimDetails.textContent = "❌ Claim not found or invalid ID.";
+    } else {
+      loadClaim();
+    }
+
+    async function loadClaim() {
+      const ref = doc(db, "claims", claimId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        claimDetails.textContent = "❌ Claim not found.";
+        return;
+      }
+
+      const data = snap.data();
+      claimDetails.innerHTML = data.html || "⚠️ No claim details available.";
+      statusSelect.value = data.status || "pending";
+      statusControls.style.display = "block";
+    }
+
+    async function updateStatus() {
+      const newStatus = statusSelect.value;
+      const ref = doc(db, "claims", claimId);
+      await updateDoc(ref, { status: newStatus });
+      statusMessage.textContent = "✅ Status updated!";
+      setTimeout(() => statusMessage.textContent = "", 3000);
+    }
+  </script>
+</body>
+</html>

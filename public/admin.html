@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Quaerens</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 2rem;
+      color: #111827;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.table-container {
+  overflow-x: auto;
+  max-height: 70vh;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+}
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 0.75rem;
+      text-align: left;
+    }
+    th {
+  background-color: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      margin-right: 0.5rem;
+    }
+    .button {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 1rem;
+      margin-right: 0.5rem;
+    }
+    .status-select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+    #statusFilter {
+      margin-left: 1rem;
+      padding: 0.5rem;
+    }
+    #loginForm {
+      max-width: 400px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+    #loginForm input {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .logo {
+      height: 40px;
+    }
+    .sticky-bar {
+  position: sticky;
+  top: 0;
+  background: #f3f4f6;
+  z-index: 10;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <img src="quaerens-logo.png" alt="Quaerens Logo" class="logo" />
+  </header>
+
+  <div id="loginForm">
+    <h2 style="text-align:center">Sign In</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button class="button" id="loginButton" onclick="login()">Login</button>
+    <div id="loginStatus"></div>
+  </div>
+
+  <div style="display:none" id="adminContent">
+    <div>
+      <div class="sticky-bar">
+        <div>
+          <label for="collectionSelector">Select Collection:</label>
+          <select id="collectionSelector" onchange="loadClaims()">
+            <option value="claims">Flight Claims</option>
+            <option value="fullServiceRequests">Full Service</option>
+            <option value="checkout">DIY Kit Checkouts</option>
+          </select>
+        
+          <button class="button" onclick="submitTestClaim()">Submit Test Claim</button>
+          <button class="button" onclick="exportCSV()">📄 Export CSV</button>
+          <button class="button" onclick="logout()">Logout</button>
+        
+          <!-- ✅ New: Collection Selector Dropdown -->
+          <label for="collectionSelector">Claim type:</label>
+          <select id="collectionSelector" onchange="loadClaims()" style="margin-right: 1rem;">
+            <option value="claims">General</option>
+            <option value="fullServiceRequests">Full Service</option>
+            <option value="flightClaims">Flight</option>
+          </select>
+        
+          <!-- Existing: Status Filter -->
+          <label for="statusFilter">Filter by status:</label>
+          <select id="statusFilter" onchange="loadClaims()">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        
+          <!-- Search Input + Summary -->
+          <div style="margin: 1rem 0;">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search name, email, or type..."
+              style="padding: 0.5rem; width: 100%; max-width: 300px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 0.5rem;"
+              oninput="loadClaims()"
+            />
+            <p id="claimSummary" style="margin: 0; font-weight: 500;"></p>
+          </div>
+        </div>        
+
+          <div class="table-container">
+            <table>
+              <thead id="claimsHeader">
+                <!-- Header will be injected dynamically -->
+              </thead>
+              <tbody id="claimsBody"></tbody>
+            </table>
+          </div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, updateDoc, deleteDoc, doc, addDoc, Timestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    let currentSortField = 'createdAt';
+    let currentSortDirection = 'desc'; 
+
+onAuthStateChanged(auth, user => {
+  const loginForm = document.getElementById("loginForm");
+  const adminContent = document.getElementById("adminContent");
+
+  if (user) {
+    loginForm.style.display = "none";
+    adminContent.style.display = "block";
+    loadClaims(); // Only load data if user is logged in
+  } else {
+    loginForm.style.display = "block";
+    adminContent.style.display = "none";
+  }
+});
+
+window.logout = function () {
+  signOut(auth).then(() => {
+    showToast("👋 Logged out.");
+    loginForm.style.display = "block";
+    adminContent.style.display = "none";
+  });
+};
+
+
+const loginForm = document.getElementById("loginForm");
+const adminContent = document.getElementById("adminContent");
+const table = document.getElementById("claimsBody");
+const loginStatus = document.getElementById("loginStatus");
+const toast = document.getElementById("toast");
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3000);
+}
+
+    window.login = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => showToast("✅ Logged in."))
+        .catch(err => showToast("❌ " + err.message));
+    };
+
+    let currentSortColumn = null;
+
+window.sortTable = function (columnIndex) {
+  const table = document.querySelector("table");
+  const rows = Array.from(table.rows).slice(1); // exclude header row
+
+  const type = table.rows[0].cells[columnIndex].textContent.trim();
+  const isDate = type === "Date";
+
+  rows.sort((a, b) => {
+    const aText = a.cells[columnIndex].textContent.trim();
+    const bText = b.cells[columnIndex].textContent.trim();
+
+    if (isDate) {
+      return new Date(aText) - new Date(bText);
+    } else {
+      return aText.localeCompare(bText, undefined, { numeric: true });
+    }
+  });
+
+  if (currentSortColumn === columnIndex && currentSortDirection === "asc") {
+    rows.reverse();
+    currentSortDirection = "desc";
+  } else {
+    currentSortDirection = "asc";
+  }
+
+  currentSortColumn = columnIndex;
+
+  const tbody = table.querySelector("tbody");
+  tbody.innerHTML = "";
+  rows.forEach(row => tbody.appendChild(row));
+
+  updateHeaderArrows(columnIndex);
+};
+
+function updateTableHeader(collection) {
+  const header = document.getElementById("claimsHeader");
+  if (!header) return;
+
+  let headers = [];
+
+  if (collection === "claims") {
+    headers = ["Date", "Name", "Email", "Type", "Phone", "Details", "Status", "Change", "Attachment", "Actions"];
+  } else if (collection === "checkout") {
+    headers = ["Date", "Name", "Email", "Country", "Phone", "Details", "Status", "Change", "Attachment", "Actions"];
+  } else if (collection === "fullServiceRequests") {
+    headers = ["Date", "Title", "Name", "Email", "Phone", "Resort", "Details", "Status", "Change", "Attachment", "Actions"];
+  } else {
+    headers = ["Date", "Name", "Email", "Type", "Phone", "Details", "Status", "Change", "Attachment", "Actions"];
+  }
+
+  header.innerHTML = `
+    <tr>
+      ${headers.map(h => `<th onclick="sortTable(${headers.indexOf(h)})" style="cursor:pointer;">${h}</th>`).join("")}
+    </tr>
+  `;
+}
+
+function updateHeaderArrows(activeIndex) {
+  const headers = document.querySelectorAll("thead th");
+  headers.forEach((th, i) => {
+    const baseText = th.textContent.replace(/[\u25B2\u25BC]/g, "").trim(); // remove old arrows
+    if (i === activeIndex) {
+      th.innerHTML = baseText + (currentSortDirection === "asc" ? " ▲" : " ▼");
+    } else {
+      th.innerHTML = baseText;
+    }
+  });
+}
+
+async function loadClaims() {
+  updateTableHeader(document.getElementById("collectionSelector").value || "claims");
+
+  const filter = document.getElementById("statusFilter").value;
+  const searchTerm = document.getElementById("searchInput")?.value?.toLowerCase() || "";
+  const selectedCollection = document.getElementById("collectionSelector").value || "claims";
+
+  const claimsQuery = query(collection(db, selectedCollection), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(claimsQuery);
+
+  table.innerHTML = "";
+  let total = 0;
+  let pending = 0;
+  let resolved = 0;
+
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+
+    const matchesSearch =
+      (data.name || "").toLowerCase().includes(searchTerm) ||
+      (data.email || "").toLowerCase().includes(searchTerm) ||
+      (data.type || "").toLowerCase().includes(searchTerm);
+
+    if (
+      (filter !== "all" && data.status !== filter) ||
+      (searchTerm && !matchesSearch)
+    ) {
+      return;
+    }
+
+    total++;
+    if (data.status === "pending") pending++;
+    if (data.status === "resolved") resolved++;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+<td>${data.createdAt?.toDate().toLocaleString() || "-"}</td>
+<td>${data.name || "-"}</td>
+<td>${data.email || "-"}</td>
+<td>${data.type || data.resort || "-"}</td>
+<td>${data.phone || "-"}</td>
+<td>${data.details || "-"}</td>
+<td>
+  <span style="
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    background-color: ${data.status === 'resolved' ? '#10b981' : '#f59e0b'};
+  ">
+    ${data.status === 'resolved' ? 'Resolved' : 'Pending'}
+  </span>
+</td>
+<td>
+  <select class="status-select" onchange="updateStatus('${docSnap.id}', this.value)">
+    <option value="pending" ${data.status === "pending" ? "selected" : ""}>Pending</option>
+    <option value="resolved" ${data.status === "resolved" ? "selected" : ""}>Resolved</option>
+  </select>
+</td>
+<td>${data.fileUrl ? `<a href="${data.fileUrl}" target="_blank">Download</a>` : "-"}</td>
+<td>
+  <a href="/claim-detail.html?id=${docSnap.id}" target="_blank">View</a>
+  <a href="/claim-detail.html?id=${docSnap.id}&pdf=true" target="_blank">PDF</a>
+  <a href="#" onclick="deleteClaim('${docSnap.id}')" style="color:red;">Delete</a>
+</td>
+    `;
+    table.appendChild(row);
+  });
+
+  const summaryElement = document.getElementById("claimSummary");
+  if (summaryElement) {
+    summaryElement.innerText = `Showing ${total} claim(s): ${pending} pending, ${resolved} resolved`;
+  }
+
+  window.updateStatus = async function (id, newStatus) {
+    const ref = doc(db, selectedCollection, id);
+    await updateDoc(ref, { status: newStatus });
+    loadClaims();
+  };
+
+  window.deleteClaim = async function (id) {
+    if (confirm("Are you sure you want to delete this claim?")) {
+      await deleteDoc(doc(db, selectedCollection, id));
+      showToast("🗑️ Claim deleted.");
+      loadClaims();
+    }
+  };
+}
+
+    function extractField(html, label) {
+      const match = html?.match(new RegExp(`<strong>${label}:</strong>\\s*(.*?)<`, "i"));
+      return match ? match[1] : "-";
+    }
+
+    function extractAttachment(html) {
+      const match = html?.match(/<a href="(.*?)".*?>View File<\/a>/i);
+      return match ? `<a href="${match[1]}" target="_blank">Download</a>` : "-";
+    }
+
+    window.exportCSV = function () {
+      const rows = [[
+        "Date", "Name", "Email", "Type", "Phone", "Details", "Status",
+        "Attachment URL", "Claim View URL", "PDF URL"
+      ]];
+
+      const tableRows = document.getElementById("claimsBody").querySelectorAll("tr");
+      tableRows.forEach(tr => {
+        const cells = tr.querySelectorAll("td");
+        if (cells.length >= 10) {
+          const clean = text => `"${text?.replace(/\n/g, ' ').replace(/"/g, '""') || "-"}"`;
+
+          const attachmentLink = cells[8].querySelector('a')?.href || "-";
+          const claimLinks = cells[9].querySelectorAll('a');
+          let viewLink = "-", pdfLink = "-";
+
+          claimLinks.forEach(link => {
+            if (link.href.includes("&pdf=true")) pdfLink = link.href;
+            else if (link.href.includes("claim-detail.html")) viewLink = link.href;
+          });
+
+          rows.push([
+            clean(cells[0].innerText),
+            clean(cells[1].innerText),
+            clean(cells[2].innerText),
+            clean(cells[3].innerText),
+            clean(cells[4].innerText),
+            clean(cells[5].innerText),
+            clean(cells[6].innerText),
+            clean(attachmentLink),
+            clean(viewLink),
+            clean(pdfLink)
+          ]);
+        }
+      });
+
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "claims.csv";
+      a.click();
+      showToast("📄 CSV downloaded");
+      URL.revokeObjectURL(url);
+    };
+
+    window.submitTestClaim = async function () {
+      const random = Math.floor(Math.random() * 10000);
+      await addDoc(collection(db, "claims"), {
+        name: `Test User ${random}`,
+        email: `test${random}@email.com`,
+        phone: "+441234567890",
+        type: "Test Submission",
+        details: "This is a test claim to verify the system end-to-end.",
+        fileUrl: "",
+        createdAt: Timestamp.now(),
+        status: "pending"
+      });
+      showToast("✅ Test claim submitted.");
+      loadClaims();
+    };
+
+    // Initial call
+    loadClaims();
+  </script>
+</body>
+</html>

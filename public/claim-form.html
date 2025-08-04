@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flight Delay Compensation | Quaerens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      top: 0px !important;
+      position: static !important;
+    }
+    html {
+      margin-top: 0 !important;
+    }
+    .content-box {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f9fafb;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+    /* Hide Google Translate top banner and branding */
+    .goog-te-banner-frame.skiptranslate,
+    .goog-te-gadget-icon,
+    .goog-logo-link,
+    .goog-te-gadget,
+    body > .skiptranslate {
+      display: none !important;
+    }
+    .goog-te-gadget {
+      font-size: 0 !important;
+    }
+    form label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+    form input,
+    form select {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+    }
+  </style>
+
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+  <div id="google_translate_element" style="display: none;"></div>
+
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="/">
+        <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto">
+      </a>
+      <nav>
+        <div class="w-full bg-gray-100 text-right p-2">
+          <div x-data="{ open: false }" class="relative inline-block text-left">
+            <button @click="open = !open"
+                    class="inline-flex items-center justify-center rounded border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none">
+              🌐 Language
+              <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l5 5 5-5" />
+              </svg>
+            </button>
+            <div x-show="open" @click.outside="open = false"
+                 class="absolute right-0 mt-2 w-48 rounded-md shadow bg-white text-sm text-gray-700 z-50">
+                 <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
+                 <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
+                 <a href="#" onclick="setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
+                 <a href="#" onclick="setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
+                 <a href="#" onclick="setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
+                 <a href="#" onclick="setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
+                 <a href="#" onclick="setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
+                 <a href="#" onclick="setLanguage('en|da')" class="block px-4 py-2 hover:bg-gray-100">🇩🇰 Dansk</a>
+                 <a href="#" onclick="setLanguage('en|pl')" class="block px-4 py-2 hover:bg-gray-100">🇵🇱 Polski</a>
+                 <a href="#" onclick="setLanguage('en|cs')" class="block px-4 py-2 hover:bg-gray-100">🇨🇿 Čeština</a>
+                 <a href="#" onclick="setLanguage('en|ro')" class="block px-4 py-2 hover:bg-gray-100">🇷🇴 Română</a>
+                 <a href="#" onclick="setLanguage('en|bg')" class="block px-4 py-2 hover:bg-gray-100">🇧🇬 Български</a>
+                 <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
+                 <a href="#" onclick="setLanguage('en|pt')" class="block px-4 py-2 hover:bg-gray-100">🇵🇹 Português</a>                 
+            </div>
+          </div>
+        </div>
+      </nav>
+      <script>
+        // Read googtrans cookie on load and set dropdown
+        document.addEventListener("DOMContentLoaded", () => {
+          const match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+          const lang = match ? match[1] : "en";
+      
+          // Set the language selector dropdown (form)
+          const languageSelect = document.getElementById("language");
+          if (languageSelect) languageSelect.value = lang;
+        });
+      
+        // Change language function called by header dropdown
+        function setLanguage(langPair) {
+          if (!langPair) return;
+      
+          const langCode = langPair.split('|')[1];
+      
+          // Set cookie for Google Translate
+          document.cookie = `googtrans=/en/${langCode};path=/;max-age=31536000`;
+      
+          // Trigger change on Google Translate iframe select
+          const googleSelect = document.querySelector('select.goog-te-combo');
+          if (googleSelect && googleSelect.options) {
+            googleSelect.value = langCode;
+            googleSelect.dispatchEvent(new Event('change'));
+          }
+      
+          // Update your own language dropdown in form (if present)
+          const languageSelect = document.getElementById("language");
+          if (languageSelect) languageSelect.value = langCode;
+        }
+      </script>      
+    </div>
+  </header>
+
+  <script>
+    // On page load, read the lang from URL or cookie and set Google Translate + dropdown
+    document.addEventListener("DOMContentLoaded", function () {
+      // Helper to get URL query param
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+  
+      // Get lang from URL param 'lang' or fallback to cookie or 'en'
+      const langFromUrl = getQueryParam('lang');
+      const cookieMatch = document.cookie.match(/googtrans=\/en\/(\w+)/);
+      const langFromCookie = cookieMatch ? cookieMatch[1] : null;
+      const lang = langFromUrl || langFromCookie || 'en';
+  
+      // Set Google Translate cookie
+      document.cookie = `googtrans=/en/${lang};path=/;domain=${location.hostname};max-age=31536000`;
+  
+      // Set dropdown value
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = lang;
+  
+      // Trigger Google Translate select to change language
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = lang;
+        googleSelect.dispatchEvent(new Event('change'));
+      }
+    });
+  
+    // Function to set language: update cookie, trigger Google Translate, update dropdown UI
+    function setLanguage(langPair) {
+      if (!langPair) return;
+  
+      // Set Google Translate cookie
+      document.cookie = `googtrans=/en/${langPair.split('|')[1]};path=/;domain=${location.hostname};max-age=31536000`;
+  
+      // Trigger Google Translate select change
+      const googleSelect = document.querySelector('select.goog-te-combo');
+      if (googleSelect && googleSelect.options) {
+        googleSelect.value = langPair.split('|')[1];
+        googleSelect.dispatchEvent(new Event('change'));
+      }
+  
+      // Update dropdown UI
+      const languageSelect = document.getElementById("language");
+      if (languageSelect) languageSelect.value = langPair.split('|')[1];
+    }
+  </script>
+  
+  <!-- Google Translate hidden engine (bottom of page) -->
+  <div id="google_translate_element2" style="display: none;"></div>
+  <script type="text/javascript">
+    function doGTranslate(lang_pair) {
+      if (!lang_pair) return;
+      var lang = lang_pair.split('|')[1];
+      var select = document.querySelector('select.goog-te-combo');
+      if (select && select.options) {
+        select.value = lang;
+        select.dispatchEvent(new Event('change'));
+      }
+    }
+  </script>
+  
+  <script type="text/javascript">
+    function googleTranslateElementInit2() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,fr,es,de,nl,it,sv,da,pl,cs,ro,bg,el,pt',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element2');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
+  
+
+<!-- Hero Section -->
+<section class="relative w-full overflow-hidden">
+  <img src="images/hero-flight3.png" alt="Free Legal Help Banner"
+       class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
+</section>
+
+<!-- Why Trust Us Image -->
+<div class="max-w-3xl mx-auto px-4 mt-12 mb-4" data-aos="fade-up">
+  <img src="images/why-trust-us-badges.png"
+       alt="Why Trust Us Badges"
+       class="mx-auto w-full max-w-xl rounded-lg shadow" />
+</div>
+
+<!-- Main Explainer Box (No Floating Badge) -->
+<div class="max-w-3xl mx-auto px-4 mt-12 mb-8" data-aos="fade-up">
+  <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-900 p-6 rounded-xl shadow text-left">
+    <h3 class="text-lg font-bold mb-3">How This Works – It's 100% Free</h3>
+    <ul class="space-y-3 text-sm sm:text-base">
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>Fill in your details and we’ll generate the correct claim form <strong>completely FREE of charge</strong>.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>We can send the letter directly to the airline — you’ll also receive a copy by email.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>Prefer to send it yourself? We give you a printable PDF, ready to go.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>Then just sit back and wait for your compensation. We’ve made it that simple.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-green-600 mt-1">✔</span>
+        <span>If you're happy with our free service, please tell your friends and family. 😊</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- Airline Emails (used in form logic) -->
+<script>
+  window.airlineEmails = {
+    "Ryanair": "claims@ryanair.com",
+    "easyJet": "customer.support@easyjet.com",
+    "Lufthansa": "customer.relations@lufthansa.com",
+    "Vueling": "atencion.clientes@vueling.com",
+    "British Airways": "customer.relations@ba.com",
+    "KLM": "mail@klm.nl",
+    "Transavia": "servicecentre@transavia.com",
+    "Air France": "mail.afklmplc@airfrance.fr",
+    "Iberia": "clasica@iberia.es",
+    "Jet2": "customer.service@jet2.com",
+    "Wizz Air": "claim@wizzair.com",
+    "TUI Airways": "aftertravel@tui.co.uk",
+    "Norwegian": "complaints@norwegian.com",
+    "Aer Lingus": "customerqueries@aerlingus.com",
+    "Brussels Airlines": "claim@brusselsairlines.com",
+    "Swiss International Air Lines": "contact@swiss.com",
+    "Eurowings": "customercare@eurowings.com",
+    "TAP Air Portugal": "customer@tap.pt",
+    "Finnair": "feedback@finnair.com",
+    "SAS Scandinavian Airlines": "customercare@sas.se",
+    "Aegean Airlines": "customercare@aegeanair.com",
+    "LOT Polish Airlines": "contact@lot.pl",
+    "Air Malta": "customer.relations@airmalta.com",
+    "Corendon Airlines": "info@corendon-airlines.com",
+    "SunExpress": "customer.service@sunexpress.com",
+    "Blue Air": "support@blueairweb.com",
+    "Volotea": "support@volotea.com",
+    "Lauda Europe": "assistance@laudamotion.com",
+    "Widerøe": "info@wideroe.no",
+    "Croatia Airlines": "contact@croatiaairlines.hr",
+    "Alitalia (ITA Airways)": "customer.relations@itaspa.com",
+    "Condor": "service@condor.com"
+  };
+</script>
+
+<script>
+  window.airlineLangMap = {
+    "Air France": "fr",
+    "Transavia France": "fr",
+    "Vueling": "es",
+    "Iberia": "es",
+    "Air Europa": "es",
+    "Binter Canarias": "es",
+    "Alitalia (ITA Airways)": "it",
+    "ITA Airways": "it",
+    "TAP Air Portugal": "pt",
+    "Azores Airlines": "pt",
+    "Aegean Airlines": "el",
+    "Olympic Air": "el",
+    "SAS Scandinavian Airlines": "sv",
+    "Norwegian": "sv",
+    "Widerøe": "sv",
+    "Lufthansa": "de",
+    "Swiss International Air Lines": "de",
+    "Austrian Airlines": "de",
+    "Brussels Airlines": "fr", // or "nl"
+    "KLM": "nl",
+    "Transavia": "nl",
+    "Finnair": "fi",
+    "LOT Polish Airlines": "pl",
+    "Czech Airlines": "cs",
+    "Croatia Airlines": "hr",
+    "Air Malta": "en",
+    "Luxair": "fr",
+    "Volotea": "es",
+    "Condor": "de",
+    "easyJet": "en",
+    "British Airways": "en",
+    "Jet2": "en",
+    "TUI Airways": "en",
+    "Ryanair": "en"
+    // Add more as needed!
+  };
+  </script>  
+
+<!-- ✅ Firebase Setup -->
+<script type="module" src="firebase-setup.js"></script>
+
+<script>
+// --- REASON LABELS ---
+const reasonLabels = {
+  technical_issue: "Technical issue",
+  crew_availability: "Crew availability",
+  weather_conditions: "Weather conditions",
+  air_traffic_control: "Air traffic control",
+  operational_disruption: "Operational disruption",
+  late_incoming_aircraft: "Late incoming aircraft",
+  other: "Other"
+};
+
+// --- TRANSLATIONS (Add more languages as needed) ---
+const translations = {
+  en: {
+    intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
+    closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
+    subject: "Compensation Request under EC Regulation 261/2004",
+    to: "To:",
+    detailsTitle: "Flight Details:",
+    paymentLabel: "Preferred Payment Method",
+    claimRef: "Claim Reference",
+    footer: "This document was generated at no cost by Quaerens.co.uk."
+  },
+  fr: {
+    intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
+    closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
+    subject: "Demande d'indemnisation selon le règlement CE 261/2004",
+    to: "À :",
+    detailsTitle: "Détails du vol :",
+    paymentLabel: "Méthode de paiement préférée",
+    claimRef: "Référence du dossier",
+    footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+  }
+};
+
+// --- COMPENSATION LOGIC ---
+function calculateCompensation(distance, delayDuration) {
+  if (delayDuration === "4") return 600;
+  if (delayDuration === "3") return distance === "short" ? 250 : 400;
+  return 0;
+}
+
+function generatePDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Utility for distance
+  function readableDistance(dist) {
+    if (dist === "short") return "Up to 1,500 km";
+    if (dist === "medium") return "1,500–3,500 km";
+    if (dist === "long") return "Over 3,500 km";
+    return dist || "";
+  }
+
+  // === 1. English Letter ===
+  const today = new Date().toLocaleDateString();
+  const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const amount = data.compensation || 0;
+
+  let y = 20;
+  doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+
+  doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+  doc.setFont(undefined, "normal").text(`Claim Reference: ${claimRef}`, 10, y); y += 10;
+  doc.setFont(undefined, "bold").text("To:", 10, y); y += 6;
+  doc.setFont(undefined, "normal").text(
+    `${data.airline}${data.airlineEmail ? "\nEmail: " + data.airlineEmail : ""}`,
+    10, y
+  );
+  y += 14;
+  doc.setFont(undefined, "bold").text("Subject:", 10, y); y += 6;
+  doc.setFont(undefined, "normal").text("Compensation Request under EC Regulation 261/2004, Article 7", 10, y); y += 12;
+  doc.setFont(undefined, "normal").text("Dear Sir/Madam,", 10, y); y += 10;
+
+  // Main body (English)
+  const introEn = `I am writing to formally request compensation for the following disrupted flight, under Article 7 of EC Regulation 261/2004 (“the Regulation”). My claim is supported by the European Court of Justice decisions in Sturgeon (C-402/07), Nelson (C-581/10), and Wallentin-Hermann (C-549/07).
+
+According to Article 7(1) of the Regulation and consistent CJEU case law, passengers are entitled to fixed compensation where a flight arrives at its final destination three hours or more after the scheduled time, except in cases of extraordinary circumstances as strictly defined by Article 5(3) and clarified by the CJEU.
+
+My flight, detailed below, was delayed over ${data.delayDuration || "N/A"} hours, and no extraordinary circumstances have been evidenced by the carrier. I therefore request immediate payment of the statutory compensation, as required by law.`;
+
+  const introLinesEn = doc.splitTextToSize(introEn, 180);
+  doc.text(introLinesEn, 10, y);
+  y += introLinesEn.length * 6 + 2;
+
+  doc.setFont(undefined, "bold").text("Flight Details:", 10, y); y += 8;
+  [
+    `Passenger Name: ${data.fullName || ""}`,
+    `Flight Number: ${data.flightNumber || ""}`,
+    `Booking Reference: ${data.bookingRef || ""}`,
+    `Flight Date: ${data.flightDate || ""}`,
+    `Departure Airport: ${data.depAirport || ""}`,
+    `Arrival Airport: ${data.arrAirport || ""}`,
+    `Airline: ${data.airline || ""}`,
+    `Reason for Delay: ${data.reason || ""}`,
+    `Flight Distance: ${readableDistance(data.distance)}`,
+    `Delay Duration: ${data.delayDuration || ""} hours`
+  ].forEach(line => { doc.text(line, 10, y); y += 7; });
+
+  y += 2;
+  doc.setFont(undefined, "bold").text("Amount Claimed:", 10, y); y += 7;
+  doc.setFont(undefined, "normal").text(`€${amount} (Article 7, EC 261/2004)`, 10, y); y += 10;
+
+  doc.setFont(undefined, "bold").text("Preferred Payment Method:", 10, y); y += 7;
+  doc.setFont(undefined, "normal").text(`IBAN/PayPal: ${data.iban || ""}`, 10, y); y += 10;
+
+  // Closing (English)
+  const closingEn = `Please process this claim and arrange payment to the account above within 14 days of receipt. If you believe extraordinary circumstances apply, you must provide detailed documentary evidence as required by Article 5(3) and Wallentin-Hermann.
+
+If full payment or a legally valid response is not received within 14 days, I reserve the right to escalate this matter to the National Enforcement Body, pursue legal recovery through the European Small Claims Procedure, and claim statutory interest and legal costs.
+
+This claim is made with reference to EC Regulation 261/2004, CJEU Cases C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann), and all relevant national enforcement measures. Supporting documents are available upon request.
+
+Please confirm receipt of this claim and your proposed actions in writing.`;
+
+  const closingLinesEn = doc.splitTextToSize(closingEn, 180);
+  doc.text(closingLinesEn, 10, y);
+  y += closingLinesEn.length * 6 + 2;
+
+  doc.text("Thank you for your cooperation.", 10, y); y += 8;
+  doc.text("Yours faithfully,", 10, y); y += 8;
+  doc.text(data.fullName || "", 10, y); y += 8;
+
+  // Always place the footer 10mm from the bottom of the page
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(10).setTextColor(120).text(
+    "This document was generated at no cost by Quaerens.co.uk.", 
+    10, 
+    pageHeight - 10
+  );
+
+
+  // === 2. Airline Local Language ===
+  // Select language based on airline (default to English if unknown)
+  const airlineLangMap = {
+    "Air France": "fr",
+    "Transavia France": "fr",
+    "Vueling": "es",
+    "Iberia": "es",
+    "Air Europa": "es",
+    "Alitalia (ITA Airways)": "it",
+    "ITA Airways": "it",
+    "TAP Air Portugal": "pt",
+    "Aegean Airlines": "el",
+    "Olympic Air": "el",
+    "SAS Scandinavian Airlines": "sv",
+    "Norwegian": "sv",
+    "Widerøe": "sv",
+    // Add more mappings if needed
+  };
+  // Use code from airlineLangMap or default to English
+  const airlineLang = airlineLangMap[data.airline] || data.language || "en";
+  const translations = {
+    // ENGLISH omitted (already above)
+    fr: {
+      subject: "Demande d'indemnisation selon le règlement CE 261/2004, Article 7",
+      greeting: "Madame, Monsieur,",
+      intro: `Je vous écris pour demander une indemnisation concernant le vol perturbé ci-dessous, conformément à l'article 7 du règlement CE 261/2004 ("le Règlement"). Ma demande est étayée par la jurisprudence de la Cour de justice de l'Union européenne, notamment Sturgeon (C-402/07), Nelson (C-581/10) et Wallentin-Hermann (C-549/07).
+
+Selon l'article 7(1) du Règlement et la jurisprudence constante, les passagers ont droit à une indemnisation forfaitaire lorsque leur vol arrive à destination avec un retard de trois heures ou plus, sauf en cas de circonstances extraordinaires telles que définies strictement à l'article 5(3) et précisées par la CJUE.
+
+Mon vol, détaillé ci-dessous, a été retardé de plus de ${data.delayDuration || "N/A"} heures, et aucune circonstance extraordinaire n'a été démontrée par le transporteur. Je demande donc le paiement immédiat de l'indemnisation légale.`,
+      flightDetails: "Détails du vol :",
+      amountClaimed: "Montant réclamé :",
+      paymentMethod: "Méthode de paiement préférée :",
+      closing: `Veuillez traiter cette réclamation et effectuer le paiement sur le compte ci-dessus dans un délai de 14 jours. Si vous estimez que des circonstances extraordinaires s'appliquent, vous devez fournir les preuves documentaires détaillées requises par l'article 5(3) et Wallentin-Hermann.
+
+Sans règlement ou réponse juridiquement valable sous 14 jours, je me réserve le droit de saisir l’Autorité nationale compétente, d’engager une procédure européenne de règlement des petits litiges et de réclamer les intérêts et frais prévus par la loi.
+
+Cette réclamation est fondée sur le règlement CE 261/2004, les arrêts C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) et toutes mesures nationales applicables. Les justificatifs sont disponibles sur demande.
+
+Merci de confirmer la réception de cette réclamation et les suites que vous envisagez d’y donner par écrit.`,
+      thanks: "Merci de votre coopération.",
+      signoff: "Cordialement,",
+      footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
+    },
+    es: {
+      subject: "Solicitud de indemnización bajo el Reglamento CE 261/2004, Artículo 7",
+      greeting: "Estimados señores:",
+      intro: `Me dirijo a ustedes para solicitar formalmente la compensación correspondiente por el siguiente vuelo perturbado, conforme al artículo 7 del Reglamento CE 261/2004 (“el Reglamento”). Mi reclamación está respaldada por las sentencias del Tribunal de Justicia de la Unión Europea en Sturgeon (C-402/07), Nelson (C-581/10) y Wallentin-Hermann (C-549/07).
+
+Según el artículo 7(1) del Reglamento y la jurisprudencia constante del TJUE, los pasajeros tienen derecho a una compensación fija cuando el vuelo llega a su destino final con un retraso de tres horas o más, salvo en casos de circunstancias extraordinarias estrictamente definidas en el artículo 5(3) y aclaradas por el TJUE.
+
+Mi vuelo, detallado a continuación, sufrió un retraso superior a ${data.delayDuration || "N/A"} horas y la compañía no ha aportado prueba de circunstancias extraordinarias. Por ello, solicito el pago inmediato de la compensación legal.`,
+      flightDetails: "Datos del vuelo:",
+      amountClaimed: "Cantidad reclamada:",
+      paymentMethod: "Método de pago preferido:",
+      closing: `Por favor, tramiten esta reclamación y abonen el importe indicado en el plazo de 14 días. Si consideran que existen circunstancias extraordinarias, deben aportar la documentación exigida por el artículo 5(3) y Wallentin-Hermann.
+
+Si no recibo el pago completo o una respuesta jurídicamente válida en el plazo indicado, me reservo el derecho de acudir a la Autoridad Nacional competente, iniciar un procedimiento monitorio europeo y reclamar intereses y costes legales.
+
+Esta reclamación se realiza conforme al Reglamento CE 261/2004, las sentencias C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) y la normativa nacional correspondiente. Los documentos justificativos están disponibles si los requieren.
+
+Agradezco confirmen la recepción de esta reclamación y el trámite que le vayan a dar por escrito.`,
+      thanks: "Gracias por su colaboración.",
+      signoff: "Atentamente,",
+      footer: "Este documento ha sido generado gratuitamente por Quaerens.co.uk."
+    },
+    it: {
+      subject: "Richiesta di compensazione ai sensi del Regolamento CE 261/2004, Articolo 7",
+      greeting: "Spettabile Compagnia,",
+      intro: `Con la presente richiedo formalmente la compensazione prevista per il volo sottostante ai sensi dell’articolo 7 del Regolamento CE 261/2004 (“il Regolamento”). La mia richiesta si basa sulle sentenze della Corte di Giustizia dell’Unione Europea Sturgeon (C-402/07), Nelson (C-581/10) e Wallentin-Hermann (C-549/07).
+
+Ai sensi dell’articolo 7(1) del Regolamento e della costante giurisprudenza della CGUE, i passeggeri hanno diritto a una compensazione forfettaria quando il volo arriva a destinazione con un ritardo di tre ore o più, salvo circostanze eccezionali rigorosamente definite dall’articolo 5(3) e chiarite dalla Corte.
+
+Il mio volo, dettagliato sotto, ha subito un ritardo superiore a ${data.delayDuration || "N/A"} ore e la compagnia non ha fornito alcuna prova di circostanze eccezionali. Chiedo quindi il pagamento immediato della compensazione prevista dalla legge.`,
+      flightDetails: "Dettagli del volo:",
+      amountClaimed: "Importo richiesto:",
+      paymentMethod: "Metodo di pagamento preferito:",
+      closing: `Vi invito a processare la presente richiesta e a effettuare il pagamento entro 14 giorni. In caso di asserite circostanze eccezionali, siete tenuti a fornire prova documentale come richiesto dall’articolo 5(3) e Wallentin-Hermann.
+
+Qualora il pagamento o una risposta giuridicamente valida non pervengano entro 14 giorni, mi riservo di investire l’Autorità Nazionale competente, avviare una procedura europea per le controversie di modesta entità e richiedere interessi e spese legali.
+
+La presente si fonda sul Regolamento CE 261/2004, le sentenze C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) e la normativa nazionale pertinente. Documentazione a supporto disponibile su richiesta.
+
+Vi prego di confermare per iscritto la ricezione della presente e le azioni che intendete intraprendere.`,
+      thanks: "Grazie per la collaborazione.",
+      signoff: "Distinti saluti,",
+      footer: "Questo documento è stato generato gratuitamente da Quaerens.co.uk."
+    },
+    pt: {
+      subject: "Pedido de indemnização ao abrigo do Regulamento CE 261/2004, Artigo 7",
+      greeting: "Exmos. Senhores,",
+      intro: `Venho por este meio solicitar formalmente a compensação pelo voo abaixo referido, nos termos do artigo 7.º do Regulamento CE 261/2004 (“o Regulamento”). O meu pedido é sustentado pela jurisprudência do Tribunal de Justiça da União Europeia, nomeadamente Sturgeon (C-402/07), Nelson (C-581/10) e Wallentin-Hermann (C-549/07).
+
+De acordo com o artigo 7.º(1) do Regulamento e com a jurisprudência constante do TJUE, os passageiros têm direito a uma compensação fixa quando o voo chega ao destino final com um atraso de três horas ou mais, salvo em casos de circunstâncias extraordinárias, estritamente definidos no artigo 5.º(3) e esclarecidos pelo TJUE.
+
+O meu voo, detalhado abaixo, teve um atraso superior a ${data.delayDuration || "N/A"} horas e a transportadora não apresentou qualquer prova de circunstâncias extraordinárias. Solicito, assim, o pagamento imediato da compensação legalmente devida.`,
+      flightDetails: "Dados do voo:",
+      amountClaimed: "Valor reclamado:",
+      paymentMethod: "Método de pagamento preferido:",
+      closing: `Solicito o processamento deste pedido e o pagamento para a conta acima indicada no prazo de 14 dias. Caso entendam que existem circunstâncias extraordinárias, devem apresentar prova documental detalhada, conforme exigido pelo artigo 5.º(3) e Wallentin-Hermann.
+
+Se não receber o pagamento integral ou uma resposta juridicamente válida no prazo referido, reservo-me o direito de recorrer à Autoridade Nacional competente, iniciar um processo europeu para pequenas causas e reclamar juros e custas legais.
+
+Este pedido é feito ao abrigo do Regulamento CE 261/2004, Acórdãos C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) e legislação nacional aplicável. Documentos comprovativos disponíveis a pedido.
+
+Agradeço a confirmação da receção deste pedido e das medidas que pretendem adotar, por escrito.`,
+      thanks: "Agradeço a vossa colaboração.",
+      signoff: "Com os melhores cumprimentos,",
+      footer: "Este documento foi gerado gratuitamente por Quaerens.co.uk."
+    },
+    el: {
+      subject: "Αίτημα αποζημίωσης βάσει του Κανονισμού ΕΚ 261/2004, Άρθρο 7",
+      greeting: "Αξιότιμοι κύριοι,",
+      intro: `Σας απευθύνω το παρόν αίτημα αποζημίωσης για την παρακάτω διαταραγμένη πτήση, σύμφωνα με το άρθρο 7 του Κανονισμού ΕΚ 261/2004 ("ο Κανονισμός"). Η αξίωσή μου στηρίζεται στη νομολογία του Δικαστηρίου της Ευρωπαϊκής Ένωσης (υποθέσεις Sturgeon C-402/07, Nelson C-581/10, Wallentin-Hermann C-549/07).
+
+Σύμφωνα με το άρθρο 7(1) του Κανονισμού και τη σταθερή νομολογία, οι επιβάτες δικαιούνται σταθερή αποζημίωση όταν η πτήση φτάνει στον τελικό προορισμό της με καθυστέρηση τριών ωρών ή περισσότερο, εκτός εάν υφίστανται έκτακτες περιστάσεις αυστηρά οριζόμενες στο άρθρο 5(3) και ερμηνευόμενες από το ΔΕΕ.
+
+Η πτήση μου, που αναφέρεται παρακάτω, καθυστέρησε πάνω από ${data.delayDuration || "N/A"} ώρες και δεν έχουν παρουσιαστεί έκτακτες περιστάσεις. Ζητώ επομένως την άμεση καταβολή της νόμιμης αποζημίωσης.`,
+      flightDetails: "Στοιχεία πτήσης:",
+      amountClaimed: "Αξιούμενο ποσό:",
+      paymentMethod: "Προτιμώμενος τρόπος πληρωμής:",
+      closing: `Παρακαλώ επεξεργαστείτε το αίτημα και καταβάλετε το ποσό εντός 14 ημερών. Σε περίπτωση που επικαλείστε έκτακτες περιστάσεις, οφείλετε να προσκομίσετε λεπτομερή αποδεικτικά έγγραφα σύμφωνα με το άρθρο 5(3) και την υπόθεση Wallentin-Hermann.
+
+Εάν δεν λάβω πλήρη εξόφληση ή νομικά αιτιολογημένη απάντηση εντός 14 ημερών, διατηρώ το δικαίωμα να προσφύγω στην Εθνική Αρχή, να κινήσω ευρωπαϊκή διαδικασία μικροδιαφορών και να διεκδικήσω νόμιμους τόκους και δικαστικά έξοδα.
+
+Το παρόν αίτημα υποβάλλεται με βάση τον Κανονισμό ΕΚ 261/2004, τις υποθέσεις C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) και την εθνική νομοθεσία. Υποστηρικτικά έγγραφα διαθέσιμα κατόπιν αιτήματος.
+
+Παρακαλώ επιβεβαιώστε γραπτώς την παραλαβή και τις ενέργειές σας.`,
+      thanks: "Σας ευχαριστώ για τη συνεργασία.",
+      signoff: "Με εκτίμηση,",
+      footer: "Το παρόν έγγραφο δημιουργήθηκε δωρεάν από το Quaerens.co.uk."
+    },
+    sv: {
+      subject: "Begäran om ersättning enligt EU-förordning 261/2004, Artikel 7",
+      greeting: "Bästa kundtjänst,",
+      intro: `Jag skriver för att formellt begära ersättning för nedanstående försenade flyg, enligt artikel 7 i EU-förordning 261/2004 (“förordningen”). Min begäran stöds av EU-domstolens avgöranden i Sturgeon (C-402/07), Nelson (C-581/10) och Wallentin-Hermann (C-549/07).
+
+Enligt artikel 7(1) och domstolspraxis har passagerare rätt till schablonersättning när ett flyg når slutdestinationen tre timmar eller mer efter utsatt tid, utom vid extraordinära omständigheter strikt definierade i artikel 5(3) och förtydligade av EU-domstolen.
+
+Mitt flyg, specificerat nedan, anlände med över ${data.delayDuration || "N/A"} timmars försening och inget sådant undantag har visats av flygbolaget. Jag begär därmed omedelbar utbetalning av lagstadgad ersättning.`,
+      flightDetails: "Flyguppgifter:",
+      amountClaimed: "Begärt belopp:",
+      paymentMethod: "Önskad betalningsmetod:",
+      closing: `Vänligen behandla detta anspråk och utbetala ersättningen till ovanstående konto inom 14 dagar. Om ni hävdar extraordinära omständigheter måste ni tillhandahålla full dokumentation enligt artikel 5(3) och Wallentin-Hermann.
+
+Om full ersättning eller ett juridiskt motiverat svar inte mottas inom 14 dagar, förbehåller jag mig rätten att vända mig till nationell tillsynsmyndighet, inleda europeiskt småmålsförfarande och kräva ränta och kostnader.
+
+Anspråket grundas på EU-förordning 261/2004, rättsfall C-402/07 (Sturgeon), C-581/10 (Nelson), C-549/07 (Wallentin-Hermann) och tillämplig nationell lagstiftning. Underlag finns på begäran.
+
+Bekräfta vänligen skriftligt att ni mottagit detta krav och hur ni avser agera.`,
+      thanks: "Tack för ert samarbete.",
+      signoff: "Med vänlig hälsning,",
+      footer: "Detta dokument har genererats kostnadsfritt av Quaerens.co.uk."
+    }
+  };
+
+  if (airlineLang !== "en" && translations[airlineLang]) {
+    doc.addPage();
+    y = 20;
+    const t = translations[airlineLang];
+
+    doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
+
+    doc.setFont(undefined, "bold").text(today, 10, y); y += 10;
+    doc.setFont(undefined, "normal").text(`Referencia de reclamación: ${claimRef}`, 10, y); y += 10;
+    doc.setFont(undefined, "bold").text("A:", 10, y); y += 6;
+    doc.setFont(undefined, "normal").text(
+      `${data.airline}${data.airlineEmail ? "\nEmail: " + data.airlineEmail : ""}`,
+      10, y
+    );
+    y += 14;
+    doc.setFont(undefined, "bold").text("Asunto:", 10, y); y += 6;
+    doc.setFont(undefined, "normal").text(t.subject, 10, y); y += 12;
+    doc.setFont(undefined, "normal").text(t.greeting, 10, y); y += 10;
+
+    // Main body
+    const introLines = doc.splitTextToSize(t.intro, 180);
+    doc.text(introLines, 10, y);
+    y += introLines.length * 6 + 2;
+
+    doc.setFont(undefined, "bold").text(t.flightDetails, 10, y); y += 8;
+    [
+      `${t.flightDetails} ${data.fullName || ""}`,
+      `Flight Number: ${data.flightNumber || ""}`,
+      `Booking Reference: ${data.bookingRef || ""}`,
+      `Flight Date: ${data.flightDate || ""}`,
+      `Departure Airport: ${data.depAirport || ""}`,
+      `Arrival Airport: ${data.arrAirport || ""}`,
+      `Airline: ${data.airline || ""}`,
+      `Reason for Delay: ${data.reason || ""}`,
+      `Flight Distance: ${readableDistance(data.distance)}`,
+      `Delay Duration: ${data.delayDuration || ""} hours`
+    ].forEach(line => { doc.text(line, 10, y); y += 7; });
+
+    y += 2;
+    doc.setFont(undefined, "bold").text(t.amountClaimed, 10, y); y += 7;
+    doc.setFont(undefined, "normal").text(`€${amount} (Art. 7, CE 261/2004)`, 10, y); y += 10;
+
+    doc.setFont(undefined, "bold").text(t.paymentMethod, 10, y); y += 7;
+    doc.setFont(undefined, "normal").text(`${data.iban || ""}`, 10, y); y += 10;
+
+    const closingLines = doc.splitTextToSize(t.closing, 180);
+    doc.text(closingLines, 10, y);
+    y += closingLines.length * 6 + 2;
+
+    doc.text(t.thanks, 10, y); y += 8;
+doc.text(t.signoff, 10, y); y += 8;
+doc.text(data.fullName || "", 10, y); y += 8;
+
+// Always place the footer 10mm from the bottom of the page
+const pageHeight = doc.internal.pageSize.getHeight();
+doc.setFontSize(10).setTextColor(120).text(
+  t.footer,
+  10,
+  pageHeight - 10
+);
+
+
+  }
+
+  doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
+}
+
+// --- MAIN FORM LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+  const {
+    collection,
+    addDoc,
+    serverTimestamp,
+    ref,
+    uploadBytes,
+    getDownloadURL
+  } = window.firebaseUtils;
+
+  const db = window.db;
+  const storage = window.storage;
+  const airlineEmails = window.airlineEmails;
+
+  const form = document.getElementById("claim-letter-form");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Gather fields
+    const fullName     = document.getElementById("fullName").value.trim();
+    const flightNumber = document.getElementById("flightNumber").value.trim();
+    const bookingRef   = document.getElementById("bookingRef").value.trim();
+    const iban         = document.getElementById("iban").value.trim();
+    const flightDate   = document.getElementById("flightDate").value;
+    const depAirport   = document.getElementById("depAirport").value.trim();
+    const arrAirport   = document.getElementById("arrAirport").value.trim();
+    const airline      = document.getElementById("airline").value;
+    const reasonCode   = document.getElementById("reason").value;
+    const reason       = reasonLabels[reasonCode] || "Other";
+    const distance     = document.getElementById("distance").value;
+    const delayDuration= document.getElementById("delayDuration").value;
+    const compensation = calculateCompensation(distance, delayDuration);
+    const language     = document.getElementById("language").value;
+    const email        = document.getElementById("email").value.trim();
+    const handleOption = document.getElementById("handleOption").value;
+    const donation     = document.getElementById("donation").value;
+
+    // Validate required
+    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    // Upload optional file
+    let fileURL = "";
+    const file = document.getElementById("fileUpload").files[0];
+    if (file) {
+      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+      const snap       = await uploadBytes(storageRef, file);
+      fileURL          = await getDownloadURL(snap.ref);
+    }
+
+    // Build claim data
+    const claimData = {
+      fullName,
+      flightNumber,
+      bookingRef,
+      iban,
+      flightDate,
+      depAirport,
+      arrAirport,
+      airline,
+      reason,
+      reasonCode,
+      distance,
+      delayDuration,
+      compensation,
+      language,
+      email,
+      handleOption,
+      donation,
+      fileURL,
+      createdAt: serverTimestamp(),
+      airlineEmail: airlineEmails[airline] || ""
+    };
+
+    try {
+      // Save to Firestore
+      await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+      // Handle PDF / Email / Quaerens processing
+      if (handleOption === "pdf") {
+        generatePDF(claimData);
+      } else if (handleOption === "email") {
+        await fetch(
+          "https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(claimData)
+          }
+        );
+        alert("✅ Your letter has been emailed!");
+      } else {
+        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+      }
+
+      // Show confirmation message
+      document.getElementById("claim-letter-result").classList.remove("hidden");
+    } catch (err) {
+      console.error("Error saving claim:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+});
+</script>
+
+<!-- EC261 Claim Letter Generator Heading Only -->
+<section class="bg-blue-50 pt-10 pb-10">
+  <div class="max-w-3xl mx-auto px-4 text-center">
+    <div class="bg-yellow-300 text-blue-900 px-6 py-6 rounded-xl shadow-lg border-2 border-yellow-500">
+      <h2 class="text-3xl sm:text-4xl font-extrabold uppercase tracking-wide">
+        Generate Your Free EC261 Claim Letter
+      </h2>
+      <p class="text-lg sm:text-xl font-semibold mt-2">
+        No lawyers, no fees — just fill in your flight details!
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow-md">
+  <p class="text-gray-700 text-center mb-6">
+    Fill in your flight and contact details to get a free compensation claim letter (PDF or email). No lawyer needed.
+  </p>
+
+  <form id="claim-letter-form" class="bg-white p-6 rounded shadow-md space-y-4">
+    <div>
+      <label class="font-semibold">Full Name</label>
+      <input type="text" id="fullName" required class="w-full border p-2 rounded" />
+    </div>
+
+    <div>
+      <label class="font-semibold">Flight Number</label>
+      <input type="text" id="flightNumber" required class="w-full border p-2 rounded" />
+    </div>
+
+    <div>
+      <label class="font-semibold">Booking Reference</label>
+      <input type="text" id="bookingRef" class="w-full border p-2 rounded" required />
+    </div>
+
+    <div>
+      <label class="font-semibold">Preferred Payment Method (e.g. IBAN, PayPal)</label>
+      <input type="text" id="iban" class="w-full border p-2 rounded" required />
+    </div>
+
+    <div>
+      <label class="font-semibold">Flight Date</label>
+      <input type="date" id="flightDate" required class="w-full border p-2 rounded" />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div>
+        <label for="depAirport" class="font-semibold">Departure Airport</label>
+        <select id="depAirport" class="w-full border p-2 rounded" required>
+          <option value="">Select a departure airport</option>
+        </select>
+      </div>
+      <div>
+        <label for="arrAirport" class="font-semibold">Arrival Airport</label>
+        <select id="arrAirport" class="w-full border p-2 rounded" required>
+          <option value="">Select an arrival airport</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label for="airline" class="font-semibold">Airline</label>
+      <select id="airline" class="w-full border p-2 rounded" required>
+        <option value="">Select an airline</option>
+        <option value="Aegean Airlines">Aegean Airlines</option>
+        <option value="Aer Lingus">Aer Lingus</option>
+        <option value="Aeroflot">Aeroflot</option>
+        <option value="Air Arabia">Air Arabia</option>
+        <option value="Air Baltic">Air Baltic</option>
+        <option value="Air Canada">Air Canada</option>
+        <option value="Air China">Air China</option>
+        <option value="Air Europa">Air Europa</option>
+        <option value="Air France">Air France</option>
+        <option value="Air India">Air India</option>
+        <option value="Air Italy">Air Italy</option>
+        <option value="Air Malta">Air Malta</option>
+        <option value="Air New Zealand">Air New Zealand</option>
+        <option value="Air Serbia">Air Serbia</option>
+        <option value="Air Transat">Air Transat</option>
+        <option value="Alaska Airlines">Alaska Airlines</option>
+        <option value="All Nippon Airways (ANA)">All Nippon Airways (ANA)</option>
+        <option value="Allegiant Air">Allegiant Air</option>
+        <option value="Alitalia (ITA Airways)">Alitalia (ITA Airways)</option>
+        <option value="American Airlines">American Airlines</option>
+        <option value="Anaheim Airlines">Anaheim Airlines</option>
+        <option value="Austrian Airlines">Austrian Airlines</option>
+        <option value="British Airways">British Airways</option>
+        <option value="Brussels Airlines">Brussels Airlines</option>
+        <option value="Cathay Pacific">Cathay Pacific</option>
+        <option value="China Airlines">China Airlines</option>
+        <option value="China Eastern Airlines">China Eastern Airlines</option>
+        <option value="China Southern Airlines">China Southern Airlines</option>
+        <option value="Copa Airlines">Copa Airlines</option>
+        <option value="Delta Air Lines">Delta Air Lines</option>
+        <option value="easyJet">easyJet</option>
+        <option value="Edelweiss Air">Edelweiss Air</option>
+        <option value="El Al Israel Airlines">El Al Israel Airlines</option>
+        <option value="Emirates">Emirates</option>
+        <option value="Etihad Airways">Etihad Airways</option>
+        <option value="EVA Air">EVA Air</option>
+        <option value="Finnair">Finnair</option>
+        <option value="Frontier Airlines">Frontier Airlines</option>
+        <option value="Gulf Air">Gulf Air</option>
+        <option value="Hainan Airlines">Hainan Airlines</option>
+        <option value="Iberia">Iberia</option>
+        <option value="Indonesia AirAsia">Indonesia AirAsia</option>
+        <option value="Icelandair">Icelandair</option>
+        <option value="Japan Airlines (JAL)">Japan Airlines (JAL)</option>
+        <option value="Jet2">Jet2</option>
+        <option value="JetBlue">JetBlue</option>
+        <option value="KLM">KLM</option>
+        <option value="Korean Air">Korean Air</option>
+        <option value="LATAM Airlines">LATAM Airlines</option>
+        <option value="Lufthansa">Lufthansa</option>
+        <option value="Malaysia Airlines">Malaysia Airlines</option>
+        <option value="Norwegian">Norwegian Air Shuttle</option>
+        <option value="Olympic Air">Olympic Air</option>
+        <option value="Oman Air">Oman Air</option>
+        <option value="Qantas">Qantas</option>
+        <option value="Qatar Airways">Qatar Airways</option>
+        <option value="Ryanair">Ryanair</option>
+        <option value="SAS Scandinavian Airlines">SAS Scandinavian Airlines</option>
+        <option value="Singapore Airlines">Singapore Airlines</option>
+        <option value="Spirit Airlines">Spirit Airlines</option>
+        <option value="Swiss International Air Lines">Swiss International Air Lines</option>
+        <option value="TAP Air Portugal">TAP Air Portugal</option>
+        <option value="Thai Airways">Thai Airways</option>
+        <option value="Transavia">Transavia</option>
+        <option value="Transavia France">Transavia France</option>
+        <option value="Turkish Airlines">Turkish Airlines</option>
+        <option value="United Airlines">United Airlines</option>
+        <option value="Vueling">Vueling</option>
+        <option value="Volotea">Volotea</option>
+        <option value="Widerøe">Widerøe</option>
+        <option value="Wizz Air">Wizz Air</option>
+        <option value="Xiamen Airlines">Xiamen Airlines</option>
+        <option value="Yemenia">Yemenia</option>
+        <option value="Zanzibar Airways">Zanzibar Airways</option>
+      </select>
+    </div>    
+
+    <div>
+      <label class="font-semibold">Reason for Delay</label>
+      <select id="reason" class="w-full border p-2 rounded" required>
+        <option value="">Select a reason</option>
+        <option value="technical_issue">Technical issue</option>
+        <option value="crew_availability">Crew availability</option>
+        <option value="weather_conditions">Weather conditions</option>
+        <option value="air_traffic_control">Air traffic control</option>
+        <option value="operational_disruption">Operational disruption</option>
+        <option value="late_incoming_aircraft">Late incoming aircraft</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Flight Distance</label>
+      <select id="distance" required class="w-full border p-2 rounded">
+        <option value="">Select distance</option>
+        <option value="short">Under 1500 km</option>
+        <option value="medium">1500–3500 km</option>
+        <option value="long">Over 3500 km</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Delay Duration</label>
+      <select id="delayDuration" required class="w-full border p-2 rounded">
+        <option value="">Select duration</option>
+        <option value="2">2 hours</option>
+        <option value="3">3 hours</option>
+        <option value="4">4+ hours</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Preferred Language</label>
+      <select id="language" required class="w-full border p-2 rounded">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+        <option value="fr">French</option>
+        <option value="nl">Dutch</option>
+        <option value="it">Italian</option>
+        <option value="pt">Portuguese</option>
+        <option value="da">Danish</option>
+        <option value="pl">Polish</option>
+        <option value="cs">Czech</option>
+        <option value="ro">Romanian</option>
+        <option value="bg">Bulgarian</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Email Address</label>
+      <input type="email" id="email" required class="w-full border p-2 rounded" />
+    </div>
+
+    <div>
+      <label class="font-semibold">Would you like us to handle it for you?</label>
+      <select id="handleOption" class="w-full border p-2 rounded">
+        <option value="pdf">No thanks – just give me the PDF letter</option>
+        <option value="email">Email me the letter</option>
+        <option value="quaerens">Let Quaerens handle the claim for me (no win, no fee)</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Would you like to donate?</label>
+      <select id="donation" class="w-full border p-2 rounded">
+        <option value="none">No donation</option>
+        <option value="quaerens">Support Quaerens</option>
+        <option value="charity">Donate to charity</option>
+        <option value="split">Split between both</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">Upload Boarding Pass or Document (optional)</label>
+      <input type="file" id="fileUpload" class="w-full border p-2 rounded" />
+    </div>
+
+    <div class="mt-6 text-center">
+      <button type="submit"
+              class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">
+        Generate My Claim Letter
+      </button>
+    </div>
+
+    <div id="claim-letter-result" class="hidden text-green-600 mt-4 font-semibold">
+      ✅ Your letter is being prepared...
+    </div>
+  </form>
+</div>
+
+<!-- Airline auto-select language script goes here -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const airlineSelect = document.getElementById("airline");
+    const languageSelect = document.getElementById("language");
+  
+    airlineSelect.addEventListener("change", function () {
+      const selected = this.value;
+      const lang = window.airlineLangMap[selected];
+      if (lang && languageSelect) {
+        languageSelect.value = lang;
+      }
+    });
+  });
+  </script>
+
+<!-- 5.5) Populate departure & arrival selects -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const airportList = [
+    "London Heathrow (LHR)", "London Gatwick (LGW)", "London Stansted (STN)", "London Luton (LTN)",
+    "Manchester (MAN)", "Birmingham (BHX)", "Edinburgh (EDI)", "Glasgow (GLA)", "Bristol (BRS)",
+    "Leeds Bradford (LBA)", "Newcastle (NCL)", "East Midlands (EMA)", "Liverpool (LPL)",
+    "Madrid Barajas (MAD)", "Barcelona El Prat (BCN)", "Malaga (AGP)", "Palma de Mallorca (PMI)",
+    "Alicante (ALC)", "Gran Canaria (LPA)", "Tenerife South (TFS)", "Tenerife North (TFN)",
+    "Ibiza (IBZ)", "Fuerteventura (FUE)", "Menorca (MAH)", "Bilbao (BIO)", "Paris Charles de Gaulle (CDG)",
+    "Paris Orly (ORY)", "Nice Côte d'Azur (NCE)", "Lyon Saint-Exupéry (LYS)", "Marseille Provence (MRS)",
+    "Toulouse-Blagnac (TLS)", "Nantes Atlantique (NTE)", "Bordeaux Mérignac (BOD)", "Rome Fiumicino (FCO)",
+    "Rome Ciampino (CIA)", "Milan Malpensa (MXP)", "Milan Linate (LIN)", "Venice Marco Polo (VCE)",
+    "Naples (NAP)", "Bologna (BLQ)", "Pisa (PSA)", "Florence (FLR)", "Catania (CTA)", "Palermo (PMO)",
+    "Lisbon (LIS)", "Porto (OPO)", "Faro (FAO)", "Madeira Funchal (FNC)", "Ponta Delgada Azores (PDL)",
+    "Athens (ATH)", "Thessaloniki (SKG)", "Heraklion (HER)", "Rhodes (RHO)", "Kos (KGS)", "Corfu (CFU)",
+    "Santorini (JTR)", "Mykonos (JMK)", "Zakynthos (ZTH)", "Kefalonia (EFL)", "Larnaca (LCA)", "Paphos (PFO)",
+    "Amsterdam Schiphol (AMS)", "Frankfurt (FRA)", "Munich (MUC)", "Berlin Brandenburg (BER)",
+    "Düsseldorf (DUS)", "Hamburg (HAM)", "Cologne Bonn (CGN)", "Brussels Zaventem (BRU)",
+    "Copenhagen (CPH)", "Stockholm Arlanda (ARN)", "Gothenburg Landvetter (GOT)", "Oslo Gardermoen (OSL)",
+    "Dublin (DUB)", "Cork (ORK)", "Shannon (SNN)", "Geneva (GVA)", "Zurich (ZRH)", "Dubai (DXB)",
+    "Istanbul (IST)", "Doha Hamad (DOH)", "New York JFK (JFK)", "Toronto Pearson (YYZ)", "Bangkok Suvarnabhumi (BKK)",
+    "Singapore Changi (SIN)"
+  ];
+
+  ['depAirport','arrAirport'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select an airport</option>';
+    airportList.forEach(ap => sel.appendChild(new Option(ap, ap)));
+  });
+});
+</script>
+
+<button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
+  ↑
+</button>
+<script>
+  const scrollBtn = document.getElementById("scrollTopBtn");
+  window.addEventListener("scroll", () => {
+    scrollBtn.classList.toggle("hidden", window.scrollY < 300);
+  });
+  scrollBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+</script>
+  
+  <!-- Testimonials Section -->
+  <section class="py-16 bg-white w-full">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-3xl font-extrabold text-center text-blue-800 mb-12" data-aos="fade-up">What Our Clients Say</h2>
+    
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Testimonial Card -->
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
+            <p class="italic text-blue-900">“Quaerens got me €400 for my cancelled flight from Madrid – super easy!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Laura P.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
+            <p class="italic text-blue-900">“I didn’t even know I had a right to claim. Thank you for making it simple!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Marc V.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
+            <p class="italic text-blue-900">“Very professional team. Highly recommended for any flight issues.”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Sofia R.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up">
+            <p class="italic text-blue-900">“So grateful I found this service — my claim was accepted within weeks!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Daniel H.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="100">
+            <p class="italic text-blue-900">“No lawyer, no drama. Just a proper letter and compensation!”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Emma J.</p>
+          </div>
+    
+          <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-200" data-aos="fade-up" data-aos-delay="200">
+            <p class="italic text-blue-900">“Easy to use, quick result, and totally free. Would recommend to anyone.”</p>
+            <p class="font-semibold text-blue-800 mt-4">– Johan M.</p>
+          </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Footer Section -->
+  <footer class="bg-blue-900 text-white text-center py-6 w-full">
+    <p class="mb-2">© 2025 Quaerens Ltd. All rights reserved.</p>
+    <p>
+      <a href="#" class="underline">Privacy Policy</a> |
+      <a href="#" class="underline">Terms of Use</a> |
+      <a href="#" class="underline">GDPR</a> |
+      <a href="#" class="underline">Contact Us</a>
+    </p>
+  </footer>
+  
+<!-- ✅ Main form logic (final, no logos) -->
+<script type="module">
+  document.addEventListener('DOMContentLoaded', () => {
+    const {
+      collection,
+      addDoc,
+      serverTimestamp,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } = window.firebaseUtils;
+
+    const db = window.db;
+    const storage = window.storage;
+    const airlineEmails = window.airlineEmails;
+
+    const reasonLabels = {
+      technical_issue: "Technical issue",
+      crew_availability: "Crew availability",
+      weather_conditions: "Weather conditions",
+      air_traffic_control: "Air traffic control",
+      operational_disruption: "Operational disruption",
+      late_incoming_aircraft: "Late incoming aircraft",
+      other: "Other"
+    };
+
+    const form = document.getElementById("claim-letter-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      // Optional file upload
+      let fileURL = "";
+      const file = form.querySelector("#fileUpload")?.files?.[0];
+      if (file) {
+        const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+        const uploadSnapshot = await uploadBytes(storageRef, file);
+        fileURL = await getDownloadURL(uploadSnapshot.ref);
+      }
+
+      const claimData = {
+        fullName: formData.get("fullName"),
+        email: formData.get("email"),
+        flightNumber: formData.get("flightNumber"),
+        bookingRef: formData.get("bookingRef"),
+        flightDate: formData.get("flightDate"),
+        depAirport: formData.get("depAirport"),
+        arrAirport: formData.get("arrAirport"),
+        airline: formData.get("airline"),
+        airlineEmail: airlineEmails[formData.get("airline")] || "",
+        reason: reasonLabels[formData.get("reason")] || "",
+        reasonCode: formData.get("reason"),
+        distance: formData.get("distance"),
+        delayDuration: formData.get("delayDuration"),
+        compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
+        iban: formData.get("iban"),
+        handleOption: formData.get("handleOption"),
+        language: formData.get("language"),
+        donation: formData.get("donation"),
+        fileURL,
+        submittedAt: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "flightClaimLetters"), claimData);
+
+        switch (claimData.handleOption) {
+          case "pdf":
+            generatePDF(claimData);
+            break;
+          case "email":
+            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(claimData)
+            });
+            alert("✅ Your letter has been emailed!");
+            break;
+          case "quaerens":
+            alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
+            break;
+        }
+
+        document.getElementById("claim-letter-result").classList.remove("hidden");
+
+      } catch (err) {
+        console.error("❌ Error saving claim:", err);
+        alert("Something went wrong. Please try again.");
+      }
+    });
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("startClaimBtn");
+    const langSelect = document.getElementById("language"); // your language dropdown ID
+
+    if (btn && langSelect) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const selectedLang = langSelect.value || "en";
+        // Append lang param and navigate
+        window.location.href = `claim-form.html?lang=${selectedLang}`;
+      });
+    }
+  });
+</script>
+</body>
+</html>
