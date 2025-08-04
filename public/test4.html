@@ -1127,55 +1127,50 @@ function setLanguage(langPair) {
       updateClaims();
     });
   </script>
-</body>
-</html>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("claimSearch");
-  const filterButtons = document.querySelectorAll(".filter-btn");
-  const claimBoxes = document.querySelectorAll(".claim-box");
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById('claimSearch');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const claimBoxes = document.querySelectorAll('.claim-box');
+    let currentFilter = 'all';
+    let currentSearch = '';
 
-  let currentFilter = "all";
-  let currentSearch = "";
+    function updateClaims() {
+      claimBoxes.forEach(box => {
+        const isDIY = box.querySelector('a').classList.contains('claim-free-btn');
+        const isAssessment = box.querySelector('a').classList.contains('claim-blue-btn');
+        const title = box.querySelector('h3').textContent.toLowerCase();
 
-  function updateClaims() {
-    claimBoxes.forEach(box => {
-      const isDIY = box.querySelector("a").classList.contains("claim-free-btn");
-      const isAssessment = box.querySelector("a").classList.contains("claim-blue-btn");
-      const title = box.querySelector("h3").textContent.toLowerCase();
+        const matchesFilter =
+          currentFilter === 'all' ||
+          (currentFilter === 'diy' && isDIY) ||
+          (currentFilter === 'assessment' && isAssessment);
+        const matchesSearch = title.includes(currentSearch);
 
-      const matchesFilter =
-        currentFilter === "all" ||
-        (currentFilter === "diy" && isDIY) ||
-        (currentFilter === "assessment" && isAssessment);
+        box.style.display = matchesFilter && matchesSearch ? 'flex' : 'none';
+      });
+    }
 
-      const matchesSearch = title.includes(currentSearch);
-
-      box.style.display = matchesFilter && matchesSearch ? "flex" : "none";
+    // Filter button logic
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.type;
+        updateClaims();
+      });
     });
-  }
 
-  // Filter button logic
-  filterButtons.forEach(btn => {
-    btn.addEventListener("click", function () {
-      filterButtons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFilter = btn.dataset.type;
+    // Search input logic
+    searchInput.addEventListener('input', () => {
+      currentSearch = searchInput.value.toLowerCase();
       updateClaims();
-      // Optionally clear search field when filter changes
-      // searchInput.value = ""; currentSearch = "";
     });
-  });
 
-  // Search input logic
-  searchInput.addEventListener("input", function () {
-    currentSearch = searchInput.value.toLowerCase();
+    // Initial display
     updateClaims();
   });
-
-  updateClaims(); // Initial on page load
-});
 </script>
 </body>
 </html>
