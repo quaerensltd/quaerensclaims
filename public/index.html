@@ -663,34 +663,6 @@ footer {
     </div>
   </section>
 
-  <section class="py-12 bg-white">
-    <div class="container mx-auto px-4 max-w-4xl text-center">
-      <h2 class="text-2xl font-bold mb-4 text-gray-800">Two Simple Ways to Start</h2>
-      <p class="text-gray-600 mb-8">
-        Whether you prefer to handle things yourself or want a helping hand — Quaerens gives you both. Start right away, completely free. Every tool and service we offer is built to make your journey to compensation simple, transparent, and stress-free.
-      </p>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        <!-- DIY Option -->
-        <div class="border rounded-lg p-6 bg-gray-50 shadow hover:shadow-md transition">
-          <h3 class="text-xl font-semibold text-blue-700 mb-2">Do It Yourself</h3>
-          <p class="text-gray-600">
-            Want full control? Use our free templates, refund calculators, and step-by-step guides to take action on your own. No signup, no obligation — just straightforward tools to help you move forward.
-          </p>
-        </div>
-  
-        <!-- Free Assessment Option -->
-        <div class="border rounded-lg p-6 bg-gray-50 shadow hover:shadow-md transition">
-          <h3 class="text-xl font-semibold text-blue-700 mb-2">Free Assessment</h3>
-          <p class="text-gray-600">
-            Prefer expert support? Tell us your situation and we’ll review it for free. If it qualifies, our team will handle the paperwork and process for you — and you only pay if we succeed.
-          </p>
-        </div>
-  
-      </div>
-    </div>
-  </section> 
-
 <main>
   <div class="filter-bar" style="display: flex; align-items: center; gap: 1rem; justify-content: center; margin-bottom: 1.5rem;">
     <input type="text" id="claimSearch" class="search-input" placeholder="Search..." style="margin-bottom: 0;" />
@@ -1123,50 +1095,59 @@ function setLanguage(langPair) {
         updateClaims();
       });
 
-      <!-- Unified search + filter for claim boxes -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const searchInput   = document.getElementById("claimSearch");
-      const filterButtons = document.querySelectorAll(".filter-btn");
-      const claimBoxes    = document.querySelectorAll(".claim-box");
-
-      let currentFilter = "all";
-      let currentSearch = "";
-
-      function updateClaims() {
-        claimBoxes.forEach(box => {
-          const isDIY        = box.querySelector(".claim-free-btn") !== null;
-          const isAssessment = box.querySelector(".claim-blue-btn") !== null;
-          const title        = box.querySelector("h3").textContent.toLowerCase();
-
-          const matchesFilter =
-            currentFilter === "all" ||
-            (currentFilter === "diy" && isDIY) ||
-            (currentFilter === "assessment" && isAssessment);
-
-          const matchesSearch = title.includes(currentSearch);
-
-          box.style.display = (matchesFilter && matchesSearch) ? "flex" : "none";
-        });
-      }
-
-      filterButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-          filterButtons.forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentFilter = btn.dataset.type;
-          updateClaims();
-        });
-      });
-
-      searchInput.addEventListener("input", () => {
-        currentSearch = searchInput.value.toLowerCase();
-        updateClaims();
-      });
-
       // Initial display
       updateClaims();
     });
   </script>
+</body>
+</html>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const searchInput = document.getElementById("claimSearch");
+  const filterButtons = document.querySelectorAll(".filter-btn");
+  const claimBoxes = document.querySelectorAll(".claim-box");
+
+  let currentFilter = "all";
+  let currentSearch = "";
+
+  function updateClaims() {
+    claimBoxes.forEach(box => {
+      const isDIY = box.querySelector("a").classList.contains("claim-free-btn");
+      const isAssessment = box.querySelector("a").classList.contains("claim-blue-btn");
+      const title = box.querySelector("h3").textContent.toLowerCase();
+
+      const matchesFilter =
+        currentFilter === "all" ||
+        (currentFilter === "diy" && isDIY) ||
+        (currentFilter === "assessment" && isAssessment);
+
+      const matchesSearch = title.includes(currentSearch);
+
+      box.style.display = matchesFilter && matchesSearch ? "flex" : "none";
+    });
+  }
+
+  // Filter button logic
+  filterButtons.forEach(btn => {
+    btn.addEventListener("click", function () {
+      filterButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.type;
+      updateClaims();
+      // Optionally clear search field when filter changes
+      // searchInput.value = ""; currentSearch = "";
+    });
+  });
+
+  // Search input logic
+  searchInput.addEventListener("input", function () {
+    currentSearch = searchInput.value.toLowerCase();
+    updateClaims();
+  });
+
+  updateClaims(); // Initial on page load
+});
+</script>
 </body>
 </html>
