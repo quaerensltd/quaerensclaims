@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full" x-data="{ qcOpen:false, heroPaused:false }">
+<html lang="en" class="h-full" x-data="{ qcOpen: false, menuOpen: false }">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <title>QuickCheck | Quaerens</title>
   <meta name="description" content="QuickCheck by Quaerens — simple tools and friendly help to recover refunds and compensation across travel, finance, property and more." />
   <link rel="canonical" href="https://www.quaerens.co.uk/" />
@@ -28,55 +27,73 @@
   <!-- Alpine.js -->
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-  <!-- i18next for translations -->
-  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js" defer></script>
-
-  <!-- AOS (optional) -->
-  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
-
-  <!-- Plausible Analytics -->
-  <script defer data-domain="quaerens.co.uk" src="https://plausible.io/js/plausible.js"></script>
+  <!-- i18next -->
+  <script src="https://cdn.jsdelivr.net/npm/i18next@23.15.1/dist/umd/i18next.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next-browser-languagedetector@8.0.0/dist/umd/i18nextBrowserLanguageDetector.min.js" defer></script>
 
   <link rel="icon" type="image/png" href="/images/favicon.png" />
+
+  <!-- Schema.org -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Quaerens",
+      "url": "https://www.quaerens.co.uk",
+      "logo": "https://www.quaerens.co.uk/images/quaerens-logo.png",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "info@quaerens.co.uk",
+        "telephone": "+442080500725",
+        "contactType": "customer service"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "71–75 Shelton Street, Covent Garden",
+        "addressLocality": "London",
+        "postalCode": "WC2H 9JQ",
+        "addressCountry": "UK"
+      }
+    }
+  </script>
 
   <style>
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f9fafb; color:#111827; }
+    html, body { height: 100%; scroll-behavior: smooth; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f9fafb; color: #111827; }
 
     /* Accessibility */
-    .skip-link { position:absolute; left:-999px; top:auto; width:1px; height:1px; overflow:hidden; }
-    .skip-link:focus { position:static; width:auto; height:auto; padding:.5rem 1rem; background:#111827; color:#fff; z-index:9999; }
+    .skip-link { position: absolute; left: -999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+    .skip-link:focus { position: static; width: auto; height: auto; padding: .5rem 1rem; background: #111827; color: #fff; z-index: 9999; }
     :focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
 
     /* Reduce motion */
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
     /* Claim card styles */
-    .claim-box { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1rem; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.04); width:100%; max-width:260px; min-height:250px; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
-    .claim-box:hover { transform: translateY(-6px); border-color:#2563eb; box-shadow: 0 10px 20px rgba(0,0,0,.12); }
-    .claim-box img { width:140px; height:140px; object-fit:contain; border-radius:8px; margin-bottom:.5rem; }
-    .claim-free-btn, .claim-blue-btn { display:inline-block; padding:.65rem 1.25rem; border-radius:999px; font-weight:800; border:0; margin-top:auto; }
-    .claim-free-btn { background:#22c55e; color:#fff; }
-    .claim-free-btn:hover { background:#16a34a; }
-    .claim-blue-btn { background:#2563eb; color:#fff; }
-    .claim-blue-btn:hover { background:#1d4ed8; }
+    .claim-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.04); width: 100%; max-width: 260px; height: 280px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .claim-box:hover { transform: translateY(-6px); border-color: #2563eb; box-shadow: 0 10px 20px rgba(0,0,0,.12); }
+    .claim-box picture img { width: 120px; height: 120px; object-fit: contain; border-radius: 8px; margin-bottom: .5rem; }
+    .claim-free-btn, .claim-blue-btn { display: inline-block; padding: .65rem 1.25rem; border-radius: 999px; font-weight: 800; border: 0; margin-top: auto; }
+    .claim-free-btn { background: #22c55e; color: #fff; }
+    .claim-free-btn:hover { background: #16a34a; }
+    .claim-blue-btn { background: #2563eb; color: #fff; }
+    .claim-blue-btn:hover { background: #1d4ed8; }
 
     /* Sticky CTA spacing */
     @media (max-width: 768px) { body { padding-bottom: 64px; } }
 
-    /* Scroll to top */
-    .scroll-top-btn { transition: opacity 0.3s ease; }
-    .scroll-top-btn.hidden { opacity: 0; pointer-events: none; }
-
     /* Hide Google Translate banner */
-    .goog-te-banner-frame.skiptranslate { display:none !important; }
-    body > .skiptranslate { display:none !important; }
-    body { top:0 !important; }
+    .goog-te-banner-frame.skiptranslate, body > .skiptranslate { display: none !important; }
+    body { top: 0 !important; }
+
+    /* Tailwind animations */
+    .animate-fade-up { animation: fadeUp 0.8s ease-out; }
+    @keyframes fadeUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
-<body class="h-full" x-data @keydown.escape="qcOpen=false">
+<body class="h-full" x-data @keydown.escape="qcOpen = false; menuOpen = false">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Header -->
@@ -94,44 +111,54 @@
         <a href="#digital" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Digital Risks</a>
       </nav>
       <div class="flex items-center gap-3">
-        <!-- Hidden Google gadget -->
-        <div id="google_translate_element" class="sr-only" aria-hidden="true"></div>
-
+        <!-- Mobile hamburger menu -->
+        <button x-cloak x-show="!menuOpen" @click="menuOpen = true" class="md:hidden p-2 rounded hover:bg-gray-100" aria-label="Open menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <button x-cloak x-show="menuOpen" @click="menuOpen = false" class="md:hidden p-2 rounded hover:bg-gray-100" aria-label="Close menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
         <!-- Language dropdown -->
-        <div x-data="{ open:false }" class="relative">
-          <button @click="open=!open" class="inline-flex items-center rounded border border-gray-300 px-3 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100" aria-haspopup="true" :aria-expanded="open">
+        <div x-data="{ open: false }" class="relative">
+          <button @click="open = !open" class="inline-flex items-center rounded border border-gray-300 px-3 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100" aria-label="Select language">
             🌐 Language
           </button>
-          <div x-show="open" @click.outside="open=false" class="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg z-50 text-sm text-gray-700">
-            <a href="#" @click.prevent="i18next.changeLanguage('en'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'en' ? 'true' : 'false'">🇬🇧 English</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('fr'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'fr' ? 'true' : 'false'">🇫🇷 Français</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('es'); open=false " class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'es' ? 'true' : 'false'">🇪🇸 Español</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('de'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'de' ? 'true' : 'false'">🇩🇪 Deutsch</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('it'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'it' ? 'true' : 'false'">🇮🇹 Italiano</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('nl'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'nl' ? 'true' : 'false'">🇳🇱 Nederlands</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('sv'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'sv' ? 'true' : 'false'">🇸🇪 Svenska</a>
-            <a href="#" @click.prevent="i18next.changeLanguage('el'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'el' ? 'true' : 'false'">🇬🇷 Ελληνικά</a>
+          <div x-show="open" @click.outside="open = false" class="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg z-50 text-sm text-gray-700">
+            <a href="#" data-lang="en" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
+            <a href="#" data-lang="fr" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
+            <a href="#" data-lang="es" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
+            <a href="#" data-lang="de" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
+            <a href="#" data-lang="it" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
+            <a href="#" data-lang="nl" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
+            <a href="#" data-lang="sv" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
+            <a href="#" data-lang="el" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
           </div>
         </div>
-
-        <button type="button" @click.prevent="qcOpen=true" class="hidden md:inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
+        <button type="button" @click.prevent="qcOpen = true" class="hidden md:inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
       </div>
+    </div>
+    <!-- Mobile menu -->
+    <div x-show="menuOpen" x-cloak class="md:hidden bg-white border-b" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0">
+      <nav class="flex flex-col gap-2 px-4 py-4" aria-label="Mobile primary">
+        <a href="#travel" @click="menuOpen = false" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Travel & Holiday</a>
+        <a href="#finance" @click="menuOpen = false" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Finance & Pensions</a>
+        <a href="#property" @click="menuOpen = false" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Property & Mortgages</a>
+        <a href="#consumer" @click="menuOpen = false" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Everyday Issues</a>
+        <a href="#digital" @click="menuOpen = false" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Digital Risks</a>
+      </nav>
     </div>
   </header>
 
   <main id="main" class="min-h-screen">
     <!-- Hero -->
-    <section class="relative bg-cover bg-center min-h-[260px] h-[42vh]" style="background-image:url('/images/hero-index.jpg')">
+    <section class="relative bg-cover bg-center min-h-[260px] h-[42vh]" style="background-image: url('/images/hero-index.jpg')">
       <div class="absolute inset-0 bg-black/40"></div>
       <div class="relative z-10 mx-auto max-w-5xl h-full flex flex-col items-center justify-center text-center px-4">
-        <div class="flex items-center gap-2">
-          <h1 id="hero-title" aria-live="polite" class="text-white font-extrabold text-3xl md:text-5xl"></h1>
-          <button @click="heroPaused=!heroPaused" class="text-white text-sm" :aria-label="heroPaused ? 'Resume hero text animation' : 'Pause hero text animation'">{{ heroPaused ? '▶' : '⏸' }}</button>
-        </div>
-        <p id="hero-subtitle" aria-live="polite" class="mt-3 text-white text-base md:text-xl max-w-2xl"></p>
+        <h1 id="hero-title" data-i18n="hero.title" class="text-white font-extrabold text-3xl md:text-5xl"></h1>
+        <p id="hero-subtitle" data-i18n="hero.subtitle" class="mt-3 text-white text-base md:text-xl max-w-2xl"></p>
         <div class="mt-6 flex gap-3 flex-wrap justify-center">
           <a href="#how-it-works" class="rounded-full border border-white/80 text-white px-4 py-2 text-sm font-semibold hover:bg-white hover:text-gray-900">How it works</a>
-          <button type="button" @click.prevent="qcOpen=true" class="rounded-full bg-blue-600 text-white px-4 py-2 text-sm font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
+          <button type="button" @click.prevent="qcOpen = true" class="rounded-full bg-blue-600 text-white px-4 py-2 text-sm font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
         </div>
       </div>
     </section>
@@ -139,47 +166,64 @@
     <!-- Trust strip -->
     <section class="bg-white border-b">
       <div class="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-        <div class="text-sm text-gray-700"><strong class="text-gray-900" data-i18n="trust.friendly">Friendly, expert assistants.</strong> <span data-i18n="trust.noJargon">Clear language, no jargon.</span></div>
-        <div class="text-sm text-gray-700"><strong class="text-gray-900" data-i18n="trust.diy">DIY or done-with-you.</strong> <span data-i18n="trust.chooseSupport">You choose the level of support.</span></div>
-        <div class="text-sm text-gray-700"><strong class="text-gray-900" data-i18n="trust.pricing">Transparent pricing.</strong> <span data-i18n="trust.freeTools">Many tools free; some success-based.</span></div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900">Friendly, expert assistants.</strong> Clear language, no jargon.</div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900">DIY or done-with-you.</strong> You choose the level of support.</div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900">Transparent pricing.</strong> Many tools free; some success-based.</div>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="bg-gray-50 py-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-8">What Our Clients Say</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up">
+            <p class="text-gray-600 text-sm">"Quaerens made my flight delay claim so easy! The DIY tool was straightforward, and I got €600 back in weeks."</p>
+            <p class="mt-4 font-semibold text-gray-900">Emma S., London</p>
+          </article>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.2s">
+            <p class="text-gray-600 text-sm">"Their team guided me through a tricky timeshare issue. Professional, friendly, and no upfront fees."</p>
+            <p class="mt-4 font-semibold text-gray-900">Carlos M., Madrid</p>
+          </article>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.4s">
+            <p class="text-gray-600 text-sm">"The parking appeal template worked perfectly. Saved me £100 with minimal effort!"</p>
+            <p class="mt-4 font-semibold text-gray-900">Sophie L., Manchester</p>
+          </article>
+        </div>
       </div>
     </section>
 
     <!-- Two ways to start -->
     <section id="how-it-works" class="bg-white py-12">
       <div class="mx-auto max-w-6xl px-4">
-        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-2" data-i18n="howItWorks.title">Two simple ways to start</h2>
-        <p class="text-center text-gray-600 mb-8" data-i18n="howItWorks.subtitle">Handle it yourself with free tools, or ask us to guide you. No pressure either way.</p>
-
+        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-2">Two simple ways to start</h2>
+        <p class="text-center text-gray-600 mb-8">Handle it yourself with free tools, or ask us to guide you. No pressure either way.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- DIY -->
-          <article class="flex flex-col border border-green-500 bg-green-50 rounded-lg p-6 shadow-sm">
-            <h3 class="text-center text-xl font-semibold text-green-700 mb-3" data-i18n="diy.title">Do It Yourself – DIY</h3>
-            <p class="text-gray-700 mb-2" data-i18n="diy.description">Take control and file on your own timeline, with everything you need at your fingertips:</p>
+          <article class="flex flex-col border border-green-500 bg-green-50 rounded-lg p-6 shadow-sm animate-fade-up">
+            <h3 class="text-center text-xl font-semibold text-green-700 mb-3">Do It Yourself – DIY</h3>
+            <p class="text-gray-700 mb-2">Take control and file on your own timeline, with everything you need at your fingertips:</p>
             <ul class="list-disc ml-5 space-y-1 text-gray-700">
-              <li data-i18n="diy.feature1">Customisable request templates ready to download</li>
-              <li data-i18n="diy.feature2">Interactive calculators to estimate your entitlement</li>
-              <li data-i18n="diy.feature3">Step-by-step guides on submission and documentation</li>
-              <li data-i18n="diy.feature4">Comprehensive FAQs addressing common roadblocks</li>
-              <li data-i18n="diy.feature5">Access to our library of sample cases and best-practice tips</li>
+              <li>Customisable request templates ready to download</li>
+              <li>Interactive calculators to estimate your entitlement</li>
+              <li>Step-by-step guides on submission and documentation</li>
+              <li>Comprehensive FAQs addressing common roadblocks</li>
+              <li>Access to our library of sample cases and best-practice tips</li>
             </ul>
-            <p class="text-gray-700 mt-3" data-i18n="diy.noSignup">No signup, no fees — just straightforward, self-serve resources to help you move forward.</p>
-            <a href="#travel" class="mt-5 inline-flex justify-center claim-free-btn" data-i18n="diy.explore">Explore free tools</a>
+            <p class="text-gray-700 mt-3">No signup, no fees — just straightforward, self-serve resources to help you move forward.</p>
+            <a href="#travel" class="mt-5 inline-flex justify-center claim-free-btn">Explore free tools</a>
           </article>
-
-          <!-- Guided Expert Help -->
-          <article class="flex flex-col border border-blue-500 bg-blue-50 rounded-lg p-6 shadow-sm">
-            <h3 class="text-center text-xl font-semibold text-blue-700 mb-3" data-i18n="guided.title">Guided Expert Help</h3>
-            <p class="text-gray-700 mb-2" data-i18n="guided.description">Prefer expert support? Share your details and enjoy:</p>
+          <article class="flex flex-col border border-blue-500 bg-blue-50 rounded-lg p-6 shadow-sm animate-fade-up" style="animation-delay: 0.2s">
+            <h3 class="text-center text-xl font-semibold text-blue-700 mb-3">Guided Expert Help</h3>
+            <p class="text-gray-700 mb-2">Prefer expert support? Share your details and enjoy:</p>
             <ul class="list-disc ml-5 space-y-1 text-gray-700">
-              <li data-i18n="guided.feature1">Free, no-obligation review by our specialist team and external legal partners</li>
-              <li data-i18n="guided.feature2">Dedicated case manager handling all paperwork</li>
-              <li data-i18n="guided.feature3">Regular updates and direct communication</li>
-              <li data-i18n="guided.feature4">Personalised guidance tailored to your situation</li>
-              <li data-i18n="guided.feature5">No upfront cost in many cases — you pay only on success</li>
+              <li>Free, no-obligation review by our specialist team and external legal partners</li>
+              <li>Dedicated case manager handling all paperwork</li>
+              <li>Regular updates and direct communication</li>
+              <li>Personalised guidance tailored to your situation</li>
+              <li>No upfront cost in many cases — you pay only on success</li>
             </ul>
-            <p class="text-gray-700 mt-3" data-i18n="guided.submit">Submit your info now and let us do the heavy lifting — risk free.</p>
-            <button type="button" @click.prevent="qcOpen=true" class="mt-5 inline-flex justify-center claim-blue-btn" aria-haspopup="dialog" aria-controls="quickcheck-menu" data-i18n="guided.start">Start free check ▾</button>
+            <p class="text-gray-700 mt-3">Submit your info now and let us do the heavy lifting — risk free.</p>
+            <button type="button" @click.prevent="qcOpen = true" class="mt-5 inline-flex justify-center claim-blue-btn" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
           </article>
         </div>
       </div>
@@ -187,260 +231,249 @@
 
     <!-- Category nav -->
     <nav class="relative flex flex-wrap justify-center gap-3 mb-8 px-4" aria-label="Categories">
-      <a href="#travel" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.travel">Travel & Holiday</a>
-      <a href="#finance" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.finance">Finance & Pensions</a>
-      <a href="#property" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.property">Property & Mortgages</a>
-      <a href="#consumer" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.consumer">Everyday Issues</a>
-      <a href="#digital" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.digital">Digital Risks</a>
+      <a href="#travel" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Travel & Holiday</a>
+      <a href="#finance" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Finance & Pensions</a>
+      <a href="#property" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Property & Mortgages</a>
+      <a href="#consumer" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Everyday Issues</a>
+      <a href="#digital" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Digital Risks</a>
     </nav>
 
     <!-- TRAVEL -->
-    <section id="travel-banner" class="relative h-[200px] mb-10">
-      <img src="/images/travel-banner.webp" srcset="/images/travel-banner.webp 1600w, /images/travel-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Travel and holiday support" loading="lazy" />
+    <section id="travel-banner" class="relative min-h-[240px] mb-10">
+      <picture>
+        <source srcset="/images/travel-banner.webp" type="image/webp" />
+        <img src="/images/travel-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Travel and holiday support" loading="lazy" />
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
       <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="travel.title">Travel & Holiday</h2>
-        <p class="text-sm md:text-base opacity-95" data-i18n="travel.subtitle">Flight delays, refunds, luggage and more.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold">Travel & Holiday</h2>
+        <p class="text-sm md:text-base opacity-95">Flight delays, refunds, luggage and more.</p>
       </div>
     </section>
-
     <section id="travel" class="mb-12">
       <div class="max-w-6xl mx-auto px-4">
-        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50 animate-fade-up">
           <div class="text-center mb-6">
-            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="travel.sectionTitle">✈️ Travel & Holiday</h3>
-            <p class="text-gray-700" data-i18n="travel.sectionSubtitle">Use a free DIY tool or ask for a quick review.</p>
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">✈️ Travel & Holiday</h3>
+            <p class="text-gray-700">Use a free DIY tool or ask for a quick review.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
-            <a href="/freeflightclaim.html" class="claim-box"><img src="/images/new-flightclaim.webp" srcset="/images/new-flightclaim.webp 280w, /images/new-flightclaim-sm.webp 140w" sizes="140px" alt="Flight delay tool" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.flightTitle">Flight Delay</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.flightDesc">Work out up to €600 and create your letter.</p><span class="claim-free-btn" data-i18n="travel.flightBtn">DIY FREE</span></a>
-            <a href="/freeholidaycompensation.html" class="claim-box"><img src="/images/new-holidaycomp.webp" srcset="/images/new-holidaycomp.webp 280w, /images/new-holidaycomp-sm.webp 140w" sizes="140px" alt="Holiday refund wizard" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.holidayTitle">Holiday Refund</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.holidayDesc">For cancellations or major changes.</p><span class="claim-free-btn" data-i18n="travel.holidayBtn">DIY FREE</span></a>
-            <a href="/train-delay.html" class="claim-box"><img src="/images/new-traindelay.webp" srcset="/images/new-traindelay.webp 280w, /images/new-traindelay-sm.webp 140w" sizes="140px" alt="Train delay" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.trainTitle">Train Delay</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.trainDesc">Delays over 60 mins, missed connections.</p><span class="claim-free-btn" data-i18n="travel.trainBtn">DIY FREE</span></a>
-            <a href="/lost-luggage.html" class="claim-box"><img src="/images/new-luggage.webp" srcset="/images/new-luggage.webp 280w, /images/new-luggage-sm.webp 140w" sizes="140px" alt="Lost luggage guide" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.luggageTitle">Lost Luggage</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.luggageDesc">Steps and forms for lost or damaged bags.</p><span class="claim-free-btn" data-i18n="travel.luggageBtn">DIY FREE</span></a>
-            <a href="/airbnb-refunds.html" class="claim-box"><img src="/images/new-airbnbl.webp" srcset="/images/new-airbnbl.webp 280w, /images/new-airbnbl-sm.webp 140w" sizes="140px" alt="Airbnb refund help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.airbnbTitle">Airbnb Refunds</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.airbnbDesc">We can help with cancellations or issues.</p><span class="claim-blue-btn" data-i18n="travel.airbnbBtn">Free assessment</span></a>
-            <a href="/holidaypark.html" class="claim-box"><img src="/images/new-holidayparks.webp" srcset="/images/new-holidayparks.webp 280w, /images/new-holidayparks-sm.webp 140w" sizes="140px" alt="Holiday park issues" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.parkTitle">Holiday Park</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.parkDesc">Booking errors, safety issues, fees.</p><span class="claim-blue-btn" data-i18n="travel.parkBtn">Free assessment</span></a>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/freeflightclaim.html" class="claim-box"><picture><source srcset="/images/new-flightclaim.webp" type="image/webp" /><img src="/images/new-flightclaim.png" alt="Flight delay tool" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Flight Delay</h4><p class="text-sm text-gray-600 mb-3">Work out up to €600 and create your letter.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/freeholidaycompensation.html" class="claim-box"><picture><source srcset="/images/new-holidaycomp.webp" type="image/webp" /><img src="/images/new-holidaycomp.png" alt="Holiday refund wizard" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Holiday Refund</h4><p class="text-sm text-gray-600 mb-3">For cancellations or major changes.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/train-delay.html" class="claim-box"><picture><source srcset="/images/new-traindelay.webp" type="image/webp" /><img src="/images/new-traindelay.png" alt="Train delay" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Train Delay</h4><p class="text-sm text-gray-600 mb-3">Delays over 60 mins, missed connections.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/lost-luggage.html" class="claim-box"><picture><source srcset="/images/new-luggage.webp" type="image/webp" /><img src="/images/new-luggage.png" alt="Lost luggage guide" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Lost Luggage</h4><p class="text-sm text-gray-600 mb-3">Steps and forms for lost or damaged bags.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/airbnb-refunds.html" class="claim-box"><picture><source srcset="/images/new-airbnbl.webp" type="image/webp" /><img src="/images/new-airbnbl.png" alt="Airbnb refund help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Airbnb Refunds</h4><p class="text-sm text-gray-600 mb-3">We can help with cancellations or issues.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/holidaypark.html" class="claim-box"><picture><source srcset="/images/new-holidayparks.webp" type="image/webp" /><img src="/images/new-holidayparks.png" alt="Holiday park issues" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Holiday Park</h4><p class="text-sm text-gray-600 mb-3">Booking errors, safety issues, fees.</p><span class="claim-blue-btn">Free assessment</span></a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- FINANCE -->
-    <section id="finance-banner" class="relative h-[200px] mb-10">
-      <img src="/images/finance-banner.webp" srcset="/images/finance-banner.webp 1600w, /images/finance-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Finance and pensions support" loading="lazy" />
+    <section id="finance-banner" class="relative min-h-[240px] mb-10">
+      <picture>
+        <source srcset="/images/finance-banner.webp" type="image/webp" />
+        <img src="/images/finance-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Finance and pensions support" loading="lazy" />
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
       <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="finance.title">Finance & Pensions</h2>
-        <p class="text-sm md:text-base opacity-95" data-i18n="finance.subtitle">Hidden fees, pension issues and more.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold">Finance & Pensions</h2>
+        <p class="text-sm md:text-base opacity-95">Hidden fees, pension issues and more.</p>
       </div>
     </section>
-
     <section id="finance" class="mb-12">
       <div class="max-w-6xl mx-auto px-4">
-        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50 animate-fade-up">
           <div class="text-center mb-6">
-            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="finance.sectionTitle">💰 Finance & Pensions</h3>
-            <p class="text-gray-700" data-i18n="finance.sectionSubtitle">DIY calculators and templates, or ask us to review.</p>
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">💰 Finance & Pensions</h3>
+            <p class="text-gray-700">DIY calculators and templates, or ask us to review.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
-            <a href="/car-finance.html" class="claim-box"><img src="/images/new-carfinance.webp" srcset="/images/new-carfinance.webp 280w, /images/new-carfinance-sm.webp 140w" sizes="140px" alt="Car finance help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.carTitle">Car Finance</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.carDesc">Check fees and interest, step by step.</p><span class="claim-free-btn" data-i18n="finance.carBtn">DIY FREE</span></a>
-            <a href="/pension-issues.html" class="claim-box"><img src="/images/new-pensionissues.webp" srcset="/images/new-pensionissues.webp 280w, /images/new-pensionissues-sm.webp 140w" sizes="140px" alt="Pension issue guidance" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.pensionTitle">Pension Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.pensionDesc">Spot under-credited contributions.</p><span class="claim-free-btn" data-i18n="finance.pensionBtn">DIY FREE</span></a>
-            <a href="/misssold-bankaccounts.html" class="claim-box"><img src="/images/new-missoldbank.webp" srcset="/images/new-missoldbank.webp 280w, /images/new-missoldbank-sm.webp 140w" sizes="140px" alt="Bank fees help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.bankTitle">Bank Accounts</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.bankDesc">Unfair charges and hidden fees.</p><span class="claim-free-btn" data-i18n="finance.bankBtn">DIY FREE</span></a>
-            <a href="/creditcard-fees.html" class="claim-box"><img src="/images/new-creditcard.webp" srcset="/images/new-creditcard.webp 280w, /images/new-creditcard-sm.webp 140w" sizes="140px" alt="Credit card fee guide" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.creditTitle">Credit Card Fees</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.creditDesc">Identify penalty rates and APR jumps.</p><span class="claim-free-btn" data-i18n="finance.creditBtn">DIY FREE</span></a>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/car-finance.html" class="claim-box"><picture><source srcset="/images/new-carfinance.webp" type="image/webp" /><img src="/images/new-carfinance.png" alt="Car finance help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Car Finance</h4><p class="text-sm text-gray-600 mb-3">Check fees and interest, step by step.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/pension-issues.html" class="claim-box"><picture><source srcset="/images/new-pensionissues.webp" type="image/webp" /><img src="/images/new-pensionissues.png" alt="Pension issue guidance" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Pension Issues</h4><p class="text-sm text-gray-600 mb-3">Spot under-credited contributions.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/misssold-bankaccounts.html" class="claim-box"><picture><source srcset="/images/new-missoldbank.webp" type="image/webp" /><img src="/images/new-missoldbank.png" alt="Bank fees help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Bank Accounts</h4><p class="text-sm text-gray-600 mb-3">Unfair charges and hidden fees.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/creditcard-fees.html" class="claim-box"><picture><source srcset="/images/new-creditcard.webp" type="image/webp" /><img src="/images/new-creditcard.png" alt="Credit card fee guide" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Credit Card Fees</h4><p class="text-sm text-gray-600 mb-3">Identify penalty rates and APR jumps.</p><span class="claim-free-btn">DIY FREE</span></a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- PROPERTY -->
-    <section id="property-banner" class="relative h-[200px] mb-10">
-      <img src="/images/property-banner.webp" srcset="/images/property-banner.webp 1600w, /images/property-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Property and mortgages" loading="lazy" />
+    <section id="property-banner" class="relative min-h-[240px] mb-10">
+      <picture>
+        <source srcset="/images/property-banner.webp" type="image/webp" />
+        <img src="/images/property-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Property and mortgages" loading="lazy" />
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
       <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="property.title">Property & Mortgages</h2>
-        <p class="text-sm md:text-base opacity-95" data-i18n="property.subtitle">Spanish mortgages, property issues and timeshare.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold">Property & Mortgages</h2>
+        <p class="text-sm md:text-base opacity-95">Spanish mortgages, property issues and timeshare.</p>
       </div>
     </section>
-
     <section id="property" class="mb-12">
       <div class="max-w-6xl mx-auto px-4">
-        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50 animate-fade-up">
           <div class="text-center mb-6">
-            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="property.sectionTitle">🏠 Property & Mortgages</h3>
-            <p class="text-gray-700" data-i18n="property.sectionSubtitle">Local knowledge and simple steps.</p>
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">🏠 Property & Mortgages</h3>
+            <p class="text-gray-700">Local knowledge and simple steps.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
-            <a href="/spanish-mortgages.html" class="claim-box"><img src="/images/new-amortgages.webp" srcset="/images/new-amortgages.webp 280w, /images/new-amortgages-sm.webp 140w" sizes="140px" alt="Spanish mortgage help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.mortgageTitle">Spanish Mortgages</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.mortgageDesc">Check overpaid interest and charges.</p><span class="claim-blue-btn" data-i18n="property.mortgageBtn">Free assessment</span></a>
-            <a href="/spanish-properties.html" class="claim-box"><img src="/images/new-spanishpropety.webp" srcset="/images/new-spanishpropety.webp 280w, /images/new-spanishpropety-sm.webp 140w" sizes="140px" alt="Spanish property help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.propertyTitle">Spanish Property</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.propertyDesc">Deeds, developer and lease issues.</p><span class="claim-blue-btn" data-i18n="property.propertyBtn">Free assessment</span></a>
-            <a href="/timeshare.html" class="claim-box"><img src="/images/new-timesharerefund.webp" srcset="/images/new-timesharerefund.webp 280w, /images/new-timesharerefund-sm.webp 140w" sizes="140px" alt="Timeshare refund" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.timeshareTitle">Timeshare Refund</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.timeshareDesc">Deposits and mis-sold promises.</p><span class="claim-blue-btn" data-i18n="property.timeshareBtn">Free assessment</span></a>
-            <a href="https://www.exitmytimeshares.com" target="_blank" rel="noopener" class="claim-box"><img src="/images/new-timeshareexitl.webp" srcset="/images/new-timeshareexitl.webp 280w, /images/new-timeshareexitl-sm.webp 140w" sizes="140px" alt="Timeshare exit DIY" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.exitTitle">Timeshare Exit</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.exitDesc">DIY exit kit with support.</p><span class="claim-free-btn" data-i18n="property.exitBtn">DIY admin fee</span></a>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/spanish-mortgages.html" class="claim-box"><picture><source srcset="/images/new-amortgages.webp" type="image/webp" /><img src="/images/new-amortgages.png" alt="Spanish mortgage help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Spanish Mortgages</h4><p class="text-sm text-gray-600 mb-3">Check overpaid interest and charges.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/spanish-properties.html" class="claim-box"><picture><source srcset="/images/new-spanishpropety.webp" type="image/webp" /><img src="/images/new-spanishpropety.png" alt="Spanish property help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Spanish Property</h4><p class="text-sm text-gray-600 mb-3">Deeds, developer and lease issues.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/timeshare.html" class="claim-box"><picture><source srcset="/images/new-timesharerefund.webp" type="image/webp" /><img src="/images/new-timesharerefund.png" alt="Timeshare refund" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Timeshare Refund</h4><p class="text-sm text-gray-600 mb-3">Deposits and mis-sold promises.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="https://www.exitmytimeshares.com" target="_blank" rel="noopener" class="claim-box"><picture><source srcset="/images/new-timeshareexitl.webp" type="image/webp" /><img src="/images/new-timeshareexitl.png" alt="Timeshare exit DIY" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Timeshare Exit</h4><p class="text-sm text-gray-600 mb-3">DIY exit kit with support.</p><span class="claim-free-btn">DIY admin fee</span></a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- CONSUMER -->
-    <section id="consumer-banner" class="relative h-[200px] mb-10">
-      <img src="/images/misc-banner.webp" srcset="/images/misc-banner.webp 1600w, /images/misc-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Everyday consumer issues" loading="lazy" />
+    <section id="consumer-banner" class="relative min-h-[240px] mb-10">
+      <picture>
+        <source srcset="/images/misc-banner.webp" type="image/webp" />
+        <img src="/images/misc-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Everyday consumer issues" loading="lazy" />
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
       <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="consumer.title">Everyday Issues</h2>
-        <p class="text-sm md:text-base opacity-95" data-i18n="consumer.subtitle">Gym cancellations, parking, energy and more.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold">Everyday Issues</h2>
+        <p class="text-sm md:text-base opacity-95">Gym cancellations, parking, energy and more.</p>
       </div>
     </section>
-
     <section id="consumer" class="mb-12">
       <div class="max-w-6xl mx-auto px-4">
-        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50 animate-fade-up">
           <div class="text-center mb-6">
-            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="consumer.sectionTitle">🛍️ Everyday Issues</h3>
-            <p class="text-gray-700" data-i18n="consumer.sectionSubtitle">Quick wins with simple steps.</p>
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">🛍️ Everyday Issues</h3>
+            <p class="text-gray-700">Quick wins with simple steps.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
-            <a href="/gym-cancellation.html" class="claim-box"><img src="/images/new-gymcancel.webp" srcset="/images/new-gymcancel.webp 280w, /images/new-gymcancel-sm.webp 140w" sizes="140px" alt="Gym cancellation" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.gymTitle">Gym Cancellation</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.gymDesc">End or refund unfair renewals.</p><span class="claim-free-btn" data-i18n="consumer.gymBtn">DIY FREE</span></a>
-            <a href="/parking-appeal.html" class="claim-box"><img src="/images/new-parkingl.webp" srcset="/images/new-parkingl.webp 280w, /images/new-parkingl-sm.webp 140w" sizes="140px" alt="Parking appeal" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.parkingTitle">Parking Appeal</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.parkingDesc">Template letters and photo tips.</p><span class="claim-free-btn" data-i18n="consumer.parkingBtn">DIY FREE</span></a>
-            <a href="/energy-switch.html" class="claim-box"><img src="/images/new-energyswitch.webp" srcset="/images/new-energyswitch.webp 280w, /images/new-energyswitch-sm.webp 140w" sizes="140px" alt="Energy switch and refunds" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.energyTitle">Energy Switch</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.energyDesc">Compare, switch and claim overpayments.</p><span class="claim-free-btn" data-i18n="consumer.energyBtn">DIY FREE</span></a>
-            <a href="/housing-disrepair.html" class="claim-box"><img src="/images/new-housingdisrepair.webp" srcset="/images/new-housingdisrepair.webp 280w, /images/new-housingdisrepair-sm.webp 140w" sizes="140px" alt="Housing disrepair" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.housingTitle">Housing Disrepair</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.housingDesc">Repairs and compensation for damp/leaks.</p><span class="claim-blue-btn" data-i18n="consumer.housingBtn">Free assessment</span></a>
-            <a href="/medical-negligence.html" class="claim-box"><img src="/images/new-medical.webp" srcset="/images/new-medical.webp 280w, /images/new-medical-sm.webp 140w" sizes="140px" alt="Medical negligence" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.medicalTitle">Medical Negligence</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.medicalDesc">Independent reviews and guidance.</p><span class="claim-blue-btn" data-i18n="consumer.medicalBtn">Free assessment</span></a>
-            <a href="/return-issues.html" class="claim-box"><img src="/images/new-refundissues.webp" srcset="/images/new-refundissues.webp 280w, /images/new-refundissues-sm.webp 140w" sizes="140px" alt="Retailer refund issues" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.refundTitle">Refund Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.refundDesc">Escalate returns and repairs.</p><span class="claim-blue-btn" data-i18n="consumer.refundBtn">Free assessment</span></a>
-            <a href="/other.html" class="claim-box"><img src="/images/new-otherclaims.webp" srcset="/images/new-otherclaims.webp 280w, /images/new-otherclaims-sm.webp 140w" sizes="140px" alt="Other issues" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.otherTitle">Other Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.otherDesc">Subscriptions, warranties and more.</p><span class="claim-blue-btn" data-i18n="consumer.otherBtn">Free assessment</span></a>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/gym-cancellation.html" class="claim-box"><picture><source srcset="/images/new-gymcancel.webp" type="image/webp" /><img src="/images/new-gymcancel.png" alt="Gym cancellation" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Gym Cancellation</h4><p class="text-sm text-gray-600 mb-3">End or refund unfair renewals.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/parking-appeal.html" class="claim-box"><picture><source srcset="/images/new-parkingl.webp" type="image/webp" /><img src="/images/new-parkingl.png" alt="Parking appeal" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Parking Appeal</h4><p class="text-sm text-gray-600 mb-3">Template letters and photo tips.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/energy-switch.html" class="claim-box"><picture><source srcset="/images/new-energyswitch.webp" type="image/webp" /><img src="/images/new-energyswitch.png" alt="Energy switch and refunds" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Energy Switch</h4><p class="text-sm text-gray-600 mb-3">Compare, switch and claim overpayments.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/housing-disrepair.html" class="claim-box"><picture><source srcset="/images/new-housingdisrepair.webp" type="image/webp" /><img src="/images/new-housingdisrepair.png" alt="Housing disrepair" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Housing Disrepair</h4><p class="text-sm text-gray-600 mb-3">Repairs and compensation for damp/leaks.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/medical-negligence.html" class="claim-box"><picture><source srcset="/images/new-medical.webp" type="image/webp" /><img src="/images/new-medical.png" alt="Medical negligence" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Medical Negligence</h4><p class="text-sm text-gray-600 mb-3">Independent reviews and guidance.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/return-issues.html" class="claim-box"><picture><source srcset="/images/new-refundissues.webp" type="image/webp" /><img src="/images/new-refundissues.png" alt="Retailer refund issues" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Refund Issues</h4><p class="text-sm text-gray-600 mb-3">Escalate returns and repairs.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/other.html" class="claim-box"><picture><source srcset="/images/new-otherclaims.webp" type="image/webp" /><img src="/images/new-otherclaims.png" alt="Other issues" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Other Issues</h4><p class="text-sm text-gray-600 mb-3">Subscriptions, warranties and more.</p><span class="claim-blue-btn">Free assessment</span></a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- DIGITAL -->
-    <section id="digital-banner" class="relative h-[200px] mb-10">
-      <img src="/images/data-banner.webp" srcset="/images/data-banner.webp 1600w, /images/data-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Digital risks" loading="lazy" />
+    <section id="digital-banner" class="relative min-h-[240px] mb-10">
+      <picture>
+        <source srcset="/images/data-banner.webp" type="image/webp" />
+        <img src="/images/data-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Digital risks" loading="lazy" />
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
       <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="digital.title">Digital Risks</h2>
-        <p class="text-sm md:text-base opacity-95" data-i18n="digital.subtitle">Data breaches, crypto issues and cross-border disputes.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold">Digital Risks</h2>
+        <p class="text-sm md:text-base opacity-95">Data breaches, crypto issues and cross-border disputes.</p>
       </div>
     </section>
-
     <section id="digital" class="mb-12">
       <div class="max-w-6xl mx-auto px-4">
-        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50 animate-fade-up">
           <div class="text-center mb-6">
-            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="digital.sectionTitle">💻 Digital Risks</h3>
-            <p class="text-gray-700" data-i18n="digital.sectionSubtitle">DIY steps plus help if you need it.</p>
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">💻 Digital Risks</h3>
+            <p class="text-gray-700">DIY steps plus help if you need it.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 place-items-center">
-            <a href="/cyber-claims.html" class="claim-box"><img src="/images/new-cyber.webp" srcset="/images/new-cyber.webp 280w, /images/new-cyber-sm.webp 140w" sizes="140px" alt="Data breach help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="digital.cyberTitle">Data Breach</h4><p class="text-sm text-gray-600 mb-3" data-i18n="digital.cyberDesc">ICO complaints and letters.</p><span class="claim-blue-btn" data-i18n="digital.cyberBtn">Free assessment</span></a>
-            <a href="/crypto-scams.html" class="claim-box"><img src="/images/new-crypto.webp" srcset="/images/new-crypto.webp 280w, /images/new-crypto-sm.webp 140w" sizes="140px" alt="Crypto scam recovery" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="digital.cryptoTitle">Crypto Recovery</h4><p class="text-sm text-gray-600 mb-3" data-i18n="digital.cryptoDesc">Exchange liaison and tracing.</p><span class="claim-blue-btn" data-i18n="digital.cryptoBtn">Free assessment</span></a>
-            <a href="/crossborder.html" class="claim-box"><img src="/images/new-crossborder.webp" srcset="/images/new-crossborder.webp 280w, /images/new-crossborder-sm.webp 140w" sizes="140px" alt="Cross-border help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="digital.crossborderTitle">Cross-Border Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="digital.crossborderDesc">Currency and VAT disputes.</p><span class="claim-blue-btn" data-i18n="digital.crossborderBtn">Free assessment</span></a>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
+            <a href="/cyber-claims.html" class="claim-box"><picture><source srcset="/images/new-cyber.webp" type="image/webp" /><img src="/images/new-cyber.png" alt="Data breach help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Data Breach</h4><p class="text-sm text-gray-600 mb-3">ICO complaints and letters.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/crypto-scams.html" class="claim-box"><picture><source srcset="/images/new-crypto.webp" type="image/webp" /><img src="/images/new-crypto.png" alt="Crypto scam recovery" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Crypto Recovery</h4><p class="text-sm text-gray-600 mb-3">Exchange liaison and tracing.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/crossborder.html" class="claim-box"><picture><source srcset="/images/new-crossborder.webp" type="image/webp" /><img src="/images/new-crossborder.png" alt="Cross-border help" loading="lazy" width="120" height="120" /></picture><h4 class="text-lg font-semibold">Cross-Border Issues</h4><p class="text-sm text-gray-600 mb-3">Currency and VAT disputes.</p><span class="claim-blue-btn">Free assessment</span></a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- TEAM -->
-    <section id="team-banner" class="relative h-[200px] mb-10">
-      <img src="/images/team-banner.webp" srcset="/images/team-banner.webp 1600w, /images/team-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Our team at work" loading="lazy" />
+    <section id="team-banner" class="relative min-h-[240px] mb-10">
+      <picture>
+        <source srcset="/images/team-banner.webp" type="image/webp" />
+        <img src="/images/team-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Our team at work" loading="lazy" />
+      </picture>
       <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
       <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="team.title">Meet the Quaerens Team</h2>
-        <p class="text-sm md:text-base opacity-95" data-i18n="team.subtitle">Real people, quick replies.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold">Meet the Quaerens Team</h2>
+        <p class="text-sm md:text-base opacity-95">Real people, quick replies.</p>
       </div>
     </section>
-
     <section id="meet-the-team" class="py-12 bg-gray-50">
       <div class="max-w-6xl mx-auto px-4">
-        <h2 class="text-3xl font-extrabold mb-8 text-center" data-i18n="team.sectionTitle">Introductions</h2>
+        <h2 class="text-3xl font-extrabold mb-8 text-center">Introductions</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          <!-- Deborah Shane -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/deborah-shane.webp" srcset="/images/deborah-shane.webp 256w, /images/deborah-shane-sm.webp 128w" sizes="128px" alt="Deborah Shane" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.deborahName">Deborah Shane</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.deborahRole">Admin Coordinator</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.deborahDesc">Keeps cases on schedule; available for questions.</p>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up">
+            <img src="/images/deborah-shane.jpg" alt="Deborah Shane" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Deborah Shane</h3>
+            <p class="text-indigo-600 text-sm font-medium">Admin Coordinator</p>
+            <p class="text-gray-600 text-sm mt-2">With over 10 years in case management, Deborah keeps cases on schedule and is available for questions.</p>
             <div class="mt-3 text-sm space-x-4">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+              <a href="mailto:info@quaerens.co.uk" class="underline">Email</a>
+              <a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a>
             </div>
           </article>
-          <!-- Martijn Pronk -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/martijn-pronk.webp" srcset="/images/martijn-pronk.webp 256w, /images/martijn-pronk-sm.webp 128w" sizes="128px" alt="Martijn Pronk" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.martijnName">Martijn Pronk</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.martijnRole">Case Processor</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.martijnDesc">Ensures submissions are error-free.</p>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.2s">
+            <img src="/images/martijn-pronk.jpg" alt="Martijn Pronk" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Martijn Pronk</h3>
+            <p class="text-indigo-600 text-sm font-medium">Case Processor</p>
+            <p class="text-gray-600 text-sm mt-2">Martijn’s attention to detail ensures error-free submissions, backed by his legal admin expertise.</p>
             <div class="mt-3 text-sm space-x-4">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+              <a href="mailto:info@quaerens.co.uk" class="underline">Email</a>
+              <a href="https://wa.me/34624346933" target="_blank" class="underline" rel="noopener">WhatsApp</a>
             </div>
           </article>
-          <!-- Nikhil Gupta -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/nikhil-gupta.webp" srcset="/images/nikhil-gupta.webp 256w, /images/nikhil-gupta-sm.webp 128w" sizes="128px" alt="Nikhil Gupta" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.nikhilName">Nikhil Gupta</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.nikhilRole">Consultant Liaison</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.nikhilDesc">Connects clients with specialists.</p>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.4s">
+            <img src="/images/nikhil-gupta.jpg" alt="Nikhil Gupta" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Nikhil Gupta</h3>
+            <p class="text-indigo-600 text-sm font-medium">Consultant Liaison</p>
+            <p class="text-gray-600 text-sm mt-2">Nikhil connects clients with specialists, leveraging his background in client relations.</p>
             <div class="mt-3 text-sm space-x-4">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+              <a href="mailto:info@quaerens.co.uk" class="underline">Email</a>
+              <a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a>
             </div>
           </article>
-          <!-- Alexander Hughes -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/alexander-hughes.webp" srcset="/images/alexander-hughes.webp 256w, /images/alexander-hughes-sm.webp 128w" sizes="128px" alt="Alexander Hughes" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.alexanderName">Alexander Hughes</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.alexanderRole">Client Outreach Lead</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.alexanderDesc">Drives engagement; weekend cyclist.</p>
-            <div class="mt-3 text-sm">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-            </div>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up">
+            <img src="/images/alexander-hughes.jpg" alt="Alexander Hughes" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Alexander Hughes</h3>
+            <p class="text-indigo-600 text-sm font-medium">Client Outreach Lead</p>
+            <p class="text-gray-600 text-sm mt-2">Alexander drives engagement with his marketing expertise; he’s also a weekend cyclist.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
           </article>
-          <!-- Priya Patel -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/priya-patel.webp" srcset="/images/priya-patel.webp 256w, /images/priya-patel-sm.webp 128w" sizes="128px" alt="Priya Patel" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.priyaName">Priya Patel</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.priyaRole">Automation & Content Lead</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.priyaDesc">Builds AI workflows; ex-SEO.</p>
-            <div class="mt-3 text-sm">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-            </div>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.2s">
+            <img src="/images/priya-patel.jpg" alt="Priya Patel" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Priya Patel</h3>
+            <p class="text-indigo-600 text-sm font-medium">Automation & Content Lead</p>
+            <p class="text-gray-600 text-sm mt-2">Priya builds AI workflows, drawing on her extensive experience in SEO and content strategy.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
           </article>
-          <!-- Javier Dominguez -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/javier-dominguez.webp" srcset="/images/javier-dominguez.webp 256w, /images/javier-dominguez-sm.webp 128w" sizes="128px" alt="Javier Dominguez" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.javierName">Javier Dominguez</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.javierRole">Designer & Video Synthesist</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.javierDesc">Creates visuals and short videos.</p>
-            <div class="mt-3 text-sm">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-            </div>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.4s">
+            <img src="/images/javier-dominguez.jpg" alt="Javier Dominguez" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Javier Dominguez</h3>
+            <p class="text-indigo-600 text-sm font-medium">Designer & Video Synthesist</p>
+            <p class="text-gray-600 text-sm mt-2">Javier creates compelling visuals and videos, with a keen eye for design.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
           </article>
-          <!-- Sandra Lee -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/sandra-lee.webp" srcset="/images/sandra-lee.webp 256w, /images/sandra-lee-sm.webp 128w" sizes="128px" alt="Sandra Lee" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.sandraName">Sandra Lee</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.sandraRole">Chatbot & Engagement Dev</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.sandraDesc">Builds our real-time chat tools.</p>
-            <div class="mt-3 text-sm">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-            </div>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up">
+            <img src="/images/sandra-lee.jpg" alt="Sandra Lee" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Sandra Lee</h3>
+            <p class="text-indigo-600 text-sm font-medium">Chatbot & Engagement Dev</p>
+            <p class="text-gray-600 text-sm mt-2">Sandra develops real-time chat tools to enhance user engagement.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
           </article>
-          <!-- Marcus Brown -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/marcus-brown.webp" srcset="/images/marcus-brown.webp 256w, /images/marcus-brown-sm.webp 128w" sizes="128px" alt="Marcus Brown" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.marcusName">Marcus Brown</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.marcusRole">Media Manager</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.marcusDesc">Optimises ad spend & conversion.</p>
-            <div class="mt-3 text-sm space-x-4">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
-            </div>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.2s">
+            <img src="/images/marcus-brown.jpg" alt="Marcus Brown" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Marcus Brown</h3>
+            <p class="text-indigo-600 text-sm font-medium">Media Manager</p>
+            <p class="text-gray-600 text-sm mt-2">Marcus optimizes ad spend and conversions with his digital marketing expertise.</p>
+            <div class="mt-3 text-sm space-x-4"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a><a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a></div>
           </article>
-          <!-- Elena Rossi -->
-          <article class="bg-white rounded-lg shadow p-6 text-center">
-            <img src="/images/elena-rossi.webp" srcset="/images/elena-rossi.webp 256w, /images/elena-rossi-sm.webp 128w" sizes="128px" alt="Elena Rossi" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
-            <h3 class="text-lg font-semibold" data-i18n="team.elenaName">Elena Rossi</h3>
-            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.elenaRole">Analytics & Insights Lead</p>
-            <p class="text-gray-600 text-sm mt-2" data-i18n="team.elenaDesc">Builds dashboards & insights.</p>
-            <div class="mt-3 text-sm space-x-4">
-              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
-              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
-            </div>
+          <article class="bg-white rounded-lg shadow p-6 text-center animate-fade-up" style="animation-delay: 0.4s">
+            <img src="/images/elena-rossi.jpg" alt="Elena Rossi" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Elena Rossi</h3>
+            <p class="text-indigo-600 text-sm font-medium">Analytics & Insights Lead</p>
+            <p class="text-gray-600 text-sm mt-2">Elena builds dashboards and insights to drive data-informed decisions.</p>
+            <div class="mt-3 text-sm space-x-4"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a><a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a></div>
           </article>
         </div>
       </div>
@@ -449,7 +482,7 @@
 
   <!-- Sticky mobile CTA -->
   <div class="fixed bottom-0 inset-x-0 md:hidden bg-blue-600 p-4 text-center" role="region" aria-label="Start your free check">
-    <button type="button" @click.prevent="qcOpen=true" class="text-white font-bold" aria-haspopup="dialog" aria-controls="quickcheck-menu" data-i18n="cta.mobile">Free claim check ▾</button>
+    <button type="button" @click.prevent="qcOpen = true" class="text-white font-bold" aria-haspopup="dialog" aria-controls="quickcheck-menu">Free claim check ▾</button>
   </div>
 
   <!-- Footer -->
@@ -457,611 +490,113 @@
     <div class="mx-auto max-w-7xl px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-600">
       <div>
         <img src="/images/quaerens-logo.png" alt="Quaerens" width="140" height="42" loading="lazy" class="mb-3" />
-        <p data-i18n="footer.about">Quaerens is an approachable, assistance service. We work with you to prepare the right documents and guide your next steps. We’re not a law firm — instead, we connect you with trusted external legal partners when specialist advice is needed.</p>
+        <p>Quaerens is an approachable, assistance service. We work with you to prepare the right documents and guide your next steps. We’re not a law firm — instead, we connect you with trusted external legal partners when specialist advice is needed.</p>
       </div>
       <div>
-        <p class="font-semibold text-gray-900" data-i18n="footer.company">Company</p>
+        <p class="font-semibold text-gray-900">Company</p>
         <ul class="mt-2 space-y-1">
-          <li><a href="/privacy.html" class="hover:text-blue-700" data-i18n="footer.privacy">Privacy Policy</a></li>
-          <li><a href="/terms.html" class="hover:text-blue-700" data-i18n="footer.terms">Terms of Use</a></li>
-          <li><a href="/gdpr.html" class="hover:text-blue-700" data-i18n="footer.gdpr">GDPR</a></li>
-          <li><a href="/contact.html" class="hover:text-blue-700" data-i18n="footer.contact">Contact</a></li>
-          <li><a href="/services.html" class="hover:text-blue-700" data-i18n="footer.services">Services</a></li>
+          <li><a href="/privacy.html" class="hover:text-blue-700">Privacy Policy</a></li>
+          <li><a href="/terms.html" class="hover:text-blue-700">Terms of Use</a></li>
+          <li><a href="/gdpr.html" class="hover:text-blue-700">GDPR</a></li>
+          <li><a href="/contact.html" class="hover:text-blue-700">Contact</a></li>
+          <li><a href="/services.html" class="hover:text-blue-700">Services</a></li>
         </ul>
       </div>
       <div>
-        <p class="font-semibold text-gray-900" data-i18n="footer.getInTouch">Get in touch</p>
+        <p class="font-semibold text-gray-900">Get in touch</p>
         <ul class="mt-2 space-y-1">
-          <li data-i18n="footer.emailLabel">Email: <a href="mailto:info@quaerens.co.uk" class="hover:text-blue-700">info@quaerens.co.uk</a></li>
-          <li data-i18n="footer.whatsappLabel">WhatsApp: <a href="https://wa.me/442080500725" target="_blank" rel="noopener" class="hover:text-blue-700">+44 (0)20 8050 0725</a></li>
-          <li data-i18n="footer.companyNo">Company No.: 16176152 · Registered in England & Wales</li>
-          <li data-i18n="footer.address">Address: 71–75 Shelton Street, Covent Garden, London WC2H 9JQ</li>
+          <li>Email: <a href="mailto:info@quaerens.co.uk" class="hover:text-blue-700">info@quaerens.co.uk</a></li>
+          <li>WhatsApp: <a href="https://wa.me/442080500725" target="_blank" rel="noopener" class="hover:text-blue-700">+44 (0)20 8050 0725</a></li>
+          <li>Company No.: 16176152 · Registered in England & Wales</li>
+          <li>Address: 71–75 Shelton Street, Covent Garden, London WC2H 9JQ</li>
         </ul>
       </div>
     </div>
-    <div class="text-center text-xs text-gray-500 pb-8" data-i18n="footer.copyright">© 2025 Quaerens Ltd. All rights reserved.</div>
+    <div class="text-center text-xs text-gray-500 pb-8">© 2025 Quaerens Ltd. All rights reserved.</div>
   </footer>
 
-  <!-- Scroll to top -->
-  <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 scroll-top-btn" aria-label="Scroll to top">
-    ↑
-  </button>
-
-  <!-- Start Free Check: all individual claims -->
-  <div x-show="qcOpen" x-transition.opacity class="fixed inset-0 z-[100]" aria-labelledby="quickcheck-title" role="dialog" aria-modal="true" id="quickcheck-menu">
-    <div @click="qcOpen=false" class="absolute inset-0 bg-black/30" aria-hidden="true"></div>
-    <div class="relative mx-auto mt-16 md:mt-24 max-w-5xl bg-white rounded-2xl shadow-xl border overflow-hidden" x-trap.noscroll="qcOpen">
+  <!-- Start Free Check -->
+  <div x-show="qcOpen" x-transition.opacity x-trap.noscroll="qcOpen" class="fixed inset-0 z-[100]" aria-labelledby="quickcheck-title" role="dialog" aria-modal="true" id="quickcheck-menu">
+    <div @click="qcOpen = false" class="absolute inset-0 bg-black/30" aria-hidden="true"></div>
+    <div class="relative mx-auto mt-16 md:mt-24 max-w-5xl bg-white rounded-2xl shadow-xl border overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b">
-        <h2 id="quickcheck-title" class="text-lg font-semibold" data-i18n="modal.title">Start free check</h2>
-        <button class="px-3 py-1 rounded hover:bg-gray-100" @click="qcOpen=false" aria-label="Close">✕</button>
+        <h2 id="quickcheck-title" class="text-lg font-semibold">Start free check</h2>
+        <button class="px-3 py-1 rounded hover:bg-gray-100" @click="qcOpen = false" aria-label="Close">✕</button>
       </div>
       <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-        <!-- Travel -->
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.travel">Travel & Holiday</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Travel & Holiday</p>
           <ul class="space-y-1">
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeflightclaim.html" aria-label="Check Flight Delay compensation tool" data-i18n="modal.flight">✈️ Flight Delay</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeholidaycompensation.html" aria-label="Check Holiday Refund tool" data-i18n="modal.holiday">🏖️ Holiday Refund</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/train-delay.html" aria-label="Check Train Delay tool" data-i18n="modal.train">🚆 Train Delay</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/lost-luggage.html" aria-label="Check Lost Luggage tool" data-i18n="modal.luggage">🧳 Lost Luggage</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/airbnb-refunds.html" aria-label="Check Airbnb Refunds tool" data-i18n="modal.airbnb">🏠 Airbnb Refunds</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/holidaypark.html" aria-label="Check Holiday Park issues tool" data-i18n="modal.park">🚐 Holiday Park</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeflightclaim.html">✈️ Flight Delay</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeholidaycompensation.html">🏖️ Holiday Refund</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/train-delay.html">🚆 Train Delay</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/lost-luggage.html">🧳 Lost Luggage</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/airbnb-refunds.html">🏠 Airbnb Refunds</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/holidaypark.html">🚐 Holiday Park</a></li>
           </ul>
         </div>
-        <!-- Finance -->
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.finance">Finance & Pensions</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Finance & Pensions</p>
           <ul class="space-y-1">
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/car-finance.html" aria-label="Check Car Finance tool" data-i18n="modal.car">🚗 Car Finance</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/pension-issues.html" aria-label="Check Pension Issues tool" data-i18n="modal.pension">👴 Pension Issues</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/misssold-bankaccounts.html" aria-label="Check Bank Accounts tool" data-i18n="modal.bank">🏦 Bank Accounts</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/creditcard-fees.html" aria-label="Check Credit Card Fees tool" data-i18n="modal.credit">💳 Credit Card Fees</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/car-finance.html">🚗 Car Finance</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/pension-issues.html">👴 Pension Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/misssold-bankaccounts.html">🏦 Bank Accounts</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/creditcard-fees.html">💳 Credit Card Fees</a></li>
           </ul>
         </div>
-        <!-- Property -->
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.property">Property & Mortgages</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Property & Mortgages</p>
           <ul class="space-y-1">
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-mortgages.html" aria-label="Check Spanish Mortgages tool" data-i18n="modal.mortgage">💶 Spanish Mortgages</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-properties.html" aria-label="Check Spanish Property tool" data-i18n="modal.property">🏘️ Spanish Property</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/timeshare.html" aria-label="Check Timeshare Refund tool" data-i18n="modal.timeshare">🔄 Timeshare Refund</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="https://www.exitmytimeshares.com" target="_blank" rel="noopener" aria-label="Check Timeshare Exit DIY tool" data-i18n="modal.exit">❌ Timeshare Exit (DIY)</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-mortgages.html">💶 Spanish Mortgages</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-properties.html">🏘️ Spanish Property</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/timeshare.html">🔄 Timeshare Refund</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="https://www.exitmytimeshares.com" target="_blank" rel="noopener">❌ Timeshare Exit (DIY)</a></li>
           </ul>
         </div>
-        <!-- Consumer -->
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.consumer">Everyday Issues</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Everyday Issues</p>
           <ul class="space-y-1">
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/gym-cancellation.html" aria-label="Check Gym Cancellation tool" data-i18n="modal.gym">🏋️‍♂️ Gym Cancellation</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/parking-appeal.html" aria-label="Check Parking Appeal tool" data-i18n="modal.parking">🚗 Parking Appeal</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/energy-switch.html" aria-label="Check Energy Switch tool" data-i18n="modal.energy">🔌 Energy Switch</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/housing-disrepair.html" aria-label="Check Housing Disrepair tool" data-i18n="modal.housing">🏠 Housing Disrepair</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/medical-negligence.html" aria-label="Check Medical Negligence tool" data-i18n="modal.medical">🩺 Medical Negligence</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/return-issues.html" aria-label="Check Refund Issues tool" data-i18n="modal.refund">🔄 Refund Issues</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/other.html" aria-label="Check Other Issues tool" data-i18n="modal.other">❓ Other Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/gym-cancellation.html">🏋️‍♂️ Gym Cancellation</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/parking-appeal.html">🚗 Parking Appeal</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/energy-switch.html">🔌 Energy Switch</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/housing-disrepair.html">🏠 Housing Disrepair</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/medical-negligence.html">🩺 Medical Negligence</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/return-issues.html">🔄 Refund Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/other.html">❓ Other Issues</a></li>
           </ul>
         </div>
-        <!-- Digital -->
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.digital">Digital Risks</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Digital Risks</p>
           <ul class="space-y-1">
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/cyber-claims.html" aria-label="Check Data Breach tool" data-i18n="modal.cyber">🔒 Data Breach</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crypto-scams.html" aria-label="Check Crypto Recovery tool" data-i18n="modal.crypto">💰 Crypto Recovery</a></li>
-            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crossborder.html" aria-label="Check Cross-Border Issues tool" data-i18n="modal.crossborder">🌐 Cross-Border Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/cyber-claims.html">🔒 Data Breach</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crypto-scams.html">💰 Crypto Recovery</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crossborder.html">🌐 Cross-Border Issues</a></li>
           </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- i18next initialization -->
-  <script>
-    i18next.init({
-      lng: localStorage.getItem('i18nextLng') || 'en',
-      resources: {
-        en: {
-          translation: {
-            trust: {
-              friendly: "Friendly, expert assistants.",
-              noJargon: "Clear language, no jargon.",
-              diy: "DIY or done-with-you.",
-              chooseSupport: "You choose the level of support.",
-              pricing: "Transparent pricing.",
-              freeTools: "Many tools free; some success-based."
-            },
-            howItWorks: {
-              title: "Two simple ways to start",
-              subtitle: "Handle it yourself with free tools, or ask us to guide you. No pressure either way."
-            },
-            diy: {
-              title: "Do It Yourself – DIY",
-              description: "Take control and file on your own timeline, with everything you need at your fingertips:",
-              feature1: "Customisable request templates ready to download",
-              feature2: "Interactive calculators to estimate your entitlement",
-              feature3: "Step-by-step guides on submission and documentation",
-              feature4: "Comprehensive FAQs addressing common roadblocks",
-              feature5: "Access to our library of sample cases and best-practice tips",
-              noSignup: "No signup, no fees — just straightforward, self-serve resources to help you move forward.",
-              explore: "Explore free tools"
-            },
-            guided: {
-              title: "Guided Expert Help",
-              description: "Prefer expert support? Share your details and enjoy:",
-              feature1: "Free, no-obligation review by our specialist team and external legal partners",
-              feature2: "Dedicated case manager handling all paperwork",
-              feature3: "Regular updates and direct communication",
-              feature4: "Personalised guidance tailored to your situation",
-              feature5: "No upfront cost in many cases — you pay only on success",
-              submit: "Submit your info now and let us do the heavy lifting — risk free.",
-              start: "Start free check ▾"
-            },
-            nav: {
-              travel: "Travel & Holiday",
-              finance: "Finance & Pensions",
-              property: "Property & Mortgages",
-              consumer: "Everyday Issues",
-              digital: "Digital Risks"
-            },
-            travel: {
-              title: "Travel & Holiday",
-              subtitle: "Flight delays, refunds, luggage and more.",
-              sectionTitle: "✈️ Travel & Holiday",
-              sectionSubtitle: "Use a free DIY tool or ask for a quick review.",
-              flightTitle: "Flight Delay",
-              flightDesc: "Work out up to €600 and create your letter.",
-              flightBtn: "DIY FREE",
-              holidayTitle: "Holiday Refund",
-              holidayDesc: "For cancellations or major changes.",
-              holidayBtn: "DIY FREE",
-              trainTitle: "Train Delay",
-              trainDesc: "Delays over 60 mins, missed connections.",
-              trainBtn: "DIY FREE",
-              luggageTitle: "Lost Luggage",
-              luggageDesc: "Steps and forms for lost or damaged bags.",
-              luggageBtn: "DIY FREE",
-              airbnbTitle: "Airbnb Refunds",
-              airbnbDesc: "We can help with cancellations or issues.",
-              airbnbBtn: "Free assessment",
-              parkTitle: "Holiday Park",
-              parkDesc: "Booking errors, safety issues, fees.",
-              parkBtn: "Free assessment"
-            },
-            finance: {
-              title: "Finance & Pensions",
-              subtitle: "Hidden fees, pension issues and more.",
-              sectionTitle: "💰 Finance & Pensions",
-              sectionSubtitle: "DIY calculators and templates, or ask us to review.",
-              carTitle: "Car Finance",
-              carDesc: "Check fees and interest, step by step.",
-              carBtn: "DIY FREE",
-              pensionTitle: "Pension Issues",
-              pensionDesc: "Spot under-credited contributions.",
-              pensionBtn: "DIY FREE",
-              bankTitle: "Bank Accounts",
-              bankDesc: "Unfair charges and hidden fees.",
-              bankBtn: "DIY FREE",
-              creditTitle: "Credit Card Fees",
-              creditDesc: "Identify penalty rates and APR jumps.",
-              creditBtn: "DIY FREE"
-            },
-            property: {
-              title: "Property & Mortgages",
-              subtitle: "Spanish mortgages, property issues and timeshare.",
-              sectionTitle: "🏠 Property & Mortgages",
-              sectionSubtitle: "Local knowledge and simple steps.",
-              mortgageTitle: "Spanish Mortgages",
-              mortgageDesc: "Check overpaid interest and charges.",
-              mortgageBtn: "Free assessment",
-              propertyTitle: "Spanish Property",
-              propertyDesc: "Deeds, developer and lease issues.",
-              propertyBtn: "Free assessment",
-              timeshareTitle: "Timeshare Refund",
-              timeshareDesc: "Deposits and mis-sold promises.",
-              timeshareBtn: "Free assessment",
-              exitTitle: "Timeshare Exit",
-              exitDesc: "DIY exit kit with support.",
-              exitBtn: "DIY admin fee"
-            },
-            consumer: {
-              title: "Everyday Issues",
-              subtitle: "Gym cancellations, parking, energy and more.",
-              sectionTitle: "🛍️ Everyday Issues",
-              sectionSubtitle: "Quick wins with simple steps.",
-              gymTitle: "Gym Cancellation",
-              gymDesc: "End or refund unfair renewals.",
-              gymBtn: "DIY FREE",
-              parkingTitle: "Parking Appeal",
-              parkingDesc: "Template letters and photo tips.",
-              parkingBtn: "DIY FREE",
-              energyTitle: "Energy Switch",
-              energyDesc: "Compare, switch and claim overpayments.",
-              energyBtn: "DIY FREE",
-              housingTitle: "Housing Disrepair",
-              housingDesc: "Repairs and compensation for damp/leaks.",
-              housingBtn: "Free assessment",
-              medicalTitle: "Medical Negligence",
-              medicalDesc: "Independent reviews and guidance.",
-              medicalBtn: "Free assessment",
-              refundTitle: "Refund Issues",
-              refundDesc: "Escalate returns and repairs.",
-              refundBtn: "Free assessment",
-              otherTitle: "Other Issues",
-              otherDesc: "Subscriptions, warranties and more.",
-              otherBtn: "Free assessment"
-            },
-            digital: {
-              title: "Digital Risks",
-              subtitle: "Data breaches, crypto issues and cross-border disputes.",
-              sectionTitle: "💻 Digital Risks",
-              sectionSubtitle: "DIY steps plus help if you need it.",
-              cyberTitle: "Data Breach",
-              cyberDesc: "ICO complaints and letters.",
-              cyberBtn: "Free assessment",
-              cryptoTitle: "Crypto Recovery",
-              cryptoDesc: "Exchange liaison and tracing.",
-              cryptoBtn: "Free assessment",
-              crossborderTitle: "Cross-Border Issues",
-              crossborderDesc: "Currency and VAT disputes.",
-              crossborderBtn: "Free assessment"
-            },
-            team: {
-              title: "Meet the Quaerens Team",
-              subtitle: "Real people, quick replies.",
-              sectionTitle: "Introductions",
-              deborahName: "Deborah Shane",
-              deborahRole: "Admin Coordinator",
-              deborahDesc: "Keeps cases on schedule; available for questions.",
-              martijnName: "Martijn Pronk",
-              martijnRole: "Case Processor",
-              martijnDesc: "Ensures submissions are error-free.",
-              nikhilName: "Nikhil Gupta",
-              nikhilRole: "Consultant Liaison",
-              nikhilDesc: "Connects clients with specialists.",
-              alexanderName: "Alexander Hughes",
-              alexanderRole: "Client Outreach Lead",
-              alexanderDesc: "Drives engagement; weekend cyclist.",
-              priyaName: "Priya Patel",
-              priyaRole: "Automation & Content Lead",
-              priyaDesc: "Builds AI workflows; ex-SEO.",
-              javierName: "Javier Dominguez",
-              javierRole: "Designer & Video Synthesist",
-              javierDesc: "Creates visuals and short videos.",
-              sandraName: "Sandra Lee",
-              sandraRole: "Chatbot & Engagement Dev",
-              sandraDesc: "Builds our real-time chat tools.",
-              marcusName: "Marcus Brown",
-              marcusRole: "Media Manager",
-              marcusDesc: "Optimises ad spend & conversion.",
-              elenaName: "Elena Rossi",
-              elenaRole: "Analytics & Insights Lead",
-              elenaDesc: "Builds dashboards & insights.",
-              email: "Email",
-              whatsapp: "WhatsApp"
-            },
-            footer: {
-              about: "Quaerens is an approachable, assistance service. We work with you to prepare the right documents and guide your next steps. We’re not a law firm — instead, we connect you with trusted external legal partners when specialist advice is needed.",
-              company: "Company",
-              privacy: "Privacy Policy",
-              terms: "Terms of Use",
-              gdpr: "GDPR",
-              contact: "Contact",
-              services: "Services",
-              getInTouch: "Get in touch",
-              emailLabel: "Email: <a href='mailto:info@quaerens.co.uk' class='hover:text-blue-700'>info@quaerens.co.uk</a>",
-              whatsappLabel: "WhatsApp: <a href='https://wa.me/442080500725' target='_blank' rel='noopener' class='hover:text-blue-700'>+44 (0)20 8050 0725</a>",
-              companyNo: "Company No.: 16176152 · Registered in England & Wales",
-              address: "Address: 71–75 Shelton Street, Covent Garden, London WC2H 9JQ",
-              copyright: "© 2025 Quaerens Ltd. All rights reserved."
-            },
-            modal: {
-              title: "Start free check",
-              travel: "Travel & Holiday",
-              finance: "Finance & Pensions",
-              property: "Property & Mortgages",
-              consumer: "Everyday Issues",
-              digital: "Digital Risks",
-              flight: "✈️ Flight Delay",
-              holiday: "🏖️ Holiday Refund",
-              train: "🚆 Train Delay",
-              luggage: "🧳 Lost Luggage",
-              airbnb: "🏠 Airbnb Refunds",
-              park: "🚐 Holiday Park",
-              car: "🚗 Car Finance",
-              pension: "👴 Pension Issues",
-              bank: "🏦 Bank Accounts",
-              credit: "💳 Credit Card Fees",
-              mortgage: "💶 Spanish Mortgages",
-              property: "🏘️ Spanish Property",
-              timeshare: "🔄 Timeshare Refund",
-              exit: "❌ Timeshare Exit (DIY)",
-              gym: "🏋️‍♂️ Gym Cancellation",
-              parking: "🚗 Parking Appeal",
-              energy: "🔌 Energy Switch",
-              housing: "🏠 Housing Disrepair",
-              medical: "🩺 Medical Negligence",
-              refund: "🔄 Refund Issues",
-              other: "❓ Other Issues",
-              cyber: "🔒 Data Breach",
-              crypto: "💰 Crypto Recovery",
-              crossborder: "🌐 Cross-Border Issues"
-            }
-          }
-        },
-        fr: {
-          translation: {
-            finance: {
-              title: "Finances & Retraites",
-              subtitle: "Frais cachés, problèmes de retraite et plus encore.",
-              sectionTitle: "💰 Finances & Retraites",
-              sectionSubtitle: "Calculatrices DIY et modèles, ou demandez-nous de vérifier.",
-              carTitle: "Financement Auto",
-              carDesc: "Vérifiez les frais et intérêts, étape par étape.",
-              carBtn: "DIY GRATUIT",
-              pensionTitle: "Problèmes de Retraite",
-              pensionDesc: "Repérez les contributions sous-créditées.",
-              pensionBtn: "DIY GRATUIT",
-              bankTitle: "Comptes Bancaires",
-              bankDesc: "Frais injustes et coûts cachés.",
-              bankBtn: "DIY GRATUIT",
-              creditTitle: "Frais de Carte de Crédit",
-              creditDesc: "Identifiez les taux de pénalité et hausses de TAEG.",
-              creditBtn: "DIY GRATUIT"
-            },
-            // Other sections (property, consumer, digital, team, footer, modal) would follow with French translations
-          }
-        },
-        es: {
-          translation: {
-            finance: {
-              title: "Finanzas y Pensiones",
-              subtitle: "Comisiones ocultas, problemas de pensiones y más.",
-              sectionTitle: "💰 Finanzas y Pensiones",
-              sectionSubtitle: "Calculadoras DIY y plantillas, o pídanos revisar.",
-              carTitle: "Financiación de Coches",
-              carDesc: "Verifica comisiones e intereses, paso a paso.",
-              carBtn: "DIY GRATIS",
-              pensionTitle: "Problemas de Pensiones",
-              pensionDesc: "Detecta contribuciones mal acreditadas.",
-              pensionBtn: "DIY GRATIS",
-              bankTitle: "Cuentas Bancarias",
-              bankDesc: "Cargos injustos y comisiones ocultas.",
-              bankBtn: "DIY GRATIS",
-              creditTitle: "Comisiones de Tarjetas de Crédito",
-              creditDesc: "Identifica tasas de penalización y subidas de TAE.",
-              creditBtn: "DIY GRATIS"
-            },
-            // Other sections would follow with Spanish translations
-          }
-        },
-        de: {
-          translation: {
-            finance: {
-              title: "Finanzen & Renten",
-              subtitle: "Versteckte Gebühren, Rentenprobleme und mehr.",
-              sectionTitle: "💰 Finanzen & Renten",
-              sectionSubtitle: "DIY-Rechner und Vorlagen oder lassen Sie uns prüfen.",
-              carTitle: "Autofinanzierung",
-              carDesc: "Überprüfen Sie Gebühren und Zinsen, Schritt für Schritt.",
-              carBtn: "DIY KOSTENLOS",
-              pensionTitle: "Rentenprobleme",
-              pensionDesc: "Erkennung von unterbewerteten Beiträgen.",
-              pensionBtn: "DIY KOSTENLOS",
-              bankTitle: "Bankkonten",
-              bankDesc: "Unfaire Gebühren und versteckte Kosten.",
-              bankBtn: "DIY KOSTENLOS",
-              creditTitle: "Kreditkartengebühren",
-              creditDesc: "Erkennung von Strafzinsen und Zinsanstiegen.",
-              creditBtn: "DIY KOSTENLOS"
-            },
-            // Other sections would follow with German translations
-          }
-        },
-        it: {
-          translation: {
-            finance: {
-              title: "Finanza e Pensioni",
-              subtitle: "Commissioni nascoste, problemi pensionistici e altro.",
-              sectionTitle: "💰 Finanza e Pensioni",
-              sectionSubtitle: "Calcolatori fai-da-te e modelli, o chiedici di verificare.",
-              carTitle: "Finanziamento Auto",
-              carDesc: "Controlla commissioni e interessi, passo dopo passo.",
-              carBtn: "DIY GRATUITO",
-              pensionTitle: "Problemi Pensionistici",
-              pensionDesc: "Individua contributi non accreditati correttamente.",
-              pensionBtn: "DIY GRATUITO",
-              bankTitle: "Conti Bancari",
-              bankDesc: "Addebiti ingiusti e costi nascosti.",
-              bankBtn: "DIY GRATUITO",
-              creditTitle: "Commissioni Carta di Credito",
-              creditDesc: "Identifica tassi di penalità e aumenti APR.",
-              creditBtn: "DIY GRATUITO"
-            },
-            // Other sections would follow with Italian translations
-          }
-        },
-        nl: {
-          translation: {
-            finance: {
-              title: "Financiën & Pensioenen",
-              subtitle: "Verborgen kosten, pensioenproblemen en meer.",
-              sectionTitle: "💰 Financiën & Pensioenen",
-              sectionSubtitle: "DIY-calculators en sjablonen, of laat ons controleren.",
-              carTitle: "Autofinanciering",
-              carDesc: "Controleer kosten en rente, stap voor stap.",
-              carBtn: "DIY GRATIS",
-              pensionTitle: "Pensioenproblemen",
-              pensionDesc: "Ontdek ondergecrediteerde bijdragen.",
-              pensionBtn: "DIY GRATIS",
-              bankTitle: "Bankrekeningen",
-              bankDesc: "Oneerlijke kosten en verborgen toeslagen.",
-              bankBtn: "DIY GRATIS",
-              creditTitle: "Creditcardkosten",
-              creditDesc: "Identificeer strafrentes en APR-stijgingen.",
-              creditBtn: "DIY GRATIS"
-            },
-            // Other sections would follow with Dutch translations
-          }
-        },
-        sv: {
-          translation: {
-            finance: {
-              title: "Finans & Pensioner",
-              subtitle: "Dolda avgifter, pensionsproblem och mer.",
-              sectionTitle: "💰 Finans & Pensioner",
-              sectionSubtitle: "DIY-kalkylatorer och mallar, eller be oss granska.",
-              carTitle: "Bilfinansiering",
-              carDesc: "Kontrollera avgifter och räntor, steg för steg.",
-              carBtn: "DIY GRATIS",
-              pensionTitle: "Pensionsproblem",
-              pensionDesc: "Upptäck underkrediterade bidrag.",
-              pensionBtn: "DIY GRATIS",
-              bankTitle: "Bankkonton",
-              bankDesc: "Orättvisa avgifter och dolda kostnader.",
-              bankBtn: "DIY GRATIS",
-              creditTitle: "Kreditkortsavgifter",
-              creditDesc: "Identifiera straffräntor och APR-höjningar.",
-              creditBtn: "DIY GRATIS"
-            },
-            // Other sections would follow with Swedish translations
-          }
-        },
-        el: {
-          translation: {
-            finance: {
-              title: "Οικονομικά & Συντάξεις",
-              subtitle: "Κρυφές χρεώσεις, προβλήματα συντάξεων και άλλα.",
-              sectionTitle: "💰 Οικονομικά & Συντάξεις",
-              sectionSubtitle: "Υπολογιστές DIY και πρότυπα, ή ζητήστε μας να ελέγξουμε.",
-              carTitle: "Χρηματοδότηση Αυτοκινήτου",
-              carDesc: "Ελέγξτε χρεώσεις και τόκους, βήμα-βήμα.",
-              carBtn: "DIY ΔΩΡΕΑΝ",
-              pensionTitle: "Προβλήματα Σύνταξης",
-              pensionDesc: "Εντοπίστε μη πιστωμένες εισφορές.",
-              pensionBtn: "DIY ΔΩΡΕΑΝ",
-              bankTitle: "Τραπεζικοί Λογαριασμοί",
-              bankDesc: "Άδικες χρεώσεις και κρυφά κόστη.",
-              bankBtn: "DIY ΔΩΡΕΑΝ",
-              creditTitle: "Χρεώσεις Πιστωτικής Κάρτας",
-              creditDesc: "Εντοπίστε ποινές και απότομες αυξήσεις APR.",
-              creditBtn: "DIY ΔΩΡΕΑΝ"
-            },
-            // Other sections would follow with Greek translations
-          }
-        }
-      }
-    }, function(err) {
-      if (err) console.error('i18next init error:', err);
-      document.querySelectorAll('[data-i18n]').forEach(elem => {
-        const key = elem.getAttribute('data-i18n');
-        elem.innerHTML = i18next.t(key);
-      });
-      i18next.on('languageChanged', (lng) => {
-        localStorage.setItem('i18nextLng', lng);
-        document.querySelectorAll('[data-i18n]').forEach(elem => {
-          const key = elem.getAttribute('data-i18n');
-          elem.innerHTML = i18next.t(key);
-        });
-        document.documentElement.lang = lng;
-      });
-    });
-  </script>
+  <!-- Scroll-to-top -->
+  <button id="scroll-top" class="fixed bottom-16 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg hidden hover:bg-blue-700" aria-label="Scroll to top">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+  </button>
 
-  <!-- Google Translate fallback -->
-  <script>
-    function googleTranslateElementInit() {
-      if (!window.google || !window.google.translate) {
-        setTimeout(googleTranslateElementInit, 500);
-        return;
-      }
-      new google.translate.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'fr,es,de,it,nl,sv,el',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-        autoDisplay: false
-      }, 'google_translate_element');
-    }
-  </script>
+  <!-- External scripts -->
+  <script src="/js/main.js" defer></script>
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer></script>
-
-  <!-- Hero text rotation -->
-  <script>
-    const heroTitles = [
-      "Check what you could claim in minutes",
-      "Friendly help when you need it",
-      "Free tools to do it yourself"
-    ];
-    const heroSubtitles = [
-      "Simple steps to check flight delays, hidden fees, and more.",
-      "Our team is here to guide you, no jargon.",
-      "Download templates or get a free review."
-    ];
-    let heroIndex = 0;
-    function rotateHero() {
-      if (!window.Alpine || Alpine.data.heroPaused) return;
-      const title = document.getElementById('hero-title');
-      const subtitle = document.getElementById('hero-subtitle');
-      title.style.opacity = 0;
-      subtitle.style.opacity = 0;
-      setTimeout(() => {
-        title.textContent = heroTitles[heroIndex];
-        subtitle.textContent = heroSubtitles[heroIndex];
-        title.style.opacity = 1;
-        subtitle.style.opacity = 1;
-        heroIndex = (heroIndex + 1) % heroTitles.length;
-      }, 300);
-    }
-    setInterval(rotateHero, 4000);
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('hero-title').textContent = heroTitles[0];
-      document.getElementById('hero-subtitle').textContent = heroSubtitles[0];
-    });
-  </script>
-
-  <!-- Scroll to top -->
-  <script>
-    const scrollTopBtn = document.getElementById('scrollTopBtn');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        scrollTopBtn.classList.remove('hidden');
-      } else {
-        scrollTopBtn.classList.add('hidden');
-      }
-    });
-    scrollTopBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  </script>
-
-  <!-- Tawk.to chat -->
   <script>
     var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
-    (function() {
+    (function(){
       var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
-      s1.async = true;
-      s1.src = 'https://embed.tawk.to/66b7c43c0c66f64d83c6371e/1i4v3j6i3';
-      s1.charset = 'UTF-8';
-      s1.setAttribute('crossorigin', '*');
-      s0.parentNode.insertBefore(s1, s0);
+      s1.async = true; s1.src = 'https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';
+      s1.charset = 'UTF-8'; s1.setAttribute('crossorigin', '*'); s0.parentNode.insertBefore(s1, s0);
+      s1.onload = function() { document.getElementById('tawk-fallback').classList.add('hidden'); };
       setTimeout(() => {
-        if (!Tawk_API.loaded) {
-          document.getElementById('tawk-fallback').classList.add('show');
-        }
-      }, 5000);
-      Tawk_API.onLoad = function() {
-        document.getElementById('tawk-fallback').classList.remove('show');
-      };
+        if (!Tawk_API.loaded) document.getElementById('tawk-fallback').classList.remove('hidden');
+      }, 10000);
     })();
   </script>
-
-  <!-- AOS init -->
-  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
-  <script>
-    AOS.init({
-      duration: 600,
-      once: true,
-      disable: 'mobile'
-    });
-  </script>
+  <div id="tawk-fallback" class="hidden fixed bottom-4 right-4 bg-red-100 text-red-700 p-3 rounded-lg text-sm">Chat unavailable. Try <a href="mailto:info@quaerens.co.uk" class="underline">email</a>.</div>
 </body>
 </html>
-```
