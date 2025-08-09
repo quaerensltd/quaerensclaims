@@ -1,1478 +1,1067 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="en" class="h-full" x-data="{ qcOpen:false, heroPaused:false }">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- SEO Meta Tags -->
-    <title>QuickCheck | Quaerens</title>
-    <meta name="description" content="Check if you are entitled to claim compensation with Quaerens. Fast, easy, and expert claim assistance for flights, finance, timeshare, refunds, and more.">
-    <meta name="keywords" content="claim check, consumer claims, flight delay claims, finance claims, refund claims, Quaerens, claim assistance, compensation check">
-    <meta name="author" content="Quaerens Ltd.">
-    <meta name="theme-color" content="#2563eb">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta http-equiv="Cache-Control" content="max-age=31536000, must-revalidate">
+  <title>QuickCheck | Quaerens</title>
+  <meta name="description" content="QuickCheck by Quaerens — simple tools and friendly help to recover refunds and compensation across travel, finance, property and more." />
+  <link rel="canonical" href="https://www.quaerens.co.uk/" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="theme-color" content="#2563eb" />
 
-    <!-- Open Graph (Social Media) -->
-    <meta property="og:title" content="ClaimCheck | Quaerens">
-    <meta property="og:description" content="Easily find out if you can claim compensation with Quaerens. Flights, finance, refunds, timeshare and more. Protect your rights today.">
-    <meta property="og:image" content="https://quaerens.co.uk/images/quaerens-logo.png">
-    <meta property="og:url" content="https://quaerens.co.uk/index.html">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://quaerens.co.uk/images/quaerens-logo.png">
-    <link rel="canonical" href="https://quaerens.co.uk/index.html" />
+  <!-- Social -->
+  <meta property="og:site_name" content="Quaerens" />
+  <meta property="og:title" content="QuickCheck | Quaerens" />
+  <meta property="og:description" content="Check what you could recover in minutes — DIY tools or friendly help when you want it." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.quaerens.co.uk/" />
+  <meta property="og:image" content="https://www.quaerens.co.uk/images/quaerens-og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/images/favicon.png">
+  <!-- Perf: fonts + Tailwind -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Fonts & Tailwind -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"/>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- AOS Animation Library CSS (put JS at the END of the body for best results) -->
-    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
-    <!-- ✅ Alpine.js for language dropdown -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- Alpine.js -->
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        font-family: 'Inter', sans-serif;
-        background: #f9fafb;
-        margin: 0;
-        padding: 0;
-        color: #111827;
-        top: 0px !important;
-        position: static !important;
-      }
-      html {
-        scroll-behavior: smooth;
-        margin-top: 0 !important;
-      }
+  <!-- i18next for translations -->
+  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js" defer></script>
 
-      /* ✅ Hide Google Translate banner and branding */
-      .goog-te-banner-frame.skiptranslate,
-      .goog-te-gadget-icon,
-      .goog-logo-link,
-      .goog-te-gadget,
-      body > .skiptranslate {
-        display: none !important;
-      }
-      .goog-te-gadget { font-size: 0 !important; }
-      .footer-links a:hover { color: #2563eb; }
+  <!-- AOS (optional) -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        padding: 1rem 2rem;
-        flex-wrap: wrap;
-      }
-      header img {
-        height: 80px;
-        max-width: 100%;
-      }
-      .flags {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-top: 1rem;
-      }
-      .flags img {
-        width: 30px;
-        height: 20px;
-        cursor: pointer;
-        border: 1px solid #ddd;
-        border-radius: 3px;
-      }
+  <!-- Plausible Analytics -->
+  <script defer data-domain="quaerens.co.uk" src="https://plausible.io/js/plausible.js"></script>
 
-      /* Styling for language options */
-      .languages { display: flex; gap: 0.5rem; margin-top: 1rem; }
-      .lang-option {
-        cursor: pointer;
-        transition: color 0.3s;
-        color: #1f2937;
-      }
-      .lang-option:hover {
-        color: #2563eb;
-        text-decoration: underline;
-      }
-      .divider { color: #6b7280; }
-      .lang-option.active {
-        color: #2563eb;
-        font-weight: bold;
-        text-decoration: underline;
-      }
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
 
-      main {
-        text-align: center;
-        padding: 1rem;
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-      h1 { font-size: 2.5rem; margin-top: 0; }
-      h2 { font-size: 1.1rem; font-weight: normal; margin-bottom: 1.5rem; }
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f9fafb; color:#111827; }
 
-      nav {
-        margin-bottom: 2rem;
-        display: flex;
-        justify-content: center;
-        gap: 1rem; /* <-- space between buttons */
-        flex-wrap: wrap;
-      }
-      nav a {
-        display: inline-block;
-        padding: 0.6rem 1.2rem;
-        text-decoration: none;
-        background-color: #2563eb;
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-        border-radius: 8px;
-        transition: background-color 0.3s, transform 0.3s;
-      }
-      nav a:hover {
-        background-color: #1e40af;
-        transform: translateY(-2px);
-      }
+    /* Accessibility */
+    .skip-link { position:absolute; left:-999px; top:auto; width:1px; height:1px; overflow:hidden; }
+    .skip-link:focus { position:static; width:auto; height:auto; padding:.5rem 1rem; background:#111827; color:#fff; z-index:9999; }
+    :focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        justify-items: center;
-        align-items: start;
-        max-width: 1240px;
-        margin: 0 auto;
-      }
-      .claim-box {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 1rem;
-        text-align: center;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        width: 100%;
-        max-width: 250px; 
-        min-height: 250px;
-        height: auto;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        position: relative; 
-        z-index: 1;        
-      }
-.claim-box img {
-  max-width: 100px;
-  max-height: 100px;
-  width: 100%;
-  height: auto;
-  margin-bottom: 0.5rem;
-  object-fit: contain;
-  border-radius: 8px;
-}
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
-.claim-box h3 {
-  transition: color 0.3s ease;
-}
+    /* Claim card styles */
+    .claim-box { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1rem; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.04); width:100%; max-width:260px; min-height:250px; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .claim-box:hover { transform: translateY(-6px); border-color:#2563eb; box-shadow: 0 10px 20px rgba(0,0,0,.12); }
+    .claim-box img { width:140px; height:140px; object-fit:contain; border-radius:8px; margin-bottom:.5rem; }
+    .claim-free-btn, .claim-blue-btn { display:inline-block; padding:.65rem 1.25rem; border-radius:999px; font-weight:800; border:0; margin-top:auto; }
+    .claim-free-btn { background:#22c55e; color:#fff; }
+    .claim-free-btn:hover { background:#16a34a; }
+    .claim-blue-btn { background:#2563eb; color:#fff; }
+    .claim-blue-btn:hover { background:#1d4ed8; }
 
-.claim-box:hover h3 {
-  color: #2563eb;
-}
+    /* Sticky CTA spacing */
+    @media (max-width: 768px) { body { padding-bottom: 64px; } }
 
-.claim-box:hover::after {
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
-  animation: pulseRing 1.5s infinite;
-  z-index: 0;
-}
+    /* Scroll to top */
+    .scroll-top-btn { transition: opacity 0.3s ease; }
+    .scroll-top-btn.hidden { opacity: 0; pointer-events: none; }
 
-@keyframes pulseRing {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.6;
-  }
-  70% {
-    transform: scale(1.2);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-}
-
-@media (max-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.typing {
-  border-right: 2px solid white;
-  white-space: nowrap;
-  overflow: hidden;
-  animation: blink 0.7s step-end infinite;
-}
-
-/* 📱 Sticky CTA on mobile only */
-.mobile-cta {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .mobile-cta {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: #2563eb;
-    text-align: center;
-    padding: 0.75rem;
-    z-index: 999;
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-  }
-
-  .mobile-cta a {
-    color: white;
-    font-weight: bold;
-    font-size: 1.1rem;
-    text-decoration: none;
-  }
-}
-
-.claim-box:hover {
-   transform: translateY(-8px) scale(1.02);
-   border-color: #2563eb;
-   background-color: #ebf2ff;
-   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 0 12px rgba(37, 99, 235, 0.6);
-   opacity: 0.95;
-}
-
-.claim-box img {
-  transition: transform 0.3s ease;
-}
-
-.claim-box:hover img {
-  transform: scale(1.1);
-}
-
-@keyframes floatUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.claim-box {
-  animation: floatUp 0.6s ease forwards;
-}
-
-.claim-box:active {
-  transform: translateY(-2px) scale(0.98);
-  border-color: #1e40af;
-  background-color: #dbeafe;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06), 0 0 6px rgba(30, 64, 175, 0.4);
-  opacity: 0.9;
-}
-
-/* 🔄 ANIMATIONS */
-@keyframes fadeInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.claim-box:nth-child(1) { animation-delay: 0.1s; }
-.claim-box:nth-child(2) { animation-delay: 0.2s; }
-.claim-box:nth-child(3) { animation-delay: 0.3s; }
-.claim-box:nth-child(4) { animation-delay: 0.4s; }
-.claim-box:nth-child(5) { animation-delay: 0.5s; }
-.claim-box:nth-child(6) { animation-delay: 0.6s; }
-.claim-box:nth-child(7) { animation-delay: 0.7s; }
-.claim-box:nth-child(8) { animation-delay: 0.8s; }
-.claim-box:nth-child(9) { animation-delay: 0.9s; }
-.claim-box:nth-child(10) { animation-delay: 1.0s; }
-.claim-box:nth-child(11) { animation-delay: 1.1s; }
-.claim-box:nth-child(12) { animation-delay: 1.2s; }
-.claim-box:nth-child(13) { animation-delay: 1.3s; }
-.claim-box:nth-child(14) { animation-delay: 1.4s; }
-.claim-box:nth-child(15) { animation-delay: 1.5s; }
-.claim-box:nth-child(16) { animation-delay: 1.6s; }
-.claim-box:nth-child(17) { animation-delay: 1.7s; }
-.claim-box:nth-child(18) { animation-delay: 1.8s; }
-.claim-box:nth-child(19) { animation-delay: 1.9s; }
-.claim-box:nth-child(20) { animation-delay: 2.0s; }
-.claim-box:nth-child(21) { animation-delay: 2.1s; }
-.claim-box:nth-child(22) { animation-delay: 2.2s; }
-.claim-box:nth-child(23) { animation-delay: 2.3s; }
-.claim-box:nth-child(24) { animation-delay: 2.4s; }
-
-/* ---- HERO SECTION ---- */
-.hero-section {
-  position: relative;
-  background-image: url('/images/hero-index.jpg');
-  background-size: cover;
-  background-position: center;
-  height: 50vh;
-  min-height: 350px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: white;
-  opacity: 1;
-  filter: none;
-}
-
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.25); 
-  z-index: 1;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 2;
-  padding: 2rem;
-}
-
-.hero-content h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  color: white;
-}
-.hero-content p {
-  font-size: 1.5rem;
-  color: white;
-}
-
-@media (max-width: 480px) {
-  .flags {
-    justify-content: center;
-    width: 100%;
-  }
-}
-
-.claim-box:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: #2563eb;
-  background-color: #ebf2ff; /* <--- Light blue background on hover */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 0 12px rgba(37, 99, 235, 0.6);
-  opacity: 0.95;
-}
-
-.claim-box:active {
-  transform: translateY(-2px) scale(0.98);
-  border-color: #1e40af;
-  background-color: #dbeafe; /* <--- Slightly darker blue on click */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08), 0 0 6px rgba(30, 64, 175, 0.5);
-  opacity: 0.9;
-}
-
-.claim-box img {
-  max-width: 120px;
-  max-height: 120px;
-  width: 100%;
-  height: 100px;
-  margin-bottom: 0.5rem;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.claim-box h3 {
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
-}
-
-.claim-box a {
-  text-decoration: none;
-  color: #2563eb;
-  font-weight: 500;
-}
-
-/* 🔵 Base style for all claim buttons */
-.claim-free-btn,
-.claim-blue-btn {
-  display: inline-block;
-  padding: 0.7em 1.7em;
-  font-weight: 800;
-  text-decoration: none;
-  border-radius: 999px;
-  font-size: 1.08rem;
-  margin-top: 0.8em;
-  border: none;
-  box-shadow: 0 2px 8px rgba(34,197,94,0.10);
-  letter-spacing: 0.01em;
-  transition: background 0.16s, box-shadow 0.16s, color 0.12s, transform 0.2s;
-}
-
-.claim-free-btn {
-  background-color: #22c55e !important; /* Tailwind green-500 */
-  color: #fff !important;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.13);
-}
-
-.claim-free-btn:hover,
-.claim-free-btn:focus {
-  background-color: #16a34a !important; /* Tailwind green-700 */
-  box-shadow: 0 4px 16px rgba(34,197,94,0.17);
-  color: #fff !important;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  transform: translateY(-2px) scale(1.035);
-}
-
-/* 🔵 Free Assessment (dark blue button) -- enhanced for contrast */
-.claim-blue-btn {
-  background-color: #2563eb !important;
-  color: #fff !important;
-  border: 1px solid #1d4ed8;
-  font-weight: 700;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.11); /* subtle shadow for readability */
-  transition: background 0.18s, box-shadow 0.18s, color 0.18s;
-}
-.claim-blue-btn:hover,
-.claim-blue-btn:focus {
-  background-color: #1d4ed8 !important;
-  color: #fff !important;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.14);
-  transform: translateY(-2px);
-}
-
-.filter-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  background-color: #f3f4f6;
-  color: #1f2937;
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-  background-color: #e5e7eb;
-}
-
-.filter-btn.active {
-  background-color: #2563eb;
-  color: white;
-  border-color: #1d4ed8;
-}
-
-/* Green DIY filter button */
-.filter-btn[data-type="diy"] {
-  background-color: #22c55e;
-  color: #fff;
-  border-color: #16a34a;
-  font-weight: 700;
-}
-.filter-btn[data-type="diy"].active,
-.filter-btn[data-type="diy"]:hover {
-  background-color: #16a34a;
-  color: #fff;
-  border-color: #15803d;
-}
-
-/* Blue Assessment filter button */
-.filter-btn[data-type="assessment"] {
-  background-color: #2563eb;
-  color: #fff;
-  border-color: #1d4ed8;
-  font-weight: 700;
-}
-.filter-btn[data-type="assessment"].active,
-.filter-btn[data-type="assessment"]:hover {
-  background-color: #1d4ed8;
-  color: #fff;
-  border-color: #1e40af;
-}
-
-.search-input {
-  padding: 0.6rem 1.2rem;
-  width: 90%;
-  max-width: 400px;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  outline: none;
-  transition: border-color 0.3s;
-}
-
-.search-input::placeholder {
-  color: #9ca3af; /* Tailwind slate-400 */
-}
-
-.search-input:focus {
-  border-color: #2563eb;
-}
-
-.chat-box {
-  background: #fff;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.chat-box span {
-  font-size: 1.1rem;
-}
-
-footer {
-  text-align: center;
-  font-size: 0.85rem;
-  color: #6b7280;
-  padding: 2rem 1rem;
-  max-width: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.6;
-}
-.footer-links a {
-  margin: 0 0.5rem;
-}
-
-/* 🔧 Responsive tweaks for small screens */
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.8rem;
-  }
-  h2 {
-    font-size: 1rem;
-  }
-  .claim-box h3 {
-    font-size: 0.95rem;
-  }
-  .claim-box {
-    min-height: 220px;
-    padding: 1rem 0.75rem;
-  }
-  .claim-free-btn,
-  .claim-blue-btn {
-    font-size: 0.95rem;
-    padding: 0.5rem 1rem;
-    width: 100%;
-    text-align: center;
-  }
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .flags {
-    margin-top: 0.5rem;
-  }
-}
-
-.typing {
-  border-right: 2px solid white;
-  white-space: nowrap;
-  overflow: hidden;
-  animation: blink 0.7s step-end infinite;
-}
-
-@keyframes blink {
-  50% {
-    border-color: transparent;
-  }
-}
-</style>
+    /* Hide Google Translate banner */
+    .goog-te-banner-frame.skiptranslate { display:none !important; }
+    body > .skiptranslate { display:none !important; }
+    body { top:0 !important; }
+  </style>
 </head>
-<body>
-<!-- HEADER -->
-<header class="flex flex-col md:flex-row items-center justify-between px-4 py-4 md:px-8 bg-white">
-    <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="h-12 md:h-16 mb-4 md:mb-0" />
-    <div id="google_translate_element" class="mb-4 md:mb-0"></div>
-    <!-- Language Dropdown -->
-    <div x-data="{ open: false }" class="relative inline-block text-left">
-      <button @click="open = !open"
-        class="inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none">
-        🌐 Language
-        <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l5 5 5-5" />
-        </svg>
-      </button>
-      <div x-show="open" @click.outside="open = false"
-        class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-50 text-sm text-gray-700">
-        <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
-        <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
-        <a href="#" onclick="setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
-        <a href="#" onclick="setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
-        <a href="#" onclick="setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
-        <a href="#" onclick="setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
-        <a href="#" onclick="setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
-        <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
+<body class="h-full" x-data @keydown.escape="qcOpen=false">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Header -->
+  <header class="bg-white border-b">
+    <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-4">
+      <a href="/" class="inline-flex items-center gap-3">
+        <img src="/images/quaerens-logo.png" width="280" height="84" alt="Quaerens" loading="eager" class="h-20 md:h-24 w-auto" />
+        <span class="sr-only">Quaerens home</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-5" aria-label="Primary">
+        <a href="#travel" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Travel & Holiday</a>
+        <a href="#finance" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Finance & Pensions</a>
+        <a href="#property" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Property & Mortgages</a>
+        <a href="#consumer" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Everyday Issues</a>
+        <a href="#digital" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Digital Risks</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <!-- Hidden Google gadget -->
+        <div id="google_translate_element" class="sr-only" aria-hidden="true"></div>
+
+        <!-- Language dropdown -->
+        <div x-data="{ open:false }" class="relative">
+          <button @click="open=!open" class="inline-flex items-center rounded border border-gray-300 px-3 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100" aria-haspopup="true" :aria-expanded="open">
+            🌐 Language
+          </button>
+          <div x-show="open" @click.outside="open=false" class="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg z-50 text-sm text-gray-700">
+            <a href="#" @click.prevent="i18next.changeLanguage('en'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'en' ? 'true' : 'false'">🇬🇧 English</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('fr'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'fr' ? 'true' : 'false'">🇫🇷 Français</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('es'); open=false " class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'es' ? 'true' : 'false'">🇪🇸 Español</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('de'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'de' ? 'true' : 'false'">🇩🇪 Deutsch</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('it'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'it' ? 'true' : 'false'">🇮🇹 Italiano</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('nl'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'nl' ? 'true' : 'false'">🇳🇱 Nederlands</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('sv'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'sv' ? 'true' : 'false'">🇸🇪 Svenska</a>
+            <a href="#" @click.prevent="i18next.changeLanguage('el'); open=false" class="block px-4 py-2 hover:bg-gray-100" :aria-current="i18next.language === 'el' ? 'true' : 'false'">🇬🇷 Ελληνικά</a>
+          </div>
+        </div>
+
+        <button type="button" @click.prevent="qcOpen=true" class="hidden md:inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
       </div>
     </div>
   </header>
-  
-  <!-- HERO SECTION -->
-  <section class="relative bg-cover bg-center h-[40vh] min-h-[250px]" style="background-image:url('/images/hero-index.jpg')">
-    <div class="absolute inset-0 bg-black/40"></div>
-    <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-      <h1 id="hero-title" class="text-white font-bold text-2xl md:text-4xl typing"></h1>
-      <p id="hero-subtitle" class="mt-2 text-white text-base md:text-xl"></p>
-    </div>
-  </section>
 
-  <nav class="relative flex flex-wrap justify-center gap-4 mb-8 px-4 md:px-8">
-    <a href="#travel"  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Travel & Holiday</a>
-    <a href="#finance" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Finance & Pensions</a>
-    <a href="#property" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Property & Mortgages</a>
-    <a href="#consumer" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Consumer & Misc</a>
-    <a href="#digital"  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Digital Risks</a>
-  </nav>
-
-  <!-- TWO SIMPLE WAYS -->
-  <section class="bg-white py-12">
-    <div class="mx-auto max-w-4xl px-4">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-6">
-        Two Simple Ways to Start
-      </h2>
-      <div class="bg-blue-600 text-white p-4 rounded-lg mb-8">
-        <p class="text-center">
-          Whether you prefer to handle things yourself or want a helping hand — Quaerens gives you both. Start right away, completely free. Every tool and service we offer is built to make your journey to compensation simple, transparent, and stress-free.
-        </p>
+  <main id="main" class="min-h-screen">
+    <!-- Hero -->
+    <section class="relative bg-cover bg-center min-h-[260px] h-[42vh]" style="background-image:url('/images/hero-index.jpg')">
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="relative z-10 mx-auto max-w-5xl h-full flex flex-col items-center justify-center text-center px-4">
+        <div class="flex items-center gap-2">
+          <h1 id="hero-title" aria-live="polite" class="text-white font-extrabold text-3xl md:text-5xl"></h1>
+          <button @click="heroPaused=!heroPaused" class="text-white text-sm" :aria-label="heroPaused ? 'Resume hero text animation' : 'Pause hero text animation'">{{ heroPaused ? '▶' : '⏸' }}</button>
+        </div>
+        <p id="hero-subtitle" aria-live="polite" class="mt-3 text-white text-base md:text-xl max-w-2xl"></p>
+        <div class="mt-6 flex gap-3 flex-wrap justify-center">
+          <a href="#how-it-works" class="rounded-full border border-white/80 text-white px-4 py-2 text-sm font-semibold hover:bg-white hover:text-gray-900">How it works</a>
+          <button type="button" @click.prevent="qcOpen=true" class="rounded-full bg-blue-600 text-white px-4 py-2 text-sm font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
+        </div>
       </div>
-  
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- DIY Option -->
-        <div class="flex flex-col border border-green-500 bg-green-50 rounded-lg p-6 shadow h-full">
-          <h3 class="text-center text-xl font-semibold text-green-700 mb-4">Do It Yourself</h3>
-          <div class="flex-1 text-gray-700">
-            <p class="mb-2">Take control and file on your own timeline, with everything you need at your fingertips:</p>
-            <ul class="list-disc ml-5 space-y-1">
-              <li>Customisable request templates ready to download</li>
-              <li>Interactive calculators to estimate your entitlement</li>
-              <li>Step-by-step guides on submission and documentation</li>
-              <li>Comprehensive FAQs addressing common roadblocks</li>
-              <li>Access to our library of sample cases and best-practice tips</li>
+    </section>
+
+    <!-- Trust strip -->
+    <section class="bg-white border-b">
+      <div class="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+        <div class="text-sm text-gray-700"><strong class="text-gray-900" data-i18n="trust.friendly">Friendly, expert assistants.</strong> <span data-i18n="trust.noJargon">Clear language, no jargon.</span></div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900" data-i18n="trust.diy">DIY or done-with-you.</strong> <span data-i18n="trust.chooseSupport">You choose the level of support.</span></div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900" data-i18n="trust.pricing">Transparent pricing.</strong> <span data-i18n="trust.freeTools">Many tools free; some success-based.</span></div>
+      </div>
+    </section>
+
+    <!-- Two ways to start -->
+    <section id="how-it-works" class="bg-white py-12">
+      <div class="mx-auto max-w-6xl px-4">
+        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-2" data-i18n="howItWorks.title">Two simple ways to start</h2>
+        <p class="text-center text-gray-600 mb-8" data-i18n="howItWorks.subtitle">Handle it yourself with free tools, or ask us to guide you. No pressure either way.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- DIY -->
+          <article class="flex flex-col border border-green-500 bg-green-50 rounded-lg p-6 shadow-sm">
+            <h3 class="text-center text-xl font-semibold text-green-700 mb-3" data-i18n="diy.title">Do It Yourself – DIY</h3>
+            <p class="text-gray-700 mb-2" data-i18n="diy.description">Take control and file on your own timeline, with everything you need at your fingertips:</p>
+            <ul class="list-disc ml-5 space-y-1 text-gray-700">
+              <li data-i18n="diy.feature1">Customisable request templates ready to download</li>
+              <li data-i18n="diy.feature2">Interactive calculators to estimate your entitlement</li>
+              <li data-i18n="diy.feature3">Step-by-step guides on submission and documentation</li>
+              <li data-i18n="diy.feature4">Comprehensive FAQs addressing common roadblocks</li>
+              <li data-i18n="diy.feature5">Access to our library of sample cases and best-practice tips</li>
             </ul>
-          </div>
-          <p class="mt-4 text-gray-700">
-            No signup, no fees — just straightforward, self-serve resources to help you move forward.
-          </p>
-        </div>
-  
-        <!-- Free Assessment Option -->
-        <div class="flex flex-col border border-blue-500 bg-blue-50 rounded-lg p-6 shadow h-full">
-          <h3 class="text-center text-xl font-semibold text-blue-700 mb-4">Free Assessment</h3>
-          <div class="flex-1 text-gray-700">
-            <p class="mb-2">Prefer expert support? Share your details and enjoy:</p>
-            <ul class="list-disc ml-5 space-y-1">
-              <li>Free, no-obligation review by our specialist team</li>
-              <li>Dedicated case manager handling all paperwork</li>
-              <li>Regular updates and direct communication</li>
-              <li>No upfront cost in many cases — you pay only on success</li>
-              <li>Personalised guidance tailored to your situation</li>
+            <p class="text-gray-700 mt-3" data-i18n="diy.noSignup">No signup, no fees — just straightforward, self-serve resources to help you move forward.</p>
+            <a href="#travel" class="mt-5 inline-flex justify-center claim-free-btn" data-i18n="diy.explore">Explore free tools</a>
+          </article>
+
+          <!-- Guided Expert Help -->
+          <article class="flex flex-col border border-blue-500 bg-blue-50 rounded-lg p-6 shadow-sm">
+            <h3 class="text-center text-xl font-semibold text-blue-700 mb-3" data-i18n="guided.title">Guided Expert Help</h3>
+            <p class="text-gray-700 mb-2" data-i18n="guided.description">Prefer expert support? Share your details and enjoy:</p>
+            <ul class="list-disc ml-5 space-y-1 text-gray-700">
+              <li data-i18n="guided.feature1">Free, no-obligation review by our specialist team and external legal partners</li>
+              <li data-i18n="guided.feature2">Dedicated case manager handling all paperwork</li>
+              <li data-i18n="guided.feature3">Regular updates and direct communication</li>
+              <li data-i18n="guided.feature4">Personalised guidance tailored to your situation</li>
+              <li data-i18n="guided.feature5">No upfront cost in many cases — you pay only on success</li>
             </ul>
+            <p class="text-gray-700 mt-3" data-i18n="guided.submit">Submit your info now and let us do the heavy lifting — risk free.</p>
+            <button type="button" @click.prevent="qcOpen=true" class="mt-5 inline-flex justify-center claim-blue-btn" aria-haspopup="dialog" aria-controls="quickcheck-menu" data-i18n="guided.start">Start free check ▾</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Category nav -->
+    <nav class="relative flex flex-wrap justify-center gap-3 mb-8 px-4" aria-label="Categories">
+      <a href="#travel" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.travel">Travel & Holiday</a>
+      <a href="#finance" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.finance">Finance & Pensions</a>
+      <a href="#property" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.property">Property & Mortgages</a>
+      <a href="#consumer" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.consumer">Everyday Issues</a>
+      <a href="#digital" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700" data-i18n="nav.digital">Digital Risks</a>
+    </nav>
+
+    <!-- TRAVEL -->
+    <section id="travel-banner" class="relative h-[200px] mb-10">
+      <img src="/images/travel-banner.webp" srcset="/images/travel-banner.webp 1600w, /images/travel-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Travel and holiday support" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="travel.title">Travel & Holiday</h2>
+        <p class="text-sm md:text-base opacity-95" data-i18n="travel.subtitle">Flight delays, refunds, luggage and more.</p>
+      </div>
+    </section>
+
+    <section id="travel" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="travel.sectionTitle">✈️ Travel & Holiday</h3>
+            <p class="text-gray-700" data-i18n="travel.sectionSubtitle">Use a free DIY tool or ask for a quick review.</p>
           </div>
-          <p class="mt-4 text-gray-700">
-            Submit your info now and let us do the heavy lifting — risk free.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-  
-  <main class="px-4 md:px-8 py-12">
-    <!-- Search & Filter -->
-    <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-      <input
-        type="text"
-        id="claimSearch"
-        class="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-        placeholder="Search…"
-      />
-      <div class="flex flex-wrap gap-2">
-        <button class="filter-btn active" data-type="all">All</button>
-        <button class="filter-btn" data-type="diy">Do It Yourself</button>
-        <button class="filter-btn" data-type="assessment">Free Assessment</button>
-      </div>
-    </div>
-
-  </nav>
-
-  <!-- Travel & Holiday Category -->
-  <section id="travel" class="mb-12" data-cat="travel">
-    <!-- Intro Card -->
-    <div class="max-w-3xl mx-auto flex flex-col md:flex-row gap-4 border border-gray-300 rounded-lg p-4 mb-6">
-      <img src="/images/travel-intro.png" alt="Travel & Holiday" class="w-24 h-auto rounded" />
-      <ul class="space-y-2 text-gray-700">
-        <li><strong>Flight Delay:</strong> Flights delayed over three hours or cancellations.</li>
-        <li><strong>Holiday Refund:</strong> Package cancellations, major itinerary changes, operator failures.</li>
-        <li><strong>Train Delay:</strong> Delays over 60 minutes, missed connections, services cancelled.</li>
-        <li><strong>Lost Luggage:</strong> Lost, delayed, or damaged baggage claims.</li>
-        <li><strong>Airbnb Refunds:</strong> Host cancellations or serious property misrepresentation.</li>
-        <li><strong>Caravan/Holiday Park:</strong> Booking errors, safety issues, or unexpected fees.</li>
-      </ul>
-    </div>
-    <!-- Tiles Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
-      <!-- … -->
-    </div>
-  </section>
-
-    <!-- Tiles Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch mb-8">
-      <!-- Flight Delay -->
-      <a href="freeflightclaim.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-flightclaim.png" alt="Flight Delay" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Flight Delay</h3>
-        <p class="service-desc mb-4">
-          Claim up to €600 when your flight lands more than three hours late. Enter flight details, and we’ll auto-calculate your entitlement, submit your claim to the airline, and track progress until payment.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-
-      <!-- Holiday Refund -->
-      <a href="freeholidaycompensation.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-holidaycomp.png" alt="Holiday Refund" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Holiday Refund</h3>
-        <p class="service-desc mb-4">
-          Claim full or partial refunds if your package tour is cancelled, postponed, or significantly changed. Our step-by-step wizard guides you through uploading bookings and receipts, then negotiates with the operator.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-
-      <!-- Train Delay -->
-      <a href="train-delay.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-traindelay.png" alt="Train Delay" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Train Delay</h3>
-        <p class="service-desc mb-4">
-          Claim compensation for delays over 60 minutes, missed connections, and cancellations. Use our template letters and evidence checklist to streamline your rail operator dispute.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-
-      <!-- Lost Luggage -->
-      <a href="lost-luggage.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-luggage.png" alt="Lost Luggage" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Lost Luggage</h3>
-        <p class="service-desc mb-4">
-          Claim up to £1,300 per passenger for lost, delayed, or damaged baggage. We provide pre-filled claim forms for all major airlines and track your case to settlement.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-
-      <!-- Airbnb Refunds -->
-      <a href="airbnb-refunds.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-airbnbl.png" alt="Airbnb Refunds" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Airbnb Refunds</h3>
-        <p class="service-desc mb-4">
-          Claim refunds or alternative stays when hosts cancel at short notice or misrepresent their listings. We escalate disputes through Airbnb’s Resolution Center on your behalf.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-
-      <!-- Caravan/Holiday Park -->
-      <a href="holidaypark.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-holidayparks.png" alt="Caravan/Holiday Park" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Caravan/Holiday Park</h3>
-        <p class="service-desc mb-4">
-          Claim compensation for booking mistakes, hidden fees, or safety concerns at holiday parks and campsites. Our team communicates with site operators to secure your refund.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-    </div>
-
-    <!-- Testimonials -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“Quaerens got me £400 for a delayed flight in just 10 days!”</p>
-          <p class="font-semibold text-blue-600">— Sarah K.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“I never thought a refund could be this easy—highly recommend.”</p>
-          <p class="font-semibold text-blue-600">— David P.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“The team handled everything; I just sat back and waited for my money.”</p>
-          <p class="font-semibold text-blue-600">— Emily R.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“Fast, professional and absolutely stress-free!”</p>
-          <p class="font-semibold text-blue-600">— Michael T.</p>
-        </div>
-      </div>
-    </section>  
-
-  <!-- Finance & Pensions -->
-  <section id="finance" class="px-4 md:px-8 mb-12" data-cat="finance">
-    <!-- Intro Card -->
-    <div class="max-w-3xl mx-auto mb-6 flex flex-col md:flex-row gap-4 border border-gray-300 rounded-lg p-4">
-      <img src="/images/finance-intro.png" alt="Finance & Pensions" class="w-24 rounded" />
-      <ul class="space-y-2 text-gray-700">
-        <li><strong>Car Finance:</strong> Hidden fees, unfair interest, and mis-sold auto loans.</li>
-        <li><strong>Pension Issues:</strong> Mis-sold pensions, calculation errors, under-credited contributions.</li>
-        <li><strong>Bank Accounts:</strong> Unauthorised fees, hidden charges, misleading terms.</li>
-        <li><strong>Credit Card Fees:</strong> Undisclosed APR hikes and penalty rates.</li>
-      </ul>
-    </div>
-
-    <!-- Tiles Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch mb-8">
-      <!-- Car Finance -->
-      <a href="car-finance.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-carfinance.png" alt="Car Finance" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Car Finance</h3>
-        <p class="service-desc mb-4">
-          Claim back unfair loan fees and excessive interest on your car finance agreement. Upload your contract, our tool calculates overpayments and files your claim.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-      <!-- Pension Issues -->
-      <a href="pension-issues.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-pensionissues.png" alt="Pension Issues" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Pension Issues</h3>
-        <p class="service-desc mb-4">
-          Claim compensation for mis-sold or underperforming pension plans. We audit statements and liaise with trustees to recover lost contributions.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-      <!-- Bank Accounts -->
-      <a href="misssold-bankaccounts.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-missoldbank.png" alt="Bank Accounts" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Bank Accounts</h3>
-        <p class="service-desc mb-4">
-          Claim refunds for unauthorised or hidden bank charges. Our pre-formatted dispute letters cover all major UK banks.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-      <!-- Credit Card Fees -->
-      <a href="creditcard-fees.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-creditcard.png" alt="Credit Card Fees" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Credit Card Fees</h3>
-        <p class="service-desc mb-4">
-          Claim reimbursement for hidden APR increases and penalty fees. We track your bills and file complaints with your issuer.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-    </div>
-
-    <!-- Testimonials -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“Reclaimed over £200 on my pension mistakes—so easy!”</p>
-          <p class="font-semibold text-blue-600">— Anna M.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“They found hidden bank fees I never knew existed!”</p>
-          <p class="font-semibold text-blue-600">— James L.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“My credit card overcharge was refunded in under two weeks.”</p>
-          <p class="font-semibold text-blue-600">— Olivia S.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-100"/>
-          <p class="italic mb-1">“Fantastic service—recovered thousands on my car loan!”</p>
-          <p class="font-semibold text-blue-600">— Mark D.</p>
-        </div>
-      </div>
-    </section>  
-
-  <!-- Property & Mortgages -->
-  <section id="property" class="px-4 md:px-8 mb-12" data-cat="property">
-    <!-- Intro Card -->
-    <div class="max-w-3xl mx-auto mb-6 flex flex-col md:flex-row gap-4 border border-gray-300 rounded-lg p-4">
-      <img src="/images/property-intro.png" alt="Property & Mortgages" class="w-24 rounded" />
-      <ul class="space-y-2 text-gray-700">
-        <li><strong>Spanish Mortgages:</strong> Overpaid interest and unfair bank charges on Spanish home loans.</li>
-        <li><strong>Spanish Property:</strong> Leasehold disputes, title deed issues, developer defaults.</li>
-        <li><strong>Timeshare Refund:</strong> Upfront fee refunds and mis-sold promises.</li>
-        <li><strong>Timeshare Exit:</strong> Legal guidance to terminate contracts and stop future fees.</li>
-      </ul>
-    </div>
-    
-        <!-- Tiles Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch mb-8">
-          <!-- Spanish Mortgages -->
-          <a href="spanish-mortgages.html" class="claim-box flex flex-col h-full" data-type="assessment">
-            <img src="/images/new-amortgages.png" alt="Spanish Mortgages" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Spanish Mortgages</h3>
-            <p class="service-desc mb-4">
-              Claim back overpaid interest and unfair charges on Spanish mortgage agreements. We review your loan terms and submit claims to lenders for settlement.
-            </p>
-            <button class="claim-blue-btn mt-auto">Free Assessment</button>
-          </a>
-          <!-- Spanish Property -->
-          <a href="spanish-properties.html" class="claim-box flex flex-col h-full" data-type="assessment">
-            <img src="/images/new-spanishpropety.png" alt="Spanish Property" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Spanish Property</h3>
-            <p class="service-desc mb-4">
-              Claim resolution for leasehold, title deed, or developer contract breaches. Our local partners handle communications in Spanish for you.
-            </p>
-            <button class="claim-blue-btn mt-auto">Free Assessment</button>
-          </a>
-          <!-- Timeshare Refund -->
-          <a href="timeshare.html" class="claim-box flex flex-col h-full" data-type="assessment">
-            <img src="/images/new-timesharerefund.png" alt="Timeshare Refund" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Timeshare Refund</h3>
-            <p class="service-desc mb-4">
-              Claim refunds of upfront fees, deposits, and hidden maintenance costs. We negotiate refunds based on your purchase contract.
-            </p>
-            <button class="claim-blue-btn mt-auto">Free Assessment</button>
-          </a>
-          <!-- Timeshare Exit -->
-          <a href="https://www.exitmytimeshares.com" class="claim-box flex flex-col h-full" data-type="diy" target="_blank" rel="noopener">
-            <img src="/images/new-timeshareexitl.png" alt="Timeshare Exit" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Timeshare Exit</h3>
-            <p class="service-desc mb-4">
-              Step-by-step support to legally exit your timeshare contract, halt future fees, and secure written confirmation.
-            </p>
-            <button class="claim-free-btn mt-auto">Do It Yourself</button>
-          </a>
-        </div>
-    
-        <!-- Testimonials -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“They recovered €19,200 on my mortgage amazing service!”</p>
-              <p class="font-semibold text-blue-600">— Laura G.</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“Fixed my timeshare issues in weeks highly recommend.”</p>
-              <p class="font-semibold text-blue-600">— Peter C.</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“My Spanish property dispute was settled quickly.”</p>
-              <p class="font-semibold text-blue-600">— Sofia L.</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“ExitMyTimeshares tool was super helpful withe the DIY exit.”</p>
-              <p class="font-semibold text-blue-600">— Henry T.</p>
-            </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
+            <a href="/freeflightclaim.html" class="claim-box"><img src="/images/new-flightclaim.webp" srcset="/images/new-flightclaim.webp 280w, /images/new-flightclaim-sm.webp 140w" sizes="140px" alt="Flight delay tool" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.flightTitle">Flight Delay</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.flightDesc">Work out up to €600 and create your letter.</p><span class="claim-free-btn" data-i18n="travel.flightBtn">DIY FREE</span></a>
+            <a href="/freeholidaycompensation.html" class="claim-box"><img src="/images/new-holidaycomp.webp" srcset="/images/new-holidaycomp.webp 280w, /images/new-holidaycomp-sm.webp 140w" sizes="140px" alt="Holiday refund wizard" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.holidayTitle">Holiday Refund</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.holidayDesc">For cancellations or major changes.</p><span class="claim-free-btn" data-i18n="travel.holidayBtn">DIY FREE</span></a>
+            <a href="/train-delay.html" class="claim-box"><img src="/images/new-traindelay.webp" srcset="/images/new-traindelay.webp 280w, /images/new-traindelay-sm.webp 140w" sizes="140px" alt="Train delay" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.trainTitle">Train Delay</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.trainDesc">Delays over 60 mins, missed connections.</p><span class="claim-free-btn" data-i18n="travel.trainBtn">DIY FREE</span></a>
+            <a href="/lost-luggage.html" class="claim-box"><img src="/images/new-luggage.webp" srcset="/images/new-luggage.webp 280w, /images/new-luggage-sm.webp 140w" sizes="140px" alt="Lost luggage guide" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.luggageTitle">Lost Luggage</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.luggageDesc">Steps and forms for lost or damaged bags.</p><span class="claim-free-btn" data-i18n="travel.luggageBtn">DIY FREE</span></a>
+            <a href="/airbnb-refunds.html" class="claim-box"><img src="/images/new-airbnbl.webp" srcset="/images/new-airbnbl.webp 280w, /images/new-airbnbl-sm.webp 140w" sizes="140px" alt="Airbnb refund help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.airbnbTitle">Airbnb Refunds</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.airbnbDesc">We can help with cancellations or issues.</p><span class="claim-blue-btn" data-i18n="travel.airbnbBtn">Free assessment</span></a>
+            <a href="/holidaypark.html" class="claim-box"><img src="/images/new-holidayparks.webp" srcset="/images/new-holidayparks.webp 280w, /images/new-holidayparks-sm.webp 140w" sizes="140px" alt="Holiday park issues" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="travel.parkTitle">Holiday Park</h4><p class="text-sm text-gray-600 mb-3" data-i18n="travel.parkDesc">Booking errors, safety issues, fees.</p><span class="claim-blue-btn" data-i18n="travel.parkBtn">Free assessment</span></a>
           </div>
-        </section>
-  
-
-  <!-- Consumer & Misc -->
-  <section id="consumer" class="px-4 md:px-8 mb-12" data-cat="consumer">
-    <!-- Intro Card -->
-    <div class="max-w-3xl mx-auto mb-6 flex flex-col md:flex-row gap-4 border border-gray-300 rounded-lg p-4">
-      <img src="/images/consumer-intro.png" alt="Consumer & Misc" class="w-24 rounded" />
-      <ul class="space-y-2 text-gray-700">
-        <li><strong>Gym Cancellation:</strong> Early contract terminations or auto-renewal refunds.</li>
-        <li><strong>Parking Appeal:</strong> Unfair PCNs, signage confusion, or enforcement errors.</li>
-        <li><strong>Energy Switch:</strong> Overpayment refunds, tariff comparison, and switching services.</li>
-        <li><strong>Housing Disrepair:</strong> Repairs, compensation for damp, leaks, or hazards.</li>
-        <li><strong>Medical Negligence:</strong> Clinical error reviews, evidence gathering, and guidance.</li>
-        <li><strong>Refund Issues:</strong> Retailers refusing returns, exchanges, or warranty obligations.</li>
-        <li><strong>Other Issues:</strong> Any other consumer dispute—from warranties to subscriptions.</li>
-      </ul>
-    </div>
-
-    <!-- Tiles Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch mb-8">
-      <!-- Gym Cancellation -->
-      <a href="gym-cancellation.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-gymcancel.png" alt="Gym Cancellation" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Gym Cancellation</h3>
-        <p class="service-desc mb-4">
-          Claim refunds for early gym contract terminations or unwanted auto-renewals. Our guide walks you through notice letters and cancellation procedures.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-      <!-- Parking Appeal -->
-      <a href="parking-appeal.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-parkingl.png" alt="Parking Appeal" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Parking Appeal</h3>
-        <p class="service-desc mb-4">
-          Claim overturn of unfair parking fines using letter templates, photo evidence tips, and PCN tracker.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-      <!-- Energy Switch -->
-      <a href="energy-switch.html" class="claim-box flex flex-col h-full" data-type="diy">
-        <img src="/images/new-energyswitch.png" alt="Energy Switch" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Energy Switch</h3>
-        <p class="service-desc mb-4">
-          Claim overpayment refunds and compare tariffs to switch to a cheaper supplier in minutes with our tool.
-        </p>
-        <button class="claim-free-btn mt-auto">Do It Yourself</button>
-      </a>
-      <!-- Housing Disrepair -->
-      <a href="housing-disrepair.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-housingdisrepair.png" alt="Housing Disrepair" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Housing Disrepair</h3>
-        <p class="service-desc mb-4">
-          Claim repairs & compensation for property defects like damp, leaks, or broken heating. We draft legal letters to your landlord.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-      <!-- Medical Negligence -->
-      <a href="medical-negligence.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-medical.png" alt="Medical Negligence" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Medical Negligence</h3>
-        <p class="service-desc mb-4">
-          Claim independent reviews and guidance on clinical errors or substandard care. We collect records and liaise with experts.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-      <!-- Refund Issues -->
-      <a href="return-issues.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-refundissues.png" alt="Refund Issues" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Refund Issues</h3>
-        <p class="service-desc mb-4">
-          Claim assistance when retailers refuse returns, refunds, or exchanges. We draft formal complaints and escalate to trading standards.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-      <!-- Other Issues -->
-      <a href="other.html" class="claim-box flex flex-col h-full" data-type="assessment">
-        <img src="/images/new-otherclaims.png" alt="Other Issues" class="mx-auto mb-4" />
-        <h3 class="text-lg font-semibold mb-2">Other Issues</h3>
-        <p class="service-desc mb-4">
-          Claim support on any other consumer dispute—from warranty denials to subscription plan errors.
-        </p>
-        <button class="claim-blue-btn mt-auto">Free Assessment</button>
-      </a>
-    </div>
-
-    <!-- Testimonials -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-          <p class="italic mb-1">“Saved me £200 on my gym contract — so easy!”</p>
-          <p class="font-semibold text-green-600">— Emma W.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-          <p class="italic mb-1">“Beat my parking fine after their template letter.”</p>
-          <p class="font-semibold text-green-600">— James R.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-          <p class="italic mb-1">“Housing disrepair claim settled fast, great support.”</p>
-          <p class="font-semibold text-green-600">— Olivia S.</p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow text-center">
-          <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-          <p class="italic mb-1">“Energy switch refund tool works like a charm!”</p>
-          <p class="font-semibold text-green-600">— Liam K.</p>
         </div>
       </div>
-    </section>  
+    </section>
 
-  <!-- Digital Risks -->
-  <section id="digital" class="px-4 md:px-8 mb-12" data-cat="digital">
-    <!-- Intro Card -->
-    <div class="max-w-3xl mx-auto mb-6 flex flex-col md:flex-row gap-4 border border-gray-300 rounded-lg p-4">
-      <img src="/images/digital-intro.png" alt="Digital Risks" class="w-24 rounded" />
-      <ul class="space-y-2 text-gray-700">
-        <li><strong>Data Breach:</strong> Personal data leaks, identity theft risks, and regulator notifications.</li>
-        <li><strong>Crypto Scam Recovery:</strong> Stolen or mis-sent cryptocurrency retrieval and exchange negotiations.</li>
-        <li><strong>Cross-Border Issues:</strong> International consumer disputes, currency conversion errors, and jurisdictional gaps.</li>
-      </ul>
-    </div>
-    
-        <!-- Tiles Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch mb-8">
-          <!-- Data Breach -->
-          <a href="cyber-claims.html" class="claim-box flex flex-col h-full" data-type="assessment">
-            <img src="/images/new-cyber.png" alt="Data Breach" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Data Breach</h3>
-            <p class="service-desc mb-4">
-              Claim compensation for personal data breaches and identity theft. We lodge ICO complaints, notify affected parties, and negotiate settlements.
-            </p>
-            <button class="claim-blue-btn mt-auto">Free Assessment</button>
-          </a>
-          <!-- Crypto Scam Recovery -->
-          <a href="crypto-scams.html" class="claim-box flex flex-col h-full" data-type="assessment">
-            <img src="/images/new-crypto.png" alt="Crypto Scam Recovery" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Crypto Scam Recovery</h3>
-            <p class="service-desc mb-4">
-              Claim assistance to recover stolen or mis-sent cryptocurrency. We coordinate with exchanges, track funds on-chain, and liaise with legal teams.
-            </p>
-            <button class="claim-blue-btn mt-auto">Free Assessment</button>
-          </a>
-          <!-- Cross-Border Issues -->
-          <a href="crossborder.html" class="claim-box flex flex-col h-full" data-type="assessment">
-            <img src="/images/new-crossborder.png" alt="Cross-Border Issues" class="mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">Cross-Border Issues</h3>
-            <p class="service-desc mb-4">
-              Claim resolution for disputes spanning multiple jurisdictions, including currency errors, VAT miscalculations, and legal gaps.
-            </p>
-            <button class="claim-blue-btn mt-auto">Free Assessment</button>
-          </a>
-        </div>
-    
-        <!-- Testimonials -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“They secured my GDPR payout in under a month!”</p>
-              <p class="font-semibold text-green-600">— Aisha T.</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“Crypto recovery team got back 95% of my funds amazing.”</p>
-              <p class="font-semibold text-green-600">— Michael B.</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“Cross-border claim processed flawlessly across three countries.”</p>
-              <p class="font-semibold text-green-600">— Sophie L.</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="w-16 h-16 mb-2 object-contain opacity-75"/>
-              <p class="italic mb-1">“Digital risk support is top notch highly recommend!”</p>
-              <p class="font-semibold text-green-600">— Daniel K.</p>
-            </div>
+    <!-- FINANCE -->
+    <section id="finance-banner" class="relative h-[200px] mb-10">
+      <img src="/images/finance-banner.webp" srcset="/images/finance-banner.webp 1600w, /images/finance-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Finance and pensions support" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="finance.title">Finance & Pensions</h2>
+        <p class="text-sm md:text-base opacity-95" data-i18n="finance.subtitle">Hidden fees, pension issues and more.</p>
+      </div>
+    </section>
+
+    <section id="finance" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="finance.sectionTitle">💰 Finance & Pensions</h3>
+            <p class="text-gray-700" data-i18n="finance.sectionSubtitle">DIY calculators and templates, or ask us to review.</p>
           </div>
-        </section>
-  
-  
-<!-- Meet the Team -->
-<section id="meet-the-team" class="py-12 bg-gray-50">
-    <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-3xl font-bold mb-8 text-center">Meet the Quaerens Team</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-        
-        <!-- Deborah Shane -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/deborah-shane.jpg" alt="Deborah Shane"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Deborah Shane</h3>
-          <p class="text-indigo-600 font-medium">Admin Coordinator</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Keeps our operations running smoothly—managing schedules, coordinating meetings, and ensuring every team member has what they need to succeed.
-          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
+            <a href="/car-finance.html" class="claim-box"><img src="/images/new-carfinance.webp" srcset="/images/new-carfinance.webp 280w, /images/new-carfinance-sm.webp 140w" sizes="140px" alt="Car finance help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.carTitle">Car Finance</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.carDesc">Check fees and interest, step by step.</p><span class="claim-free-btn" data-i18n="finance.carBtn">DIY FREE</span></a>
+            <a href="/pension-issues.html" class="claim-box"><img src="/images/new-pensionissues.webp" srcset="/images/new-pensionissues.webp 280w, /images/new-pensionissues-sm.webp 140w" sizes="140px" alt="Pension issue guidance" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.pensionTitle">Pension Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.pensionDesc">Spot under-credited contributions.</p><span class="claim-free-btn" data-i18n="finance.pensionBtn">DIY FREE</span></a>
+            <a href="/misssold-bankaccounts.html" class="claim-box"><img src="/images/new-missoldbank.webp" srcset="/images/new-missoldbank.webp 280w, /images/new-missoldbank-sm.webp 140w" sizes="140px" alt="Bank fees help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.bankTitle">Bank Accounts</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.bankDesc">Unfair charges and hidden fees.</p><span class="claim-free-btn" data-i18n="finance.bankBtn">DIY FREE</span></a>
+            <a href="/creditcard-fees.html" class="claim-box"><img src="/images/new-creditcard.webp" srcset="/images/new-creditcard.webp 280w, /images/new-creditcard-sm.webp 140w" sizes="140px" alt="Credit card fee guide" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="finance.creditTitle">Credit Card Fees</h4><p class="text-sm text-gray-600 mb-3" data-i18n="finance.creditDesc">Identify penalty rates and APR jumps.</p><span class="claim-free-btn" data-i18n="finance.creditBtn">DIY FREE</span></a>
+          </div>
         </div>
-  
-        <!-- Martijn Pronk -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/martijn-pronk.jpg" alt="Martijn Pronk"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Martijn Pronk</h3>
-          <p class="text-indigo-600 font-medium">Case Processor</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Reviews incoming applications and documentation with precision, ensuring every case moves swiftly and accurately through our system.
-          </p>
-        </div>
-  
-        <!-- Nikhil Gupta -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/nikhil-gupta.jpg" alt="Nikhil Gupta"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Nikhil Gupta</h3>
-          <p class="text-indigo-600 font-medium">Consultant Liaison</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Connects clients with our expert consultants—legal, finance, or technical—to ensure each case gets the specialist attention it deserves.
-          </p>
-        </div>
-  
-        <!-- Alexander Hughes -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/alexander-hughes.jpg" alt="Alexander Hughes"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Alexander Hughes</h3>
-          <p class="text-indigo-600 font-medium">Social-Media Strategist</p>
-          <p class="text-gray-600 text-sm mt-2">
-            With 8+ years steering digital campaigns for startups and Fortune-500s, Alexander blends data-driven insights with creative flair. Passionate about weekend cycling.
-          </p>
-        </div>
-  
-        <!-- Priya Patel -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/priya-patel.jpg" alt="Priya Patel"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Priya Patel</h3>
-          <p class="text-indigo-600 font-medium">Prompt Engineer & Content Lead</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Crafts the AI prompts that power every post, image, and video. A former SEO copywriter and avid baker, she turns complex legal jargon into snack-sized social content.
-          </p>
-        </div>
-  
-        <!-- Javier Dominguez -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/javier-dominguez.jpg" alt="Javier Dominguez"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Javier Dominguez</h3>
-          <p class="text-indigo-600 font-medium">Designer & Video Synthesist</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Transforms AI-generated assets into polished visuals and short videos. When not color-grading in Premiere Pro, you’ll find him at the skate park.
-          </p>
-        </div>
-  
-        <!-- Sandra Lee -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/sandra-lee.jpg" alt="Sandra Lee"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Sandra Lee</h3>
-          <p class="text-indigo-600 font-medium">Community Bot & Engagement Dev</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Builds and refines our AI chatbots for DMs and comments. A Python enthusiast, she spends weekends rescuing stray code snippets—and stray cats.
-          </p>
-        </div>
-  
-        <!-- Marcus Brown -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/marcus-brown.jpg" alt="Marcus Brown"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Marcus Brown</h3>
-          <p class="text-indigo-600 font-medium">Media Manager</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Uses machine learning to optimise ad budgets and copy across Meta and Google. When not crunching ROAS numbers, he’s on the golf course.
-          </p>
-        </div>
-  
-        <!-- Elena Rossi -->
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center text-center">
-          <img src="/images/elena-rossi.jpg" alt="Elena Rossi"
-               class="w-32 h-32 rounded-full object-cover shadow-md mb-4"/>
-          <h3 class="text-xl font-semibold">Elena Rossi</h3>
-          <p class="text-indigo-600 font-medium">Data & AI Analytics Lead</p>
-          <p class="text-gray-600 text-sm mt-2">
-            Pipelines social and ad data into dashboards and anomaly-detection models. A data-science hobbyist and amateur astronomer.
-          </p>
-        </div>
-  
       </div>
-    </div>
-  </section>
-  
-  <footer class="bg-white py-8">
-    <div class="text-center text-gray-600 text-sm">
-      © 2025 Quaerens Ltd. All rights reserved.
-    </div>
-    <div class="mt-4 text-center space-x-4">
-      <a href="/privacy.html" class="hover:text-blue-600">Privacy Policy</a>
-      <a href="/terms.html" class="hover:text-blue-600">Terms of Use</a>
-      <a href="/gdpr.html" class="hover:text-blue-600">GDPR</a>
-      <a href="/contact.html" class="hover:text-blue-600">Contact Us</a>
-      <a href="/services.html" class="hover:text-blue-600">Services</a>
-    </div>
-  </footer>  
+    </section>
 
-  <!-- Google Translate Integration -->
-  <script>
-    function googleTranslateElementInit() {
-      new google.translate.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'en,es,fr,de,nl,it,sv,el',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-      }, 'google_translate_element');
-    }
-  </script>
-  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <!-- PROPERTY -->
+    <section id="property-banner" class="relative h-[200px] mb-10">
+      <img src="/images/property-banner.webp" srcset="/images/property-banner.webp 1600w, /images/property-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Property and mortgages" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="property.title">Property & Mortgages</h2>
+        <p class="text-sm md:text-base opacity-95" data-i18n="property.subtitle">Spanish mortgages, property issues and timeshare.</p>
+      </div>
+    </section>
 
-  <!-- Tawk.to Live Chat -->
-  <script>
-    var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
-    (function() {
-      var s1 = document.createElement("script"),
-          s0 = document.getElementsByTagName("script")[0];
-      s1.async = true;
-      s1.src = 'https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';
-      s1.charset = 'UTF-8';
-      s1.setAttribute('crossorigin', '*');
-      s0.parentNode.insertBefore(s1, s0);
-    })();
-  </script>
+    <section id="property" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="property.sectionTitle">🏠 Property & Mortgages</h3>
+            <p class="text-gray-700" data-i18n="property.sectionSubtitle">Local knowledge and simple steps.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
+            <a href="/spanish-mortgages.html" class="claim-box"><img src="/images/new-amortgages.webp" srcset="/images/new-amortgages.webp 280w, /images/new-amortgages-sm.webp 140w" sizes="140px" alt="Spanish mortgage help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.mortgageTitle">Spanish Mortgages</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.mortgageDesc">Check overpaid interest and charges.</p><span class="claim-blue-btn" data-i18n="property.mortgageBtn">Free assessment</span></a>
+            <a href="/spanish-properties.html" class="claim-box"><img src="/images/new-spanishpropety.webp" srcset="/images/new-spanishpropety.webp 280w, /images/new-spanishpropety-sm.webp 140w" sizes="140px" alt="Spanish property help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.propertyTitle">Spanish Property</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.propertyDesc">Deeds, developer and lease issues.</p><span class="claim-blue-btn" data-i18n="property.propertyBtn">Free assessment</span></a>
+            <a href="/timeshare.html" class="claim-box"><img src="/images/new-timesharerefund.webp" srcset="/images/new-timesharerefund.webp 280w, /images/new-timesharerefund-sm.webp 140w" sizes="140px" alt="Timeshare refund" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.timeshareTitle">Timeshare Refund</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.timeshareDesc">Deposits and mis-sold promises.</p><span class="claim-blue-btn" data-i18n="property.timeshareBtn">Free assessment</span></a>
+            <a href="https://www.exitmytimeshares.com" target="_blank" rel="noopener" class="claim-box"><img src="/images/new-timeshareexitl.webp" srcset="/images/new-timeshareexitl.webp 280w, /images/new-timeshareexitl-sm.webp 140w" sizes="140px" alt="Timeshare exit DIY" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="property.exitTitle">Timeshare Exit</h4><p class="text-sm text-gray-600 mb-3" data-i18n="property.exitDesc">DIY exit kit with support.</p><span class="claim-free-btn" data-i18n="property.exitBtn">DIY admin fee</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <!-- Language Dropdown Logic -->
-  <script>
-    function setLanguage(langPair) {
-      if (!langPair) return;
-      const lang = langPair.split('|')[1];
-      const cookieValue = '/en/' + lang;
-      document.cookie = `googtrans=${cookieValue}; path=/; domain=${location.hostname}`;
-      let attempts = 0;
-      (function trySelect() {
-        const select = document.querySelector('.goog-te-combo');
-        if (select) {
-          select.value = lang;
-          select.dispatchEvent(new Event('change'));
-        } else if (attempts < 10) {
-          attempts++;
-          setTimeout(trySelect, 300);
-        } else {
-          location.reload();
-        }
-      })();
-    }
-  </script>
+    <!-- CONSUMER -->
+    <section id="consumer-banner" class="relative h-[200px] mb-10">
+      <img src="/images/misc-banner.webp" srcset="/images/misc-banner.webp 1600w, /images/misc-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Everyday consumer issues" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="consumer.title">Everyday Issues</h2>
+        <p class="text-sm md:text-base opacity-95" data-i18n="consumer.subtitle">Gym cancellations, parking, energy and more.</p>
+      </div>
+    </section>
 
-  <!-- Auto-detect Language on First Visit -->
-  <script>
-    if (!document.cookie.includes('googtrans')) {
-      fetch('https://ipapi.co/json/')
-        .then(r => r.json())
-        .then(data => {
-          const map = { FR:'fr', ES:'es', DE:'de', IT:'it', NL:'nl', SE:'sv', GR:'el' };
-          const lang = map[data.country_code] || 'en';
-          const cv = `/en/${lang}`;
-          document.cookie = `googtrans=${cv}; path=/; domain=${location.hostname}`;
-          location.reload();
-        })
-        .catch(console.error);
-    }
-  </script>
+    <section id="consumer" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="consumer.sectionTitle">🛍️ Everyday Issues</h3>
+            <p class="text-gray-700" data-i18n="consumer.sectionSubtitle">Quick wins with simple steps.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
+            <a href="/gym-cancellation.html" class="claim-box"><img src="/images/new-gymcancel.webp" srcset="/images/new-gymcancel.webp 280w, /images/new-gymcancel-sm.webp 140w" sizes="140px" alt="Gym cancellation" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.gymTitle">Gym Cancellation</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.gymDesc">End or refund unfair renewals.</p><span class="claim-free-btn" data-i18n="consumer.gymBtn">DIY FREE</span></a>
+            <a href="/parking-appeal.html" class="claim-box"><img src="/images/new-parkingl.webp" srcset="/images/new-parkingl.webp 280w, /images/new-parkingl-sm.webp 140w" sizes="140px" alt="Parking appeal" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.parkingTitle">Parking Appeal</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.parkingDesc">Template letters and photo tips.</p><span class="claim-free-btn" data-i18n="consumer.parkingBtn">DIY FREE</span></a>
+            <a href="/energy-switch.html" class="claim-box"><img src="/images/new-energyswitch.webp" srcset="/images/new-energyswitch.webp 280w, /images/new-energyswitch-sm.webp 140w" sizes="140px" alt="Energy switch and refunds" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.energyTitle">Energy Switch</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.energyDesc">Compare, switch and claim overpayments.</p><span class="claim-free-btn" data-i18n="consumer.energyBtn">DIY FREE</span></a>
+            <a href="/housing-disrepair.html" class="claim-box"><img src="/images/new-housingdisrepair.webp" srcset="/images/new-housingdisrepair.webp 280w, /images/new-housingdisrepair-sm.webp 140w" sizes="140px" alt="Housing disrepair" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.housingTitle">Housing Disrepair</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.housingDesc">Repairs and compensation for damp/leaks.</p><span class="claim-blue-btn" data-i18n="consumer.housingBtn">Free assessment</span></a>
+            <a href="/medical-negligence.html" class="claim-box"><img src="/images/new-medical.webp" srcset="/images/new-medical.webp 280w, /images/new-medical-sm.webp 140w" sizes="140px" alt="Medical negligence" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.medicalTitle">Medical Negligence</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.medicalDesc">Independent reviews and guidance.</p><span class="claim-blue-btn" data-i18n="consumer.medicalBtn">Free assessment</span></a>
+            <a href="/return-issues.html" class="claim-box"><img src="/images/new-refundissues.webp" srcset="/images/new-refundissues.webp 280w, /images/new-refundissues-sm.webp 140w" sizes="140px" alt="Retailer refund issues" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.refundTitle">Refund Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.refundDesc">Escalate returns and repairs.</p><span class="claim-blue-btn" data-i18n="consumer.refundBtn">Free assessment</span></a>
+            <a href="/other.html" class="claim-box"><img src="/images/new-otherclaims.webp" srcset="/images/new-otherclaims.webp 280w, /images/new-otherclaims-sm.webp 140w" sizes="140px" alt="Other issues" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="consumer.otherTitle">Other Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="consumer.otherDesc">Subscriptions, warranties and more.</p><span class="claim-blue-btn" data-i18n="consumer.otherBtn">Free assessment</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <!-- Hero Typing Animation -->
-  <script>
-    const titles = [
-      "Check if you're eligible",
-      "Recover what you're owed",
-      "Your rights. Your refund.",
-      "No-win, no-fee support service",
-      "Fast, expert assistance",
-      "We support. You benefit.",
-      "Trusted by thousands across Europe",
-      "Start your free eligibility check now",
-      "From flights to finance — we’ve got you"
-    ];
-    const subtitles = [
-      "Find out if you're entitled to a refund.",
-      "We make the process simple and stress-free.",
-      "Millions of consumers are eligible — are you?",
-      "Free eligibility check in 2 minutes.",
-      "Don’t miss out on what may be rightfully yours.",
-      "Thousands supported every month — you're next.",
-      "Legal matters made effortless.",
-      "No jargon. No hassle. Just results.",
-      "Instant results. Zero cost to assess."
-    ];
-    let idx = 0;
-    function typeText(el, txt, speed=50, cb) {
-      el.textContent = '';
-      let i = 0;
-      const iv = setInterval(() => {
-        el.textContent += txt[i++];
-        if (i > txt.length) {
-          clearInterval(iv);
-          cb && cb();
-        }
-      }, speed);
-    }
-    function cycle() {
-      const t = document.getElementById('hero-title'),
-            s = document.getElementById('hero-subtitle');
-      typeText(t, titles[idx], 50, () => {
-        typeText(s, subtitles[idx], 50, () => {
-          setTimeout(() => {
-            idx = (idx + 1) % titles.length;
-            cycle();
-          }, 2000);
-        });
-      });
-    }
-    window.addEventListener('DOMContentLoaded', cycle);
-  </script>
+    <!-- DIGITAL -->
+    <section id="digital-banner" class="relative h-[200px] mb-10">
+      <img src="/images/data-banner.webp" srcset="/images/data-banner.webp 1600w, /images/data-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Digital risks" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="digital.title">Digital Risks</h2>
+        <p class="text-sm md:text-base opacity-95" data-i18n="digital.subtitle">Data breaches, crypto issues and cross-border disputes.</p>
+      </div>
+    </section>
 
-  <!-- AOS Init -->
-  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-  <script>
-    AOS.init({ duration: 800, once: true, offset: 100 });
-  </script>
+    <section id="digital" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2" data-i18n="digital.sectionTitle">💻 Digital Risks</h3>
+            <p class="text-gray-700" data-i18n="digital.sectionSubtitle">DIY steps plus help if you need it.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 place-items-center">
+            <a href="/cyber-claims.html" class="claim-box"><img src="/images/new-cyber.webp" srcset="/images/new-cyber.webp 280w, /images/new-cyber-sm.webp 140w" sizes="140px" alt="Data breach help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="digital.cyberTitle">Data Breach</h4><p class="text-sm text-gray-600 mb-3" data-i18n="digital.cyberDesc">ICO complaints and letters.</p><span class="claim-blue-btn" data-i18n="digital.cyberBtn">Free assessment</span></a>
+            <a href="/crypto-scams.html" class="claim-box"><img src="/images/new-crypto.webp" srcset="/images/new-crypto.webp 280w, /images/new-crypto-sm.webp 140w" sizes="140px" alt="Crypto scam recovery" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="digital.cryptoTitle">Crypto Recovery</h4><p class="text-sm text-gray-600 mb-3" data-i18n="digital.cryptoDesc">Exchange liaison and tracing.</p><span class="claim-blue-btn" data-i18n="digital.cryptoBtn">Free assessment</span></a>
+            <a href="/crossborder.html" class="claim-box"><img src="/images/new-crossborder.webp" srcset="/images/new-crossborder.webp 280w, /images/new-crossborder-sm.webp 140w" sizes="140px" alt="Cross-border help" loading="lazy" width="140" height="140" /><h4 class="text-lg font-semibold" data-i18n="digital.crossborderTitle">Cross-Border Issues</h4><p class="text-sm text-gray-600 mb-3" data-i18n="digital.crossborderDesc">Currency and VAT disputes.</p><span class="claim-blue-btn" data-i18n="digital.crossborderBtn">Free assessment</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <!-- Mobile CTA -->
-  <div class="fixed bottom-0 inset-x-0 md:hidden bg-blue-600 p-4 text-center">
-    <a href="submit-form.html" class="text-white font-bold">Free Claim Check →</a>
+    <!-- TEAM -->
+    <section id="team-banner" class="relative h-[200px] mb-10">
+      <img src="/images/team-banner.webp" srcset="/images/team-banner.webp 1600w, /images/team-banner-sm.webp 800w" sizes="(max-width: 768px) 800px, 1600px" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Our team at work" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold" data-i18n="team.title">Meet the Quaerens Team</h2>
+        <p class="text-sm md:text-base opacity-95" data-i18n="team.subtitle">Real people, quick replies.</p>
+      </div>
+    </section>
+
+    <section id="meet-the-team" class="py-12 bg-gray-50">
+      <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-3xl font-extrabold mb-8 text-center" data-i18n="team.sectionTitle">Introductions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <!-- Deborah Shane -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/deborah-shane.webp" srcset="/images/deborah-shane.webp 256w, /images/deborah-shane-sm.webp 128w" sizes="128px" alt="Deborah Shane" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.deborahName">Deborah Shane</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.deborahRole">Admin Coordinator</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.deborahDesc">Keeps cases on schedule; available for questions.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Martijn Pronk -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/martijn-pronk.webp" srcset="/images/martijn-pronk.webp 256w, /images/martijn-pronk-sm.webp 128w" sizes="128px" alt="Martijn Pronk" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.martijnName">Martijn Pronk</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.martijnRole">Case Processor</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.martijnDesc">Ensures submissions are error-free.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Nikhil Gupta -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/nikhil-gupta.webp" srcset="/images/nikhil-gupta.webp 256w, /images/nikhil-gupta-sm.webp 128w" sizes="128px" alt="Nikhil Gupta" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.nikhilName">Nikhil Gupta</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.nikhilRole">Consultant Liaison</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.nikhilDesc">Connects clients with specialists.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Alexander Hughes -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/alexander-hughes.webp" srcset="/images/alexander-hughes.webp 256w, /images/alexander-hughes-sm.webp 128w" sizes="128px" alt="Alexander Hughes" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.alexanderName">Alexander Hughes</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.alexanderRole">Client Outreach Lead</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.alexanderDesc">Drives engagement; weekend cyclist.</p>
+            <div class="mt-3 text-sm">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+            </div>
+          </article>
+          <!-- Priya Patel -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/priya-patel.webp" srcset="/images/priya-patel.webp 256w, /images/priya-patel-sm.webp 128w" sizes="128px" alt="Priya Patel" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.priyaName">Priya Patel</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.priyaRole">Automation & Content Lead</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.priyaDesc">Builds AI workflows; ex-SEO.</p>
+            <div class="mt-3 text-sm">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+            </div>
+          </article>
+          <!-- Javier Dominguez -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/javier-dominguez.webp" srcset="/images/javier-dominguez.webp 256w, /images/javier-dominguez-sm.webp 128w" sizes="128px" alt="Javier Dominguez" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.javierName">Javier Dominguez</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.javierRole">Designer & Video Synthesist</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.javierDesc">Creates visuals and short videos.</p>
+            <div class="mt-3 text-sm">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+            </div>
+          </article>
+          <!-- Sandra Lee -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/sandra-lee.webp" srcset="/images/sandra-lee.webp 256w, /images/sandra-lee-sm.webp 128w" sizes="128px" alt="Sandra Lee" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.sandraName">Sandra Lee</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.sandraRole">Chatbot & Engagement Dev</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.sandraDesc">Builds our real-time chat tools.</p>
+            <div class="mt-3 text-sm">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+            </div>
+          </article>
+          <!-- Marcus Brown -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/marcus-brown.webp" srcset="/images/marcus-brown.webp 256w, /images/marcus-brown-sm.webp 128w" sizes="128px" alt="Marcus Brown" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.marcusName">Marcus Brown</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.marcusRole">Media Manager</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.marcusDesc">Optimises ad spend & conversion.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Elena Rossi -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/elena-rossi.webp" srcset="/images/elena-rossi.webp 256w, /images/elena-rossi-sm.webp 128w" sizes="128px" alt="Elena Rossi" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold" data-i18n="team.elenaName">Elena Rossi</h3>
+            <p class="text-indigo-600 text-sm font-medium" data-i18n="team.elenaRole">Analytics & Insights Lead</p>
+            <p class="text-gray-600 text-sm mt-2" data-i18n="team.elenaDesc">Builds dashboards & insights.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline" data-i18n="team.email">Email</a>
+              <a href="https://wa.me/442080500725" target="_blank" class="underline" rel="noopener" data-i18n="team.whatsapp">WhatsApp</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Sticky mobile CTA -->
+  <div class="fixed bottom-0 inset-x-0 md:hidden bg-blue-600 p-4 text-center" role="region" aria-label="Start your free check">
+    <button type="button" @click.prevent="qcOpen=true" class="text-white font-bold" aria-haspopup="dialog" aria-controls="quickcheck-menu" data-i18n="cta.mobile">Free claim check ▾</button>
   </div>
 
-  <!-- Search & Filter Logic -->
+  <!-- Footer -->
+  <footer class="bg-white border-t">
+    <div class="mx-auto max-w-7xl px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-600">
+      <div>
+        <img src="/images/quaerens-logo.png" alt="Quaerens" width="140" height="42" loading="lazy" class="mb-3" />
+        <p data-i18n="footer.about">Quaerens is an approachable, assistance service. We work with you to prepare the right documents and guide your next steps. We’re not a law firm — instead, we connect you with trusted external legal partners when specialist advice is needed.</p>
+      </div>
+      <div>
+        <p class="font-semibold text-gray-900" data-i18n="footer.company">Company</p>
+        <ul class="mt-2 space-y-1">
+          <li><a href="/privacy.html" class="hover:text-blue-700" data-i18n="footer.privacy">Privacy Policy</a></li>
+          <li><a href="/terms.html" class="hover:text-blue-700" data-i18n="footer.terms">Terms of Use</a></li>
+          <li><a href="/gdpr.html" class="hover:text-blue-700" data-i18n="footer.gdpr">GDPR</a></li>
+          <li><a href="/contact.html" class="hover:text-blue-700" data-i18n="footer.contact">Contact</a></li>
+          <li><a href="/services.html" class="hover:text-blue-700" data-i18n="footer.services">Services</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-gray-900" data-i18n="footer.getInTouch">Get in touch</p>
+        <ul class="mt-2 space-y-1">
+          <li data-i18n="footer.emailLabel">Email: <a href="mailto:info@quaerens.co.uk" class="hover:text-blue-700">info@quaerens.co.uk</a></li>
+          <li data-i18n="footer.whatsappLabel">WhatsApp: <a href="https://wa.me/442080500725" target="_blank" rel="noopener" class="hover:text-blue-700">+44 (0)20 8050 0725</a></li>
+          <li data-i18n="footer.companyNo">Company No.: 16176152 · Registered in England & Wales</li>
+          <li data-i18n="footer.address">Address: 71–75 Shelton Street, Covent Garden, London WC2H 9JQ</li>
+        </ul>
+      </div>
+    </div>
+    <div class="text-center text-xs text-gray-500 pb-8" data-i18n="footer.copyright">© 2025 Quaerens Ltd. All rights reserved.</div>
+  </footer>
+
+  <!-- Scroll to top -->
+  <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 scroll-top-btn" aria-label="Scroll to top">
+    ↑
+  </button>
+
+  <!-- Start Free Check: all individual claims -->
+  <div x-show="qcOpen" x-transition.opacity class="fixed inset-0 z-[100]" aria-labelledby="quickcheck-title" role="dialog" aria-modal="true" id="quickcheck-menu">
+    <div @click="qcOpen=false" class="absolute inset-0 bg-black/30" aria-hidden="true"></div>
+    <div class="relative mx-auto mt-16 md:mt-24 max-w-5xl bg-white rounded-2xl shadow-xl border overflow-hidden" x-trap.noscroll="qcOpen">
+      <div class="flex items-center justify-between px-4 py-3 border-b">
+        <h2 id="quickcheck-title" class="text-lg font-semibold" data-i18n="modal.title">Start free check</h2>
+        <button class="px-3 py-1 rounded hover:bg-gray-100" @click="qcOpen=false" aria-label="Close">✕</button>
+      </div>
+      <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+        <!-- Travel -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.travel">Travel & Holiday</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeflightclaim.html" aria-label="Check Flight Delay compensation tool" data-i18n="modal.flight">✈️ Flight Delay</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeholidaycompensation.html" aria-label="Check Holiday Refund tool" data-i18n="modal.holiday">🏖️ Holiday Refund</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/train-delay.html" aria-label="Check Train Delay tool" data-i18n="modal.train">🚆 Train Delay</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/lost-luggage.html" aria-label="Check Lost Luggage tool" data-i18n="modal.luggage">🧳 Lost Luggage</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/airbnb-refunds.html" aria-label="Check Airbnb Refunds tool" data-i18n="modal.airbnb">🏠 Airbnb Refunds</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/holidaypark.html" aria-label="Check Holiday Park issues tool" data-i18n="modal.park">🚐 Holiday Park</a></li>
+          </ul>
+        </div>
+        <!-- Finance -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.finance">Finance & Pensions</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/car-finance.html" aria-label="Check Car Finance tool" data-i18n="modal.car">🚗 Car Finance</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/pension-issues.html" aria-label="Check Pension Issues tool" data-i18n="modal.pension">👴 Pension Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/misssold-bankaccounts.html" aria-label="Check Bank Accounts tool" data-i18n="modal.bank">🏦 Bank Accounts</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/creditcard-fees.html" aria-label="Check Credit Card Fees tool" data-i18n="modal.credit">💳 Credit Card Fees</a></li>
+          </ul>
+        </div>
+        <!-- Property -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.property">Property & Mortgages</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-mortgages.html" aria-label="Check Spanish Mortgages tool" data-i18n="modal.mortgage">💶 Spanish Mortgages</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-properties.html" aria-label="Check Spanish Property tool" data-i18n="modal.property">🏘️ Spanish Property</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/timeshare.html" aria-label="Check Timeshare Refund tool" data-i18n="modal.timeshare">🔄 Timeshare Refund</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="https://www.exitmytimeshares.com" target="_blank" rel="noopener" aria-label="Check Timeshare Exit DIY tool" data-i18n="modal.exit">❌ Timeshare Exit (DIY)</a></li>
+          </ul>
+        </div>
+        <!-- Consumer -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.consumer">Everyday Issues</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/gym-cancellation.html" aria-label="Check Gym Cancellation tool" data-i18n="modal.gym">🏋️‍♂️ Gym Cancellation</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/parking-appeal.html" aria-label="Check Parking Appeal tool" data-i18n="modal.parking">🚗 Parking Appeal</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/energy-switch.html" aria-label="Check Energy Switch tool" data-i18n="modal.energy">🔌 Energy Switch</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/housing-disrepair.html" aria-label="Check Housing Disrepair tool" data-i18n="modal.housing">🏠 Housing Disrepair</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/medical-negligence.html" aria-label="Check Medical Negligence tool" data-i18n="modal.medical">🩺 Medical Negligence</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/return-issues.html" aria-label="Check Refund Issues tool" data-i18n="modal.refund">🔄 Refund Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/other.html" aria-label="Check Other Issues tool" data-i18n="modal.other">❓ Other Issues</a></li>
+          </ul>
+        </div>
+        <!-- Digital -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2" data-i18n="modal.digital">Digital Risks</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/cyber-claims.html" aria-label="Check Data Breach tool" data-i18n="modal.cyber">🔒 Data Breach</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crypto-scams.html" aria-label="Check Crypto Recovery tool" data-i18n="modal.crypto">💰 Crypto Recovery</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crossborder.html" aria-label="Check Cross-Border Issues tool" data-i18n="modal.crossborder">🌐 Cross-Border Issues</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- i18next initialization -->
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const searchInput = document.getElementById("claimSearch"),
-            filterButtons = document.querySelectorAll(".filter-btn"),
-            claimBoxes = document.querySelectorAll(".claim-box");
-      let currentFilter = "all",
-          currentSearch = "";
-
-      function updateClaims() {
-        claimBoxes.forEach(box => {
-          const isDIY = !!box.querySelector(".claim-free-btn"),
-                isAssess = !!box.querySelector(".claim-blue-btn"),
-                title = box.querySelector("h3").textContent.toLowerCase(),
-                passFilter = currentFilter === "all"
-                           || (currentFilter === "diy" && isDIY)
-                           || (currentFilter === "assessment" && isAssess),
-                passSearch = title.includes(currentSearch);
-          box.style.display = passFilter && passSearch ? "flex" : "none";
-        });
+    i18next.init({
+      lng: localStorage.getItem('i18nextLng') || 'en',
+      resources: {
+        en: {
+          translation: {
+            trust: {
+              friendly: "Friendly, expert assistants.",
+              noJargon: "Clear language, no jargon.",
+              diy: "DIY or done-with-you.",
+              chooseSupport: "You choose the level of support.",
+              pricing: "Transparent pricing.",
+              freeTools: "Many tools free; some success-based."
+            },
+            howItWorks: {
+              title: "Two simple ways to start",
+              subtitle: "Handle it yourself with free tools, or ask us to guide you. No pressure either way."
+            },
+            diy: {
+              title: "Do It Yourself – DIY",
+              description: "Take control and file on your own timeline, with everything you need at your fingertips:",
+              feature1: "Customisable request templates ready to download",
+              feature2: "Interactive calculators to estimate your entitlement",
+              feature3: "Step-by-step guides on submission and documentation",
+              feature4: "Comprehensive FAQs addressing common roadblocks",
+              feature5: "Access to our library of sample cases and best-practice tips",
+              noSignup: "No signup, no fees — just straightforward, self-serve resources to help you move forward.",
+              explore: "Explore free tools"
+            },
+            guided: {
+              title: "Guided Expert Help",
+              description: "Prefer expert support? Share your details and enjoy:",
+              feature1: "Free, no-obligation review by our specialist team and external legal partners",
+              feature2: "Dedicated case manager handling all paperwork",
+              feature3: "Regular updates and direct communication",
+              feature4: "Personalised guidance tailored to your situation",
+              feature5: "No upfront cost in many cases — you pay only on success",
+              submit: "Submit your info now and let us do the heavy lifting — risk free.",
+              start: "Start free check ▾"
+            },
+            nav: {
+              travel: "Travel & Holiday",
+              finance: "Finance & Pensions",
+              property: "Property & Mortgages",
+              consumer: "Everyday Issues",
+              digital: "Digital Risks"
+            },
+            travel: {
+              title: "Travel & Holiday",
+              subtitle: "Flight delays, refunds, luggage and more.",
+              sectionTitle: "✈️ Travel & Holiday",
+              sectionSubtitle: "Use a free DIY tool or ask for a quick review.",
+              flightTitle: "Flight Delay",
+              flightDesc: "Work out up to €600 and create your letter.",
+              flightBtn: "DIY FREE",
+              holidayTitle: "Holiday Refund",
+              holidayDesc: "For cancellations or major changes.",
+              holidayBtn: "DIY FREE",
+              trainTitle: "Train Delay",
+              trainDesc: "Delays over 60 mins, missed connections.",
+              trainBtn: "DIY FREE",
+              luggageTitle: "Lost Luggage",
+              luggageDesc: "Steps and forms for lost or damaged bags.",
+              luggageBtn: "DIY FREE",
+              airbnbTitle: "Airbnb Refunds",
+              airbnbDesc: "We can help with cancellations or issues.",
+              airbnbBtn: "Free assessment",
+              parkTitle: "Holiday Park",
+              parkDesc: "Booking errors, safety issues, fees.",
+              parkBtn: "Free assessment"
+            },
+            finance: {
+              title: "Finance & Pensions",
+              subtitle: "Hidden fees, pension issues and more.",
+              sectionTitle: "💰 Finance & Pensions",
+              sectionSubtitle: "DIY calculators and templates, or ask us to review.",
+              carTitle: "Car Finance",
+              carDesc: "Check fees and interest, step by step.",
+              carBtn: "DIY FREE",
+              pensionTitle: "Pension Issues",
+              pensionDesc: "Spot under-credited contributions.",
+              pensionBtn: "DIY FREE",
+              bankTitle: "Bank Accounts",
+              bankDesc: "Unfair charges and hidden fees.",
+              bankBtn: "DIY FREE",
+              creditTitle: "Credit Card Fees",
+              creditDesc: "Identify penalty rates and APR jumps.",
+              creditBtn: "DIY FREE"
+            },
+            property: {
+              title: "Property & Mortgages",
+              subtitle: "Spanish mortgages, property issues and timeshare.",
+              sectionTitle: "🏠 Property & Mortgages",
+              sectionSubtitle: "Local knowledge and simple steps.",
+              mortgageTitle: "Spanish Mortgages",
+              mortgageDesc: "Check overpaid interest and charges.",
+              mortgageBtn: "Free assessment",
+              propertyTitle: "Spanish Property",
+              propertyDesc: "Deeds, developer and lease issues.",
+              propertyBtn: "Free assessment",
+              timeshareTitle: "Timeshare Refund",
+              timeshareDesc: "Deposits and mis-sold promises.",
+              timeshareBtn: "Free assessment",
+              exitTitle: "Timeshare Exit",
+              exitDesc: "DIY exit kit with support.",
+              exitBtn: "DIY admin fee"
+            },
+            consumer: {
+              title: "Everyday Issues",
+              subtitle: "Gym cancellations, parking, energy and more.",
+              sectionTitle: "🛍️ Everyday Issues",
+              sectionSubtitle: "Quick wins with simple steps.",
+              gymTitle: "Gym Cancellation",
+              gymDesc: "End or refund unfair renewals.",
+              gymBtn: "DIY FREE",
+              parkingTitle: "Parking Appeal",
+              parkingDesc: "Template letters and photo tips.",
+              parkingBtn: "DIY FREE",
+              energyTitle: "Energy Switch",
+              energyDesc: "Compare, switch and claim overpayments.",
+              energyBtn: "DIY FREE",
+              housingTitle: "Housing Disrepair",
+              housingDesc: "Repairs and compensation for damp/leaks.",
+              housingBtn: "Free assessment",
+              medicalTitle: "Medical Negligence",
+              medicalDesc: "Independent reviews and guidance.",
+              medicalBtn: "Free assessment",
+              refundTitle: "Refund Issues",
+              refundDesc: "Escalate returns and repairs.",
+              refundBtn: "Free assessment",
+              otherTitle: "Other Issues",
+              otherDesc: "Subscriptions, warranties and more.",
+              otherBtn: "Free assessment"
+            },
+            digital: {
+              title: "Digital Risks",
+              subtitle: "Data breaches, crypto issues and cross-border disputes.",
+              sectionTitle: "💻 Digital Risks",
+              sectionSubtitle: "DIY steps plus help if you need it.",
+              cyberTitle: "Data Breach",
+              cyberDesc: "ICO complaints and letters.",
+              cyberBtn: "Free assessment",
+              cryptoTitle: "Crypto Recovery",
+              cryptoDesc: "Exchange liaison and tracing.",
+              cryptoBtn: "Free assessment",
+              crossborderTitle: "Cross-Border Issues",
+              crossborderDesc: "Currency and VAT disputes.",
+              crossborderBtn: "Free assessment"
+            },
+            team: {
+              title: "Meet the Quaerens Team",
+              subtitle: "Real people, quick replies.",
+              sectionTitle: "Introductions",
+              deborahName: "Deborah Shane",
+              deborahRole: "Admin Coordinator",
+              deborahDesc: "Keeps cases on schedule; available for questions.",
+              martijnName: "Martijn Pronk",
+              martijnRole: "Case Processor",
+              martijnDesc: "Ensures submissions are error-free.",
+              nikhilName: "Nikhil Gupta",
+              nikhilRole: "Consultant Liaison",
+              nikhilDesc: "Connects clients with specialists.",
+              alexanderName: "Alexander Hughes",
+              alexanderRole: "Client Outreach Lead",
+              alexanderDesc: "Drives engagement; weekend cyclist.",
+              priyaName: "Priya Patel",
+              priyaRole: "Automation & Content Lead",
+              priyaDesc: "Builds AI workflows; ex-SEO.",
+              javierName: "Javier Dominguez",
+              javierRole: "Designer & Video Synthesist",
+              javierDesc: "Creates visuals and short videos.",
+              sandraName: "Sandra Lee",
+              sandraRole: "Chatbot & Engagement Dev",
+              sandraDesc: "Builds our real-time chat tools.",
+              marcusName: "Marcus Brown",
+              marcusRole: "Media Manager",
+              marcusDesc: "Optimises ad spend & conversion.",
+              elenaName: "Elena Rossi",
+              elenaRole: "Analytics & Insights Lead",
+              elenaDesc: "Builds dashboards & insights.",
+              email: "Email",
+              whatsapp: "WhatsApp"
+            },
+            footer: {
+              about: "Quaerens is an approachable, assistance service. We work with you to prepare the right documents and guide your next steps. We’re not a law firm — instead, we connect you with trusted external legal partners when specialist advice is needed.",
+              company: "Company",
+              privacy: "Privacy Policy",
+              terms: "Terms of Use",
+              gdpr: "GDPR",
+              contact: "Contact",
+              services: "Services",
+              getInTouch: "Get in touch",
+              emailLabel: "Email: <a href='mailto:info@quaerens.co.uk' class='hover:text-blue-700'>info@quaerens.co.uk</a>",
+              whatsappLabel: "WhatsApp: <a href='https://wa.me/442080500725' target='_blank' rel='noopener' class='hover:text-blue-700'>+44 (0)20 8050 0725</a>",
+              companyNo: "Company No.: 16176152 · Registered in England & Wales",
+              address: "Address: 71–75 Shelton Street, Covent Garden, London WC2H 9JQ",
+              copyright: "© 2025 Quaerens Ltd. All rights reserved."
+            },
+            modal: {
+              title: "Start free check",
+              travel: "Travel & Holiday",
+              finance: "Finance & Pensions",
+              property: "Property & Mortgages",
+              consumer: "Everyday Issues",
+              digital: "Digital Risks",
+              flight: "✈️ Flight Delay",
+              holiday: "🏖️ Holiday Refund",
+              train: "🚆 Train Delay",
+              luggage: "🧳 Lost Luggage",
+              airbnb: "🏠 Airbnb Refunds",
+              park: "🚐 Holiday Park",
+              car: "🚗 Car Finance",
+              pension: "👴 Pension Issues",
+              bank: "🏦 Bank Accounts",
+              credit: "💳 Credit Card Fees",
+              mortgage: "💶 Spanish Mortgages",
+              property: "🏘️ Spanish Property",
+              timeshare: "🔄 Timeshare Refund",
+              exit: "❌ Timeshare Exit (DIY)",
+              gym: "🏋️‍♂️ Gym Cancellation",
+              parking: "🚗 Parking Appeal",
+              energy: "🔌 Energy Switch",
+              housing: "🏠 Housing Disrepair",
+              medical: "🩺 Medical Negligence",
+              refund: "🔄 Refund Issues",
+              other: "❓ Other Issues",
+              cyber: "🔒 Data Breach",
+              crypto: "💰 Crypto Recovery",
+              crossborder: "🌐 Cross-Border Issues"
+            }
+          }
+        },
+        fr: {
+          translation: {
+            finance: {
+              title: "Finances & Retraites",
+              subtitle: "Frais cachés, problèmes de retraite et plus encore.",
+              sectionTitle: "💰 Finances & Retraites",
+              sectionSubtitle: "Calculatrices DIY et modèles, ou demandez-nous de vérifier.",
+              carTitle: "Financement Auto",
+              carDesc: "Vérifiez les frais et intérêts, étape par étape.",
+              carBtn: "DIY GRATUIT",
+              pensionTitle: "Problèmes de Retraite",
+              pensionDesc: "Repérez les contributions sous-créditées.",
+              pensionBtn: "DIY GRATUIT",
+              bankTitle: "Comptes Bancaires",
+              bankDesc: "Frais injustes et coûts cachés.",
+              bankBtn: "DIY GRATUIT",
+              creditTitle: "Frais de Carte de Crédit",
+              creditDesc: "Identifiez les taux de pénalité et hausses de TAEG.",
+              creditBtn: "DIY GRATUIT"
+            },
+            // Other sections (property, consumer, digital, team, footer, modal) would follow with French translations
+          }
+        },
+        es: {
+          translation: {
+            finance: {
+              title: "Finanzas y Pensiones",
+              subtitle: "Comisiones ocultas, problemas de pensiones y más.",
+              sectionTitle: "💰 Finanzas y Pensiones",
+              sectionSubtitle: "Calculadoras DIY y plantillas, o pídanos revisar.",
+              carTitle: "Financiación de Coches",
+              carDesc: "Verifica comisiones e intereses, paso a paso.",
+              carBtn: "DIY GRATIS",
+              pensionTitle: "Problemas de Pensiones",
+              pensionDesc: "Detecta contribuciones mal acreditadas.",
+              pensionBtn: "DIY GRATIS",
+              bankTitle: "Cuentas Bancarias",
+              bankDesc: "Cargos injustos y comisiones ocultas.",
+              bankBtn: "DIY GRATIS",
+              creditTitle: "Comisiones de Tarjetas de Crédito",
+              creditDesc: "Identifica tasas de penalización y subidas de TAE.",
+              creditBtn: "DIY GRATIS"
+            },
+            // Other sections would follow with Spanish translations
+          }
+        },
+        de: {
+          translation: {
+            finance: {
+              title: "Finanzen & Renten",
+              subtitle: "Versteckte Gebühren, Rentenprobleme und mehr.",
+              sectionTitle: "💰 Finanzen & Renten",
+              sectionSubtitle: "DIY-Rechner und Vorlagen oder lassen Sie uns prüfen.",
+              carTitle: "Autofinanzierung",
+              carDesc: "Überprüfen Sie Gebühren und Zinsen, Schritt für Schritt.",
+              carBtn: "DIY KOSTENLOS",
+              pensionTitle: "Rentenprobleme",
+              pensionDesc: "Erkennung von unterbewerteten Beiträgen.",
+              pensionBtn: "DIY KOSTENLOS",
+              bankTitle: "Bankkonten",
+              bankDesc: "Unfaire Gebühren und versteckte Kosten.",
+              bankBtn: "DIY KOSTENLOS",
+              creditTitle: "Kreditkartengebühren",
+              creditDesc: "Erkennung von Strafzinsen und Zinsanstiegen.",
+              creditBtn: "DIY KOSTENLOS"
+            },
+            // Other sections would follow with German translations
+          }
+        },
+        it: {
+          translation: {
+            finance: {
+              title: "Finanza e Pensioni",
+              subtitle: "Commissioni nascoste, problemi pensionistici e altro.",
+              sectionTitle: "💰 Finanza e Pensioni",
+              sectionSubtitle: "Calcolatori fai-da-te e modelli, o chiedici di verificare.",
+              carTitle: "Finanziamento Auto",
+              carDesc: "Controlla commissioni e interessi, passo dopo passo.",
+              carBtn: "DIY GRATUITO",
+              pensionTitle: "Problemi Pensionistici",
+              pensionDesc: "Individua contributi non accreditati correttamente.",
+              pensionBtn: "DIY GRATUITO",
+              bankTitle: "Conti Bancari",
+              bankDesc: "Addebiti ingiusti e costi nascosti.",
+              bankBtn: "DIY GRATUITO",
+              creditTitle: "Commissioni Carta di Credito",
+              creditDesc: "Identifica tassi di penalità e aumenti APR.",
+              creditBtn: "DIY GRATUITO"
+            },
+            // Other sections would follow with Italian translations
+          }
+        },
+        nl: {
+          translation: {
+            finance: {
+              title: "Financiën & Pensioenen",
+              subtitle: "Verborgen kosten, pensioenproblemen en meer.",
+              sectionTitle: "💰 Financiën & Pensioenen",
+              sectionSubtitle: "DIY-calculators en sjablonen, of laat ons controleren.",
+              carTitle: "Autofinanciering",
+              carDesc: "Controleer kosten en rente, stap voor stap.",
+              carBtn: "DIY GRATIS",
+              pensionTitle: "Pensioenproblemen",
+              pensionDesc: "Ontdek ondergecrediteerde bijdragen.",
+              pensionBtn: "DIY GRATIS",
+              bankTitle: "Bankrekeningen",
+              bankDesc: "Oneerlijke kosten en verborgen toeslagen.",
+              bankBtn: "DIY GRATIS",
+              creditTitle: "Creditcardkosten",
+              creditDesc: "Identificeer strafrentes en APR-stijgingen.",
+              creditBtn: "DIY GRATIS"
+            },
+            // Other sections would follow with Dutch translations
+          }
+        },
+        sv: {
+          translation: {
+            finance: {
+              title: "Finans & Pensioner",
+              subtitle: "Dolda avgifter, pensionsproblem och mer.",
+              sectionTitle: "💰 Finans & Pensioner",
+              sectionSubtitle: "DIY-kalkylatorer och mallar, eller be oss granska.",
+              carTitle: "Bilfinansiering",
+              carDesc: "Kontrollera avgifter och räntor, steg för steg.",
+              carBtn: "DIY GRATIS",
+              pensionTitle: "Pensionsproblem",
+              pensionDesc: "Upptäck underkrediterade bidrag.",
+              pensionBtn: "DIY GRATIS",
+              bankTitle: "Bankkonton",
+              bankDesc: "Orättvisa avgifter och dolda kostnader.",
+              bankBtn: "DIY GRATIS",
+              creditTitle: "Kreditkortsavgifter",
+              creditDesc: "Identifiera straffräntor och APR-höjningar.",
+              creditBtn: "DIY GRATIS"
+            },
+            // Other sections would follow with Swedish translations
+          }
+        },
+        el: {
+          translation: {
+            finance: {
+              title: "Οικονομικά & Συντάξεις",
+              subtitle: "Κρυφές χρεώσεις, προβλήματα συντάξεων και άλλα.",
+              sectionTitle: "💰 Οικονομικά & Συντάξεις",
+              sectionSubtitle: "Υπολογιστές DIY και πρότυπα, ή ζητήστε μας να ελέγξουμε.",
+              carTitle: "Χρηματοδότηση Αυτοκινήτου",
+              carDesc: "Ελέγξτε χρεώσεις και τόκους, βήμα-βήμα.",
+              carBtn: "DIY ΔΩΡΕΑΝ",
+              pensionTitle: "Προβλήματα Σύνταξης",
+              pensionDesc: "Εντοπίστε μη πιστωμένες εισφορές.",
+              pensionBtn: "DIY ΔΩΡΕΑΝ",
+              bankTitle: "Τραπεζικοί Λογαριασμοί",
+              bankDesc: "Άδικες χρεώσεις και κρυφά κόστη.",
+              bankBtn: "DIY ΔΩΡΕΑΝ",
+              creditTitle: "Χρεώσεις Πιστωτικής Κάρτας",
+              creditDesc: "Εντοπίστε ποινές και απότομες αυξήσεις APR.",
+              creditBtn: "DIY ΔΩΡΕΑΝ"
+            },
+            // Other sections would follow with Greek translations
+          }
+        }
       }
-
-      filterButtons.forEach(btn =>
-        btn.addEventListener("click", () => {
-          filterButtons.forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentFilter = btn.dataset.type;
-          updateClaims();
-        })
-      );
-
-      searchInput.addEventListener("input", e => {
-        currentSearch = e.target.value.toLowerCase();
-        updateClaims();
+    }, function(err) {
+      if (err) console.error('i18next init error:', err);
+      document.querySelectorAll('[data-i18n]').forEach(elem => {
+        const key = elem.getAttribute('data-i18n');
+        elem.innerHTML = i18next.t(key);
       });
-
-      updateClaims();
+      i18next.on('languageChanged', (lng) => {
+        localStorage.setItem('i18nextLng', lng);
+        document.querySelectorAll('[data-i18n]').forEach(elem => {
+          const key = elem.getAttribute('data-i18n');
+          elem.innerHTML = i18next.t(key);
+        });
+        document.documentElement.lang = lng;
+      });
     });
   </script>
 
+  <!-- Google Translate fallback -->
+  <script>
+    function googleTranslateElementInit() {
+      if (!window.google || !window.google.translate) {
+        setTimeout(googleTranslateElementInit, 500);
+        return;
+      }
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'fr,es,de,it,nl,sv,el',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer></script>
+
+  <!-- Hero text rotation -->
+  <script>
+    const heroTitles = [
+      "Check what you could claim in minutes",
+      "Friendly help when you need it",
+      "Free tools to do it yourself"
+    ];
+    const heroSubtitles = [
+      "Simple steps to check flight delays, hidden fees, and more.",
+      "Our team is here to guide you, no jargon.",
+      "Download templates or get a free review."
+    ];
+    let heroIndex = 0;
+    function rotateHero() {
+      if (!window.Alpine || Alpine.data.heroPaused) return;
+      const title = document.getElementById('hero-title');
+      const subtitle = document.getElementById('hero-subtitle');
+      title.style.opacity = 0;
+      subtitle.style.opacity = 0;
+      setTimeout(() => {
+        title.textContent = heroTitles[heroIndex];
+        subtitle.textContent = heroSubtitles[heroIndex];
+        title.style.opacity = 1;
+        subtitle.style.opacity = 1;
+        heroIndex = (heroIndex + 1) % heroTitles.length;
+      }, 300);
+    }
+    setInterval(rotateHero, 4000);
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('hero-title').textContent = heroTitles[0];
+      document.getElementById('hero-subtitle').textContent = heroSubtitles[0];
+    });
+  </script>
+
+  <!-- Scroll to top -->
+  <script>
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        scrollTopBtn.classList.remove('hidden');
+      } else {
+        scrollTopBtn.classList.add('hidden');
+      }
+    });
+    scrollTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <!-- Tawk.to chat -->
+  <script>
+    var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+    (function() {
+      var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+      s1.async = true;
+      s1.src = 'https://embed.tawk.to/66b7c43c0c66f64d83c6371e/1i4v3j6i3';
+      s1.charset = 'UTF-8';
+      s1.setAttribute('crossorigin', '*');
+      s0.parentNode.insertBefore(s1, s0);
+      setTimeout(() => {
+        if (!Tawk_API.loaded) {
+          document.getElementById('tawk-fallback').classList.add('show');
+        }
+      }, 5000);
+      Tawk_API.onLoad = function() {
+        document.getElementById('tawk-fallback').classList.remove('show');
+      };
+    })();
+  </script>
+
+  <!-- AOS init -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
+  <script>
+    AOS.init({
+      duration: 600,
+      once: true,
+      disable: 'mobile'
+    });
+  </script>
 </body>
 </html>
+```
