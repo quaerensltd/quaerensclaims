@@ -68,7 +68,7 @@
       body { top:0 !important; }
     </style>
   </head>
-  <body class="h-full">
+  <body class="h-full" x-data="{ qcOpen:false }">
     <a class="skip-link" href="#main">Skip to content</a>
 
     <!-- Header -->
@@ -87,7 +87,7 @@
         </nav>
         <div class="flex items-center gap-3">
           <div id="google_translate_element" aria-label="Language selector" class="sr-only" aria-hidden="true"></div>
-          <!-- Alpine language dropdown (kept) -->
+          <!-- Alpine language dropdown -->
           <div x-data="{ open:false }" class="relative">
             <button @click="open=!open" class="inline-flex items-center rounded border border-gray-300 px-3 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100">🌐 Language</button>
             <div x-show="open" @click.outside="open=false" class="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg z-50 text-sm text-gray-700">
@@ -101,7 +101,7 @@
               <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
             </div>
           </div>
-          <a href="#travel" class="hidden md:inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700">Start free check</a>
+          <button type="button" @click.prevent="qcOpen=true" class="hidden md:inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
         </div>
       </div>
     </header>
@@ -115,7 +115,7 @@
           <p id="hero-subtitle" class="mt-3 text-white text-base md:text-xl max-w-2xl"></p>
           <div class="mt-6 flex gap-3 flex-wrap justify-center">
             <a href="#how-it-works" class="rounded-full border border-white/80 text-white px-4 py-2 text-sm font-semibold hover:bg-white hover:text-gray-900">How it works</a>
-            <a href="#travel" class="rounded-full bg-blue-600 text-white px-4 py-2 text-sm font-semibold hover:bg-blue-700">Start free check</a>
+            <button type="button" @click.prevent="qcOpen=true" class="rounded-full bg-blue-600 text-white px-4 py-2 text-sm font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
           </div>
         </div>
       </section>
@@ -151,7 +151,7 @@
                 <li>We prepare paperwork with you</li>
                 <li>Clear updates and next steps</li>
               </ul>
-              <a href="#travel" class="mt-5 inline-flex justify-center claim-blue-btn">Start free check</a>
+              <button type="button" @click.prevent="qcOpen=true" class="mt-5 inline-flex justify-center claim-blue-btn" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
             </article>
           </div>
         </div>
@@ -250,7 +250,7 @@
       </section>
 
       <!-- CONSUMER -->
-      <section id="consumer-banner" class="relative h-[200px] mb-10"><!-- unique id (fixed) -->
+      <section id="consumer-banner" class="relative h-[200px] mb-10">
         <img src="/images/misc-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Everyday consumer issues" loading="lazy" />
         <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
         <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
@@ -408,7 +408,7 @@
 
     <!-- Sticky mobile CTA -->
     <div class="fixed bottom-0 inset-x-0 md:hidden bg-blue-600 p-4 text-center" role="region" aria-label="Start your free check">
-      <a href="#travel" class="text-white font-bold">Free claim check →</a>
+      <button type="button" @click.prevent="qcOpen=true" class="text-white font-bold" aria-haspopup="dialog" aria-controls="quickcheck-menu">Free claim check ▾</button>
     </div>
 
     <!-- Footer with clear company info (trust) -->
@@ -441,6 +441,73 @@
       <div class="text-center text-xs text-gray-500 pb-8">© 2025 Quaerens Ltd. All rights reserved.</div>
     </footer>
 
+    <!-- Start Free Check: all individual claims (accessible dropdown modal) -->
+    <div x-show="qcOpen" x-transition.opacity class="fixed inset-0 z-[100]" aria-labelledby="quickcheck-title" role="dialog" aria-modal="true" id="quickcheck-menu">
+      <div @click="qcOpen=false" class="absolute inset-0 bg-black/30" aria-hidden="true"></div>
+      <div class="relative mx-auto mt-16 md:mt-24 max-w-5xl bg-white rounded-2xl shadow-xl border overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b">
+          <h2 id="quickcheck-title" class="text-lg font-semibold">Start free check</h2>
+          <button class="px-3 py-1 rounded hover:bg-gray-100" @click="qcOpen=false" aria-label="Close">✕</button>
+        </div>
+        <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+          <!-- Travel -->
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Travel & Holiday</p>
+            <ul class="space-y-1">
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeflightclaim.html">✈️ Flight Delay</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeholidaycompensation.html">🏖️ Holiday Refund</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/train-delay.html">🚆 Train Delay</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/lost-luggage.html">🧳 Lost Luggage</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/airbnb-refunds.html">🏠 Airbnb Refunds</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/holidaypark.html">🚐 Holiday Park</a></li>
+            </ul>
+          </div>
+          <!-- Finance -->
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Finance & Pensions</p>
+            <ul class="space-y-1">
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/car-finance.html">🚗 Car Finance</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/pension-issues.html">👴 Pension Issues</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/misssold-bankaccounts.html">🏦 Bank Accounts</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/creditcard-fees.html">💳 Credit Card Fees</a></li>
+            </ul>
+          </div>
+          <!-- Property -->
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Property & Mortgages</p>
+            <ul class="space-y-1">
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-mortgages.html">💶 Spanish Mortgages</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-properties.html">🏘️ Spanish Property</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/timeshare.html">🔄 Timeshare Refund</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="https://www.exitmytimeshares.com" target="_blank" rel="noopener">❌ Timeshare Exit (DIY)</a></li>
+            </ul>
+          </div>
+          <!-- Consumer -->
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Everyday Issues</p>
+            <ul class="space-y-1">
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/gym-cancellation.html">🏋️‍♂️ Gym Cancellation</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/parking-appeal.html">🚗 Parking Appeal</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/energy-switch.html">🔌 Energy Switch</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/housing-disrepair.html">🏠 Housing Disrepair</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/medical-negligence.html">🩺 Medical Negligence</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/return-issues.html">🔄 Refund Issues</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/other.html">❓ Other Issues</a></li>
+            </ul>
+          </div>
+          <!-- Digital -->
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Digital Risks</p>
+            <ul class="space-y-1">
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/cyber-claims.html">🔒 Data Breach</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crypto-scams.html">💰 Crypto Recovery</a></li>
+              <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crossborder.html">🌐 Cross‑Border Issues</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Google Translate (brand visible) -->
     <script>
       function googleTranslateElementInit() {
@@ -455,43 +522,14 @@
       function setLanguage(langPair){ if(!langPair) return; const lang = langPair.split('|')[1]; const attemptsMax=12; let tries=0; (function loop(){ const sel=document.querySelector('.goog-te-combo'); if(sel){ sel.value=lang; sel.dispatchEvent(new Event('change')); } else if(tries++<attemptsMax){ setTimeout(loop,250); } })(); }
     </script>
 
-    <!-- (Optional) Gate IP-based auto-language behind consent tool; disabled by default for trust -->
+    <!-- Hero typing animation -->
     <script>
-      // Example: after consent, set googtrans cookie then reload.
-      // document.cookie = `googtrans=/en/es; path=/; domain=${location.hostname}`; location.reload();
+      const titles=["Check if you're eligible","Recover what you're owed","Your rights. Your refund.","No‑win, no‑fee support (where offered)","Fast, friendly help","We support. You benefit.","Trusted across Europe","Start your free eligibility check","From flights to finance — we’ve got you"]; const subtitles=["Find out if you're entitled to a refund.","We make the process simple and stress‑free.","Millions of consumers are eligible — are you?","Free eligibility check in ~2 minutes.","Don’t miss out on what may be yours.","Thousands supported every month.","Clear steps, no jargon.","Instant results. Zero cost to assess.","DIY tools or friendly help."]; let idx=0; function typeText(el,txt,speed=24,cb){ el.textContent=''; let i=0; const iv=setInterval(()=>{ el.textContent+=txt[i++]||''; if(i>txt.length){ clearInterval(iv); cb&&cb(); } },speed);} function cycle(){ const t=document.getElementById('hero-title'), s=document.getElementById('hero-subtitle'); typeText(t,titles[idx],22,()=>{ typeText(s,subtitles[idx],18,()=>{ setTimeout(()=>{ idx=(idx+1)%titles.length; cycle(); },1600); }); }); } window.addEventListener('DOMContentLoaded',cycle);
     </script>
 
-    <!-- Tawk.to Live Chat -->
-    <script>
-      var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-      (function(){var s1=document.createElement('script'),s0=document.getElementsByTagName('script')[0];s1.async=true;s1.src='https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';s1.charset='UTF-8';s1.setAttribute('crossorigin','*');s0.parentNode.insertBefore(s1,s0);})();
-    </script>
-
-    <!-- Hero typing -->
-    <script>
-      const titles=["Check if you're eligible","Recover what you're owed","Your rights. Your refund.","No‑win, no‑fee options","Fast, friendly assistance","We support. You benefit.","Start your free check now"]; const subtitles=["Find out what you could recover in minutes.","We make steps simple and stress‑free.","Millions of people are eligible — are you?","Takes about two minutes to begin.","No jargon. No pressure. Just results.","DIY or done‑with‑you — you decide.","Instant start. Zero cost to assess."]; let idx=0; function typeText(el,txt,speed=26,cb){ el.textContent=''; let i=0; const iv=setInterval(()=>{ el.textContent += (txt[i++]||''); if(i>txt.length){ clearInterval(iv); cb&&cb(); }},speed);} function cycle(){ const t=document.getElementById('hero-title'), s=document.getElementById('hero-subtitle'); typeText(t,titles[idx],26,()=>{ typeText(s,subtitles[idx],18,()=>{ setTimeout(()=>{ idx=(idx+1)%titles.length; cycle(); },2000); }); }); } window.addEventListener('DOMContentLoaded',cycle);
-    </script>
-
-    <!-- AOS -->
+    <!-- AOS Init -->
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-    <script> AOS.init({ duration: 700, once: true, offset: 96 }); </script>
+    <script> AOS.init({ duration: 800, once: true, offset: 100 }); </script>
 
-    <!-- Structured data for trust -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Quaerens Ltd",
-      "url": "https://www.quaerens.co.uk/",
-      "logo": "https://www.quaerens.co.uk/images/quaerens-logo.png",
-      "contactPoint": [{
-        "@type": "ContactPoint",
-        "contactType": "customer support",
-        "email": "info@quaerens.co.uk",
-        "telephone": "+44 7578 600296",
-        "areaServed": "EU, UK"
-      }]
-    }
-    </script>
   </body>
 </html>
