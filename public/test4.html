@@ -57,10 +57,6 @@
     }
     .input-error { border-color: #ef4444; }
 
-    /* Make hero fully visible (no cropping) */
-    .hero-wrapper { background: #0b1a33; }
-    .hero-img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
-
     /* Improve contrast on comparison cards over bg image */
     .card-veil { background: rgba(255,255,255,0.96); backdrop-filter: blur(2px); }
   </style>
@@ -90,7 +86,6 @@
 
       localStorage.setItem('ffc_lang', targetLang);
 
-      // Soft reload (keeps scroll)
       const y = window.scrollY;
       window.location.reload();
       window.scrollTo(0, y);
@@ -156,34 +151,20 @@
     </div>
   </header>
 
-<!-- Hero Section (fully visible, responsive) -->
-<section class="relative w-full bg-slate-900">
-  <div class="mx-auto max-w-7xl px-4 py-4 md:py-6">
-    <div class="relative w-full min-h-[320px] md:h-[68vh] rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-      <img
-        src="images/hero-flight2.jpg"
-        srcset="images/hero-flight2.jpg 1200w, images/hero-flight2@2x.jpg 2000w"
-        sizes="100vw"
-        alt="Smiling couple holding compensation money at an airport"
-        class="w-full h-full object-contain"
-        loading="eager"
-        fetchpriority="high"
-      />
-      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
-    </div>
-  </div>
-</section>
-        <!-- Desktop/tablet: viewport height -->
+  <!-- Hero Section (single image, absolute path, no duplicates) -->
+  <section class="relative w-full bg-slate-900">
+    <div class="mx-auto max-w-7xl px-4 py-4 md:py-6">
+      <div class="relative w-full min-h-[320px] md:h-[68vh] rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
         <img
-          src="images/hero-flight2.jpg"
-          srcset="images/hero-flight2.jpg 1200w, images/hero-flight2@2x.jpg 2000w"
-          sizes="(min-width: 768px) 100vw"
+          src="/images/hero-flight2.jpg"
+          srcset="/images/hero-flight2.jpg 1200w, /images/hero-flight2@2x.jpg 2000w"
+          sizes="100vw"
           alt="Smiling couple holding compensation money at an airport"
-          class="hidden md:block absolute inset-0 w-full h-full object-contain"
+          class="w-full h-full object-contain"
           loading="eager"
           fetchpriority="high"
+          onerror="this.src='/images/hero-flight2.jpg';"
         />
-        <!-- Optional bottom gradient -->
         <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
       </div>
     </div>
@@ -312,8 +293,7 @@
   </div>
 
   <!-- Legal Explanation over background -->
-  <section class="py-16 bg-cover bg-center bg-no-repeat"
-           style="background-image: url('images/airport-background-night.jpg');">
+  <section class="py-16 bg-cover bg-center bg-no-repeat" style="background-image: url('images/airport-background-night.jpg');">
     <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="card-veil rounded-xl shadow-xl p-6 border border-gray-200" data-aos="fade-up">
         <h3 class="text-lg font-bold text-red-700 mb-4 text-center">USE A LAWYER</h3>
@@ -441,9 +421,6 @@
         <p><strong>Who pays the compensation?</strong><br>
           The airline – not the travel agent or booking site.</p>
 
-        <p><strong>What if I got a refund or voucher?</strong><br>
-          You can still claim compensation in addition to other remedies.</p>
-
         <p><strong>How much does this service cost?</strong><br>
           It’s completely free to generate and send your letter with FreeFlightClaim. Donations are optional and appreciated.</p>
 
@@ -515,12 +492,14 @@
     ↑
   </button>
 
-  <!-- Scripts -->
+  <!-- AOS init -->
   <script>
-    // AOS init
     window.addEventListener('load', () => { if (window.AOS) AOS.init({ once: true, duration: 500, offset: 40 }); });
+  </script>
 
-    // EC261 calculator with distance band
+  <!-- Calculator + Airports datalist -->
+  <script>
+    // Airport datalist
     const airportList = [
       "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
       "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
@@ -531,12 +510,13 @@
       "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
       "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
     ];
+    window.airportList = airportList; // expose for modal population
 
     const datalist = document.getElementById('airports');
     airportList.forEach(name => { const option = document.createElement('option'); option.value = name; datalist.appendChild(option); });
-
     function validAirport(val){ return airportList.includes(val.trim()); }
 
+    // Calculator with distance band
     document.getElementById('compensation-form').addEventListener('submit', function (e) {
       e.preventDefault();
 
@@ -651,7 +631,7 @@
     };
   </script>
 
-  <!-- PDF generator (unchanged core, fee-free text) -->
+  <!-- PDF generator (fee-free text) -->
   <script>
     function generatePDF(data) {
       const { jsPDF } = window.jspdf;
@@ -802,71 +782,26 @@
       <button onclick="document.getElementById('airportsModal').classList.add('hidden')"
         class="absolute top-2 right-2 text-xl font-bold text-gray-500 hover:text-red-600" aria-label="Close">&times;</button>
       <h3 class="text-lg font-bold mb-4 text-blue-800">Airports Checked Live</h3>
-      <ul id="airportsList" class="list-disc list-inside text-gray-700 space-y-1">
-        <!-- Airports dynamically inserted here -->
-      </ul>
+      <ul id="airportsList" class="list-disc list-inside text-gray-700 space-y-1"></ul>
     </div>
   </div>
 
-  <!-- Scroll to Top Button -->
-  <button id="scrollTopBtn" aria-label="Scroll to top"
-    class="fixed bottom-5 right-5 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring focus:ring-yellow-300 hidden">
-    ↑
-  </button>
-
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-6 mt-12">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
-      <p class="text-sm">&copy; 2025 FreeFlightClaim.com — Powered by Quaerens Ltd</p>
-      <div class="mt-3 sm:mt-0 flex space-x-4">
-        <a href="/privacy.html" class="text-gray-400 hover:text-white">Privacy Policy</a>
-        <a href="/terms.html" class="text-gray-400 hover:text-white">Terms of Service</a>
-        <a href="/gdpr.html" class="text-gray-400 hover:text-white">GDPR</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <!-- Modal Esc / click-outside for Airports & FAQ -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      AOS.init();
+    document.addEventListener('DOMContentLoaded', function () {
+      // Populate Airports modal list
+      const al = document.getElementById('airportsList');
+      if (al && window.airportList) {
+        al.innerHTML = window.airportList.map(a => `<li>${a.replace(/ \([A-Z]{3}\)$/, '')}</li>`).join('');
+      }
 
-      // Scroll to top button logic
-      const scrollTopBtn = document.getElementById('scrollTopBtn');
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 200) {
-          scrollTopBtn.classList.remove('hidden');
-        } else {
-          scrollTopBtn.classList.add('hidden');
-        }
+      // Esc/Click-outside handlers
+      ['airportsModal', 'faqModal'].forEach(id => {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        document.addEventListener('keydown', e => { if (e.key === "Escape") modal.classList.add('hidden'); });
+        modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
       });
-      scrollTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-
-      // Live flights data with retry and caching
-      const flightsContainer = document.getElementById('flightsContainer');
-      const lastData = localStorage.getItem('flightsData');
-      if (lastData) flightsContainer.innerHTML = lastData;
-
-      const fetchFlights = () => {
-        fetch('flights-today.json')
-          .then(res => res.json())
-          .then(data => {
-            flightsContainer.innerHTML = data.map(f => `<li>${f}</li>`).join('');
-            localStorage.setItem('flightsData', flightsContainer.innerHTML);
-          })
-          .catch(() => {
-            flightsContainer.innerHTML = `
-              <p class="text-red-500">Could not load flight status data.</p>
-              <button onclick="fetchFlights()" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded">Retry</button>
-            `;
-          });
-      };
-      fetchFlights();
     });
   </script>
 </body>
