@@ -43,23 +43,22 @@
 
     .content-box { max-width: 600px; margin: 0 auto; padding: 2rem; background: #f9fafb; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,.05); }
 
-    /* Hide Google Translate chrome */
-    .goog-te-banner-frame.skiptranslate,
-    .goog-te-gadget-icon,
-    .goog-logo-link,
-    .goog-te-gadget,
-    body > .skiptranslate { display: none !important; }
-    .goog-te-gadget { font-size: 0 !important; }
+    /* Google Translate — hide only the banner, keep the widget alive */
+    .goog-te-banner-frame.skiptranslate { display: none !important; }
+    body { top: 0 !important; }
+    #google_translate_element {
+      position: fixed;
+      left: -9999px; top: -9999px;
+      width: 1px; height: 1px; overflow: hidden;
+    }
+    .goog-te-gadget-icon, .goog-logo-link { display: none !important; }
+    /* DO NOT hide .goog-te-gadget or body > .skiptranslate */
 
     form label { display: block; margin-top: 1rem; font-weight: 600; }
     form input, form select {
       width: 100%; padding: .6rem; border: 1px solid #d1d5db; border-radius: 6px; margin-top: .5rem;
     }
     .input-error { border-color: #ef4444; }
-
-    /* Make hero fully visible (no cropping) */
-    .hero-wrapper { background: #0b1a33; }
-    .hero-img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
 
     /* Improve contrast on comparison cards over bg image */
     .card-veil { background: rgba(255,255,255,0.96); backdrop-filter: blur(2px); }
@@ -81,19 +80,15 @@
       });
 
       var targetLang = langPair.split('|')[1];
-      var newLang = `/auto/${targetLang}`;
+      var newLang = '/auto/' + targetLang;
 
       // Set new cookies
       ['', '.'+domain, baseDomain, '.'+baseDomain].forEach(d => {
-        document.cookie = `googtrans=${newLang}; path=/;` + (d ? ` domain=${d};` : '');
+        document.cookie = 'googtrans=' + newLang + '; path=/;' + (d ? ' domain=' + d + ';' : '');
       });
 
       localStorage.setItem('ffc_lang', targetLang);
-
-      // Soft reload (keeps scroll)
-      const y = window.scrollY;
       window.location.reload();
-      window.scrollTo(0, y);
     }
 
     function getCurrentLang(){
@@ -107,7 +102,8 @@
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-  <div id="google_translate_element" style="display: none;"></div>
+  <!-- Keep GT element in DOM (moved off-screen via CSS so translation works) -->
+  <div id="google_translate_element"></div>
 
   <!-- Header -->
   <header class="bg-white shadow">
@@ -156,23 +152,23 @@
     </div>
   </header>
 
-<!-- Hero Section (light background + visible image) -->
-<section class="relative w-full bg-gradient-to-b from-white to-slate-50">
-  <div class="mx-auto max-w-7xl px-4 py-4 md:py-6">
-    <div class="relative w-full min-h-[320px] md:h-[68vh] rounded-xl overflow-hidden bg-transparent flex items-center justify-center">
-      <img
-        src="/images/hero-flight2.jpg"
-        srcset="/images/hero-flight2.jpg 1200w, /images/hero-flight2@2x.jpg 2000w"
-        sizes="100vw"
-        alt="Smiling couple holding compensation money at an airport"
-        class="w-full h-full md:h-auto md:max-h-[68vh] object-cover md:object-contain drop-shadow-xl"
-        loading="eager"
-        fetchpriority="high"
-        onerror="this.src='/images/hero-flight2.jpg';"
-      />
+  <!-- Hero Section (reliable height; visible image) -->
+  <section class="relative w-full bg-gradient-to-b from-white to-slate-50">
+    <div class="mx-auto max-w-7xl px-4 py-4 md:py-6">
+      <div class="relative w-full h-[48vh] md:h-[68vh] rounded-xl overflow-hidden bg-white flex items-center justify-center">
+        <img
+          src="/images/hero-flight2.jpg"
+          srcset="/images/hero-flight2.jpg 1200w, /images/hero-flight2@2x.jpg 2000w"
+          sizes="100vw"
+          alt="Smiling couple holding compensation money at an airport"
+          class="w-full h-full object-contain"
+          loading="eager"
+          fetchpriority="high"
+          onerror="this.onerror=null; this.src='/images/hero-flight2.jpg';"
+        />
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
   <!-- Claim Calculator -->
   <section id="calculator" class="py-16 bg-white">
@@ -394,7 +390,7 @@
     </div>
   </div>
 
-  <!-- FAQ Modal (fees removed) -->
+  <!-- FAQ Modal -->
   <div id="faqModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle" aria-describedby="faqModalDesc">
     <div class="bg-white max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-lg relative">
       <button onclick="document.getElementById('faqModal').classList.add('hidden')" aria-label="Close FAQ" class="absolute top-2 right-2 text-xl font-bold">&times;</button>
@@ -520,6 +516,7 @@
       "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
       "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
     ];
+    window.airportList = airportList; // expose to modal
 
     const datalist = document.getElementById('airports');
     airportList.forEach(name => { const option = document.createElement('option'); option.value = name; datalist.appendChild(option); });
@@ -602,7 +599,7 @@
     }
   </script>
 
-  <!-- Simple airline email map (kept) -->
+  <!-- Simple airline email map -->
   <script>
     const airlineEmails = {
       "Ryanair": "claims@ryanair.com",
@@ -640,7 +637,7 @@
     };
   </script>
 
-  <!-- PDF generator (unchanged core, fee-free text) -->
+  <!-- PDF generator -->
   <script>
     function generatePDF(data) {
       const { jsPDF } = window.jspdf;
@@ -727,12 +724,12 @@
         autoDisplay: false
       }, 'google_translate_element');
     }
-    window.onload = function() {
+    window.addEventListener('load', function() {
       const gtFrame = document.querySelector('.goog-te-banner-frame.skiptranslate');
       if (gtFrame) gtFrame.style.display = 'none';
-    };
+    });
   </script>
-  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
   <!-- Live flights with caching + retry (24h expiry) -->
   <script>
@@ -814,7 +811,9 @@
     (function(){
       const list = document.getElementById('airportsList');
       if (list && Array.isArray(window.airportList || [])) {
-        list.innerHTML = (window.airportList).map(n => n.replace(/\s*\([A-Z]{3}\)\s*$/, '')).map(name => `<li>${name}</li>`).join('');
+        list.innerHTML = (window.airportList)
+          .map(n => n.replace(/\s*\([A-Z]{3}\)\s*$/, ''))
+          .map(name => `<li>${name}</li>`).join('');
       }
     })();
 
