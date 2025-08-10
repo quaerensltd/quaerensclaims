@@ -43,16 +43,14 @@
 
     .content-box { max-width: 600px; margin: 0 auto; padding: 2rem; background: #f9fafb; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,.05); }
 
-    /* Google Translate — hide only the banner, keep the widget alive */
+    /* Google Translate — hide only the banner; keep widget alive but off-screen */
     .goog-te-banner-frame.skiptranslate { display: none !important; }
     body { top: 0 !important; }
     #google_translate_element {
-      position: fixed;
-      left: -9999px; top: -9999px;
-      width: 1px; height: 1px; overflow: hidden;
+      position: fixed; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden;
     }
     .goog-te-gadget-icon, .goog-logo-link { display: none !important; }
-    /* DO NOT hide .goog-te-gadget or body > .skiptranslate */
+    /* IMPORTANT: do NOT hide .goog-te-gadget or body > .skiptranslate */
 
     form label { display: block; margin-top: 1rem; font-weight: 600; }
     form input, form select {
@@ -60,35 +58,47 @@
     }
     .input-error { border-color: #ef4444; }
 
-    /* Improve contrast on comparison cards over bg image */
+    /* Comparison cards veil */
     .card-veil { background: rgba(255,255,255,0.96); backdrop-filter: blur(2px); }
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <script>
-    // Language switcher using cookies (keeps GT toolbar hidden)
-    function setLanguage(langPair) {
-      if (!langPair) return;
+    // ---------- Google Translate helpers ----------
+    function setGtCookie(lang) {
       var domain = window.location.hostname;
       var baseDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
-
-      // Clear existing cookies on variations
-      var expire = 'Thu, 01 Jan 1970 00:00:01 GMT';
-      ['','.'+domain, baseDomain, '.'+baseDomain].forEach(d => {
-        document.cookie = 'googtrans=; expires=' + expire + '; path=/;' + (d ? ' domain=' + d + ';' : '');
-      });
-
-      var targetLang = langPair.split('|')[1];
-      var newLang = '/auto/' + targetLang;
-
-      // Set new cookies
+      var value = '/auto/' + lang;
       ['', '.'+domain, baseDomain, '.'+baseDomain].forEach(d => {
-        document.cookie = 'googtrans=' + newLang + '; path=/;' + (d ? ' domain=' + d + ';' : '');
+        document.cookie = 'googtrans=' + value + '; path=/;' + (d ? ' domain=' + d + ';' : '');
       });
+    }
 
-      localStorage.setItem('ffc_lang', targetLang);
-      window.location.reload();
+    // Programmatic trigger (no reload needed)
+    function doGTranslate(langPair) {
+      var lang = (langPair.split('|')[1] || 'en');
+      var select = document.querySelector('select.goog-te-combo');
+      if (!select) { // wait for GT to inject the select
+        setTimeout(function(){ doGTranslate(langPair); }, 200);
+        return;
+      }
+      if (select.value === lang) return;
+      select.value = lang;
+      // Trigger the change event in a way GT detects
+      select.dispatchEvent(new Event('change'));
+    }
+
+    // Called from our menu
+    function setLanguage(langPair) {
+      var lang = langPair.split('|')[1];
+      setGtCookie(lang);
+      // Try immediate programmatic switch (works even with widget off-screen)
+      doGTranslate(langPair);
+      // Fallback: if GT hasn't loaded yet, also persist and do a light reload
+      setTimeout(function(){
+        if (!document.querySelector('select.goog-te-combo')) window.location.reload();
+      }, 1200);
     }
 
     function getCurrentLang(){
@@ -134,7 +144,8 @@
                 ['pl','🇵🇱 Polski'],['cs','🇨🇿 Čeština'],['ro','🇷🇴 Română'],['bg','🇧🇬 Български'],
                 ['el','🇬🇷 Ελληνικά'],['pt','🇵🇹 Português']
               ]">
-                <a href="#" @click.prevent="setLanguage('en|' + opt[0]); open=false"
+                <a href="#"
+                   @click.prevent="setLanguage('en|' + opt[0]); lang = opt[0]; open=false"
                    class="block px-4 py-2 hover:bg-gray-100"
                    :aria-current="lang === opt[0] ? 'true' : 'false'"
                    x-text="opt[1]"></a>
@@ -152,10 +163,22 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="relative w-full overflow-hidden">
-    <img src="images/hero-flight2.jpg" alt="Free Flight Delay Legal Help Banner"
-      class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
+  <!-- Hero Section (reliable height; visible image) -->
+  <section class="relative w-full bg-gradient-to-b from-white to-slate-50">
+    <div class="mx-auto max-w-7xl px-4 py-4 md:py-6">
+      <div class="relative w-full h-[48vh] md:h-[68vh] rounded-xl overflow-hidden bg-white flex items-center justify-center">
+        <img
+          src="/images/hero-flight2.jpg"
+          srcset="/images/hero-flight2.jpg 1200w, /images/hero-flight2@2x.jpg 2000w"
+          sizes="100vw"
+          alt="Smiling couple holding compensation money at an airport"
+          class="w-full h-full object-contain"
+          loading="eager"
+          fetchpriority="high"
+          onerror="this.onerror=null; this.src='/images/hero-flight2.jpg';"
+        />
+      </div>
+    </div>
   </section>
 
   <!-- Claim Calculator -->
@@ -689,6 +712,7 @@
 
   <!-- Default language cookie and GT init -->
   <script>
+    // Ensure a default cookie exists on first load
     (function() {
       function getCookie(name) {
         const value = `; ${document.cookie}`;
@@ -704,6 +728,7 @@
         });
       }
     })();
+
     function googleTranslateElementInit() {
       new google.translate.TranslateElement({
         pageLanguage: 'en',
@@ -711,7 +736,14 @@
         layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
         autoDisplay: false
       }, 'google_translate_element');
+
+      // If a cookie already requested a language, apply it now
+      var lg = (document.cookie.match(/(?:^|; )googtrans=\/auto\/([a-z-]+)/i)||[])[1];
+      if (lg && lg !== 'en') {
+        doGTranslate('en|' + lg);
+      }
     }
+
     window.addEventListener('load', function() {
       const gtFrame = document.querySelector('.goog-te-banner-frame.skiptranslate');
       if (gtFrame) gtFrame.style.display = 'none';
