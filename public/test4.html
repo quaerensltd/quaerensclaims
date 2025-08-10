@@ -5,7 +5,6 @@
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- SEO Meta Tags -->
   <title>Flight Delay Compensation | Free & Fast | FreeFlightClaim by Quaerens</title>
   <meta name="description" content="Generate your EC261 flight delay compensation letter free in minutes. No lawyers, no fees. Start your claim today with FreeFlightClaim, powered by Quaerens." />
   <meta name="keywords" content="flight delay compensation, EC261 claim, flight compensation, delayed flight claim, airline compensation, free flight claim" />
@@ -13,7 +12,7 @@
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.freeflightclaim.com/" />
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph -->
   <meta property="og:title" content="Flight Delay Compensation | FreeFlightClaim (Free)" />
   <meta property="og:description" content="Create and send your EC261 compensation letter free. No fees. No catch." />
   <meta property="og:url" content="https://www.freeflightclaim.com/" />
@@ -29,93 +28,94 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Alpine.js for interactivity -->
+  <!-- Alpine.js -->
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-  <!-- AOS (animations) -->
+  <!-- AOS -->
   <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
   <script defer src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 
   <style>
-    .hidden { display: none !important; }
     body { font-family: 'Inter', sans-serif; top: 0 !important; position: static !important; }
     html { margin-top: 0 !important; }
+    .hidden { display: none !important; }
 
     .content-box { max-width: 600px; margin: 0 auto; padding: 2rem; background: #f9fafb; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,.05); }
 
-    /* Google Translate — hide only the banner, keep the widget alive */
-    #google_translate_element {
-      position: absolute;
-      width: 0;
-      height: 0;
-      overflow: hidden;
-      visibility: hidden;
-    }
+    /* Google Translate: keep the gadget alive but off-screen. Do NOT hide .goog-te-gadget itself. */
+    #google_translate_element { position: fixed; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; }
     .goog-te-banner-frame.skiptranslate { display: none !important; }
     .goog-te-gadget-icon, .goog-logo-link { display: none !important; }
-    /* DO NOT hide .goog-te-gadget or body > .skiptranslate */
+    body { top: 0 !important; }
 
     form label { display: block; margin-top: 1rem; font-weight: 600; }
-    form input, form select {
-      width: 100%; padding: .6rem; border: 1px solid #d1d5db; border-radius: 6px; margin-top: .5rem;
-    }
+    form input, form select { width: 100%; padding: .6rem; border: 1px solid #d1d5db; border-radius: 6px; margin-top: .5rem; }
     .input-error { border-color: #ef4444; }
 
-    /* Improve contrast on comparison cards over bg image */
     .card-veil { background: rgba(255,255,255,0.96); backdrop-filter: blur(2px); }
   </style>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 
   <script>
-    // Language switcher using cookies (keeps GT toolbar hidden)
-    function setLanguage(langPair) {
-      if (!langPair) {
-        console.error('No language pair provided');
-        return;
-      }
-      const domain = window.location.hostname;
-      const baseDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
-      const targetLang = langPair.split('|')[1];
-      const newLang = '/auto/' + targetLang;
-
-      // Clear existing cookies
-      const expire = 'Thu, 01 Jan 1970 00:00:01 GMT';
-      ['', '.'+baseDomain].forEach(d => {
-        document.cookie = `googtrans=; expires=${expire}; path=/;${d ? ' domain=' + d : ''}`;
-      });
-
-      // Set new cookie
-      document.cookie = `googtrans=${newLang}; path=/; domain=.${baseDomain}`;
-      localStorage.setItem('ffc_lang', targetLang);
-      console.log(`Set language cookie: googtrans=${newLang} for domain=.${baseDomain}`);
-      window.location.reload();
+    /* ========= Google Translate: reliable switching ========= */
+    function setGtCookie(lang) {
+      // host-only cookie (most reliable) + hostname cookie; 1-year persistence
+      var value = '/auto/' + lang + ';path=/;max-age=31536000';
+      document.cookie = 'googtrans=' + value; // host-only
+      document.cookie = 'googtrans=' + value + ';domain=' + location.hostname; // hostname cookie
     }
 
-    function getCurrentLang() {
-      const c = document.cookie.match(/(?:^|; )googtrans=([^;]+)/);
-      if (!c) {
-        console.log('No googtrans cookie found, defaulting to en');
-        return 'en';
+    function GTranslateFireEvent(el, evtName) {
+      try {
+        if (document.createEvent) {
+          var evObj = document.createEvent('HTMLEvents');
+          evObj.initEvent(evtName, true, true);
+          el.dispatchEvent(evObj);
+        } else if (document.createEventObject) { // IE <= 8
+          var evObj2 = document.createEventObject();
+          el.fireEvent('on' + evtName, evObj2);
+        }
+      } catch(e) {}
+    }
+
+    function doGTranslate(langPair, tries = 0) {
+      var lang = (langPair.split('|')[1] || 'en');
+      var select = document.querySelector('select.goog-te-combo');
+      if (!select) {
+        if (tries < 50) return setTimeout(function(){ doGTranslate(langPair, tries+1); }, 200); // wait up to ~10s
+        return;
       }
-      const val = decodeURIComponent(c[1]);
-      const parts = val.split('/');
-      const lang = parts[2] || 'en';
-      console.log(`Current language: ${lang}`);
-      return lang;
+      if (select.value === lang) return;
+      select.value = lang;
+      GTranslateFireEvent(select, 'change');
+    }
+
+    function setLanguage(langPair) {
+      var lang = langPair.split('|')[1];
+      setGtCookie(lang);
+      doGTranslate(langPair); // immediate attempt
+      // fallback reload if the widget still hasn't injected
+      setTimeout(function(){
+        if (!document.querySelector('select.goog-te-combo')) location.reload();
+      }, 1500);
+    }
+
+    function getCurrentLang(){
+      const m = document.cookie.match(/(?:^|; )googtrans=\/auto\/([a-z-]+)/i);
+      return m ? m[1] : 'en';
     }
   </script>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-  <!-- Keep GT element in DOM (hidden via CSS so translation works) -->
+  <!-- Keep GT element present -->
   <div id="google_translate_element"></div>
 
   <!-- Header -->
   <header class="bg-white shadow">
     <div class="max-w-7xl mx-auto px-4 py-3">
       <div class="flex items-center justify-between gap-3">
-        <!-- Primary brand (FreeFlightClaim) -->
         <a href="/" class="shrink-0 order-1">
           <img src="/images/logo-freeflightclaim.png" alt="FreeFlightClaim Logo" class="h-12 sm:h-14 w-auto" />
         </a>
@@ -140,7 +140,8 @@
                 ['pl','🇵🇱 Polski'],['cs','🇨🇿 Čeština'],['ro','🇷🇴 Română'],['bg','🇧🇬 Български'],
                 ['el','🇬🇷 Ελληνικά'],['pt','🇵🇹 Português']
               ]">
-                <a href="#" @click.prevent="setLanguage('en|' + opt[0]); open=false"
+                <a href="#"
+                   @click.prevent="setLanguage('en|' + opt[0]); lang = opt[0]; open=false"
                    class="block px-4 py-2 hover:bg-gray-100"
                    :aria-current="lang === opt[0] ? 'true' : 'false'"
                    x-text="opt[1]"></a>
@@ -149,7 +150,6 @@
           </div>
         </div>
 
-        <!-- Powered by Quaerens (smaller) -->
         <a href="/" class="shrink-0 order-2 sm:order-3 text-right">
           <div class="leading-tight text-xs text-gray-500">Powered by</div>
           <img src="/images/quaerens-logo.png" alt="Quaerens Logo" class="h-6 w-auto inline-block" />
@@ -158,10 +158,22 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="relative w-full overflow-hidden">
-    <img src="images/hero-flight2.jpg" alt="Free Flight Delay Legal Help Banner"
-      class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
+  <!-- Hero (fixed height + object-contain so it's always visible) -->
+  <section class="relative w-full bg-gradient-to-b from-white to-slate-50">
+    <div class="mx-auto max-w-7xl px-4 py-4 md:py-6">
+      <div class="relative w-full h-[48vh] md:h-[68vh] rounded-xl overflow-hidden bg-white flex items-center justify-center">
+        <img
+          src="/images/hero-flight2.jpg"
+          srcset="/images/hero-flight2.jpg 1200w, /images/hero-flight2@2x.jpg 2000w"
+          sizes="100vw"
+          alt="Smiling couple holding compensation money at an airport"
+          class="w-full h-full object-contain"
+          loading="eager"
+          fetchpriority="high"
+          onerror="this.onerror=null; this.src='/images/hero-flight2.jpg';"
+        />
+      </div>
+    </div>
   </section>
 
   <!-- Claim Calculator -->
@@ -253,10 +265,8 @@
             </button>
           </form>
 
-          <!-- Compensation Result -->
           <div id="compensation-result" class="mt-6 text-center text-lg font-semibold text-green-700 hidden" aria-live="polite"></div>
 
-          <!-- CTA Button Below -->
           <a href="/claim-form.html" id="claim-button"
             class="block w-full text-center mt-4 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-2 px-4 rounded transition hidden">
             File Your Claim Free →
@@ -264,7 +274,6 @@
         </div>
       </div>
     </div>
-    <!-- datalist outside grid -->
     <datalist id="airports"></datalist>
   </section>
 
@@ -286,9 +295,8 @@
     </div>
   </div>
 
-  <!-- Legal Explanation over background -->
-  <section class="py-16 bg-cover bg-center bg-no-repeat"
-           style="background-image: url('/images/airport-background-night.jpg');">
+  <!-- Comparison -->
+  <section class="py-16 bg-cover bg-center bg-no-repeat" style="background-image: url('/images/airport-background-night.jpg');">
     <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="card-veil rounded-xl shadow-xl p-6 border border-gray-200" data-aos="fade-up">
         <h3 class="text-lg font-bold text-red-700 mb-4 text-center">USE A LAWYER</h3>
@@ -321,8 +329,7 @@
   </section>
 
   <div class="text-center">
-    <a href="/claim-form.html"
-      class="inline-block bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 text-center">
+    <a href="/claim-form.html" class="inline-block bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 text-center">
       Start your free claim
     </a>
   </div>
@@ -356,13 +363,10 @@
     </div>
   </section>
 
-  <!-- YOUR RIGHTS under EC261 (collapsible) -->
+  <!-- Rights -->
   <div class="max-w-3xl mx-auto px-4">
     <div x-data="{ open: true }" class="w-full bg-white rounded-xl shadow-md p-4 sm:p-6 border border-gray-200 mt-6" data-aos="fade-up" data-aos-delay="300">
-      <button
-        @click="open = !open"
-        class="w-full text-left text-lg sm:text-xl font-bold text-blue-700 flex items-center justify-between focus:outline-none"
-        aria-expanded="true" aria-controls="rightsContent">
+      <button @click="open = !open" class="w-full text-left text-lg sm:text-xl font-bold text-blue-700 flex items-center justify-between focus:outline-none" aria-expanded="true" aria-controls="rightsContent">
         <span>YOUR RIGHTS UNDER EC 261</span>
         <svg xmlns="http://www.w3.org/2000/svg" :class="open ? 'rotate-180' : ''" class="h-5 w-5 text-blue-700 transition-transform duration-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clip-rule="evenodd" />
@@ -390,40 +394,17 @@
       <button onclick="document.getElementById('faqModal').classList.add('hidden')" aria-label="Close FAQ" class="absolute top-2 right-2 text-xl font-bold">&times;</button>
       <h3 id="faqModalTitle" class="text-xl font-semibold mb-4">Flight Delay & Cancellation Compensation – FAQ</h3>
       <div id="faqModalDesc" class="space-y-4 text-sm leading-relaxed">
-        <p><strong>What is EC Regulation 261/2004?</strong><br>
-          A European Union law that entitles airline passengers to compensation for long delays, cancellations, and denied boarding.</p>
-
-        <p><strong>Who is eligible for compensation?</strong><br>
-          Passengers delayed 3+ hours, cancelled within 14 days, or denied boarding due to the airline’s fault.</p>
-
-        <p><strong>How far back can I claim?</strong><br>
-          Up to 6 years in the UK, 3 years in many EU countries.</p>
-
-        <p><strong>What are the compensation amounts?</strong><br>
-          • €250 for flights under 1,500 km<br>
-          • €400 for 1,500–3,500 km<br>
-          • €600 for over 3,500 km (4+ hours delay)</p>
-
-        <p><strong>Can I claim for a short flight (e.g., 100 miles)?</strong><br>
-          Yes, if arrival delay is 3+ hours and it’s the airline’s fault, you may still claim €250.</p>
-
-        <p><strong>What counts as “extraordinary circumstances”?</strong><br>
-          Bad weather, strikes, air traffic control issues — technical faults and crew issues usually qualify.</p>
-
-        <p><strong>Do non-EU airlines count?</strong><br>
-          Yes, if departing from the EU/UK or arriving on an EU/UK airline.</p>
-
-        <p><strong>Who pays the compensation?</strong><br>
-          The airline – not the travel agent or booking site.</p>
-
-        <p><strong>What if I got a refund or voucher?</strong><br>
-          You can still claim compensation in addition to other remedies.</p>
-
-        <p><strong>How much does this service cost?</strong><br>
-          It’s completely free to generate and send your letter with FreeFlightClaim. Donations are optional and appreciated.</p>
-
-        <p><strong>How long does it take?</strong><br>
-          Many airlines reply within 2–4 weeks; escalations can take longer.</p>
+        <p><strong>What is EC Regulation 261/2004?</strong><br>A European Union law that entitles airline passengers to compensation for long delays, cancellations, and denied boarding.</p>
+        <p><strong>Who is eligible for compensation?</strong><br>Passengers delayed 3+ hours, cancelled within 14 days, or denied boarding due to the airline’s fault.</p>
+        <p><strong>How far back can I claim?</strong><br>Up to 6 years in the UK, 3 years in many EU countries.</p>
+        <p><strong>What are the compensation amounts?</strong><br>• €250 for flights under 1,500 km<br>• €400 for 1,500–3,500 km<br>• €600 for over 3,500 km (4+ hours delay)</p>
+        <p><strong>Can I claim for a short flight (e.g., 100 miles)?</strong><br>Yes, if arrival delay is 3+ hours and it’s the airline’s fault, you may still claim €250.</p>
+        <p><strong>What counts as “extraordinary circumstances”?</strong><br>Bad weather, strikes, air traffic control issues — technical faults and crew issues usually qualify.</p>
+        <p><strong>Do non-EU airlines count?</strong><br>Yes, if departing from the EU/UK or arriving on an EU/UK airline.</p>
+        <p><strong>Who pays the compensation?</strong><br>The airline – not the travel agent or booking site.</p>
+        <p><strong>What if I got a refund or voucher?</strong><br>You can still claim compensation in addition to other remedies.</p>
+        <p><strong>How much does this service cost?</strong><br>It’s completely free to generate and send your letter with FreeFlightClaim. Donations are optional and appreciated.</p>
+        <p><strong>How long does it take?</strong><br>Many airlines reply within 2–4 weeks; escalations can take longer.</p>
       </div>
     </div>
   </div>
@@ -470,14 +451,13 @@
   </section>
 
   <div class="text-center">
-    <a href="/claim-form.html"
-       class="inline-block bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 text-center">
+    <a href="/claim-form.html" class="inline-block bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 text-center">
       Start your free claim
     </a>
   </div>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 text-white殷 py-6 mt-12">
+  <footer class="bg-gray-800 text-white py-6 mt-12">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
       <p class="text-sm">&copy; 2025 FreeFlightClaim.com — Powered by Quaerens Ltd</p>
       <div class="mt-3 sm:mt-0 flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -490,36 +470,32 @@
   </footer>
 
   <!-- Scroll to top -->
-  <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition" aria-label="Scroll to top">
-    ↑
-  </button>
+  <button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition" aria-label="Scroll to top">↑</button>
 
-  <!-- Scripts -->
+  <!-- Page Scripts -->
   <script>
-    // AOS init
+    // AOS
     window.addEventListener('load', () => { if (window.AOS) AOS.init({ once: true, duration: 500, offset: 40 }); });
 
-    // EC261 calculator with distance band
+    // Airports
     const airportList = [
-      "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
-      "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
-      "London Gatwick (LGW)", "London Heathrow (LHR)", "Madrid Barajas (MAD)", "Malaga (AGP)", "Manchester (MAN)",
-      "Milan Malpensa (MXP)", "Munich (MUC)", "Nice Côte d'Azur (NCE)", "Oslo Gardermoen (OSL)", "Paris Charles de Gaulle (CDG)",
-      "Paris Orly (ORY)", "Porto (OPO)", "Prague Vaclav Havel (PRG)", "Rome Fiumicino (FCO)", "Stockholm Arlanda (ARN)",
-      "Vienna (VIE)", "Warsaw Chopin (WAW)", "Zagreb (ZAG)", "Zurich (ZRH)", "Athens (ATH)", "Palma de Mallorca (PMI)",
-      "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
-      "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
+      "Amsterdam Schiphol (AMS)","Barcelona El Prat (BCN)","Berlin Brandenburg (BER)","Brussels Zaventem (BRU)",
+      "Copenhagen (CPH)","Dublin (DUB)","Edinburgh (EDI)","Frankfurt (FRA)","Geneva (GVA)","Lisbon (LIS)",
+      "London Gatwick (LGW)","London Heathrow (LHR)","Madrid Barajas (MAD)","Malaga (AGP)","Manchester (MAN)",
+      "Milan Malpensa (MXP)","Munich (MUC)","Nice Côte d'Azur (NCE)","Oslo Gardermoen (OSL)","Paris Charles de Gaulle (CDG)",
+      "Paris Orly (ORY)","Porto (OPO)","Prague Vaclav Havel (PRG)","Rome Fiumicino (FCO)","Stockholm Arlanda (ARN)",
+      "Vienna (VIE)","Warsaw Chopin (WAW)","Zagreb (ZAG)","Zurich (ZRH)","Athens (ATH)","Palma de Mallorca (PMI)",
+      "Ibiza (IBZ)","Tenerife South (TFS)","Gran Canaria (LPA)","Rhodes (RHO)","Corfu (CFU)","Heraklion (HER)",
+      "Larnaca (LCA)","Paphos (PFO)","Split (SPU)","Dubrovnik (DBV)","Reykjavik (KEF)"
     ];
-    window.airportList = airportList; // expose to modal
-
+    window.airportList = airportList;
     const datalist = document.getElementById('airports');
-    airportList.forEach(name => { const option = document.createElement('option'); option.value = name; datalist.appendChild(option); });
-
+    airportList.forEach(name => { const o = document.createElement('option'); o.value = name; datalist.appendChild(o); });
     function validAirport(val){ return airportList.includes(val.trim()); }
 
+    // Calculator
     document.getElementById('compensation-form').addEventListener('submit', function (e) {
       e.preventDefault();
-
       const dep = document.getElementById('departure');
       const arr = document.getElementById('arrival');
       const delaySel = document.getElementById('delay');
@@ -528,7 +504,6 @@
       const claimButton = document.getElementById('claim-button');
 
       [dep,arr,delaySel,distSel].forEach(el => el.classList.remove('input-error'));
-
       let ok = true;
       if (!dep.value.trim() || !validAirport(dep.value)) { dep.classList.add('input-error'); ok = false; }
       if (!arr.value.trim() || !validAirport(arr.value)) { arr.classList.add('input-error'); ok = false; }
@@ -542,18 +517,16 @@
       }
 
       const delay = parseInt(delaySel.value, 10);
-      const dist = distSel.value; // short, medium, long
-      let compensation = 0;
-
-      if (delay < 3) compensation = 0; // under 3 hours
-      else {
-        if (dist === 'short') compensation = 250;
-        else if (dist === 'medium') compensation = 400;
-        else if (dist === 'long') compensation = (delay >= 4 ? 600 : 300);
+      const dist = distSel.value;
+      let euro = 0;
+      if (delay >= 3) {
+        if (dist === 'short') euro = 250;
+        else if (dist === 'medium') euro = 400;
+        else if (dist === 'long') euro = (delay >= 4 ? 600 : 300);
       }
 
-      if (compensation > 0) {
-        result.innerHTML = `✅ You may be entitled to <strong>€${compensation}</strong> in compensation.`;
+      if (euro > 0) {
+        result.innerHTML = `✅ You may be entitled to <strong>€${euro}</strong> in compensation.`;
         claimButton.classList.remove('hidden');
       } else {
         result.textContent = `ℹ️ Delays under 3 hours usually don’t qualify under EU261 rules.`;
@@ -565,190 +538,47 @@
     // Scroll to top
     const scrollBtn = document.getElementById("scrollTopBtn");
     if (scrollBtn) {
-      window.addEventListener("scroll", () => {
-        scrollBtn.classList.toggle("hidden", window.scrollY < 300);
-      });
-      scrollBtn.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+      window.addEventListener("scroll", () => { scrollBtn.classList.toggle("hidden", window.scrollY < 300); });
+      scrollBtn.addEventListener("click", () => { window.scrollTo({ top: 0, behavior: "smooth" }); });
     }
   </script>
 
-  <!-- Firebase scaffold left as-is (no-op if not loaded) -->
-  <script type="module" src="/firebase-setup.js"></script>
+  <!-- Translate init (must be after helpers) -->
   <script>
-    if (window.firebaseUtils && window.firestore && window.storage) {
-      const db = window.firestore;
-      const storage = window.storage;
-      const { collection, addDoc, serverTimestamp, ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
-      const claimForm = document.getElementById("claim-letter-form");
-      if (claimForm) {
-        claimForm.addEventListener("submit", async function (e) {
-          e.preventDefault();
-          // your code to extract values + call generatePDF()
-        });
-      }
-    } else {
-      console.warn("Firebase not initialized yet or firebaseUtils missing");
-    }
-  </script>
-
-  <!-- Simple airline email map -->
-  <script>
-    const airlineEmails = {
-      "Ryanair": "claims@ryanair.com",
-      "easyJet": "customer.support@easyjet.com",
-      "Lufthansa": "customer.relations@lufthansa.com",
-      "Vueling": "atencion.clientes@vueling.com",
-      "British Airways": "customer.relations@ba.com",
-      "KLM": "mail@klm.nl",
-      "Transavia": "servicecentre@transavia.com",
-      "Air France": "mail.afklmplc@airfrance.fr",
-      "Iberia": "clasica@iberia.es",
-      "Jet2": "customer.service@jet2.com",
-      "Wizz Air": "claim@wizzair.com",
-      "TUI Airways": "aftertravel@tui.co.uk",
-      "Norwegian": "complaints@norwegian.com",
-      "Aer Lingus": "customerqueries@aerlingus.com",
-      "Brussels Airlines": "claim@brusselsairlines.com",
-      "Swiss International Air Lines": "contact@swiss.com",
-      "Eurowings": "customercare@eurowings.com",
-      "TAP Air Portugal": "customer@tap.pt",
-      "Finnair": "feedback@finnair.com",
-      "SAS Scandinavian Airlines": "customercare@sas.se",
-      "Aegean Airlines": "customercare@aegeanair.com",
-      "LOT Polish Airlines": "contact@lot.pl",
-      "Air Malta": "customer.relations@airmalta.com",
-      "Corendon Airlines": "info@corendon-airlines.com",
-      "SunExpress": "customer.service@sunexpress.com",
-      "Blue Air": "support@blueairweb.com",
-      "Volotea": "support@volotea.com",
-      "Lauda Europe": "assistance@laudamotion.com",
-      "Widerøe": "info@wideroe.no",
-      "Croatia Airlines": "contact@croatiaairlines.hr",
-      "Alitalia (ITA Airways)": "customer.relations@itaspa.com",
-      "Condor": "service@condor.com"
-    };
-  </script>
-
-  <!-- PDF generator -->
-  <script>
-    function generatePDF(data) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const today = new Date().toLocaleDateString();
-      const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
-
-      let y = 20;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-
-      doc.setFont(undefined, "bold"); doc.text(today, 10, y); y += 10;
-      doc.setFont(undefined, "normal"); doc.text(`Claim Reference: ${claimRef}`, 10, y); y += 12;
-
-      doc.setFont(undefined, "bold"); doc.text("To:", 10, y); y += 6;
-      doc.setFont(undefined, "normal"); doc.text(airlineContact, 10, y); y += 14;
-
-      doc.setFont(undefined, "bold"); doc.text("Subject:", 10, y); y += 6;
-      doc.setFont(undefined, "normal"); doc.text("Compensation Request under EC Regulation 261/2004", 10, y); y += 10;
-
-      const intro = `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`;
-      const introLines = doc.splitTextToSize(intro, 180);
-      doc.text(introLines, 10, y); y += introLines.length * 6 + 6;
-
-      doc.setFont(undefined, "bold"); doc.text("Flight Details:", 10, y); y += 8;
-
-      doc.setFont(undefined, "normal");
-      const details = [
-        `Passenger Name: ${data.fullName}`,
-        `Email: ${data.email}`,
-        `Flight Number: ${data.flightNumber}`,
-        `Booking Reference: ${data.bookingRef || ''}`,
-        `Flight Date: ${data.flightDate}`,
-        `Departure Airport: ${data.depAirport}`,
-        `Arrival Airport: ${data.arrAirport}`,
-        `Airline: ${data.airline}`,
-        `Reason for Delay: ${data.reason || "Not specified"}`,
-        `Flight Distance: ${data.distance}`,
-        `Delay Duration: ${data.delayDuration}`,
-        `Estimated Compensation: €${data.compensation}`,
-        `Preferred Payment Method (IBAN): ${data.iban || ''}`
-      ];
-      details.forEach(line => { doc.text(line, 10, y); y += 7; });
-
-      y += 4;
-      const closing = `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body if not resolved in time.\n\nSincerely,\n\n${data.fullName}`;
-      const closingLines = doc.splitTextToSize(closing, 180);
-      doc.text(closingLines, 10, y); y += closingLines.length * 6;
-
-      doc.setFontSize(10); doc.setTextColor(120);
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const footerText = "This document was generated free of charge by FreeFlightClaim.com.";
-      const textWidth = doc.getTextWidth(footerText);
-      doc.text(footerText, (pageWidth - textWidth) / 2, 290);
-
-      doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-    }
-  </script>
-
-  <!-- Default language cookie and GT init -->
-  <script>
-    (function() {
-      function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-      }
-      if (!getCookie('googtrans')) {
-        var domain = window.location.hostname;
-        var baseDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
-        document.cookie = `googtrans=/auto/en;path=/;domain=.${baseDomain}`;
-        console.log('Set default language cookie: googtrans=/auto/en');
+    // Ensure default cookie exists
+    (function ensureDefaultCookie(){
+      if (!document.cookie.match(/(?:^|; )googtrans=/)) {
+        document.cookie = 'googtrans=/auto/en;path=/;max-age=31536000';
       }
     })();
 
     function googleTranslateElementInit() {
-      try {
-        new google.translate.TranslateElement({
-          pageLanguage: 'en',
-          includedLanguages: 'en,fr,es,de,nl,it,sv,el,da,pl,cs,ro,bg,pt',
-          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-          autoDisplay: false
-        }, 'google_translate_element');
-        console.log('Google Translate initialized successfully');
-      } catch (e) {
-        console.error('Google Translate initialization failed:', e);
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,fr,es,de,nl,it,sv,el,da,pl,cs,ro,bg,pt',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element');
+
+      // Apply saved cookie language if not English
+      var lgMatch = document.cookie.match(/(?:^|; )googtrans=\/auto\/([a-z-]+)/i);
+      var lg = lgMatch ? lgMatch[1] : null;
+      if (lg && lg !== 'en') {
+        doGTranslate('en|' + lg);
       }
     }
 
     window.addEventListener('load', function() {
       const gtFrame = document.querySelector('.goog-te-banner-frame.skiptranslate');
-      if (gtFrame) {
-        gtFrame.style.display = 'none';
-        console.log('Google Translate banner hidden');
-      } else {
-        console.warn('Google Translate banner not found');
-      }
-      setTimeout(() => {
-        if (!window.google || !window.google.translate) {
-          console.error('Google Translate not loaded');
-          const languageDropdown = document.querySelector('.order-3.sm\\:order-2');
-          if (languageDropdown) {
-            languageDropdown.innerHTML += '<span class="text-red-500 text-xs ml-2">Translation unavailable</span>';
-          }
-        }
-      }, 2000);
+      if (gtFrame) gtFrame.style.display = 'none';
     });
   </script>
-  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" onerror="console.error('Failed to load Google Translate script')"></script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
   <!-- Live flights with caching + retry (24h expiry) -->
   <script>
     const FLIGHTS_KEY = 'ffc_flights_cache_v1';
-    const MAX_AGE = 24 * 60 * 60 * 1000; // 24h
+    const MAX_AGE = 24 * 60 * 60 * 1000;
     const updatedEl = document.getElementById('flights-updated');
     const listEl = document.getElementById('flights-list');
     const retryBtn = document.getElementById('retry-flights');
@@ -767,9 +597,7 @@
           <strong>${f.airport}</strong> —
           <strong>Flight:</strong> ${f.flightNumber || "N/A"}<br>
           <strong>Scheduled:</strong> ${f.scheduledTimeUtc || "N/A"}<br>
-          <strong>Status:</strong> ${
-            f.type === "delay" ? ("Delayed " + (f.averageDelay || "?") + " min") : ("Cancelled" + (f.date ? " (" + f.date + ")" : ""))
-          }
+          <strong>Status:</strong> ${ f.type === "delay" ? ("Delayed " + (f.averageDelay || "?") + " min") : ("Cancelled" + (f.date ? " (" + f.date + ")" : "")) }
         </li>`;
       });
       html += "</ul>";
@@ -784,13 +612,13 @@
             const { data, cachedAt } = JSON.parse(cached);
             if (Date.now() - cachedAt < MAX_AGE) {
               renderFlights(data);
-              // background refresh
               setTimeout(() => fetchFlights(true), 0);
               return;
             }
           }
         }
-        const r = await fetch('/flights-today.json', { cache: 'no-store' });
+        // Use relative path if this file is not at site root
+        const r = await fetch('flights-today.json', { cache: 'no-store' });
         const data = await r.json();
         localStorage.setItem(FLIGHTS_KEY, JSON.stringify({ data, cachedAt: Date.now() }));
         renderFlights(data);
@@ -821,7 +649,6 @@
 
   <!-- Modal behavior + Airports list population -->
   <script>
-    // Populate Airports modal from the same list (strip IATA codes)
     (function(){
       const list = document.getElementById('airportsList');
       if (list && Array.isArray(window.airportList || [])) {
@@ -831,17 +658,34 @@
       }
     })();
 
-    // Close modals on Escape / click outside
     document.addEventListener('DOMContentLoaded', function () {
       const airportsModal = document.getElementById('airportsModal');
       const faqModal = document.getElementById('faqModal');
-
       [airportsModal, faqModal].forEach(modal => {
         if (!modal) return;
         document.addEventListener('keydown', e => { if (e.key === "Escape") modal.classList.add('hidden'); });
         modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
       });
     });
+  </script>
+
+  <!-- Firebase scaffold (no-op if not loaded) -->
+  <script type="module" src="/firebase-setup.js"></script>
+  <script>
+    if (window.firebaseUtils && window.firestore && window.storage) {
+      const db = window.firestore;
+      const storage = window.storage;
+      const { collection, addDoc, serverTimestamp, ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
+      const claimForm = document.getElementById("claim-letter-form");
+      if (claimForm) {
+        claimForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          // integrate generatePDF() here if needed
+        });
+      }
+    } else {
+      console.warn("Firebase not initialized yet or firebaseUtils missing");
+    }
   </script>
 </body>
 </html>
