@@ -1,966 +1,615 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full" x-data="{ qcOpen:false }">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="images/favicon.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flight Delay Compensation | Quaerens</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>QuickCheck | Quaerens</title>
+  <meta name="description" content="QuickCheck by Quaerens — simple tools and friendly help to recover refunds and compensation across travel, finance, property and more." />
+  <link rel="canonical" href="https://www.quaerens.co.uk/" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="theme-color" content="#2563eb" />
+
+  <!-- Social -->
+  <meta property="og:site_name" content="Quaerens" />
+  <meta property="og:title" content="QuickCheck | Quaerens" />
+  <meta property="og:description" content="Check what you could recover in minutes — DIY tools or friendly help when you want it." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.quaerens.co.uk/" />
+  <meta property="og:image" content="https://www.quaerens.co.uk/images/quaerens-og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Perf: fonts + Tailwind -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- ✅ Add Alpine.js here -->
+  <!-- Alpine.js -->
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .content-box {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 2rem;
-      background: #f9fafb;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    .goog-te-banner-frame.skiptranslate,
-  .goog-logo-link,
-  .goog-te-gadget {
-    display: none !important;
-  }
-  body {
-    top: 0px !important;
-  }
-    form label {
-      display: block;
-      margin-top: 1rem;
-      font-weight: 600;
-    }
-    form input, form select {
-      width: 100%;
-      padding: 0.6rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-top: 0.5rem;
-    }
-  </style>
-  <script type="text/javascript">
-    function googleTranslateElementInit() {
-      new google.translate.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'en,es,fr,de,nl,it',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-      }, 'google_translate_element');
-    }
-  </script>
-  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-  <script>
-    function setLanguage(lang) {
-      var newLang = '/auto/' + lang;
-      document.cookie = 'googtrans=' + newLang + '; path=/';
-      document.cookie = 'googtrans=' + newLang + '; domain=' + window.location.hostname + '; path=/';
-      location.reload();
-    }
-  </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  </head>
+  <!-- AOS (optional) -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 
-<body class="bg-gray-50 text-gray-800">
-  <div id="google_translate_element" style="display: none;"></div>
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f9fafb; color:#111827; }
+
+    /* Accessibility */
+    .skip-link { position:absolute; left:-999px; top:auto; width:1px; height:1px; overflow:hidden; }
+    .skip-link:focus { position:static; width:auto; height:auto; padding:.5rem 1rem; background:#111827; color:#fff; z-index:9999; }
+    :focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+    /* Claim card styles (single source) */
+    .claim-box { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1rem; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.04); width:100%; max-width:260px; min-height:250px; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .claim-box:hover { transform: translateY(-6px); border-color:#2563eb; box-shadow: 0 10px 20px rgba(0,0,0,.12); }
+    .claim-box img { width:120px; height:120px; object-fit:contain; border-radius:8px; margin-bottom:.5rem; }
+    .claim-free-btn, .claim-blue-btn { display:inline-block; padding:.65rem 1.25rem; border-radius:999px; font-weight:800; border:0; margin-top:auto; }
+    .claim-free-btn { background:#22c55e; color:#fff; }
+    .claim-free-btn:hover { background:#16a34a; }
+    .claim-blue-btn { background:#2563eb; color:#fff; }
+    .claim-blue-btn:hover { background:#1d4ed8; }
+
+    /* Sticky CTA spacing on mobile so it doesn't overlap footer */
+    @media (max-width: 768px) { body { padding-bottom: 64px; } }
+
+    /* Hide only the Google Translate top banner (keep page layout tight) */
+    .goog-te-banner-frame.skiptranslate { display:none !important; }
+    body > .skiptranslate { display:none !important; }
+    body { top:0 !important; }
+  </style>
+</head>
+<body class="h-full" x-data @keydown.escape="qcOpen=false">
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <!-- Header -->
-  <header class="bg-white shadow">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <a href="/">
-        <img src="images/quaerens-logo.png" alt="Quaerens Logo" class="h-20 w-auto">
+  <header class="bg-white border-b">
+    <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-4">
+      <a href="/" class="inline-flex items-center gap-3">
+        <!-- Bigger logo -->
+        <img src="/images/quaerens-logo.png" width="280" height="84" alt="Quaerens" loading="eager" class="h-20 md:h-24 w-auto" />
+        <span class="sr-only">Quaerens home</span>
       </a>
-      <nav>
-        <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">More claims</a>
+      <nav class="hidden md:flex items-center gap-5" aria-label="Primary">
+        <a href="#travel" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Travel & Holiday</a>
+        <a href="#finance" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Finance & Pensions</a>
+        <a href="#property" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Property & Mortgages</a>
+        <a href="#consumer" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Everyday Issues</a>
+        <a href="#digital" class="text-sm font-semibold text-gray-700 hover:text-blue-700">Digital Risks</a>
       </nav>
-      
+      <div class="flex items-center gap-3">
+        <!-- Hidden Google gadget (needed for translate to work) -->
+        <div id="google_translate_element" class="sr-only" aria-hidden="true"></div>
+
+        <!-- Custom Language dropdown -->
+        <div x-data="{ open:false }" class="relative">
+          <button @click="open=!open" class="inline-flex items-center rounded border border-gray-300 px-3 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100">
+            🌐 Language
+          </button>
+          <div x-show="open" @click.outside="open=false" class="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg z-50 text-sm text-gray-700">
+            <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
+            <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
+            <a href="#" onclick="setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
+            <a href="#" onclick="setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
+            <a href="#" onclick="setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
+            <a href="#" onclick="setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
+            <a href="#" onclick="setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
+            <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
+          </div>
+        </div>
+
+        <button type="button" @click.prevent="qcOpen=true" class="hidden md:inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
+      </div>
     </div>
   </header>
 
-<!-- Hero Section -->
-<section class="relative w-full overflow-hidden">
-  <img src="images/hero-flight2.jpg" alt="Free Legal Help Banner"
-       class="w-full h-auto object-cover object-center" loading="eager" fetchpriority="high" />
-</section>
-
-  <!-- Claim Calculator -->
-  <section id="calculator" class="py-16 bg-white">
-  <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-
-    <!-- Left: Legal Info -->
-    <div class="bg-blue-50 rounded-xl p-6 shadow-md" data-aos="fade-up">
-      <h2 class="text-xl font-bold mb-4 text-blue-800">Why You’re Entitled to Compensation</h2>
-      <p class="text-gray-700 mb-3">
-        Under <strong>EU Regulation 261/2004</strong>, you can claim up to <strong>€600</strong> if your flight was delayed,
-        cancelled, or overbooked — and the airline was at fault. This includes technical issues, crew shortages, and more.
-      </p>
-      <p class="text-gray-600">
-        If your flight arrived more than 3 hours late, and it wasn’t due to extraordinary circumstances (like extreme weather),
-        you may have a valid claim. Our experts handle the process — <strong>no win, no fee</strong>.
-      </p>
-      <hr class="my-4">
-      <h3 class="text-xl font-bold text-blue-800 mb-2">Why should you choose us?</h3>
-      <ul class="list-disc list-inside text-gray-700 space-y-2">
-        <li>We prepare and send your legal claim letter to the airline — at no cost.</li>
-        <li>No fees. No waiting lists. No hidden catches.</li>
-        <li>Save hours of your time — we’ve automated the process for you.</li>
-        <li>Just enter your flight details and relax.</li>
-        <li>Did I forget to mention that this service is FREE!</li>
-        <li>Support our work with an optional donation if you’re happy.</li>
-      </ul>
-    </div>
-
-    <!-- Right: Calculator -->
-    <div class="bg-white rounded-xl p-6 shadow-md content-box" data-aos="fade-up">
-      <h2>✈️ Check Your Flight Delay Compensation</h2>
-      <p>Enter your flight details to see if you’re entitled to compensation under EU261.</p>
-      <form id="compensation-form">
-        <label for="departure">Departure Airport</label>
-        <input list="airports" id="departure" placeholder="e.g. Amsterdam AMS" required>
-
-        <label for="arrival">Arrival Airport</label>
-        <input list="airports" id="arrival" placeholder="e.g. Malaga AGP" required>
-
-        <label for="delay">Delay Duration</label>
-        <select id="delay" required>
-          <option value="">Select Delay Duration</option>
-          <option value="2">Less than 3 hours</option>
-          <option value="3">3 to 4 hours</option>
-          <option value="4">More than 4 hours</option>
-        </select>
-
-        <button type="submit"
-                style="margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer;">
-          Check Compensation
-        </button>
-      </form>
-
-      <div id="compensation-result" style="margin-top: 1.5rem; font-size: 1.2rem; font-weight: 500;"></div>
-
-      <datalist id="airports"></datalist>
-    </div>
-
-  </div>
-</section>
-
-<div class="mt-10 bg-white border border-gray-200 rounded-xl p-6 shadow-md">
-
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center text-center">
-
-    <!-- News Item 1 -->
-    <div>
-      <img src="/images/logo-skynews.png" alt="Sky News" class="mx-auto h-10 mb-2">
-      <p class="text-sm text-gray-700">“Finally, a flight claim service that’s 100% free.”</p>
-    </div>
-
-    <!-- News Item 2 -->
-    <div>
-      <img src="/images/logo-travelweekly.png" alt="Travel Weekly" class="mx-auto h-10 mb-2">
-      <p class="text-sm text-gray-700">“No lawyers. No fees. Just fast, fair help for delayed flyers.”</p>
-    </div>
-
-    <!-- News Item 3 -->
-    <div>
-      <img src="/images/logo-euconsumerwatch.png" alt="EU Consumer Watch" class="mx-auto h-10 mb-2">
-      <p class="text-sm text-gray-700">“EC261 letters in minutes – sent to the airline for you.”</p>
-    </div>
-
-  </div>
-</div>
-
-<!-- EC261 Claim Letter Generator Section (Improved for Mobile and Layout) -->
-<section class="bg-blue-50 pt-0">
-  <!-- Hero Image -->
-  <div class="w-full flex justify-center items-center bg-white overflow-hidden px-2">
-    <img
-      src="images/hero-flight3.png"
-      alt="Generate Your Free EC261 Claim Letter"
-      class="w-full max-h-[600px] object-contain"
-      loading="lazy"
-    />
-  </div>
-
-  <!-- Heading and Subtext Below Hero -->
-  <div class="max-w-3xl mx-auto px-4 pt-6 pb-10 text-center">
-    <div class="bg-yellow-300 text-blue-900 px-6 py-6 rounded-xl shadow-lg border-2 border-yellow-500">
-      <h2 class="text-3xl sm:text-4xl font-extrabold uppercase tracking-wide">
-        Generate Your Free EC261 Claim Letter
-      </h2>
-      <p class="text-lg sm:text-xl font-semibold mt-2">
-        No lawyers, no fees — just fill in your flight details!
-      </p>
-    </div>
-  </div>
-</section>
-
-    <p class="text-gray-700 text-center mb-6">Fill in your flight and contact details to get a free compensation claim letter (PDF or email). No lawyer needed.</p>
-
-    <form id="claim-letter-form" class="bg-white p-6 rounded shadow-md space-y-4">
-
-      <div>
-        <label class="font-semibold">Full Name</label>
-        <input type="text" id="fullName" required class="w-full border p-2 rounded" />
+  <main id="main" class="min-h-screen">
+    <!-- Hero -->
+    <section class="relative bg-cover bg-center min-h-[260px] h-[42vh]" style="background-image:url('/images/hero-index.jpg')">
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="relative z-10 mx-auto max-w-5xl h-full flex flex-col items-center justify-center text-center px-4">
+        <h1 id="hero-title" class="text-white font-extrabold text-3xl md:text-5xl"></h1>
+        <p id="hero-subtitle" class="mt-3 text-white text-base md:text-xl max-w-2xl"></p>
+        <div class="mt-6 flex gap-3 flex-wrap justify-center">
+          <a href="#how-it-works" class="rounded-full border border-white/80 text-white px-4 py-2 text-sm font-semibold hover:bg-white hover:text-gray-900">How it works</a>
+          <button type="button" @click.prevent="qcOpen=true" class="rounded-full bg-blue-600 text-white px-4 py-2 text-sm font-semibold hover:bg-blue-700" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
+        </div>
       </div>
-    
-      <div>
-        <label class="font-semibold">Flight Number</label>
-        <input type="text" id="flightNumber" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Booking Reference</label>
-        <input type="text" id="bookingRef" class="w-full border p-2 rounded" required />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Preferred Payment Method (e.g. IBAN, PayPal)</label>
-        <input type="text" id="iban" class="w-full border p-2 rounded" required />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Flight Date</label>
-        <input type="date" id="flightDate" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Departure Airport</label>
-        <input type="text" id="depAirport" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Arrival Airport</label>
-        <input type="text" id="arrAirport" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Airline</label>
-        <input type="text" id="airline" list="airlines" required class="w-full border p-2 rounded" />
-        <div id="airlineLogoPreview" class="mt-2"></div>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Reason for Delay</label>
-        <input type="text" id="reason" class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Flight Distance</label>
-        <select id="distance" required class="w-full border p-2 rounded">
-          <option value="">Select distance</option>
-          <option value="short">Under 1500 km</option>
-          <option value="medium">1500–3500 km</option>
-          <option value="long">Over 3500 km</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Delay Duration</label>
-        <select id="delayDuration" required class="w-full border p-2 rounded">
-          <option value="">Select duration</option>
-          <option value="2">2 hours</option>
-          <option value="3">3 hours</option>
-          <option value="4">4+ hours</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Preferred Language</label>
-        <select id="language" required class="w-full border p-2 rounded">
-          <option value="en">English</option>
-          <option value="es">Spanish</option>
-          <option value="de">German</option>
-          <option value="fr">French</option>
-          <option value="nl">Dutch</option>
-          <option value="it">Italian</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Email Address</label>
-        <input type="email" id="email" required class="w-full border p-2 rounded" />
-      </div>
-    
-      <div>
-        <label class="font-semibold">Would you like us to handle it for you?</label>
-        <select id="handleOption" class="w-full border p-2 rounded">
-          <option value="pdf">No thanks – just give me the PDF letter</option>
-          <option value="email">Email me the letter</option>
-          <option value="quaerens">Let Quaerens handle the claim for me (no win, no fee)</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Would you like to donate?</label>
-        <select id="donation" class="w-full border p-2 rounded">
-          <option value="none">No donation</option>
-          <option value="quaerens">Support Quaerens</option>
-          <option value="charity">Donate to charity</option>
-          <option value="split">Split between both</option>
-        </select>
-      </div>
-    
-      <div>
-        <label class="font-semibold">Upload Boarding Pass or Document (optional)</label>
-        <input type="file" id="fileUpload" class="w-full border p-2 rounded" />
-      </div>
-      
-      <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
-        Generate My Claim Letter
-      </button>
-      
-      </form> <!-- ✅ Close form here, only once -->
-      
-      <div id="claim-letter-result" class="hidden text-green-600 mt-4 font-semibold">
-        ✅ Your letter is being prepared...
-      </div>
+    </section>
 
-<!-- Legal Explanation -->
-<section class="bg-gray-50 py-16">
-  <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+    <!-- Trust strip -->
+    <section class="bg-white border-b">
+      <div class="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+        <div class="text-sm text-gray-700"><strong class="text-gray-900">Friendly, expert assistants.</strong> Clear language, no jargon.</div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900">DIY or done-with-you.</strong> You choose the level of support.</div>
+        <div class="text-sm text-gray-700"><strong class="text-gray-900">Transparent pricing.</strong> Many tools free; some success-based.</div>
+      </div>
+    </section>
 
-    <!-- Box 1 -->
-    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 transition-transform duration-300 hover:-translate-y-1" data-aos="fade-up">
-      <h3 class="text-lg font-bold text-blue-700 mb-4 text-center">USE A LAWYER</h3>
-      <ul class="text-gray-700 text-sm space-y-3">
-        <li class="flex items-start gap-2">
-          <span class="text-red-500 mt-0.5">✖</span>
-          <span>Higher Fees (£50 to £500, + Hearing Fees)</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-red-500 mt-0.5">✖</span>
-          <span>Risk of losing money</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-red-500 mt-0.5">✖</span>
-          <span>Hours of your time lost</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-red-500 mt-0.5">✖</span>
-          <span>The result unknown</span>
-        </li>
-      </ul>
-    </div>
+    <!-- Two ways to start -->
+    <section id="how-it-works" class="bg-white py-12">
+      <div class="mx-auto max-w-6xl px-4">
+        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-2">Two simple ways to start</h2>
+        <p class="text-center text-gray-600 mb-8">Handle it yourself with free tools, or ask us to guide you. No pressure either way.</p>
 
-    <!-- Box 2 (highlighted) -->
-    <div class="bg-white rounded-xl shadow-md p-6 border-4 border-blue-600 transition-transform duration-300 hover:-translate-y-1" data-aos="fade-up" data-aos-delay="100">
-      <h3 class="text-lg font-bold text-blue-700 mb-4 text-center">USE OUR FREE SERVICE</h3>
-      <ul class="text-gray-700 text-sm space-y-3">
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>No cost, no risk – ever</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>Instant downloadable claim letter</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>We can send the email for you</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>Fast – no waiting lists</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>Thousands helped already</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>Option to donate if you wish</span>
-        </li>
-      </ul>
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- DIY -->
+          <article class="flex flex-col border border-green-500 bg-green-50 rounded-lg p-6 shadow-sm">
+            <h3 class="text-center text-xl font-semibold text-green-700 mb-3">Do It Yourself – DIY</h3>
+            <p class="text-gray-700 mb-2">Take control and file on your own timeline, with everything you need at your fingertips:</p>
+            <ul class="list-disc ml-5 space-y-1 text-gray-700">
+              <li>Customisable request templates ready to download</li>
+              <li>Interactive calculators to estimate your entitlement</li>
+              <li>Step-by-step guides on submission and documentation</li>
+              <li>Comprehensive FAQs addressing common roadblocks</li>
+              <li>Access to our library of sample cases and best-practice tips</li>
+            </ul>
+            <p class="text-gray-700 mt-3">No signup, no fees — just straightforward, self-serve resources to help you move forward.</p>
+            <a href="#travel" class="mt-5 inline-flex justify-center claim-free-btn">Explore free tools</a>
+          </article>
 
-    <!-- Box 3 -->
-    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200 transition-transform duration-300 hover:-translate-y-1" data-aos="fade-up" data-aos-delay="200">
-      <h3 class="text-lg font-bold text-blue-700 mb-4 text-center">LET QUAERENS HANDLE IT</h3>
-      <ul class="text-gray-700 text-sm space-y-3">
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>We do everything — start to finish</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>No waiting list — act immediately</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>Send the letter & follow up with the airline</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>100% free — no commission</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-green-600 mt-0.5">✔</span>
-          <span>Optional donation if happy with our help</span>
-        </li>
-      </ul>
-    </div>
+          <!-- Guided Expert Help -->
+          <article class="flex flex-col border border-blue-500 bg-blue-50 rounded-lg p-6 shadow-sm">
+            <h3 class="text-center text-xl font-semibold text-blue-700 mb-3">Guided Expert Help</h3>
+            <p class="text-gray-700 mb-2">Prefer expert support? Share your details and enjoy:</p>
+            <ul class="list-disc ml-5 space-y-1 text-gray-700">
+              <li>Free, no-obligation review by our specialist team and external legal partners</li>
+              <li>Dedicated case manager handling all paperwork</li>
+              <li>Regular updates and direct communication</li>
+              <li>Personalised guidance tailored to your situation</li>
+              <li>No upfront cost in many cases — you pay only on success</li>
+            </ul>
+              <p class="text-gray-700 mt-3">Submit your info now and let us do the heavy lifting — risk free.</p>
+            <button type="button" @click.prevent="qcOpen=true" class="mt-5 inline-flex justify-center claim-blue-btn" aria-haspopup="dialog" aria-controls="quickcheck-menu">Start free check ▾</button>
+          </article>
+        </div>
+      </div>
+    </section>
 
-  </div>
-</section>
-    
-      <section class="bg-white pt-6 px-4 sm:px-6 lg:px-8">
+    <!-- Category nav -->
+    <nav class="relative flex flex-wrap justify-center gap-3 mb-8 px-4" aria-label="Categories">
+      <a href="#travel" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Travel & Holiday</a>
+      <a href="#finance" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Finance & Pensions</a>
+      <a href="#property" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Property & Mortgages</a>
+      <a href="#consumer" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Everyday Issues</a>
+      <a href="#digital" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Digital Risks</a>
+    </nav>
 
-        <!-- BOX 1: LAWS AND REGULATIONS -->
-        <div class="w-full bg-white rounded-xl shadow-md p-4 sm:p-6 border border-gray-200 mt-6" data-aos="fade-up" data-aos-delay="200">
-          <h3 class="text-lg sm:text-xl font-bold text-blue-700 mb-4">LAWS AND REGULATIONS</h3>
-          <p class="text-gray-700 text-sm sm:text-base mb-4">
-            The amount of compensation you are entitled to depends on distance and delay time, fixed by the EU and the same for all airlines.
-          </p>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm border border-gray-300 text-left text-gray-800">
-              <thead class="bg-gray-100 sticky top-0 z-10">
-                <tr>
-                  <th class="px-3 py-2 border">Flight Distance</th>
-                  <th class="px-3 py-2 border">Delay</th>
-                  <th class="px-3 py-2 border">Compensation</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="px-3 py-2 border">&lt; 1,500 km</td>
-                  <td class="px-3 py-2 border">&gt; 3 Hours</td>
-                  <td class="px-3 py-2 border">€250</td>
-                </tr>
-                <tr>
-                  <td class="px-3 py-2 border">1,500 – 3,500 km</td>
-                  <td class="px-3 py-2 border">&gt; 3 Hours</td>
-                  <td class="px-3 py-2 border">€400</td>
-                </tr>
-                <tr>
-                  <td class="px-3 py-2 border">&gt; 3,500 km</td>
-                  <td class="px-3 py-2 border">3–4 Hours</td>
-                  <td class="px-3 py-2 border">€300</td>
-                </tr>
-                <tr>
-                  <td class="px-3 py-2 border">&gt; 3,500 km</td>
-                  <td class="px-3 py-2 border">&gt; 4 Hours</td>
-                  <td class="px-3 py-2 border">€600</td>
-                </tr>
-              </tbody>
-            </table>
+    <!-- TRAVEL -->
+    <section id="travel-banner" class="relative h-[200px] mb-10">
+      <img src="/images/travel-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Travel and holiday support" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Travel & Holiday</h2>
+        <p class="text-sm md:text-base opacity-95">Flight delays, refunds, luggage and more.</p>
+      </div>
+    </section>
+
+    <section id="travel" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">✈️ Travel & Holiday</h3>
+            <p class="text-gray-700">Use a free DIY tool or ask for a quick review.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/freeflightclaim.html" class="claim-box"><img src="/images/new-flightclaim.png" alt="Flight delay tool" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Flight Delay</h4><p class="text-sm text-gray-600 mb-3">Work out up to €600 and create your letter.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/freeholidaycompensation.html" class="claim-box"><img src="/images/new-holidaycomp.png" alt="Holiday refund wizard" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Holiday Refund</h4><p class="text-sm text-gray-600 mb-3">For cancellations or major changes.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/train-delay.html" class="claim-box"><img src="/images/new-traindelay.png" alt="Train delay" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Train Delay</h4><p class="text-sm text-gray-600 mb-3">Delays over 60 mins, missed connections.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/lost-luggage.html" class="claim-box"><img src="/images/new-luggage.png" alt="Lost luggage guide" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Lost Luggage</h4><p class="text-sm text-gray-600 mb-3">Steps and forms for lost or damaged bags.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/airbnb-refunds.html" class="claim-box"><img src="/images/new-airbnbl.png" alt="Airbnb refund help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Airbnb Refunds</h4><p class="text-sm text-gray-600 mb-3">We can help with cancellations or issues.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/holidaypark.html" class="claim-box"><img src="/images/new-holidayparks.png" alt="Holiday park issues" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Holiday Park</h4><p class="text-sm text-gray-600 mb-3">Booking errors, safety issues, fees.</p><span class="claim-blue-btn">Free assessment</span></a>
           </div>
         </div>
-      
-        <!-- BOX 2: YOUR RIGHTS UNDER EC 261 -->
-        <div x-data="{ open: true }" class="w-full bg-white rounded-xl shadow-md p-4 sm:p-6 border border-gray-200 mt-6" data-aos="fade-up" data-aos-delay="300">
-          <button
-            @click="open = !open"
-            class="w-full text-left text-lg sm:text-xl font-bold text-blue-700 flex items-center justify-between focus:outline-none"
-          >
-            <span>YOUR RIGHTS UNDER EC 261</span>
-            <svg xmlns="http://www.w3.org/2000/svg" :class="open ? 'rotate-180' : ''" class="h-5 w-5 text-blue-700 transition-transform duration-300" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clip-rule="evenodd" />
-            </svg>
-          </button>
-      
-          <div x-show="open" x-transition class="mt-4 space-y-2 text-gray-700 text-sm sm:text-base">
-            <div class="flex items-start gap-2">
-              <span class="text-green-600 mt-1">✔</span>
-              <p>If your flight is delayed more than 3 hours, you may claim compensation of €250 to €600.</p>
-            </div>
-            <div class="flex items-start gap-2">
-              <span class="text-green-600 mt-1">✔</span>
-              <p>Cancelled flights, denied boarding, and missed connections are also covered.</p>
-            </div>
-            <div class="flex items-start gap-2">
-              <span class="text-green-600 mt-1">✔</span>
-              <p>The airline must be responsible (e.g., technical fault or crew issue).</p>
-            </div>
-            <div class="flex items-start gap-2">
-              <span class="text-green-600 mt-1">✔</span>
-              <p>You can claim for flights up to 3 years ago depending on your country.</p>
-            </div>
-            <div class="flex items-start gap-2">
-              <span class="text-green-600 mt-1">✔</span>
-              <button onclick="document.getElementById('faqModal').classList.remove('hidden')" class="text-blue-600 underline">
-                Full summary – Frequently Asked Questions (FAQ)
-              </button>
-            </div>
+      </div>
+    </section>
+
+    <!-- FINANCE -->
+    <section id="finance-banner" class="relative h-[200px] mb-10">
+      <img src="/images/finance-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Finance and pensions support" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Finance & Pensions</h2>
+        <p class="text-sm md:text-base opacity-95">Hidden fees, pension issues and more.</p>
+      </div>
+    </section>
+
+    <section id="finance" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">💰 Finance & Pensions</h3>
+            <p class="text-gray-700">DIY calculators and templates, or ask us to review.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/car-finance.html" class="claim-box"><img src="/images/new-carfinance.png" alt="Car finance help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Car Finance</h4><p class="text-sm text-gray-600 mb-3">Check fees and interest, step by step.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/pension-issues.html" class="claim-box"><img src="/images/new-pensionissues.png" alt="Pension issue guidance" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Pension Issues</h4><p class="text-sm text-gray-600 mb-3">Spot under-credited contributions.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/misssold-bankaccounts.html" class="claim-box"><img src="/images/new-missoldbank.png" alt="Bank fees help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Bank Accounts</h4><p class="text-sm text-gray-600 mb-3">Unfair charges and hidden fees.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/creditcard-fees.html" class="claim-box"><img src="/images/new-creditcard.png" alt="Credit card fee guide" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Credit Card Fees</h4><p class="text-sm text-gray-600 mb-3">Identify penalty rates and APR jumps.</p><span class="claim-free-btn">DIY FREE</span></a>
           </div>
         </div>
-      
-      </section>      
-  
-  <!-- FAQ Modal -->
-  <div id="faqModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-    <div class="bg-white max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-lg relative">
-      <button onclick="document.getElementById('faqModal').classList.add('hidden')" class="absolute top-2 right-2 text-xl font-bold">&times;</button>
-      <h3 class="text-xl font-semibold mb-4">Flight Delay & Cancellation Compensation – FAQ</h3>
-      <div class="space-y-4 text-sm leading-relaxed">
-        <p><strong>What is EC Regulation 261/2004?</strong><br>
-        A European Union law that entitles airline passengers to compensation for long delays, cancellations, and denied boarding.</p>
-  
-        <p><strong>Who is eligible for compensation?</strong><br>
-        Passengers delayed 3+ hours, cancelled within 14 days, or denied boarding due to the airline’s fault.</p>
-  
-        <p><strong>How far back can I claim?</strong><br>
-        Up to 6 years in the UK, 3 years in most EU countries.</p>
-  
-        <p><strong>What are the compensation amounts?</strong><br>
-        - €250 for flights under 1,500 km<br>
-        - €400 for 1,500–3,500 km<br>
-        - €600 for over 3,500 km (4+ hours delay)</p>
-  
-        <p><strong>Can I claim for a short flight (e.g. 100 miles)?</strong><br>
-        Yes, if arrival delay is 3+ hours and it’s the airline’s fault, you may still claim €250.</p>
-  
-        <p><strong>What counts as 'extraordinary circumstances'?</strong><br>
-        Bad weather, strikes, air traffic control issues — but technical faults and crew issues usually qualify.</p>
-  
-        <p><strong>Do non-EU airlines count?</strong><br>
-        Yes, if departing from the EU/UK or arriving on an EU/UK airline.</p>
-  
-        <p><strong>Who pays the compensation?</strong><br>
-        The airline – not the travel agent or booking site.</p>
-  
-        <p><strong>What if I got a refund or voucher?</strong><br>
-        You can still claim compensation in addition to other remedies.</p>
-  
-        <p><strong>Will I be notified if the claim is accepted?</strong><br>
-        If you use Quaerens Ltd and provide a signed LoA, the airline will usually notify us directly.</p>
-  
-        <p><strong>How much does Quaerens charge?</strong><br>
-        25% of recovered compensation, including VAT – no-win, no-fee.</p>
-  
-        <p><strong>How long does it take?</strong><br>
-        2–4 weeks for a reply, up to 6–12 weeks if escalated.</p>
+      </div>
+    </section>
+
+    <!-- PROPERTY -->
+    <section id="property-banner" class="relative h-[200px] mb-10">
+      <img src="/images/property-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Property and mortgages" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Property & Mortgages</h2>
+        <p class="text-sm md:text-base opacity-95">Spanish mortgages, property issues and timeshare.</p>
+      </div>
+    </section>
+
+    <section id="property" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">🏠 Property & Mortgages</h3>
+            <p class="text-gray-700">Local knowledge and simple steps.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/spanish-mortgages.html" class="claim-box"><img src="/images/new-amortgages.png" alt="Spanish mortgage help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Spanish Mortgages</h4><p class="text-sm text-gray-600 mb-3">Check overpaid interest and charges.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/spanish-properties.html" class="claim-box"><img src="/images/new-spanishpropety.png" alt="Spanish property help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Spanish Property</h4><p class="text-sm text-gray-600 mb-3">Deeds, developer and lease issues.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/timeshare.html" class="claim-box"><img src="/images/new-timesharerefund.png" alt="Timeshare refund" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Timeshare Refund</h4><p class="text-sm text-gray-600 mb-3">Deposits and mis-sold promises.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="https://www.exitmytimeshares.com" target="_blank" rel="noopener" class="claim-box"><img src="/images/new-timeshareexitl.png" alt="Timeshare exit DIY" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Timeshare Exit</h4><p class="text-sm text-gray-600 mb-3">DIY exit kit with support.</p><span class="claim-free-btn">DIY admin fee</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONSUMER -->
+    <section id="consumer-banner" class="relative h-[200px] mb-10">
+      <img src="/images/misc-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Everyday consumer issues" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Everyday Issues</h2>
+        <p class="text-sm md:text-base opacity-95">Gym cancellations, parking, energy and more.</p>
+      </div>
+    </section>
+
+    <section id="consumer" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">🛍️ Everyday Issues</h3>
+            <p class="text-gray-700">Quick wins with simple steps.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 place-items-center">
+            <a href="/gym-cancellation.html" class="claim-box"><img src="/images/new-gymcancel.png" alt="Gym cancellation" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Gym Cancellation</h4><p class="text-sm text-gray-600 mb-3">End or refund unfair renewals.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/parking-appeal.html" class="claim-box"><img src="/images/new-parkingl.png" alt="Parking appeal" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Parking Appeal</h4><p class="text-sm text-gray-600 mb-3">Template letters and photo tips.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/energy-switch.html" class="claim-box"><img src="/images/new-energyswitch.png" alt="Energy switch and refunds" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Energy Switch</h4><p class="text-sm text-gray-600 mb-3">Compare, switch and claim overpayments.</p><span class="claim-free-btn">DIY FREE</span></a>
+            <a href="/housing-disrepair.html" class="claim-box"><img src="/images/new-housingdisrepair.png" alt="Housing disrepair" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Housing Disrepair</h4><p class="text-sm text-gray-600 mb-3">Repairs and compensation for damp/leaks.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/medical-negligence.html" class="claim-box"><img src="/images/new-medical.png" alt="Medical negligence" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Medical Negligence</h4><p class="text-sm text-gray-600 mb-3">Independent reviews and guidance.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/return-issues.html" class="claim-box"><img src="/images/new-refundissues.png" alt="Retailer refund issues" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Refund Issues</h4><p class="text-sm text-gray-600 mb-3">Escalate returns and repairs.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/solar-support.html" class="claim-box"><img src="/images/new-solar.png" alt="Solar panel issues" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Solar Support</h4><p class="text-sm text-gray-600 mb-3">Help with faulty installs, poor performance, or mis-sold solar systems.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/other.html" class="claim-box"><img src="/images/new-otherclaims.png" alt="Other issues" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Other Issues</h4><p class="text-sm text-gray-600 mb-3">Subscriptions, warranties and more.</p><span class="claim-blue-btn">Free assessment</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIGITAL -->
+    <section id="digital-banner" class="relative h-[200px] mb-10">
+      <img src="/images/data-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Digital risks" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Digital Risks</h2>
+        <p class="text-sm md:text-base opacity-95">Data breaches, crypto issues and cross-border disputes.</p>
+      </div>
+    </section>
+
+    <section id="digital" class="mb-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="rounded-lg p-6 shadow-lg border-2 border-green-500 bg-green-50">
+          <div class="text-center mb-6">
+            <h3 class="text-3xl font-extrabold text-gray-900 mb-2">💻 Digital Risks</h3>
+            <p class="text-gray-700">DIY steps plus help if you need it.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
+            <a href="/cyber-claims.html" class="claim-box"><img src="/images/new-cyber.png" alt="Data breach help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Data Breach</h4><p class="text-sm text-gray-600 mb-3">ICO complaints and letters.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/crypto-scams.html" class="claim-box"><img src="/images/new-crypto.png" alt="Crypto scam recovery" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Crypto Recovery</h4><p class="text-sm text-gray-600 mb-3">Exchange liaison and tracing.</p><span class="claim-blue-btn">Free assessment</span></a>
+            <a href="/crossborder.html" class="claim-box"><img src="/images/new-crossborder.png" alt="Cross-border help" loading="lazy" width="120" height="120" /><h4 class="text-lg font-semibold">Cross-Border Issues</h4><p class="text-sm text-gray-600 mb-3">Currency and VAT disputes.</p><span class="claim-blue-btn">Free assessment</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAM -->
+    <section id="team-banner" class="relative h-[200px] mb-10">
+      <img src="/images/team-banner.jpg" width="1600" height="400" class="absolute inset-0 w-full h-full object-cover" alt="Our team at work" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-black/20"></div>
+      <div class="relative z-10 h-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center text-white text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Meet the Quaerens Team</h2>
+        <p class="text-sm md:text-base opacity-95">Real people, quick replies.</p>
+      </div>
+    </section>
+
+    <section id="meet-the-team" class="py-12 bg-gray-50">
+      <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-3xl font-extrabold mb-8 text-center">Introductions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <!-- Deborah Shane -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/deborah-shane.jpg" alt="Deborah Shane" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Deborah Shane</h3>
+            <p class="text-indigo-600 text-sm font-medium">Admin Coordinator</p>
+            <p class="text-gray-600 text-sm mt-2">Keeps cases on schedule; available for questions.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline">Email</a>
+              <a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Martijn Pronk -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/martijn-pronk.jpg" alt="Martijn Pronk" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Martijn Pronk</h3>
+            <p class="text-indigo-600 text-sm font-medium">Case Processor</p>
+            <p class="text-gray-600 text-sm mt-2">Ensures submissions are error-free.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline">Email</a>
+              <a href="https://wa.me/34624346933" target="_blank" class="underline" rel="noopener">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Nikhil Gupta -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/nikhil-gupta.jpg" alt="Nikhil Gupta" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Nikhil Gupta</h3>
+            <p class="text-indigo-600 text-sm font-medium">Consultant Liaison</p>
+            <p class="text-gray-600 text-sm mt-2">Connects clients with specialists.</p>
+            <div class="mt-3 text-sm space-x-4">
+              <a href="mailto:info@quaerens.co.uk" class="underline">Email</a>
+              <a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a>
+            </div>
+          </article>
+          <!-- Alexander Hughes -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/alexander-hughes.jpg" alt="Alexander Hughes" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Alexander Hughes</h3>
+            <p class="text-indigo-600 text-sm font-medium">Client Outreach Lead</p>
+            <p class="text-gray-600 text-sm mt-2">Drives engagement; weekend cyclist.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
+          </article>
+          <!-- Priya Patel -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/priya-patel.jpg" alt="Priya Patel" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Priya Patel</h3>
+            <p class="text-indigo-600 text-sm font-medium">Automation & Content Lead</p>
+            <p class="text-gray-600 text-sm mt-2">Builds AI workflows; ex-SEO.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
+          </article>
+          <!-- Javier Dominguez -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/javier-dominguez.jpg" alt="Javier Dominguez" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Javier Dominguez</h3>
+            <p class="text-indigo-600 text-sm font-medium">Designer & Video Synthesist</p>
+            <p class="text-gray-600 text-sm mt-2">Creates visuals and short videos.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
+          </article>
+          <!-- Sandra Lee -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/sandra-lee.jpg" alt="Sandra Lee" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Sandra Lee</h3>
+            <p class="text-indigo-600 text-sm font-medium">Chatbot & Engagement Dev</p>
+            <p class="text-gray-600 text-sm mt-2">Builds our real-time chat tools.</p>
+            <div class="mt-3 text-sm"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a></div>
+          </article>
+          <!-- Marcus Brown -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/marcus-brown.jpg" alt="Marcus Brown" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Marcus Brown</h3>
+            <p class="text-indigo-600 text-sm font-medium">Media Manager</p>
+            <p class="text-gray-600 text-sm mt-2">Optimises ad spend & conversion.</p>
+            <div class="mt-3 text-sm space-x-4"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a><a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a></div>
+          </article>
+          <!-- Elena Rossi -->
+          <article class="bg-white rounded-lg shadow p-6 text-center">
+            <img src="/images/elena-rossi.jpg" alt="Elena Rossi" class="mx-auto w-32 h-32 rounded-full object-cover shadow mb-4" loading="lazy" />
+            <h3 class="text-lg font-semibold">Elena Rossi</h3>
+            <p class="text-indigo-600 text-sm font-medium">Analytics & Insights Lead</p>
+            <p class="text-gray-600 text-sm mt-2">Builds dashboards & insights.</p>
+            <div class="mt-3 text-sm space-x-4"><a href="mailto:info@quaerens.co.uk" class="underline">Email</a><a href="https://wa.me/447353207475" target="_blank" class="underline" rel="noopener">WhatsApp</a></div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Sticky mobile CTA -->
+  <div class="fixed bottom-0 inset-x-0 md:hidden bg-blue-600 p-4 text-center" role="region" aria-label="Start your free check">
+    <button type="button" @click.prevent="qcOpen=true" class="text-white font-bold" aria-haspopup="dialog" aria-controls="quickcheck-menu">Free claim check ▾</button>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t">
+    <div class="mx-auto max-w-7xl px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-600">
+      <div>
+        <img src="/images/quaerens-logo.png" alt="Quaerens" width="140" height="42" loading="lazy" class="mb-3" />
+        <p>Quaerens is an approachable, assistance service. We work with you to prepare the right documents and guide your next steps. We’re not a law firm — instead, we connect you with trusted external legal partners when specialist advice is needed.</p>
+      </div>
+      <div>
+        <p class="font-semibold text-gray-900">Company</p>
+        <ul class="mt-2 space-y-1">
+          <li><a href="/privacy.html" class="hover:text-blue-700">Privacy Policy</a></li>
+          <li><a href="/terms.html" class="hover:text-blue-700">Terms of Use</a></li>
+          <li><a href="/gdpr.html" class="hover:text-blue-700">GDPR</a></li>
+          <li><a href="/contact.html" class="hover:text-blue-700">Contact</a></li>
+          <li><a href="/services.html" class="hover:text-blue-700">Services</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-gray-900">Get in touch</p>
+<ul class="mt-2 space-y-1">
+  <li>Email: <a href="mailto:info@quaerens.co.uk" class="hover:text-blue-700">info@quaerens.co.uk</a></li>
+  <li>WhatsApp: <a href="https://wa.me/442080500725" target="_blank" rel="noopener" class="hover:text-blue-700">+44 (0)20 8050 0725</a></li>
+  <li>Company No.: 16176152 · Registered in England & Wales</li>
+  <li>Address: 71–75 Shelton Street, Covent Garden, London WC2H 9JQ</li>
+</ul>
+      </div>
+    </div>
+    <div class="text-center text-xs text-gray-500 pb-8">© 2025 Quaerens Ltd. All rights reserved.</div>
+  </footer>
+
+  <!-- Start Free Check: all individual claims -->
+  <div x-show="qcOpen" x-transition.opacity class="fixed inset-0 z-[100]" aria-labelledby="quickcheck-title" role="dialog" aria-modal="true" id="quickcheck-menu">
+    <div @click="qcOpen=false" class="absolute inset-0 bg-black/30" aria-hidden="true"></div>
+    <div class="relative mx-auto mt-16 md:mt-24 max-w-5xl bg-white rounded-2xl shadow-xl border overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b">
+        <h2 id="quickcheck-title" class="text-lg font-semibold">Start free check</h2>
+        <button class="px-3 py-1 rounded hover:bg-gray-100" @click="qcOpen=false" aria-label="Close">✕</button>
+      </div>
+      <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+        <!-- Travel -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Travel & Holiday</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeflightclaim.html">✈️ Flight Delay</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/freeholidaycompensation.html">🏖️ Holiday Refund</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/train-delay.html">🚆 Train Delay</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/lost-luggage.html">🧳 Lost Luggage</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/airbnb-refunds.html">🏠 Airbnb Refunds</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/holidaypark.html">🚐 Holiday Park</a></li>
+          </ul>
+        </div>
+        <!-- Finance -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Finance & Pensions</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/car-finance.html">🚗 Car Finance</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/pension-issues.html">👴 Pension Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/misssold-bankaccounts.html">🏦 Bank Accounts</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/creditcard-fees.html">💳 Credit Card Fees</a></li>
+          </ul>
+        </div>
+        <!-- Property -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Property & Mortgages</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-mortgages.html">💶 Spanish Mortgages</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/spanish-properties.html">🏘️ Spanish Property</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/timeshare.html">🔄 Timeshare Refund</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="https://www.exitmytimeshares.com" target="_blank" rel="noopener">❌ Timeshare Exit (DIY)</a></li>
+          </ul>
+        </div>
+        <!-- Consumer -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Everyday Issues</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/gym-cancellation.html">🏋️‍♂️ Gym Cancellation</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/parking-appeal.html">🚗 Parking Appeal</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/energy-switch.html">🔌 Energy Switch</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/housing-disrepair.html">🏠 Housing Disrepair</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/medical-negligence.html">🩺 Medical Negligence</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/return-issues.html">🔄 Refund Issues</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/other.html">❓ Other Issues</a></li>
+          </ul>
+        </div>
+        <!-- Digital -->
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Digital Risks</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/cyber-claims.html">🔒 Data Breach</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crypto-scams.html">💰 Crypto Recovery</a></li>
+            <li><a class="block px-3 py-2 rounded hover:bg-gray-50" href="/crossborder.html">🌐 Cross-Border Issues</a></li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
-  
-  </section>
 
-  <!-- Testimonials -->
-  <section class="relative py-16" style="background-image: url('images/airport-soft-bg.jpg'); background-size: cover; background-position: center;">
-  <div class="bg-white bg-opacity-90 py-12">
-    <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl font-bold text-center mb-10">What Our Clients Say</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gray-100 p-6 rounded shadow" data-aos="zoom-in">
-          <p class="italic">“Quaerens got me €400 for my cancelled flight from Madrid – super easy!”</p>
-          <p class="font-semibold mt-4">– Laura P.</p>
-        </div>
-        <div class="bg-gray-100 p-6 rounded shadow" data-aos="zoom-in">
-          <p class="italic">“I didn’t even know I had a right to claim. Thank you for making it simple!”</p>
-          <p class="font-semibold mt-4">– Marc V.</p>
-        </div>
-        <div class="bg-gray-100 p-6 rounded shadow" data-aos="zoom-in">
-          <p class="italic">“Very professional team. Highly recommended for any flight issues.”</p>
-          <p class="font-semibold mt-4">– Sofia R.</p>
-        </div>
-      </div>
-    </div>
-  </div></section>
-
-<!-- Image Grid Section -->
-<section class="bg-gray-50 py-12">
-  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 px-4 text-center">
-    <div data-aos="zoom-in">
-      <img src="images/traveler1.jpg" class="rounded-xl shadow-md mb-3" alt="Happy Traveler" />
-      <p class="text-sm text-gray-600">Real clients getting real results</p>
-    </div>
-    <div data-aos="zoom-in" data-aos-delay="100">
-      <img src="images/traveler2.jpg" class="rounded-xl shadow-md mb-3" alt="Flight Compensation" />
-      <p class="text-sm text-gray-600">Fast claims, no fees</p>
-    </div>
-    <div data-aos="zoom-in" data-aos-delay="200">
-      <img src="images/traveler3.jpg" class="rounded-xl shadow-md mb-3" alt="Airport Lounge" />
-      <p class="text-sm text-gray-600">Relax — we’ll handle the paperwork</p>
-    </div>
-  </div>
-</section>
-
-<!-- Footer -->
-  <footer style="text-align: center; font-size: 0.85rem; color: #6b7280; padding: 2rem 1rem; max-width: 800px; margin: 0 auto;">
-  © 2025 Quaerens Ltd. All rights reserved.<br />
-  <a href="privacy.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Privacy Policy</a> |
-  <a href="terms.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Terms of Use</a> |
-  <a href="gdpr.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">GDPR</a> |
-  <a href="contact.html" style="color: #2563eb; text-decoration: none; margin: 0 0.5rem;">Contact Us</a>
-</footer>
-
+  <!-- Google Translate (keep widget loaded; hide top bar) -->
   <script>
-    document.getElementById('compensation-form').addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      const delay = parseInt(document.getElementById('delay').value);
-      let compensation = 0;
-
-      if (delay >= 4) {
-        compensation = 600;
-      } else if (delay >= 3) {
-        compensation = 400;
-      }
-
-      const result = document.getElementById('compensation-result');
-      if (compensation > 0) {
-        result.innerHTML = `✅ You may be entitled to <strong>€${compensation}</strong> in compensation.<br>
-          <a href="claim.html?type=flight-delay" style="color: white; background: #2563eb; padding: 0.6rem 1.2rem; border-radius: 6px; display: inline-block; margin-top: 1rem; text-decoration: none;">Start Your Claim</a>`;
-      } else {
-        result.innerHTML = `ℹ️ Unfortunately, delays under 3 hours don't qualify under EU261 rules.`;
-      }
-    });
-
-    const airportList = [
-      "Amsterdam Schiphol (AMS)", "Barcelona El Prat (BCN)", "Berlin Brandenburg (BER)", "Brussels Zaventem (BRU)",
-      "Copenhagen (CPH)", "Dublin (DUB)", "Edinburgh (EDI)", "Frankfurt (FRA)", "Geneva (GVA)", "Lisbon (LIS)",
-      "London Gatwick (LGW)", "London Heathrow (LHR)", "Madrid Barajas (MAD)", "Malaga (AGP)", "Manchester (MAN)",
-      "Milan Malpensa (MXP)", "Munich (MUC)", "Nice Côte d'Azur (NCE)", "Oslo Gardermoen (OSL)", "Paris Charles de Gaulle (CDG)",
-      "Paris Orly (ORY)", "Porto (OPO)", "Prague Vaclav Havel (PRG)", "Rome Fiumicino (FCO)", "Stockholm Arlanda (ARN)",
-      "Vienna (VIE)", "Warsaw Chopin (WAW)", "Zagreb (ZAG)", "Zurich (ZRH)", "Athens (ATH)", "Palma de Mallorca (PMI)",
-      "Ibiza (IBZ)", "Tenerife South (TFS)", "Gran Canaria (LPA)", "Rhodes (RHO)", "Corfu (CFU)", "Heraklion (HER)",
-      "Larnaca (LCA)", "Paphos (PFO)", "Split (SPU)", "Dubrovnik (DBV)", "Reykjavik (KEF)"
-    ];
-
-    const datalist = document.getElementById('airports');
-    airportList.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      datalist.appendChild(option);
-    });
+    function googleTranslateElementInit() {
+      /* global google */
+      new google.translate.TranslateElement(
+        { pageLanguage: 'en', includedLanguages: 'en,es,fr,de,nl,it,sv,el' },
+        'google_translate_element'
+      );
+    }
+    function setLanguage(langPair) {
+      if (!langPair) return;
+      const lang = langPair.split('|')[1];
+      // Persist across pages
+      const cookieValue = '/en/' + lang;
+      document.cookie = 'googtrans=' + cookieValue + ';path=/;domain=' + location.hostname + ';max-age=31536000';
+      // Try to switch immediately
+      let tries = 0;
+      (function selectLang(){
+        const sel = document.querySelector('.goog-te-combo');
+        if (sel) {
+          sel.value = lang;
+          sel.dispatchEvent(new Event('change'));
+        } else if (tries++ < 20) {
+          setTimeout(selectLang, 250);
+        } else {
+          // Fallback: reload if widget wasn't ready
+          location.reload();
+        }
+      })();
+    }
   </script>
-<script type="text/javascript">
-  var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-  (function(){
-    var s1=document.createElement("script"),
-        s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-  })();
-</script>
-<button id="scrollTopBtn" class="hidden fixed bottom-6 right-6 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition">
-  ↑
-</button>
-<script>
-  const scrollBtn = document.getElementById("scrollTopBtn");
-  window.addEventListener("scroll", () => {
-    scrollBtn.classList.toggle("hidden", window.scrollY < 300);
-  });
-  scrollBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
-</script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
-<script type="module" src="firebase-setup.js"></script>
-
-<script>
-  const db = window.firestore;
-  const storage = window.storage;
-  const {
-    collection,
-    addDoc,
-    serverTimestamp,
-    ref,
-    uploadBytes,
-    getDownloadURL
-  } = window.firebaseUtils;
-
-  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    console.log("Form submitted"); // <--- for debugging
-    // your code to extract values + call generatePDF()
-  });
-
-<script>
-  const airlineEmails = {
-  "Ryanair": "claims@ryanair.com",
-  "easyJet": "customer.support@easyjet.com",
-  "Lufthansa": "customer.relations@lufthansa.com",
-  "Vueling": "atencion.clientes@vueling.com",
-  "British Airways": "customer.relations@ba.com",
-  "KLM": "mail@klm.nl",
-  "Transavia": "servicecentre@transavia.com",
-  "Air France": "mail.afklmplc@airfrance.fr",
-  "Iberia": "clasica@iberia.es",
-  "Jet2": "customer.service@jet2.com",
-  "Wizz Air": "claim@wizzair.com",
-  "TUI Airways": "aftertravel@tui.co.uk",
-  "Norwegian": "complaints@norwegian.com",
-  "Aer Lingus": "customerqueries@aerlingus.com",
-  "Brussels Airlines": "claim@brusselsairlines.com",
-  "Swiss International Air Lines": "contact@swiss.com",
-  "Eurowings": "customercare@eurowings.com",
-  "TAP Air Portugal": "customer@tap.pt",
-  "Finnair": "feedback@finnair.com",
-  "SAS Scandinavian Airlines": "customercare@sas.se",
-  "Aegean Airlines": "customercare@aegeanair.com",
-  "LOT Polish Airlines": "contact@lot.pl",
-  "Air Malta": "customer.relations@airmalta.com",
-  "Corendon Airlines": "info@corendon-airlines.com",
-  "SunExpress": "customer.service@sunexpress.com",
-  "Blue Air": "support@blueairweb.com",
-  "Volotea": "support@volotea.com",
-  "Lauda Europe": "assistance@laudamotion.com",
-  "Widerøe": "info@wideroe.no",
-  "Croatia Airlines": "contact@croatiaairlines.hr",
-  "Alitalia (ITA Airways)": "customer.relations@itaspa.com",
-  "Condor": "service@condor.com"
-};
-
-const airlineLogos = {
-  "Ryanair": "images/logos/ryanair.png",
-  "easyJet": "images/logos/easyjet.png",
-  "Lufthansa": "images/logos/lufthansa.png",
-  "Vueling": "images/logos/vueling.png",
-  "British Airways": "images/logos/britishairways.png",
-  "KLM": "images/logos/klm.png",
-  "Transavia": "images/logos/transavia.png",
-  "Air France": "images/logos/airfrance.png",
-  "Iberia": "images/logos/iberia.png",
-  "Jet2": "images/logos/jet2.png",
-  "Wizz Air": "images/logos/wizzair.png",
-  "TUI Airways": "images/logos/tuiairways.png",
-  "Norwegian": "images/logos/norwegian.png",
-  "Aer Lingus": "images/logos/aerlingus.png",
-  "Brussels Airlines": "images/logos/brusselsairlines.png",
-  "Swiss International Air Lines": "images/logos/swissinternationalairlines.png",
-  "Eurowings": "images/logos/eurowings.png",
-  "TAP Air Portugal": "images/logos/tapairportugal.png",
-  "Finnair": "images/logos/finnair.png",
-  "SAS Scandinavian Airlines": "images/logos/sasscandinavianairlines.png",
-  "Aegean Airlines": "images/logos/aegeanairlines.png",
-  "LOT Polish Airlines": "images/logos/lotpolishairlines.png",
-  "Air Malta": "images/logos/airmalta.png",
-  "Corendon Airlines": "images/logos/corendonairlines.png",
-  "SunExpress": "images/logos/sunexpress.png",
-  "Blue Air": "images/logos/blueair.png",
-  "Volotea": "images/logos/volotea.png",
-  "Lauda Europe": "images/logos/laudaeurope.png",
-  "Widerøe": "images/logos/wideroe.png",
-  "Croatia Airlines": "images/logos/croatiaairlines.png",
-  "Alitalia (ITA Airways)": "images/logos/italiaitaairways.png",
-  "Condor": "images/logos/condor.png"
-};
-
-document.getElementById("airline").addEventListener("input", function () {
-  const airlineName = this.value;
-  const logoPath = airlineLogos[airlineName];
-  const previewContainer = document.getElementById("airlineLogoPreview");
-  if (logoPath) {
-    previewContainer.innerHTML = `<img src="${logoPath}" alt="${airlineName} Logo" class="mx-auto h-12 md:h-16 mt-2">`;
-  } else {
-    previewContainer.innerHTML = "";
-  }
-});
-</script>
-
-<script>
-  // ✅ UPDATED SCRIPT WITH BOOKING REF + IBAN FIELDS INCLUDED IN CLAIM DATA AND PDF
-  document.getElementById("claim-letter-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    const fullName = document.getElementById("fullName").value.trim();
-    const flightNumber = document.getElementById("flightNumber").value.trim();
-    const flightDate = document.getElementById("flightDate").value;
-    const bookingRef = document.getElementById("bookingRef").value.trim();
-    const iban = document.getElementById("iban").value.trim();
-    const depAirport = document.getElementById("depAirport").value.trim();
-    const arrAirport = document.getElementById("arrAirport").value.trim();
-    const airline = document.getElementById("airline").value;
-    const reason = document.getElementById("reason").value.trim();
-    const language = document.getElementById("language").value;
-    const email = document.getElementById("email").value.trim();
-    const handleOption = document.getElementById("handleOption").value;
-    const donation = document.getElementById("donation").value;
-    const distance = document.getElementById("distance").value;
-    const delayDuration = document.getElementById("delayDuration").value;
-    const compensation = calculateCompensation(distance, delayDuration);
-
-    if (!fullName || !flightNumber || !flightDate || !depAirport || !arrAirport || !email || !airline) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    const file = document.getElementById("fileUpload").files[0];
-    let fileURL = "";
-
-    if (file) {
-      const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
-      const uploadSnapshot = await uploadBytes(storageRef, file);
-      fileURL = await getDownloadURL(uploadSnapshot.ref);
-    }
-
-    const claimData = {
-      fullName,
-      flightNumber,
-      flightDate,
-      depAirport,
-      arrAirport,
-      airline,
-      reason,
-      distance,
-      delayDuration,
-      compensation,
-      language,
-      email,
-      handleOption,
-      donation,
-      bookingRef,
-      iban,
-      fileURL,
-      createdAt: serverTimestamp(),
-      airlineEmail: airlineEmails[airline] || ""
-    };
-
-    try {
-      await addDoc(collection(db, "flightClaimLetters"), claimData);
-
-      if (handleOption === "pdf") {
-        generatePDF(claimData);
-      } else if (handleOption === "email") {
-        await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmail", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(claimData)
-        });
-        alert("✅ Your letter has been emailed!");
-      } else if (handleOption === "quaerens") {
-        alert("✅ Your case has been submitted to Quaerens. We’ll contact you shortly.");
-      }
-
-      document.getElementById("claim-letter-result").classList.remove("hidden");
-    } catch (err) {
-      console.error("Error saving claim:", err);
-      alert("Something went wrong. Please try again.");
-    }
-  });
-</script>
-
-<script>
-const translations = {
-  en: {
-    intro: `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`,
-    closing: `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n`,
-    subject: "Compensation Request under EC Regulation 261/2004",
-    to: "To:",
-    detailsTitle: "Flight Details:",
-    paymentLabel: "Preferred Payment Method",
-    claimRef: "Claim Reference",
-    footer: "This document was generated at no cost by Quaerens.co.uk."
-  },
-  fr: {
-    intro: `Madame, Monsieur,\n\nJe vous écris pour demander une indemnisation selon le règlement CE 261/2004 pour le vol suivant :`,
-    closing: `Conformément au règlement CE 261/2004, j'ai droit à une indemnisation basée sur les circonstances décrites ci-dessus. Veuillez traiter cette réclamation dans les 14 jours. Je me réserve le droit de faire appel à l'organisme compétent ou de recourir à une procédure judiciaire si cela n'est pas résolu à temps.\n\nCordialement,\n\n`,
-    subject: "Demande d'indemnisation selon le règlement CE 261/2004",
-    to: "À :",
-    detailsTitle: "Détails du vol :",
-    paymentLabel: "Méthode de paiement préférée",
-    claimRef: "Référence du dossier",
-    footer: "Ce document a été généré gratuitement par Quaerens.co.uk."
-  },
-  // Add other languages here (de, es, nl)
-};
-
-function generatePDF(data) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const today = new Date().toLocaleDateString();
-  const claimRef = `Q-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  const airlineContact = `${data.airline}\n${data.airlineEmail ? "Email: " + data.airlineEmail : ""}`;
-  const logoPath = airlineLogos[data.airline];
-
-  function insertHeader() {
-    if (logoPath) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = logoPath;
-      img.onload = () => {
-        doc.addImage(img, "PNG", 150, 8, 40, 15);
-        insertContent();
-      };
-      img.onerror = insertContent;
-    } else {
-      insertContent();
-    }
-  }
-
-  function insertContent() {
-    let y = 20;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-
-    doc.setFont(undefined, "bold");
-    doc.text(today, 10, y);
-    y += 10;
-
-    doc.setFont(undefined, "normal");
-    doc.text(`Claim Reference: ${claimRef}`, 10, y);
-    y += 12;
-
-    doc.setFont(undefined, "bold");
-    doc.text("To:", 10, y);
-    y += 6;
-    doc.setFont(undefined, "normal");
-    doc.text(airlineContact, 10, y);
-    y += 14;
-
-    doc.setFont(undefined, "bold");
-    doc.text("Subject:", 10, y);
-    y += 6;
-    doc.setFont(undefined, "normal");
-    doc.text("Compensation Request under EC Regulation 261/2004", 10, y);
-    y += 10;
-
-    const intro = `Dear Sir/Madam,\n\nI am writing to formally request compensation under EC Regulation 261/2004 for the following disrupted flight:`;
-    const introLines = doc.splitTextToSize(intro, 180);
-    doc.text(introLines, 10, y);
-    y += introLines.length * 6 + 6;
-
-    doc.setFont(undefined, "bold");
-    doc.text("Flight Details:", 10, y);
-    y += 8;
-
-    doc.setFont(undefined, "normal");
-    const details = [
-      `Passenger Name: ${data.fullName}`,
-      `Email: ${data.email}`,
-      `Flight Number: ${data.flightNumber}`,
-      `Booking Reference: ${data.bookingRef}`,
-      `Flight Date: ${data.flightDate}`,
-      `Departure Airport: ${data.depAirport}`,
-      `Arrival Airport: ${data.arrAirport}`,
-      `Airline: ${data.airline}`,
-      `Reason for Delay: ${data.reason || "Not specified"}`,
-      `Flight Distance: ${data.distance}`,
-      `Delay Duration: ${data.delayDuration}`,
-      `Estimated Compensation: €${data.compensation}`,
-      `Preferred Payment Method: ${data.iban}`
+  <!-- Hero typing text -->
+  <script>
+    const titles = [
+      "Check if you're eligible",
+      "Recover what you're owed",
+      "Your rights. Your refund.",
+      "No-win, no-fee support",
+      "Fast, friendly help",
+      "We support. You benefit."
     ];
-    details.forEach(line => {
-      doc.text(line, 10, y);
-      y += 7;
-    });
+    const subtitles = [
+      "Find out in minutes.",
+      "We keep it simple.",
+      "Millions are eligible — are you?",
+      "Free check, zero pressure.",
+      "No jargon, just steps.",
+      "DIY or done-with-you."
+    ];
+    function typeText(el, txt, speed = 28, cb) {
+      el.textContent = '';
+      let i = 0;
+      const t = setInterval(() => {
+        el.textContent += txt[i++] || '';
+        if (i > txt.length) { clearInterval(t); cb && cb(); }
+      }, speed);
+    }
+    (function cycle() {
+      const t = document.getElementById('hero-title'),
+            s = document.getElementById('hero-subtitle');
+      if (!t || !s) return;
+      let i = 0;
+      (function next() {
+        typeText(t, titles[i], 28, () => {
+          typeText(s, subtitles[i], 22, () => {
+            setTimeout(() => { i = (i + 1) % titles.length; next(); }, 1600);
+          });
+        });
+      })();
+    })();
+  </script>
 
-    y += 4;
-    const closing = `According to EC Regulation 261/2004, I am entitled to this compensation based on the circumstances described above. Please process this claim within 14 days. I reserve the right to escalate to the relevant enforcement body or seek legal redress if not resolved in time.\n\nSincerely,\n\n${data.fullName}`;
-    const closingLines = doc.splitTextToSize(closing, 180);
-    doc.text(closingLines, 10, y);
-    y += closingLines.length * 6;
+  <!-- AOS JS (optional) -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script> AOS.init({ duration: 800, once: true, offset: 100 }); </script>
 
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text("This document was generated at no cost by Quaerens.co.uk.", 10, 290);
-
-    doc.save(`EC261-Claim-${data.flightNumber}.pdf`);
-  }
-
-  insertHeader();
-}
-
-</script>
-
-
-  
+  <!-- Tawk.to (optional live chat) -->
+  <script>
+    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+    (function(){
+      var s1=document.createElement("script"), s0=document.getElementsByTagName("script")[0];
+      s1.async=true; s1.src='https://embed.tawk.to/68134ea200e88619103f49ca/1iq5mmahm';
+      s1.charset='UTF-8'; s1.setAttribute('crossorigin','*'); s0.parentNode.insertBefore(s1,s0);
+    })();
+  </script>
 </body>
 </html>
