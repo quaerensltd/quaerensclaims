@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Staff Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 0.85rem 1rem; }
+    .input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .btn { border-radius: 12px; padding: 0.9rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-md card p-8">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-extrabold text-blue-900">Quaerens Staff Login</h1>
+      <p class="text-slate-500 mt-2">Secure access for intake staff and managers</p>
+    </div>
+
+    <form id="loginForm" class="space-y-5">
+      <div>
+        <label class="block text-sm font-semibold text-blue-900 mb-2" for="email">Email address</label>
+        <input id="email" type="email" class="input" placeholder="name@quaerens.co.uk" required />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-blue-900 mb-2" for="password">Password</label>
+        <input id="password" type="password" class="input" placeholder="Enter password" required />
+      </div>
+
+      <button id="loginBtn" type="submit" class="btn btn-primary w-full">
+        Log In
+      </button>
+
+      <p id="loginError" class="text-sm text-red-600 hidden"></p>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginForm = document.getElementById("loginForm");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginError = document.getElementById("loginError");
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = "/client-intake-portal.html";
+      }
+    });
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      loginError.classList.add("hidden");
+      loginError.textContent = "";
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Logging in...";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = "/client-intake-portal.html";
+      } catch (error) {
+        console.error("Login failed:", error);
+        loginError.textContent = "Login failed. Please check your email and password.";
+        loginError.classList.remove("hidden");
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Log In";
+      }
+    });
+  </script>
+</body>
+</html>
