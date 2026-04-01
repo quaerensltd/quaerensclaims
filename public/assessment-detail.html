@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assessment Detail | Quaerens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .label { display: block; font-size: 0.95rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.4rem; }
+    .value { font-size: 0.95rem; color: #1f2937; line-height: 1.6; word-break: break-word; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading assessment...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Assessment Detail</h1>
+          <p class="text-sm text-slate-500">Manager review, assignment, and closer handoff</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Back to Manager Panel</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900" id="assessmentTitle">Assessment Detail</h2>
+            <p class="text-slate-500 mt-1" id="assessmentSubtitle">Loading...</p>
+          </div>
+          <div class="text-sm text-slate-500">
+            <div id="createdByText"></div>
+            <div id="createdAtText"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <div class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Details</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div><span class="label">First Name</span><div class="value" id="client_firstName">-</div></div>
+            <div><span class="label">Second Name</span><div class="value" id="client_secondName">-</div></div>
+            <div><span class="label">First Name 2</span><div class="value" id="client_firstName2">-</div></div>
+            <div><span class="label">Second Name 2</span><div class="value" id="client_secondName2">-</div></div>
+            <div><span class="label">Landline</span><div class="value" id="client_landline">-</div></div>
+            <div><span class="label">Mobile</span><div class="value" id="client_mobile">-</div></div>
+            <div><span class="label">Email</span><div class="value" id="client_email">-</div></div>
+            <div class="md:col-span-2"><span class="label">Address</span><div class="value" id="client_address">-</div></div>
+          </div>
+        </div>
+
+        <div class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
+          <div class="space-y-4">
+            <div>
+              <span class="label">Claim Type</span>
+              <div class="value" id="claimTypeText">-</div>
+            </div>
+            <div>
+              <span class="label">Submission Status</span>
+              <div class="value" id="statusText">-</div>
+            </div>
+            <div>
+              <span class="label">Manager Notes</span>
+              <div class="value whitespace-pre-wrap" id="managerNotesText">-</div>
+            </div>
+            <div>
+              <span class="label">Assessment Summary</span>
+              <div class="value whitespace-pre-wrap" id="assessmentSummaryText">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assign to Closer</h3>
+
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="label" for="closerSelect">Closer</label>
+            <select id="closerSelect" class="input">
+              <option value="">Select closer</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="label" for="appointmentDate">Appointment Date</label>
+            <input id="appointmentDate" type="date" class="input" />
+          </div>
+
+          <div>
+            <label class="label" for="appointmentTime">Appointment Time</label>
+            <input id="appointmentTime" type="time" class="input" />
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="label" for="handoffNotes">Manager Handoff Notes</label>
+          <textarea id="handoffNotes" class="input" rows="4" placeholder="Notes for the closer, best contact time, objections, priorities, anything important..."></textarea>
+        </div>
+
+        <div class="mt-6 flex flex-col md:flex-row gap-3">
+          <button id="assignCloserBtn" class="btn btn-primary" type="button">Assign to Closer</button>
+          <p id="assignMessage" class="text-sm text-green-700 hidden self-center"></p>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
+        <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
+        <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection,
+      query,
+      where,
+      addDoc,
+      serverTimestamp,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const closerSelect = document.getElementById("closerSelect");
+    const appointmentDate = document.getElementById("appointmentDate");
+    const appointmentTime = document.getElementById("appointmentTime");
+    const handoffNotes = document.getElementById("handoffNotes");
+    const assignCloserBtn = document.getElementById("assignCloserBtn");
+    const assignMessage = document.getElementById("assignMessage");
+
+    const params = new URLSearchParams(window.location.search);
+    const assessmentId = params.get("id");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let assessmentData = null;
+    let closerList = [];
+
+    function hideLoader() {
+      if (authLoader) authLoader.style.display = "none";
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp?.toDate) return "-";
+      return timestamp.toDate().toLocaleString();
+    }
+
+    function formatClaimType(type) {
+      switch (type) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
+    }
+
+    function setValue(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value || "-";
+    }
+
+    function renderFieldGrid(containerId, data) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      container.innerHTML = "";
+      const entries = Object.entries(data || {});
+
+      if (!entries.length) {
+        container.innerHTML = `<div class="value">No data available.</div>`;
+        return;
+      }
+
+      entries.forEach(([key, value]) => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
+          <div class="value">${value || "-"}</div>
+        `;
+        container.appendChild(wrapper);
+      });
+    }
+
+    async function checkManagerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No staff profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/client-intake-portal.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadClosers() {
+      const q = query(collection(db, "users"), where("role", "==", "closer"));
+      const snapshot = await getDocs(q);
+
+      closerList = snapshot.docs.map(d => ({
+        uid: d.id,
+        ...d.data()
+      }));
+
+      closerSelect.innerHTML = `<option value="">Select closer</option>`;
+      closerList.forEach(closer => {
+        const option = document.createElement("option");
+        option.value = closer.uid;
+        option.textContent = closer.name || closer.email || closer.uid;
+        closerSelect.appendChild(option);
+      });
+    }
+
+    async function loadAssessment() {
+      if (!assessmentId) {
+        alert("Missing assessment ID.");
+        window.location.href = "/manager-panel.html";
+        return;
+      }
+
+      const assessmentRef = doc(db, "assessmentReports", assessmentId);
+      const assessmentSnap = await getDoc(assessmentRef);
+
+      if (!assessmentSnap.exists()) {
+        alert("Assessment not found.");
+        window.location.href = "/manager-panel.html";
+        return;
+      }
+
+      assessmentData = assessmentSnap.data();
+
+      document.getElementById("assessmentTitle").textContent = formatClaimType(assessmentData.claimType);
+      document.getElementById("assessmentSubtitle").textContent = `Assessment ID: ${assessmentId}`;
+      document.getElementById("createdByText").textContent = `Created by: ${assessmentData.createdBy?.name || assessmentData.createdBy?.email || "-"}`;
+      document.getElementById("createdAtText").textContent = `Created: ${formatDate(assessmentData.createdAt)}`;
+
+      setValue("client_firstName", assessmentData.client?.firstName);
+      setValue("client_secondName", assessmentData.client?.secondName);
+      setValue("client_firstName2", assessmentData.client?.firstName2);
+      setValue("client_secondName2", assessmentData.client?.secondName2);
+      setValue("client_landline", assessmentData.client?.landline);
+      setValue("client_mobile", assessmentData.client?.mobile);
+      setValue("client_email", assessmentData.client?.email);
+      setValue("client_address", assessmentData.client?.address);
+
+      setValue("claimTypeText", formatClaimType(assessmentData.claimType));
+      setValue("statusText", assessmentData.status);
+      setValue("managerNotesText", assessmentData.managerNotes);
+      setValue("assessmentSummaryText", assessmentData.assessmentSummary);
+
+      renderFieldGrid("product1Fields", assessmentData.product1 || {});
+      renderFieldGrid("product2Fields", assessmentData.product2 || {});
+
+      hideLoader();
+    }
+
+    assignCloserBtn.addEventListener("click", async () => {
+      const closerUid = closerSelect.value;
+      const chosenCloser = closerList.find(c => c.uid === closerUid);
+
+      if (!closerUid || !chosenCloser) {
+        alert("Please select a closer.");
+        return;
+      }
+
+      if (!appointmentDate.value || !appointmentTime.value) {
+        alert("Please choose an appointment date and time.");
+        return;
+      }
+
+      try {
+        const assignmentRef = await addDoc(collection(db, "closerAssignments"), {
+          assessmentId,
+          submissionId: assessmentData.submissionId || "",
+          claimType: assessmentData.claimType || "",
+          createdAt: serverTimestamp(),
+          assignedAt: serverTimestamp(),
+
+          assignedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          },
+
+          closer: {
+            uid: chosenCloser.uid,
+            name: chosenCloser.name || "",
+            email: chosenCloser.email || ""
+          },
+
+          client: assessmentData.client || {},
+          submittedBy: assessmentData.submittedBy || {},
+          managerNotes: assessmentData.managerNotes || "",
+          assessmentSummary: assessmentData.assessmentSummary || "",
+          handoffNotes: handoffNotes.value || "",
+          product1: assessmentData.product1 || {},
+          product2: assessmentData.product2 || {},
+
+          appointment: {
+            date: appointmentDate.value,
+            time: appointmentTime.value
+          },
+
+          status: "Assigned"
+        });
+
+        await updateDoc(doc(db, "assessmentReports", assessmentId), {
+          closerAssignmentId: assignmentRef.id,
+          assignedCloserUid: chosenCloser.uid,
+          assignedCloserName: chosenCloser.name || "",
+          assignedAt: serverTimestamp(),
+          assignmentStatus: "Assigned"
+        });
+
+        assignMessage.textContent = "Client assigned to closer successfully.";
+        assignMessage.classList.remove("hidden");
+
+        setTimeout(() => {
+          assignMessage.classList.add("hidden");
+        }, 3000);
+      } catch (error) {
+        console.error("Failed to assign closer:", error);
+        alert("Could not assign closer.");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const hasAccess = await checkManagerAccess(user);
+        if (!hasAccess) return;
+        await loadClosers();
+        await loadAssessment();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load assessment.");
+        window.location.href = "/manager-panel.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out. Please try again.");
+      }
+    });
+  </script>
+</body>
+</html>
