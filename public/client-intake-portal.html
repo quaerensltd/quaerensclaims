@@ -245,6 +245,14 @@ import {
   addDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+const authLoader = document.getElementById("authLoader");
+const staffStatus = document.getElementById("staffStatus");
+const staffEmail = document.getElementById("staffEmail");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const solarForm = document.getElementById("solarForm");
+let currentUserData = null;
+let currentUser = null;
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -260,46 +268,49 @@ import {
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+    const solarForm = document.getElementById("solarForm");
+    const claimTypeSelect = document.getElementById("claimType");
+
     let currentUserData = null;
-let currentFirebaseUser = null;
+    let currentFirebaseUser = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
     }
 
-    async function checkUserRole(user) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+async function checkUserRole(user) {
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
 
-        if (!userSnap.exists()) {
-          alert("No staff profile found for this account.");
-          window.location.href = "/login.html";
-          return;
-        }
-
-        const userData = userSnap.data();
-const role = userData.role;
-
-currentUserData = userData;
-currentFirebaseUser = user;
-
-        if (role !== "staff" && role !== "manager") {
-          alert("You do not have permission to access this page.");
-          window.location.href = "/login.html";
-          return;
-        }
-
-        staffStatus.textContent = role === "manager" ? "Logged in as Manager" : "Logged in as Staff Member";
-        staffEmail.textContent = user.email || "";
-        logoutBtn.classList.remove("hidden");
-        hideLoader();
-      } catch (error) {
-        console.error("Role check failed:", error);
-        alert("There was a problem checking access.");
-        window.location.href = "/login.html";
-      }
+    if (!userSnap.exists()) {
+      alert("No staff profile found for this account.");
+      window.location.href = "/login.html";
+      return;
     }
+
+    const userData = userSnap.data();
+    const role = userData.role;
+
+    if (role !== "staff" && role !== "manager") {
+      alert("You do not have permission to access this page.");
+      window.location.href = "/login.html";
+      return;
+    }
+
+    currentUser = user;
+    currentUserData = userData;
+
+    staffStatus.textContent = role === "manager" ? "Logged in as Manager" : "Logged in as Staff Member";
+    staffEmail.textContent = user.email || "";
+    logoutBtn.classList.remove("hidden");
+    hideLoader();
+  } catch (error) {
+    console.error("Role check failed:", error);
+    alert("There was a problem checking access.");
+    window.location.href = "/login.html";
+  }
+}
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -320,35 +331,33 @@ currentFirebaseUser = user;
       }
     });
 
-    const solarForm = document.getElementById("solarForm");
-
 solarForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if (!currentFirebaseUser || !currentUserData) {
-    alert("You are not authorised to submit this form.");
+  if (!currentUser || !currentUserData) {
+    alert("User session not ready. Please refresh and try again.");
     return;
   }
 
-  const submitBtn = solarForm.querySelector('button[type="submit"]');
-  const originalBtnText = submitBtn.textContent;
+  const submitButton = solarForm.querySelector('button[type="submit"]');
+  const originalText = submitButton.textContent;
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Submitting...";
+  submitButton.disabled = true;
+  submitButton.textContent = "Submitting...";
 
   try {
     const formData = new FormData(solarForm);
 
     const payload = {
-      claimType: document.getElementById("claimType").value || "solar",
+      claimType: "solar",
       status: "Awaiting Review",
       createdAt: serverTimestamp(),
 
-      staff: {
-        uid: currentFirebaseUser.uid,
-        email: currentFirebaseUser.email || "",
+      submittedBy: {
+        uid: currentUser.uid,
+        email: currentUser.email || "",
         name: currentUserData.name || "",
-        role: currentUserData.role || "staff"
+        role: currentUserData.role || ""
       },
 
       client: {
@@ -417,17 +426,17 @@ solarForm.addEventListener("submit", async (e) => {
 
     await addDoc(collection(db, "claimSubmissions"), payload);
 
-    alert("Solar intake submitted successfully.");
+    alert("Intake submitted successfully.");
     solarForm.reset();
-
   } catch (error) {
     console.error("Submission failed:", error);
-    alert("There was a problem saving this intake.");
+    alert("There was a problem submitting the intake.");
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalBtnText;
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
   }
 });
+
     window.quaerensPortal = { app, auth, db };
   </script>
 </body>
