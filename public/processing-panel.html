@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Processing Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.75rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading processing panel...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Panel</h1>
+          <p class="text-sm text-slate-500">Processing review, payment tracking, and full pack workflow</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="text-sm text-slate-500 text-right">
+            <div id="processingStatus">Checking access...</div>
+            <div id="processingEmail" class="text-xs text-slate-400"></div>
+          </div>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">
+            Log Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6">
+        <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+              <option value="solar">Solar Panel Claims</option>
+              <option value="mortgage">Mortgage Review</option>
+              <option value="survey">Survey Review</option>
+              <option value="newbuild">New Build Issues</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Closer outcome</label>
+            <select id="outcomeFilter" class="input">
+              <option value="all">All outcomes</option>
+              <option value="Interested">Interested</option>
+              <option value="Call Back">Call Back</option>
+              <option value="No Answer">No Answer</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Closed Deal">Closed Deal</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Deal status</label>
+            <select id="dealStatusFilter" class="input">
+              <option value="all">All deal statuses</option>
+              <option value="Open">Open</option>
+              <option value="Won">Won</option>
+              <option value="Lost">Lost</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Initial payment</label>
+            <select id="initialPaymentFilter" class="input">
+              <option value="all">All</option>
+              <option value="Yes">Paid</option>
+              <option value="No">Unpaid</option>
+              <option value="Partly">Partly Paid</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, closer..." />
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Processing Files</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading files...</p>
+          </div>
+          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Closer</th>
+                <th class="text-left p-3">Outcome</th>
+                <th class="text-left p-3">Deal</th>
+                <th class="text-left p-3">Total Fee</th>
+                <th class="text-left p-3">Initial</th>
+                <th class="text-left p-3">Follow-Up</th>
+                <th class="text-left p-3">Appointment</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="processingBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      getDocs,
+      query
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const processingStatus = document.getElementById("processingStatus");
+    const processingEmail = document.getElementById("processingEmail");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const outcomeFilter = document.getElementById("outcomeFilter");
+    const dealStatusFilter = document.getElementById("dealStatusFilter");
+    const initialPaymentFilter = document.getElementById("initialPaymentFilter");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const processingBody = document.getElementById("processingBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+
+    let allFiles = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function formatClaimType(type) {
+      switch (type) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
+    }
+
+    function formatMoney(value) {
+      if (value === undefined || value === null || value === "") return "-";
+      return `£${value}`;
+    }
+
+    function formatAppointment(appointment) {
+      if (!appointment) return "-";
+      return `${appointment.date || "-"} ${appointment.time || "-"}`.trim();
+    }
+
+    function paidBadge(value) {
+      if (value === "Yes") return "bg-green-100 text-green-800";
+      if (value === "Partly") return "bg-amber-100 text-amber-800";
+      return "bg-slate-100 text-slate-700";
+    }
+
+    async function checkProcessingAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "processing") {
+        alert("You do not have permission to access the processing panel.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      processingStatus.textContent = "Logged in as Processing";
+      processingEmail.textContent = user.email || "";
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadFiles() {
+      try {
+        const filesQuery = query(collection(db, "closerAssignments"));
+        const snapshot = await getDocs(filesQuery);
+
+        allFiles = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
+
+        renderFiles();
+      } catch (error) {
+        console.error("Failed to load processing files:", error);
+        resultsSummary.textContent = "Could not load files.";
+      }
+    }
+
+    function renderFiles() {
+      const selectedType = claimTypeFilter.value;
+      const selectedOutcome = outcomeFilter.value;
+      const selectedDeal = dealStatusFilter.value;
+      const selectedInitialPaid = initialPaymentFilter.value;
+      const searchTerm = searchInput.value.trim().toLowerCase();
+
+      const filtered = allFiles.filter(item => {
+        const matchesType = selectedType === "all" || item.claimType === selectedType;
+        const matchesOutcome = selectedOutcome === "all" || (item.outcome || "") === selectedOutcome;
+        const matchesDeal = selectedDeal === "all" || (item.dealStatus || "") === selectedDeal;
+        const matchesInitialPaid = selectedInitialPaid === "all" || (item.feeInitialPaid || "") === selectedInitialPaid;
+
+        const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim().toLowerCase();
+        const clientEmail = (item.client?.email || "").toLowerCase();
+        const closerName = (item.closer?.name || item.closer?.email || "").toLowerCase();
+
+        const matchesSearch =
+          !searchTerm ||
+          clientName.includes(searchTerm) ||
+          clientEmail.includes(searchTerm) ||
+          closerName.includes(searchTerm);
+
+        return matchesType && matchesOutcome && matchesDeal && matchesInitialPaid && matchesSearch;
+      });
+
+      processingBody.innerHTML = "";
+
+      if (!filtered.length) {
+        processingBody.innerHTML = `
+          <tr>
+            <td colspan="10" class="p-6 text-center text-slate-500">No files found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(item => {
+          const row = document.createElement("tr");
+          row.className = "border-t border-slate-200";
+
+          const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
+          const closerName = item.closer?.name || item.closer?.email || "-";
+
+          row.innerHTML = `
+            <td class="p-3">
+              <div class="font-semibold text-slate-800">${clientName}</div>
+              <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            </td>
+            <td class="p-3">${formatClaimType(item.claimType)}</td>
+            <td class="p-3">${closerName}</td>
+            <td class="p-3">${item.outcome || "-"}</td>
+            <td class="p-3">${item.dealStatus || "-"}</td>
+            <td class="p-3">${formatMoney(item.feeTotal)}</td>
+            <td class="p-3">
+              <div>${formatMoney(item.feeInitial)}</div>
+              <div class="mt-1 inline-block px-2 py-1 rounded-full text-xs font-semibold ${paidBadge(item.feeInitialPaid)}">
+                ${item.feeInitialPaid || "No status"}
+              </div>
+            </td>
+            <td class="p-3">
+              <div>${formatMoney(item.feeFollowOn)}</div>
+              <div class="mt-1 inline-block px-2 py-1 rounded-full text-xs font-semibold ${paidBadge(item.feeFollowOnPaid)}">
+                ${item.feeFollowOnPaid || "No status"}
+              </div>
+            </td>
+            <td class="p-3">${formatAppointment(item.appointment)}</td>
+            <td class="p-3">
+              <a href="/processing-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
+            </td>
+          `;
+
+          processingBody.appendChild(row);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} processing file(s) shown`;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkProcessingAccess(user);
+        if (!allowed) return;
+        hideLoader();
+        await loadFiles();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load processing panel.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    claimTypeFilter.addEventListener("change", renderFiles);
+    outcomeFilter.addEventListener("change", renderFiles);
+    dealStatusFilter.addEventListener("change", renderFiles);
+    initialPaymentFilter.addEventListener("change", renderFiles);
+    searchInput.addEventListener("input", renderFiles);
+    refreshBtn.addEventListener("click", loadFiles);
+  </script>
+</body>
+</html>
