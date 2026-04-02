@@ -106,217 +106,225 @@
       </section>
     </main>
   </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    collection,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      collection,
-      getDocs,
-      query,
-      orderBy
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+    authDomain: "quaerensclaims.firebaseapp.com",
+    projectId: "quaerensclaims"
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-      authDomain: "quaerensclaims.firebaseapp.com",
-      projectId: "quaerensclaims"
-    };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  const authLoader = document.getElementById("authLoader");
+  const staffStatus = document.getElementById("staffStatus");
+  const staffEmail = document.getElementById("staffEmail");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const claimTypeFilter = document.getElementById("claimTypeFilter");
+  const statusFilter = document.getElementById("statusFilter");
+  const searchInput = document.getElementById("searchInput");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const submissionsBody = document.getElementById("submissionsBody");
+  const resultsSummary = document.getElementById("resultsSummary");
 
-    const authLoader = document.getElementById("authLoader");
-    const staffStatus = document.getElementById("staffStatus");
-    const staffEmail = document.getElementById("staffEmail");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const claimTypeFilter = document.getElementById("claimTypeFilter");
-    const statusFilter = document.getElementById("statusFilter");
-    const searchInput = document.getElementById("searchInput");
-    const refreshBtn = document.getElementById("refreshBtn");
-    const submissionsBody = document.getElementById("submissionsBody");
-    const resultsSummary = document.getElementById("resultsSummary");
+  let allSubmissions = [];
 
-    let allSubmissions = [];
+  function hideLoader() {
+    if (authLoader) authLoader.style.display = "none";
+  }
 
-    function hideLoader() {
-      if (authLoader) authLoader.style.display = "none";
+  function formatDate(timestamp) {
+    if (!timestamp?.toDate) return "-";
+    return timestamp.toDate().toLocaleString();
+  }
+
+  function formatClaimType(type) {
+    switch (type) {
+      case "solar": return "Solar Panel Claims";
+      case "mortgage": return "Mortgage Review";
+      case "survey": return "Survey Review";
+      case "newbuild": return "New Build Issues";
+      default: return type || "-";
     }
+  }
 
-    function formatDate(timestamp) {
-      if (!timestamp?.toDate) return "-";
-      return timestamp.toDate().toLocaleString();
-    }
+  function normalizeStatus(status) {
+    if (status === "draft") return "Draft";
+    if (status === "submitted") return "Awaiting Review";
+    if (status === "in_review") return "In Review";
+    if (status === "assessment_complete") return "Assessment Complete";
+    return status || "Awaiting Review";
+  }
 
-    function formatClaimType(type) {
-      switch (type) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
-    }
+  function badgeClass(status) {
+    if (status === "assessment_complete") return "bg-green-100 text-green-800";
+    if (status === "in_review") return "bg-blue-100 text-blue-800";
+    if (status === "draft") return "bg-slate-100 text-slate-700";
+    return "bg-amber-100 text-amber-800";
+  }
 
-    function normalizeStatus(status) {
-      if (status === "draft") return "Draft";
-      if (status === "submitted") return "Awaiting Review";
-      if (status === "in_review") return "In Review";
-      if (status === "assessment_complete") return "Assessment Complete";
-      return status || "Awaiting Review";
-    }
+  async function checkManagerAccess(user) {
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-    function badgeClass(status) {
-      if (status === "assessment_complete") return "bg-green-100 text-green-800";
-      if (status === "in_review") return "bg-blue-100 text-blue-800";
-      if (status === "draft") return "bg-slate-100 text-slate-700";
-      return "bg-amber-100 text-amber-800";
-    }
-
-    async function checkManagerAccess(user) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          alert("No staff profile found for this account.");
-          window.location.href = "/login.html";
-          return;
-        }
-
-        const userData = userSnap.data();
-
-        if (userData.role !== "manager") {
-          alert("You do not have permission to access the manager panel.");
-          window.location.href = "/client-intake-portal.html";
-          return;
-        }
-
-        staffStatus.textContent = "Logged in as Manager";
-        staffEmail.textContent = user.email || "";
-        logoutBtn.classList.remove("hidden");
-        hideLoader();
-        await loadSubmissions();
-      } catch (error) {
-        console.error("Manager access check failed:", error);
-        alert("There was a problem checking access.");
-        window.location.href = "/login.html";
-      }
-    }
-
-    async function loadSubmissions() {
-      try {
-        const submissionsQuery = query(collection(db, "claimSubmissions"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(submissionsQuery);
-
-        allSubmissions = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data()
-        }));
-
-        console.log("Loaded claimSubmissions:", allSubmissions);
-        renderSubmissions();
-      } catch (error) {
-        console.error("Failed to load submissions:", error);
-        resultsSummary.textContent = "Could not load submissions.";
-      }
-    }
-
-    function renderSubmissions() {
-      const selectedType = claimTypeFilter.value;
-      const selectedStatus = statusFilter.value;
-      const searchTerm = searchInput.value.trim().toLowerCase();
-
-      const filtered = allSubmissions.filter(item => {
-        const matchesType = selectedType === "all" || item.claimType === selectedType;
-        const matchesStatus = selectedStatus === "all" || (item.status || "submitted") === selectedStatus;
-
-        const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim().toLowerCase();
-        const clientEmail = (item.client?.email || "").toLowerCase();
-        const staffName = (item.submittedBy?.name || "").toLowerCase();
-        const staffEmailValue = (item.submittedBy?.email || "").toLowerCase();
-
-        const matchesSearch =
-          !searchTerm ||
-          clientName.includes(searchTerm) ||
-          clientEmail.includes(searchTerm) ||
-          staffName.includes(searchTerm) ||
-          staffEmailValue.includes(searchTerm);
-
-        return matchesType && matchesStatus && matchesSearch;
-      });
-
-      submissionsBody.innerHTML = "";
-
-      if (!filtered.length) {
-        submissionsBody.innerHTML = `
-          <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No submissions found.</td>
-          </tr>
-        `;
-      } else {
-        filtered.forEach(item => {
-          const row = document.createElement("tr");
-          row.className = "border-t border-slate-200";
-
-          const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
-          const clientEmail = item.client?.email || "-";
-          const submittedBy = item.submittedBy?.name || item.submittedBy?.email || "-";
-          const rawStatus = item.status || "submitted";
-
-          row.innerHTML = `
-            <td class="p-3">${formatDate(item.createdAt)}</td>
-            <td class="p-3">${formatClaimType(item.claimType)}</td>
-            <td class="p-3">${clientName}</td>
-            <td class="p-3">${clientEmail}</td>
-            <td class="p-3">${submittedBy}</td>
-            <td class="p-3">
-              <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(rawStatus)}">
-                ${normalizeStatus(rawStatus)}
-              </span>
-            </td>
-            <td class="p-3">
-              <a href="/intake-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
-            </td>
-          `;
-
-          submissionsBody.appendChild(row);
-        });
-      }
-
-      resultsSummary.textContent = `${filtered.length} submission(s) shown`;
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+      if (!userSnap.exists()) {
+        alert("No staff profile found for this account.");
         window.location.href = "/login.html";
         return;
       }
-      await checkManagerAccess(user);
-    });
 
-    logoutBtn.addEventListener("click", async () => {
-      try {
-        await signOut(auth);
-        window.location.href = "/login.html";
-      } catch (error) {
-        console.error("Logout failed:", error);
-        alert("Could not log out. Please try again.");
+      const userData = userSnap.data();
+
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access the manager panel.");
+        window.location.href = "/client-intake-portal.html";
+        return;
       }
+
+      staffStatus.textContent = "Logged in as Manager";
+      staffEmail.textContent = user.email || "";
+      logoutBtn.classList.remove("hidden");
+      hideLoader();
+      await loadSubmissions();
+    } catch (error) {
+      console.error("Manager access check failed:", error);
+      alert("There was a problem checking access.");
+      window.location.href = "/login.html";
+    }
+  }
+
+  async function loadSubmissions() {
+    try {
+      const snapshot = await getDocs(collection(db, "claimSubmissions"));
+
+      allSubmissions = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+
+      allSubmissions.sort((a, b) => {
+        const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+        const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        return bTime - aTime;
+      });
+
+      console.log("Loaded claimSubmissions:", allSubmissions);
+      renderSubmissions();
+    } catch (error) {
+      console.error("Failed to load submissions:", error);
+      resultsSummary.textContent = "Could not load submissions.";
+      submissionsBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="p-6 text-center text-red-600">Error loading submissions. Check browser console.</td>
+        </tr>
+      `;
+    }
+  }
+
+  function renderSubmissions() {
+    const selectedType = claimTypeFilter.value;
+    const selectedStatus = statusFilter.value;
+    const searchTerm = searchInput.value.trim().toLowerCase();
+
+    const filtered = allSubmissions.filter(item => {
+      const matchesType = selectedType === "all" || item.claimType === selectedType;
+      const matchesStatus = selectedStatus === "all" || (item.status || "submitted") === selectedStatus;
+
+      const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim().toLowerCase();
+      const clientEmail = (item.client?.email || "").toLowerCase();
+      const staffName = (item.submittedBy?.name || "").toLowerCase();
+      const staffEmailValue = (item.submittedBy?.email || "").toLowerCase();
+
+      const matchesSearch =
+        !searchTerm ||
+        clientName.includes(searchTerm) ||
+        clientEmail.includes(searchTerm) ||
+        staffName.includes(searchTerm) ||
+        staffEmailValue.includes(searchTerm);
+
+      return matchesType && matchesStatus && matchesSearch;
     });
 
-    claimTypeFilter.addEventListener("change", renderSubmissions);
-    statusFilter.addEventListener("change", renderSubmissions);
-    searchInput.addEventListener("input", renderSubmissions);
-    refreshBtn.addEventListener("click", loadSubmissions);
-  </script>
+    submissionsBody.innerHTML = "";
+
+    if (!filtered.length) {
+      submissionsBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="p-6 text-center text-slate-500">No submissions found.</td>
+        </tr>
+      `;
+    } else {
+      filtered.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+
+        const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
+        const clientEmail = item.client?.email || "-";
+        const submittedBy = item.submittedBy?.name || item.submittedBy?.email || "-";
+        const rawStatus = item.status || "submitted";
+
+        row.innerHTML = `
+          <td class="p-3">${formatDate(item.createdAt)}</td>
+          <td class="p-3">${formatClaimType(item.claimType)}</td>
+          <td class="p-3">${clientName}</td>
+          <td class="p-3">${clientEmail}</td>
+          <td class="p-3">${submittedBy}</td>
+          <td class="p-3">
+            <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(rawStatus)}">
+              ${normalizeStatus(rawStatus)}
+            </span>
+          </td>
+          <td class="p-3">
+            <a href="/intake-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
+          </td>
+        `;
+
+        submissionsBody.appendChild(row);
+      });
+    }
+
+    resultsSummary.textContent = `${filtered.length} submission(s) shown`;
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "/login.html";
+      return;
+    }
+    await checkManagerAccess(user);
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+      window.location.href = "/login.html";
+    } catch (error) {
+      console.error("Logout failed:", error);
+      alert("Could not log out. Please try again.");
+    }
+  });
+
+  claimTypeFilter.addEventListener("change", renderSubmissions);
+  statusFilter.addEventListener("change", renderSubmissions);
+  searchInput.addEventListener("input", renderSubmissions);
+  refreshBtn.addEventListener("click", loadSubmissions);
+</script>
+  
 </body>
 </html>
