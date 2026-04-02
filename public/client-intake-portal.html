@@ -21,8 +21,9 @@
     .hidden { display: none; }
   </style>
 </head>
-
 <body class="bg-slate-50 text-slate-800">
+
+  <!-- Loading Screen -->
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
@@ -30,7 +31,7 @@
     </div>
   </div>
 
-  <div class="min-h-screen">
+  <div class="min-h-screen hidden" id="portalWrapper">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div>
@@ -40,10 +41,10 @@
 
         <div class="flex items-center gap-3">
           <div class="text-sm text-slate-500 text-right">
-            <div id="staffStatus">Checking access...</div>
+            <div id="staffStatus">Logged in</div>
             <div id="staffEmail" class="text-xs text-slate-400"></div>
           </div>
-          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4" type="button">
             Log Out
           </button>
         </div>
@@ -62,10 +63,8 @@
         </ol>
 
         <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
-          <h3 class="font-bold text-blue-900 mb-2">Recommended backend</h3>
-          <p class="text-sm text-slate-700">
-            Firebase Authentication for staff login, Firestore for submissions, Storage for uploaded documents, and role-based access for intake staff and managers.
-          </p>
+          <h3 class="font-bold text-blue-900 mb-2">Current access</h3>
+          <p class="text-sm text-slate-700">Only staff and managers can access this page.</p>
         </div>
       </aside>
 
@@ -189,43 +188,10 @@
           </div>
 
           <div class="flex flex-col md:flex-row gap-3 justify-end border-t border-slate-200 pt-6">
-            <button type="button" class="btn btn-secondary">Save Draft</button>
+            <button type="reset" class="btn btn-secondary">Clear Form</button>
             <button type="submit" class="btn btn-primary">Submit Intake</button>
           </div>
         </form>
-
-        <section class="card p-6">
-          <h2 class="text-xl font-extrabold text-blue-900">Manager Review Panel</h2>
-          <p class="text-slate-600 mt-1">After submission, each intake should appear in a secure claim-specific panel for review, status updates, and assessment report generation.</p>
-          <div class="mt-5 overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-              <thead>
-                <tr class="bg-blue-50 text-blue-900">
-                  <th class="text-left p-3">Claim Type</th>
-                  <th class="text-left p-3">Client</th>
-                  <th class="text-left p-3">Staff Member</th>
-                  <th class="text-left p-3">Status</th>
-                  <th class="text-left p-3">Received</th>
-                  <th class="text-left p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="border-t border-slate-200">
-                  <td class="p-3">Solar Panel Claims</td>
-                  <td class="p-3">John Smith</td>
-                  <td class="p-3">A. Jones</td>
-                  <td class="p-3">
-                    <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
-                      Awaiting Review
-                    </span>
-                  </td>
-                  <td class="p-3">01 Apr 2026</td>
-                  <td class="p-3"><button class="btn btn-secondary text-sm py-2">Open File</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
       </section>
     </main>
   </div>
@@ -237,22 +203,14 @@
       onAuthStateChanged,
       signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  addDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-const authLoader = document.getElementById("authLoader");
-const staffStatus = document.getElementById("staffStatus");
-const staffEmail = document.getElementById("staffEmail");
-const logoutBtn = document.getElementById("logoutBtn");
-
-const solarForm = document.getElementById("solarForm");
-let currentUserData = null;
-let currentUser = null;
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -265,52 +223,47 @@ let currentUser = null;
     const db = getFirestore(app);
 
     const authLoader = document.getElementById("authLoader");
+    const portalWrapper = document.getElementById("portalWrapper");
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
     const solarForm = document.getElementById("solarForm");
-    const claimTypeSelect = document.getElementById("claimType");
+    const claimType = document.getElementById("claimType");
 
+    let currentUser = null;
     let currentUserData = null;
-    let currentFirebaseUser = null;
 
-    function hideLoader() {
-      if (authLoader) authLoader.style.display = "none";
+    function showPortal() {
+      authLoader.style.display = "none";
+      portalWrapper.classList.remove("hidden");
     }
 
-async function checkUserRole(user) {
-  try {
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+    async function checkUserAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-    if (!userSnap.exists()) {
-      alert("No staff profile found for this account.");
-      window.location.href = "/login.html";
-      return;
+      if (!userSnap.exists()) {
+        alert("No staff profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      const role = userData.role;
+
+      if (role !== "manager" && role !== "staff") {
+        alert("You do not have access to this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+
+      staffStatus.textContent = `${role.charAt(0).toUpperCase() + role.slice(1)} Access`;
+      staffEmail.textContent = user.email || "";
+      return true;
     }
-
-    const userData = userSnap.data();
-    const role = userData.role;
-
-    if (role !== "staff" && role !== "manager") {
-      alert("You do not have permission to access this page.");
-      window.location.href = "/login.html";
-      return;
-    }
-
-    currentUser = user;
-    currentUserData = userData;
-
-    staffStatus.textContent = role === "manager" ? "Logged in as Manager" : "Logged in as Staff Member";
-    staffEmail.textContent = user.email || "";
-    logoutBtn.classList.remove("hidden");
-    hideLoader();
-  } catch (error) {
-    console.error("Role check failed:", error);
-    alert("There was a problem checking access.");
-    window.location.href = "/login.html";
-  }
-}
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -318,7 +271,15 @@ async function checkUserRole(user) {
         return;
       }
 
-      await checkUserRole(user);
+      try {
+        const allowed = await checkUserAccess(user);
+        if (!allowed) return;
+        showPortal();
+      } catch (error) {
+        console.error("Access check failed:", error);
+        alert("Could not verify access.");
+        window.location.href = "/login.html";
+      }
     });
 
     logoutBtn.addEventListener("click", async () => {
@@ -327,117 +288,103 @@ async function checkUserRole(user) {
         window.location.href = "/login.html";
       } catch (error) {
         console.error("Logout failed:", error);
-        alert("Could not log out. Please try again.");
+        alert("Could not log out.");
       }
     });
 
-solarForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    solarForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  if (!currentUser || !currentUserData) {
-    alert("User session not ready. Please refresh and try again.");
-    return;
-  }
-
-  const submitButton = solarForm.querySelector('button[type="submit"]');
-  const originalText = submitButton.textContent;
-
-  submitButton.disabled = true;
-  submitButton.textContent = "Submitting...";
-
-  try {
-    const formData = new FormData(solarForm);
-
-    const payload = {
-      claimType: "solar",
-      status: "Awaiting Review",
-      createdAt: serverTimestamp(),
-
-      submittedBy: {
-        uid: currentUser.uid,
-        email: currentUser.email || "",
-        name: currentUserData.name || "",
-        role: currentUserData.role || ""
-      },
-
-      client: {
-        firstName: formData.get("firstName") || "",
-        secondName: formData.get("secondName") || "",
-        firstName2: formData.get("firstName2") || "",
-        secondName2: formData.get("secondName2") || "",
-        landline: formData.get("landline") || "",
-        mobile: formData.get("mobile") || "",
-        email: formData.get("email") || "",
-        address: formData.get("address") || ""
-      },
-
-      product1: {
-        product: formData.get("product1_product") || "",
-        vendor: formData.get("product1_vendor") || "",
-        vendorTrading: formData.get("product1_vendorTrading") || "",
-        docs: formData.get("product1_docs") || "",
-        purchasePrice: formData.get("product1_purchasePrice") || "",
-        paymentMethod: formData.get("product1_paymentMethod") || "",
-        finance: formData.get("product1_finance") || "",
-        financeWho: formData.get("product1_financeWho") || "",
-        purchaseDate: formData.get("product1_purchaseDate") || "",
-        investment: formData.get("product1_investment") || "",
-        returns: formData.get("product1_returns") || "",
-        fitInflation: formData.get("product1_fitInflation") || "",
-        mcs: formData.get("product1_mcs") || "",
-        extraCosts: formData.get("product1_extraCosts") || "",
-        extraCostsInfo: formData.get("product1_extraCostsInfo") || "",
-        energySavings: formData.get("product1_energySavings") || "",
-        warranty30: formData.get("product1_warranty30") || "",
-        contactVendor: formData.get("product1_contactVendor") || "",
-        thirdPartyClaim: formData.get("product1_thirdPartyClaim") || "",
-        rushed: formData.get("product1_rushed") || "",
-        thirdPartyContact: formData.get("product1_thirdPartyContact") || "",
-        damage: formData.get("product1_damage") || "",
-        comments: formData.get("product1_comments") || ""
-      },
-
-      product2: {
-        product: formData.get("product2_product") || "",
-        vendor: formData.get("product2_vendor") || "",
-        vendorTrading: formData.get("product2_vendorTrading") || "",
-        docs: formData.get("product2_docs") || "",
-        purchasePrice: formData.get("product2_purchasePrice") || "",
-        paymentMethod: formData.get("product2_paymentMethod") || "",
-        finance: formData.get("product2_finance") || "",
-        financeWho: formData.get("product2_financeWho") || "",
-        purchaseDate: formData.get("product2_purchaseDate") || "",
-        investment: formData.get("product2_investment") || "",
-        returns: formData.get("product2_returns") || "",
-        fitInflation: formData.get("product2_fitInflation") || "",
-        mcs: formData.get("product2_mcs") || "",
-        extraCosts: formData.get("product2_extraCosts") || "",
-        extraCostsInfo: formData.get("product2_extraCostsInfo") || "",
-        energySavings: formData.get("product2_energySavings") || "",
-        warranty30: formData.get("product2_warranty30") || "",
-        contactVendor: formData.get("product2_contactVendor") || "",
-        thirdPartyClaim: formData.get("product2_thirdPartyClaim") || "",
-        rushed: formData.get("product2_rushed") || "",
-        thirdPartyContact: formData.get("product2_thirdPartyContact") || "",
-        damage: formData.get("product2_damage") || "",
-        comments: formData.get("product2_comments") || ""
+      if (!currentUser) {
+        alert("No authenticated user found.");
+        return;
       }
-    };
 
-    await addDoc(collection(db, "claimSubmissions"), payload);
+      try {
+        const formData = new FormData(solarForm);
 
-    alert("Intake submitted successfully.");
-    solarForm.reset();
-  } catch (error) {
-    console.error("Submission failed:", error);
-    alert("There was a problem submitting the intake.");
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = originalText;
-  }
-});
+        const payload = {
+          claimType: claimType.value,
+          status: "Submitted",
+          createdAt: serverTimestamp(),
+          submittedBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData?.name || ""
+          },
+          client: {
+            firstName: formData.get("firstName") || "",
+            secondName: formData.get("secondName") || "",
+            firstName2: formData.get("firstName2") || "",
+            secondName2: formData.get("secondName2") || "",
+            landline: formData.get("landline") || "",
+            mobile: formData.get("mobile") || "",
+            email: formData.get("email") || "",
+            address: formData.get("address") || ""
+          },
+          product1: {
+            product: formData.get("product1_product") || "",
+            vendor: formData.get("product1_vendor") || "",
+            vendorTrading: formData.get("product1_vendorTrading") || "",
+            docs: formData.get("product1_docs") || "",
+            purchasePrice: formData.get("product1_purchasePrice") || "",
+            paymentMethod: formData.get("product1_paymentMethod") || "",
+            finance: formData.get("product1_finance") || "",
+            financeWho: formData.get("product1_financeWho") || "",
+            purchaseDate: formData.get("product1_purchaseDate") || "",
+            investment: formData.get("product1_investment") || "",
+            returns: formData.get("product1_returns") || "",
+            fitInflation: formData.get("product1_fitInflation") || "",
+            mcs: formData.get("product1_mcs") || "",
+            extraCosts: formData.get("product1_extraCosts") || "",
+            extraCostsInfo: formData.get("product1_extraCostsInfo") || "",
+            energySavings: formData.get("product1_energySavings") || "",
+            warranty30: formData.get("product1_warranty30") || "",
+            contactVendor: formData.get("product1_contactVendor") || "",
+            thirdPartyClaim: formData.get("product1_thirdPartyClaim") || "",
+            rushed: formData.get("product1_rushed") || "",
+            thirdPartyContact: formData.get("product1_thirdPartyContact") || "",
+            damage: formData.get("product1_damage") || "",
+            comments: formData.get("product1_comments") || ""
+          },
+          product2: {
+            product: formData.get("product2_product") || "",
+            vendor: formData.get("product2_vendor") || "",
+            vendorTrading: formData.get("product2_vendorTrading") || "",
+            docs: formData.get("product2_docs") || "",
+            purchasePrice: formData.get("product2_purchasePrice") || "",
+            paymentMethod: formData.get("product2_paymentMethod") || "",
+            finance: formData.get("product2_finance") || "",
+            financeWho: formData.get("product2_financeWho") || "",
+            purchaseDate: formData.get("product2_purchaseDate") || "",
+            investment: formData.get("product2_investment") || "",
+            returns: formData.get("product2_returns") || "",
+            fitInflation: formData.get("product2_fitInflation") || "",
+            mcs: formData.get("product2_mcs") || "",
+            extraCosts: formData.get("product2_extraCosts") || "",
+            extraCostsInfo: formData.get("product2_extraCostsInfo") || "",
+            energySavings: formData.get("product2_energySavings") || "",
+            warranty30: formData.get("product2_warranty30") || "",
+            contactVendor: formData.get("product2_contactVendor") || "",
+            thirdPartyClaim: formData.get("product2_thirdPartyClaim") || "",
+            rushed: formData.get("product2_rushed") || "",
+            thirdPartyContact: formData.get("product2_thirdPartyContact") || "",
+            damage: formData.get("product2_damage") || "",
+            comments: formData.get("product2_comments") || ""
+          }
+        };
 
-    window.quaerensPortal = { app, auth, db };
+        const docRef = await addDoc(collection(db, "claimSubmissions"), payload);
+
+        alert("Intake submitted successfully.");
+        solarForm.reset();
+
+        window.location.href = `/intake-detail.html?id=${docRef.id}`;
+      } catch (error) {
+        console.error("Submission failed:", error);
+        alert("Could not submit intake.");
+      }
+    });
   </script>
 </body>
 </html>
