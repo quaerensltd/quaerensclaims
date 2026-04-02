@@ -64,11 +64,6 @@
           <h3 class="font-bold text-blue-900 mb-2">Current live form</h3>
           <p class="text-sm text-slate-700">Solar Panel Claims intake is active. Other claim forms can be added next using the same portal structure.</p>
         </div>
-
-        <div class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
-          <h3 class="font-bold text-slate-800 mb-2">Save behaviour</h3>
-          <p class="text-sm text-slate-700">Save Draft writes the file as a draft. Submit Intake writes the file as ready for manager review.</p>
-        </div>
       </aside>
 
       <section class="space-y-6">
@@ -248,7 +243,7 @@
       formMessage.textContent = text;
       formMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       formMessage.classList.add(isError ? "text-red-600" : "text-green-700");
-      setTimeout(() => formMessage.classList.add("hidden"), 4000);
+      setTimeout(() => formMessage.classList.add("hidden"), 5000);
     }
 
     function getFormData() {
@@ -324,7 +319,7 @@
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        alert("Could not verify access.");
+        alert("Could not verify access. No Firestore user profile found.");
         window.location.href = "/login.html";
         return false;
       }
@@ -332,7 +327,7 @@
       const userData = userSnap.data();
 
       if (userData.role !== "staff" && userData.role !== "manager") {
-        alert("Could not verify access.");
+        alert("Could not verify access. Role found: " + (userData.role || "none"));
         window.location.href = "/login.html";
         return false;
       }
@@ -340,7 +335,7 @@
       currentUser = user;
       currentUserData = userData;
 
-      staffStatus.textContent = `Logged in as ${userData.role}`;
+      staffStatus.textContent = `Logged in as ${userData.role} | UID: ${user.uid}`;
       staffEmail.textContent = user.email || "";
       logoutBtn.classList.remove("hidden");
 
@@ -370,13 +365,20 @@
         }
       };
 
-      await addDoc(collection(db, "claimSubmissions"), payload);
+      try {
+        const ref = await addDoc(collection(db, "claimSubmissions"), payload);
+        console.log("Saved successfully:", ref.id);
 
-      showMessage(status === "draft" ? "Draft saved successfully." : "Intake submitted successfully.");
+        showMessage(status === "draft" ? "Draft saved successfully." : "Intake submitted successfully.");
 
-      if (status === "submitted") {
-        solarForm.reset();
-        claimType.value = "solar";
+        if (status === "submitted") {
+          solarForm.reset();
+          claimType.value = "solar";
+        }
+      } catch (error) {
+        console.error("Submit failed:", error);
+        alert("Submit failed: " + error.message);
+        showMessage("Could not submit intake.", true);
       }
     }
 
@@ -384,9 +386,6 @@
       saveDraftBtn.disabled = true;
       try {
         await saveIntake("draft");
-      } catch (error) {
-        console.error("Save draft failed:", error);
-        showMessage("Could not save draft.", true);
       } finally {
         saveDraftBtn.disabled = false;
       }
@@ -398,9 +397,6 @@
       submitIntakeBtn.textContent = "Submitting...";
       try {
         await saveIntake("submitted");
-      } catch (error) {
-        console.error("Submit intake failed:", error);
-        showMessage("Could not submit intake.", true);
       } finally {
         submitIntakeBtn.disabled = false;
         submitIntakeBtn.textContent = "Submit Intake";
