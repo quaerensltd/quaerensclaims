@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Assessment Detail | Quaerens</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -97,6 +98,32 @@
       </section>
 
       <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Generated Documents</h3>
+
+        <div class="flex flex-wrap gap-3 mb-6">
+          <button id="generateAssessmentBtn" class="btn btn-primary" type="button">Generate Assessment Report</button>
+          <button id="generateFullPackBtn" class="btn btn-secondary" type="button">Generate Full Pack</button>
+          <button id="saveGeneratedDocsBtn" class="btn btn-secondary" type="button">Save Documents</button>
+          <button id="downloadAssessmentPdfBtn" class="btn btn-secondary" type="button">Download Assessment PDF</button>
+          <button id="downloadFullPackPdfBtn" class="btn btn-secondary" type="button">Download Full Pack PDF</button>
+        </div>
+
+        <div class="space-y-6">
+          <div>
+            <label class="label" for="generatedAssessmentText">Assessment Report</label>
+            <textarea id="generatedAssessmentText" class="input" rows="18" placeholder="Generated assessment report will appear here..."></textarea>
+          </div>
+
+          <div>
+            <label class="label" for="generatedFullPackText">Full Processing Pack</label>
+            <textarea id="generatedFullPackText" class="input" rows="24" placeholder="Generated full pack will appear here..."></textarea>
+          </div>
+
+          <p id="generatedDocsMessage" class="text-sm text-green-700 hidden"></p>
+        </div>
+      </section>
+
+      <section class="card p-6">
         <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assign to Closer</h3>
 
         <div class="grid md:grid-cols-3 gap-4">
@@ -180,9 +207,17 @@
     const assignCloserBtn = document.getElementById("assignCloserBtn");
     const assignMessage = document.getElementById("assignMessage");
 
+    const generateAssessmentBtn = document.getElementById("generateAssessmentBtn");
+    const generateFullPackBtn = document.getElementById("generateFullPackBtn");
+    const saveGeneratedDocsBtn = document.getElementById("saveGeneratedDocsBtn");
+    const downloadAssessmentPdfBtn = document.getElementById("downloadAssessmentPdfBtn");
+    const downloadFullPackPdfBtn = document.getElementById("downloadFullPackPdfBtn");
+    const generatedAssessmentText = document.getElementById("generatedAssessmentText");
+    const generatedFullPackText = document.getElementById("generatedFullPackText");
+    const generatedDocsMessage = document.getElementById("generatedDocsMessage");
+
     const params = new URLSearchParams(window.location.search);
     const assessmentId = params.get("id");
-    console.log("Assessment ID from URL:", assessmentId);
 
     let currentUser = null;
     let currentUserData = null;
@@ -231,6 +266,220 @@
         `;
         container.appendChild(wrapper);
       });
+    }
+
+    function money(value) {
+      const n = parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
+      if (isNaN(n)) return value || "0";
+      return n.toLocaleString("en-GB", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function estimateClaimRange(data) {
+      const rawPaid = data?.product1?.purchasePrice || "";
+      const paid = parseFloat(String(rawPaid).replace(/[^0-9.]/g, "")) || 0;
+
+      let low = paid * 0.85;
+      let high = paid * 1.45;
+
+      const notesText = `
+        ${data?.product1?.comments || ""}
+        ${data?.managerNotes || ""}
+        ${data?.assessmentSummary || ""}
+        ${data?.handoffNotes || ""}
+      `.toLowerCase();
+
+      if (notesText.includes("warranty")) high += 1500;
+      if (notesText.includes("mis-sold") || notesText.includes("mis sold") || notesText.includes("pay for themselves")) {
+        low += 1000;
+        high += 2500;
+      }
+      if (notesText.includes("company") && notesText.includes("trading")) {
+        high += 1000;
+      }
+      if (notesText.includes("invoice") || notesText.includes("proof of payment") || notesText.includes("contract")) {
+        high += 1000;
+      }
+
+      low = Math.max(low, paid * 0.85);
+      high = Math.max(high, low + 2500);
+
+      return `£${money(low)} to £${money(high)}+`;
+    }
+
+    function getReference() {
+      return assessmentData?.reference || assessmentData?.submissionId || assessmentId || "N/A";
+    }
+
+    function getClientFullName() {
+      return [
+        assessmentData?.client?.firstName || "",
+        assessmentData?.client?.secondName || ""
+      ].join(" ").trim() || "Client";
+    }
+
+    function getSupplierName() {
+      return assessmentData?.product1?.vendor || "Supplier to be confirmed";
+    }
+
+    function getPurchaseDate() {
+      return assessmentData?.product1?.purchaseDate || "N/A";
+    }
+
+    function getPaymentMethod() {
+      return assessmentData?.product1?.paymentMethod || "N/A";
+    }
+
+    function getPurchasePrice() {
+      return assessmentData?.product1?.purchasePrice || "0";
+    }
+
+    function buildAssessmentReportText() {
+      const claimRange = estimateClaimRange(assessmentData);
+      const clientName = getClientFullName();
+      const supplier = getSupplierName();
+
+      return `QUAERENS
+
+Assessment & Strategy Report
+Reference: ${getReference()}
+
+Client Details
+${clientName}
+Home: ${assessmentData?.client?.landline || "N/A"}
+Mobile: ${assessmentData?.client?.mobile || "N/A"}
+Email: ${assessmentData?.client?.email || "N/A"}
+Address: ${assessmentData?.client?.address || "N/A"}
+
+Supplier Details
+${supplier}
+Company registration: ${assessmentData?.product1?.vendorTrading || "To be confirmed"}
+Reported position: ${assessmentData?.product1?.vendor || supplier}
+
+Purchase Details
+Date of Purchase: ${getPurchaseDate()}
+Cash Price: £${money(getPurchasePrice())}
+Method of Payment: ${getPaymentMethod()}
+
+Summary of Issues
+${assessmentData?.assessmentSummary || assessmentData?.product1?.comments || "No summary entered."}
+
+Claim Strength Assessment
+This appears to be a viable ${assessmentData?.claimType || "complaint"} file. The strongest angles are likely to be:
+1. Misrepresentation / overstatement of expected benefit.
+2. Warranty / aftercare concerns where long-term value was not delivered.
+3. Documented transaction, subject to evidence review.
+4. Any prior complaint or recovery attempt should be checked before final escalation.
+
+Indicative Claim Position
+Based on the current facts, this appears to be a commercially useful complaint file. A realistic working claim range at assessment stage is:
+${claimRange}
+
+Conclusion
+This is a workable complaint file with a clear complaint theme. The strongest route appears to be a combined misrepresentation and product value / warranty strategy. Any prior recovery attempt should be checked before the file proceeds further.`;
+    }
+
+    function buildFullPackText() {
+      const claimRange = estimateClaimRange(assessmentData);
+      const clientName = getClientFullName();
+      const supplier = getSupplierName();
+
+      return `QUAERENS
+
+${clientName} – Full Claim Pack
+Reference: ${getReference()}
+Client: ${clientName}
+Supplier: ${supplier}
+Payment Method: ${getPaymentMethod()}
+
+1. Assessment Summary
+This matter concerns a ${assessmentData?.claimType || "complaint"} involving ${supplier} on ${getPurchaseDate()}.
+The client reports the following issues:
+${assessmentData?.assessmentSummary || assessmentData?.product1?.comments || "No summary entered."}
+
+Indicative claim position: ${claimRange}
+
+2. Formal Complaint Letter
+Dear Sir/Madam,
+
+I wish to raise a formal complaint regarding the transaction supplied by ${supplier}.
+
+I entered into this transaction in reliance on representations made during the sales process. The outcome has not reflected what was represented, and I have suffered financial loss, loss of practical value, and inconvenience.
+
+I request that this matter is fully reviewed and that appropriate redress is considered.
+
+Yours faithfully,
+${clientName}
+
+3. Statement of Truth
+I, ${clientName}, confirm that the information I have provided is true to the best of my knowledge and belief.
+
+I relied on the representations made to me regarding the expected benefit and value of the product.
+
+Signature: _______________________
+Date: _______________________
+
+4. Loss Summary
+Purchase price: £${money(getPurchasePrice())}
+Method of payment: ${getPaymentMethod()}
+
+Potential recoverable heads of loss may include:
+- Mis-sold expectations
+- Loss of practical warranty / aftercare value
+- Reduced value of the purchase
+- Distress and inconvenience
+
+5. Evidence Checklist
+Please retain and gather the following:
+- Invoice
+- Proof of payment
+- Contract / agreement
+- Any warranty documents
+- Any sales materials or written promises
+- Any complaint correspondence
+- Any prior recovery / complaint outcome, if one exists
+
+6. Escalation / Pre-Action Letter
+Dear Sir/Madam,
+
+Unless this matter is reviewed and addressed appropriately, I reserve the right to escalate the complaint and pursue all available recovery options.
+
+This complaint concerns a transaction in which the sales presentation, expected benefit, and long-term value appear materially inconsistent with what was delivered.
+
+I request a full written response and appropriate redress.
+
+Yours faithfully,
+${clientName}
+
+7. Important File Note
+${assessmentData?.managerNotes || "No internal file note recorded."}`;
+    }
+
+    function renderPdf(filename, text) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+      const margin = 48;
+      const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const lines = doc.splitTextToSize(text, maxWidth);
+
+      let y = 50;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+
+      lines.forEach(line => {
+        if (y > pageHeight - 50) {
+          doc.addPage();
+          y = 50;
+        }
+        doc.text(line, margin, y);
+        y += 16;
+      });
+
+      doc.save(filename);
     }
 
     async function checkManagerAccess(user) {
@@ -311,11 +560,54 @@
       setValue("managerNotesText", assessmentData.managerNotes);
       setValue("assessmentSummaryText", assessmentData.assessmentSummary);
 
+      generatedAssessmentText.value = assessmentData.generatedAssessmentText || "";
+      generatedFullPackText.value = assessmentData.generatedFullPackText || "";
+
       renderFieldGrid("product1Fields", assessmentData.product1 || {});
       renderFieldGrid("product2Fields", assessmentData.product2 || {});
 
       hideLoader();
     }
+
+    generateAssessmentBtn.addEventListener("click", () => {
+      generatedAssessmentText.value = buildAssessmentReportText();
+    });
+
+    generateFullPackBtn.addEventListener("click", () => {
+      generatedFullPackText.value = buildFullPackText();
+    });
+
+    saveGeneratedDocsBtn.addEventListener("click", async () => {
+      try {
+        await updateDoc(doc(db, "assessmentReports", assessmentId), {
+          generatedAssessmentText: generatedAssessmentText.value || "",
+          generatedFullPackText: generatedFullPackText.value || "",
+          generatedDocumentsUpdatedAt: serverTimestamp(),
+          generatedDocumentsUpdatedBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+
+        generatedDocsMessage.textContent = "Generated documents saved successfully.";
+        generatedDocsMessage.classList.remove("hidden");
+        setTimeout(() => generatedDocsMessage.classList.add("hidden"), 3000);
+      } catch (error) {
+        console.error("Failed to save generated documents:", error);
+        alert("Could not save generated documents.");
+      }
+    });
+
+    downloadAssessmentPdfBtn.addEventListener("click", () => {
+      const text = generatedAssessmentText.value || buildAssessmentReportText();
+      renderPdf(`${getClientFullName().replace(/\s+/g, "_")}_Assessment_Report.pdf`, text);
+    });
+
+    downloadFullPackPdfBtn.addEventListener("click", () => {
+      const text = generatedFullPackText.value || buildFullPackText();
+      renderPdf(`${getClientFullName().replace(/\s+/g, "_")}_Full_Pack.pdf`, text);
+    });
 
     assignCloserBtn.addEventListener("click", async () => {
       const closerUid = closerSelect.value;
@@ -353,6 +645,8 @@
           managerNotes: assessmentData.managerNotes || "",
           assessmentSummary: assessmentData.assessmentSummary || "",
           handoffNotes: handoffNotes.value || "",
+          generatedAssessmentText: generatedAssessmentText.value || "",
+          generatedFullPackText: generatedFullPackText.value || "",
           product1: assessmentData.product1 || {},
           product2: assessmentData.product2 || {},
           appointment: {
