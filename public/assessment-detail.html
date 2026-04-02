@@ -35,7 +35,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Assessment Detail</h1>
-          <p class="text-sm text-slate-500">Manager review, assignment, and closer handoff</p>
+          <p class="text-sm text-slate-500">Manager review, assignment, and processing handoff</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -157,6 +157,16 @@
       </section>
 
       <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Send to Processing</h3>
+        <p class="text-slate-600 mb-4">This sends the full pack to the processing team in a separate secure file. The closer does not receive this full pack.</p>
+
+        <div class="flex flex-col md:flex-row gap-3">
+          <button id="sendToProcessingBtn" class="btn btn-primary" type="button">Send to Processing</button>
+          <p id="processingMessage" class="text-sm text-green-700 hidden self-center"></p>
+        </div>
+      </section>
+
+      <section class="card p-6">
         <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
         <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
       </section>
@@ -215,6 +225,9 @@
     const generatedAssessmentText = document.getElementById("generatedAssessmentText");
     const generatedFullPackText = document.getElementById("generatedFullPackText");
     const generatedDocsMessage = document.getElementById("generatedDocsMessage");
+
+    const sendToProcessingBtn = document.getElementById("sendToProcessingBtn");
+    const processingMessage = document.getElementById("processingMessage");
 
     const params = new URLSearchParams(window.location.search);
     const assessmentId = params.get("id");
@@ -646,7 +659,6 @@ ${assessmentData?.managerNotes || "No internal file note recorded."}`;
           assessmentSummary: assessmentData.assessmentSummary || "",
           handoffNotes: handoffNotes.value || "",
           generatedAssessmentText: generatedAssessmentText.value || "",
-          generatedFullPackText: generatedFullPackText.value || "",
           product1: assessmentData.product1 || {},
           product2: assessmentData.product2 || {},
           appointment: {
@@ -670,6 +682,60 @@ ${assessmentData?.managerNotes || "No internal file note recorded."}`;
       } catch (error) {
         console.error("Failed to assign closer:", error);
         alert("Could not assign closer.");
+      }
+    });
+
+    sendToProcessingBtn.addEventListener("click", async () => {
+      try {
+        const processingRef = await addDoc(collection(db, "processingFiles"), {
+          assessmentId,
+          submissionId: assessmentData.submissionId || "",
+          claimType: assessmentData.claimType || "",
+          reference: assessmentData.reference || assessmentData.submissionId || assessmentId || "",
+          client: assessmentData.client || {},
+          submittedBy: assessmentData.submittedBy || {},
+          managerNotes: assessmentData.managerNotes || "",
+          assessmentSummary: assessmentData.assessmentSummary || "",
+          generatedAssessmentText: generatedAssessmentText.value || "",
+          generatedFullPackText: generatedFullPackText.value || "",
+          product1: assessmentData.product1 || {},
+          product2: assessmentData.product2 || {},
+
+          processingStatus: "Awaiting Processing",
+          documentStatus: "Not Started",
+
+          closerOutcome: "",
+          dealStatus: "",
+          feeTotal: "",
+          feeInitial: "",
+          feeInitialPaid: "",
+          paymentLinkInitial: "",
+          feeFollowOn: "",
+          feeFollowOnPaid: "",
+          paymentLinkFollowOn: "",
+          paymentTrackingNotes: "",
+
+          createdAt: serverTimestamp(),
+          sentToProcessingAt: serverTimestamp(),
+          sentBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+
+        await updateDoc(doc(db, "assessmentReports", assessmentId), {
+          processingFileId: processingRef.id,
+          sentToProcessingAt: serverTimestamp(),
+          processingStatus: "Awaiting Processing"
+        });
+
+        processingMessage.textContent = "File sent to processing successfully.";
+        processingMessage.classList.remove("hidden");
+        setTimeout(() => processingMessage.classList.add("hidden"), 3000);
+      } catch (error) {
+        console.error("Failed to send to processing:", error);
+        alert("Could not send file to processing.");
       }
     });
 

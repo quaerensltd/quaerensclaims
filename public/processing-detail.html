@@ -64,8 +64,8 @@
             <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
           </div>
           <div class="text-sm text-slate-500">
-            <div id="appointmentText"></div>
-            <div id="closerText"></div>
+            <div id="sentByText"></div>
+            <div id="sentAtText"></div>
           </div>
         </div>
       </section>
@@ -86,17 +86,12 @@
         </div>
 
         <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Claim & Commercial Summary</h3>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Claim Summary</h3>
           <div class="space-y-4">
             <div><span class="label">Claim Type</span><div class="value" id="claimTypeText">-</div></div>
             <div><span class="label">Assessment Summary</span><div class="value whitespace-pre-wrap" id="assessmentSummaryText">-</div></div>
-            <div><span class="label">Closer Outcome</span><div class="value" id="closerOutcomeText">-</div></div>
-            <div><span class="label">Deal Status</span><div class="value" id="dealStatusText">-</div></div>
-            <div><span class="label">Total Fee</span><div class="value" id="feeTotalText">-</div></div>
-            <div><span class="label">Initial Payment</span><div class="value" id="feeInitialText">-</div></div>
-            <div><span class="label">Initial Payment Paid</span><div class="value" id="feeInitialPaidText">-</div></div>
-            <div><span class="label">Follow-Up Payment</span><div class="value" id="feeFollowOnText">-</div></div>
-            <div><span class="label">Follow-Up Payment Paid</span><div class="value" id="feeFollowOnPaidText">-</div></div>
+            <div><span class="label">Manager Notes</span><div class="value whitespace-pre-wrap" id="managerNotesText">-</div></div>
+            <div><span class="label">Reference</span><div class="value" id="referenceText">-</div></div>
           </div>
         </div>
       </section>
@@ -111,29 +106,14 @@
         <div id="generatedFullPackText" class="readonly-box">No full pack available.</div>
       </section>
 
-      <section class="grid lg:grid-cols-2 gap-6">
-        <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Internal Notes</h3>
-          <div class="space-y-4">
-            <div><span class="label">Manager Notes</span><div class="value whitespace-pre-wrap" id="managerNotesText">-</div></div>
-            <div><span class="label">Handoff Notes</span><div class="value whitespace-pre-wrap" id="handoffNotesText">-</div></div>
-            <div><span class="label">Closer Notes</span><div class="value whitespace-pre-wrap" id="closerNotesText">-</div></div>
-          </div>
-        </div>
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
+        <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
+      </section>
 
-        <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Payment Links</h3>
-          <div class="space-y-4">
-            <div>
-              <span class="label">Initial Payment Link</span>
-              <div class="value" id="paymentLinkInitialText">-</div>
-            </div>
-            <div>
-              <span class="label">Follow-Up Payment Link</span>
-              <div class="value" id="paymentLinkFollowOnText">-</div>
-            </div>
-          </div>
-        </div>
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
+        <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
       </section>
 
       <section class="card p-6">
@@ -238,25 +218,34 @@
       }
     }
 
+    function formatDate(timestamp) {
+      if (!timestamp?.toDate) return "-";
+      return timestamp.toDate().toLocaleString();
+    }
+
     function setValue(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "-";
     }
 
-    function setLinkOrText(id, value) {
-      const el = document.getElementById(id);
-      if (!el) return;
+    function renderFieldGrid(containerId, data) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
 
-      if (!value) {
-        el.textContent = "-";
+      const entries = Object.entries(data || {});
+      if (!entries.length) {
+        container.innerHTML = `<div class="value">No data available.</div>`;
         return;
       }
 
-      if (String(value).startsWith("http")) {
-        el.innerHTML = `<a href="${value}" target="_blank" class="text-blue-600 font-semibold hover:underline">Open link</a>`;
-      } else {
-        el.textContent = value;
-      }
+      entries.forEach(([key, value]) => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
+          <div class="value">${value || "-"}</div>
+        `;
+        container.appendChild(wrapper);
+      });
     }
 
     async function checkProcessingAccess(user) {
@@ -289,7 +278,7 @@
         return;
       }
 
-      const fileRef = doc(db, "closerAssignments", fileId);
+      const fileRef = doc(db, "processingFiles", fileId);
       const fileSnap = await getDoc(fileRef);
 
       if (!fileSnap.exists()) {
@@ -301,9 +290,9 @@
       fileData = fileSnap.data();
 
       document.getElementById("detailTitle").textContent = formatClaimType(fileData.claimType);
-      document.getElementById("detailSubtitle").textContent = `File ID: ${fileId}`;
-      document.getElementById("appointmentText").textContent = `Appointment: ${fileData.appointment?.date || "-"} ${fileData.appointment?.time || "-"}`;
-      document.getElementById("closerText").textContent = `Closer: ${fileData.closer?.name || fileData.closer?.email || "-"}`;
+      document.getElementById("detailSubtitle").textContent = `Processing File ID: ${fileId}`;
+      document.getElementById("sentByText").textContent = `Sent by: ${fileData.sentBy?.name || fileData.sentBy?.email || "-"}`;
+      document.getElementById("sentAtText").textContent = `Sent: ${formatDate(fileData.sentToProcessingAt)}`;
 
       setValue("client_firstName", fileData.client?.firstName);
       setValue("client_secondName", fileData.client?.secondName);
@@ -316,26 +305,17 @@
 
       setValue("claimTypeText", formatClaimType(fileData.claimType));
       setValue("assessmentSummaryText", fileData.assessmentSummary);
-      setValue("closerOutcomeText", fileData.outcome);
-      setValue("dealStatusText", fileData.dealStatus);
-      setValue("feeTotalText", fileData.feeTotal ? `£${fileData.feeTotal}` : "-");
-      setValue("feeInitialText", fileData.feeInitial ? `£${fileData.feeInitial}` : "-");
-      setValue("feeInitialPaidText", fileData.feeInitialPaid);
-      setValue("feeFollowOnText", fileData.feeFollowOn ? `£${fileData.feeFollowOn}` : "-");
-      setValue("feeFollowOnPaidText", fileData.feeFollowOnPaid);
-
       setValue("managerNotesText", fileData.managerNotes);
-      setValue("handoffNotesText", fileData.handoffNotes);
-      setValue("closerNotesText", fileData.closerNotes);
-
-      setLinkOrText("paymentLinkInitialText", fileData.paymentLinkInitial);
-      setLinkOrText("paymentLinkFollowOnText", fileData.paymentLinkFollowOn);
+      setValue("referenceText", fileData.reference || fileData.submissionId || fileData.assessmentId || "-");
 
       document.getElementById("generatedAssessmentText").textContent = fileData.generatedAssessmentText || "No assessment report available.";
       document.getElementById("generatedFullPackText").textContent = fileData.generatedFullPackText || "No full pack available.";
 
+      renderFieldGrid("product1Fields", fileData.product1 || {});
+      renderFieldGrid("product2Fields", fileData.product2 || {});
+
       processingStatusSelect.value = fileData.processingStatus || "Awaiting Processing";
-      documentStatusSelect.value = fileData.documentStatus || "";
+      documentStatusSelect.value = fileData.documentStatus || "Not Started";
       paymentTrackingNotes.value = fileData.paymentTrackingNotes || "";
       processingNotes.value = fileData.processingNotes || "";
 
@@ -344,7 +324,7 @@
 
     saveProcessingBtn.addEventListener("click", async () => {
       try {
-        await updateDoc(doc(db, "closerAssignments", fileId), {
+        await updateDoc(doc(db, "processingFiles", fileId), {
           processingStatus: processingStatusSelect.value,
           documentStatus: documentStatusSelect.value,
           paymentTrackingNotes: paymentTrackingNotes.value,
