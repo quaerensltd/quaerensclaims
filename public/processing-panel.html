@@ -49,7 +49,7 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="card p-6">
-        <div class="grid md:grid-cols-5 gap-4">
+        <div class="grid md:grid-cols-6 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim type</label>
             <select id="claimTypeFilter" class="input">
@@ -87,8 +87,24 @@
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Sent by</label>
-            <input id="sentBySearch" type="text" class="input" placeholder="Manager name or email" />
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Deal status</label>
+            <select id="dealStatusFilter" class="input">
+              <option value="all">All deal statuses</option>
+              <option value="Open">Open</option>
+              <option value="Won">Won</option>
+              <option value="Lost">Lost</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Initial paid</label>
+            <select id="initialPaymentFilter" class="input">
+              <option value="all">All</option>
+              <option value="Yes">Paid</option>
+              <option value="No">Unpaid</option>
+              <option value="Partly">Partly Paid</option>
+            </select>
           </div>
 
           <div>
@@ -114,10 +130,12 @@
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Reference</th>
-                <th class="text-left p-3">Sent By</th>
+                <th class="text-left p-3">Deal</th>
+                <th class="text-left p-3">Total Fee</th>
+                <th class="text-left p-3">Initial</th>
+                <th class="text-left p-3">Follow-Up</th>
                 <th class="text-left p-3">Processing Status</th>
                 <th class="text-left p-3">Document Status</th>
-                <th class="text-left p-3">Sent</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -163,7 +181,8 @@
     const claimTypeFilter = document.getElementById("claimTypeFilter");
     const processingStatusFilter = document.getElementById("processingStatusFilter");
     const documentStatusFilter = document.getElementById("documentStatusFilter");
-    const sentBySearch = document.getElementById("sentBySearch");
+    const dealStatusFilter = document.getElementById("dealStatusFilter");
+    const initialPaymentFilter = document.getElementById("initialPaymentFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const processingBody = document.getElementById("processingBody");
@@ -191,9 +210,10 @@
     }
 
     function badgeClass(status) {
-      if (status === "Completed" || status === "Finalised") return "bg-green-100 text-green-800";
+      if (status === "Completed" || status === "Finalised" || status === "Won") return "bg-green-100 text-green-800";
       if (status === "In Progress" || status === "Documents Prepared") return "bg-blue-100 text-blue-800";
-      if (status === "Awaiting Payment" || status === "In Draft") return "bg-amber-100 text-amber-800";
+      if (status === "Awaiting Payment" || status === "In Draft" || status === "Pending") return "bg-amber-100 text-amber-800";
+      if (status === "Lost") return "bg-red-100 text-red-800";
       return "bg-slate-100 text-slate-700";
     }
 
@@ -241,18 +261,16 @@
       const selectedType = claimTypeFilter.value;
       const selectedProcessingStatus = processingStatusFilter.value;
       const selectedDocumentStatus = documentStatusFilter.value;
-      const sentByTerm = sentBySearch.value.trim().toLowerCase();
+      const selectedDealStatus = dealStatusFilter.value;
+      const selectedInitialPaid = initialPaymentFilter.value;
       const searchTerm = searchInput.value.trim().toLowerCase();
 
       const filtered = allFiles.filter(item => {
         const matchesType = selectedType === "all" || item.claimType === selectedType;
-        const matchesProcessingStatus =
-          selectedProcessingStatus === "all" || (item.processingStatus || "") === selectedProcessingStatus;
-        const matchesDocumentStatus =
-          selectedDocumentStatus === "all" || (item.documentStatus || "") === selectedDocumentStatus;
-
-        const sentByText = `${item.sentBy?.name || ""} ${item.sentBy?.email || ""}`.toLowerCase();
-        const matchesSentBy = !sentByTerm || sentByText.includes(sentByTerm);
+        const matchesProcessingStatus = selectedProcessingStatus === "all" || (item.processingStatus || "") === selectedProcessingStatus;
+        const matchesDocumentStatus = selectedDocumentStatus === "all" || (item.documentStatus || "") === selectedDocumentStatus;
+        const matchesDealStatus = selectedDealStatus === "all" || (item.dealStatus || "") === selectedDealStatus;
+        const matchesInitialPaid = selectedInitialPaid === "all" || (item.feeInitialPaid || "") === selectedInitialPaid;
 
         const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim().toLowerCase();
         const clientEmail = (item.client?.email || "").toLowerCase();
@@ -264,7 +282,7 @@
           clientEmail.includes(searchTerm) ||
           refText.includes(searchTerm);
 
-        return matchesType && matchesProcessingStatus && matchesDocumentStatus && matchesSentBy && matchesSearch;
+        return matchesType && matchesProcessingStatus && matchesDocumentStatus && matchesDealStatus && matchesInitialPaid && matchesSearch;
       });
 
       processingBody.innerHTML = "";
@@ -272,7 +290,7 @@
       if (!filtered.length) {
         processingBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No processing files found.</td>
+            <td colspan="10" class="p-6 text-center text-slate-500">No processing files found.</td>
           </tr>
         `;
       } else {
@@ -291,8 +309,18 @@
             <td class="p-3">${formatClaimType(item.claimType)}</td>
             <td class="p-3">${referenceText}</td>
             <td class="p-3">
-              <div>${item.sentBy?.name || "-"}</div>
-              <div class="text-xs text-slate-500">${item.sentBy?.email || ""}</div>
+              <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(item.dealStatus)}">
+                ${item.dealStatus || "-"}
+              </span>
+            </td>
+            <td class="p-3">${item.feeTotal ? `£${item.feeTotal}` : "-"}</td>
+            <td class="p-3">
+              <div>${item.feeInitial ? `£${item.feeInitial}` : "-"}</div>
+              <div class="text-xs text-slate-500 mt-1">${item.feeInitialPaid || "No status"}</div>
+            </td>
+            <td class="p-3">
+              <div>${item.feeFollowOn ? `£${item.feeFollowOn}` : "-"}</div>
+              <div class="text-xs text-slate-500 mt-1">${item.feeFollowOnPaid || "No status"}</div>
             </td>
             <td class="p-3">
               <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(item.processingStatus)}">
@@ -304,7 +332,6 @@
                 ${item.documentStatus || "Not Started"}
               </span>
             </td>
-            <td class="p-3">${formatDate(item.sentToProcessingAt)}</td>
             <td class="p-3">
               <a href="/processing-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
             </td>
@@ -348,7 +375,8 @@
     claimTypeFilter.addEventListener("change", renderFiles);
     processingStatusFilter.addEventListener("change", renderFiles);
     documentStatusFilter.addEventListener("change", renderFiles);
-    sentBySearch.addEventListener("input", renderFiles);
+    dealStatusFilter.addEventListener("change", renderFiles);
+    initialPaymentFilter.addEventListener("change", renderFiles);
     searchInput.addEventListener("input", renderFiles);
     refreshBtn.addEventListener("click", loadFiles);
   </script>
