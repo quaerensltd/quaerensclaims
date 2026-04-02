@@ -36,7 +36,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Intake Detail</h1>
           <p class="text-sm text-slate-500">Secure submission review and assessment workflow</p>
         </div>
-
         <div class="flex items-center gap-3">
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Back to Panel</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
@@ -79,9 +78,10 @@
             <div>
               <label class="label" for="statusSelect">Status</label>
               <select id="statusSelect" class="input">
-                <option value="Awaiting Review">Awaiting Review</option>
-                <option value="In Review">In Review</option>
-                <option value="Assessment Complete">Assessment Complete</option>
+                <option value="draft">Draft</option>
+                <option value="submitted">Awaiting Review</option>
+                <option value="in_review">In Review</option>
+                <option value="assessment_complete">Assessment Complete</option>
               </select>
             </div>
 
@@ -263,7 +263,7 @@
       setValue("client_email", submissionData.client?.email);
       setValue("client_address", submissionData.client?.address);
 
-      statusSelect.value = submissionData.status || "Awaiting Review";
+      statusSelect.value = submissionData.status || "submitted";
       managerNotes.value = submissionData.managerNotes || "";
       assessmentSummary.value = submissionData.assessmentSummary || "";
 
@@ -306,8 +306,21 @@
           managerNotes: managerNotes.value,
           assessmentSummary: assessmentSummary.value,
           status: statusSelect.value,
+          product1: submissionData.product1 || {},
+          product2: submissionData.product2 || {},
           createdAt: serverTimestamp(),
           createdBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+
+        await updateDoc(doc(db, "claimSubmissions", submissionId), {
+          status: "assessment_complete",
+          assessmentId: assessmentRef.id,
+          assessmentCreatedAt: serverTimestamp(),
+          assessmentCreatedBy: {
             uid: currentUser.uid,
             email: currentUser.email || "",
             name: currentUserData.name || ""
