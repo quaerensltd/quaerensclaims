@@ -196,6 +196,17 @@
         </section>
 
         <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Reassign Lead</h4>
+          <div class="grid md:grid-cols-[1fr_auto] gap-3">
+            <select id="reassignListerSelect" class="input">
+              <option value="">Select lister</option>
+            </select>
+            <button id="reassignLeadBtn" class="btn btn-primary" type="button">Reassign</button>
+          </div>
+          <p id="reassignMessage" class="text-sm text-green-700 hidden mt-3"></p>
+        </section>
+
+        <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
           <div id="lead_notes" class="text-sm text-slate-700 whitespace-pre-wrap">-</div>
         </section>
@@ -220,7 +231,10 @@
       doc,
       getDoc,
       getDocs,
-      collection
+      updateDoc,
+      collection,
+      arrayUnion,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -255,10 +269,15 @@
 
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
+    const reassignListerSelect = document.getElementById("reassignListerSelect");
+    const reassignLeadBtn = document.getElementById("reassignLeadBtn");
+    const reassignMessage = document.getElementById("reassignMessage");
 
     let currentUser = null;
+    let currentUserData = null;
     let allLeads = [];
     let allUsers = [];
+    let selectedLead = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -282,7 +301,8 @@
         interested_intake_started: "Intake Started",
         intake_submitted: "Intake Submitted",
         intake_draft_saved: "Intake Draft Saved",
-        notes_saved: "Notes Saved"
+        notes_saved: "Notes Saved",
+        reassigned: "Reassigned"
       };
       return map[action] || action || "-";
     }
@@ -318,6 +338,7 @@
       }
 
       currentUser = user;
+      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -330,6 +351,7 @@
       allLeads = leadsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       populateListerFilter();
+      populateReassignSelect();
       renderStats();
       renderOverview();
       renderPerformance();
@@ -348,6 +370,17 @@
       });
 
       listerFilter.value = current;
+    }
+
+    function populateReassignSelect() {
+      const staffUsers = allUsers.filter(u => u.role === "staff");
+      reassignListerSelect.innerHTML = `<option value="">Select lister</option>`;
+      staffUsers.forEach(user => {
+        const option = document.createElement("option");
+        option.value = user.id;
+        option.textContent = user.name || user.email || user.id;
+        reassignListerSelect.appendChild(option);
+      });
     }
 
     function renderStats() {
@@ -473,24 +506,27 @@
     }
 
     function openLead(leadId) {
-      const lead = allLeads.find(x => x.id === leadId);
-      if (!lead) return;
+      selectedLead = allLeads.find(x => x.id === leadId);
+      if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent = `${lead.forename || ""} ${lead.surname || ""}`.trim() || "Lead Detail";
-      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${lead.id}`;
-      document.getElementById("lead_name").textContent = `${lead.title || ""} ${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = lead.telephone || "-";
-      document.getElementById("lead_address").textContent = formatAddress(lead);
-      document.getElementById("lead_postcode").textContent = lead.postcode || "-";
-      document.getElementById("lead_lister").textContent = lead.assignedToName || lead.assignedToEmail || "-";
-      document.getElementById("lead_status").textContent = formatLeadStatus(lead);
-      document.getElementById("lead_lastAction").textContent = formatAction(lead.lastAction);
-      document.getElementById("lead_callback").textContent = lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-";
-      document.getElementById("lead_converted").textContent = lead.convertedToSubmissionId || "-";
-      document.getElementById("lead_usable").textContent = lead.usable === false ? "No" : "Yes";
-      document.getElementById("lead_notes").textContent = lead.notes || "-";
+      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_lister").textContent = selectedLead.assignedToName || selectedLead.assignedToEmail || "-";
+      document.getElementById("lead_status").textContent = formatLeadStatus(selectedLead);
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_callback").textContent = selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
+      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
+      document.getElementById("lead_usable").textContent = selectedLead.usable === false ? "No" : "Yes";
+      document.getElementById("lead_notes").textContent = selectedLead.notes || "-";
 
-      renderHistory(lead.actionHistory || []);
+      reassignListerSelect.value = selectedLead.assignedToUid || "";
+      reassignMessage.classList.add("hidden");
+
+      renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
 
@@ -514,6 +550,56 @@
         wrap.appendChild(div);
       });
     }
+
+    reassignLeadBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      const newUid = reassignListerSelect.value;
+      const newLister = allUsers.find(u => u.id === newUid && u.role === "staff");
+
+      if (!newUid || !newLister) {
+        reassignMessage.textContent = "Please select a lister.";
+        reassignMessage.classList.remove("hidden", "text-green-700");
+        reassignMessage.classList.add("text-red-600");
+        return;
+      }
+
+      if (newUid === selectedLead.assignedToUid) {
+        reassignMessage.textContent = "This lead is already assigned to that lister.";
+        reassignMessage.classList.remove("hidden", "text-green-700");
+        reassignMessage.classList.add("text-red-600");
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          assignedToUid: newLister.id,
+          assignedToName: newLister.name || "",
+          assignedToEmail: newLister.email || "",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "reassigned",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: `Reassigned to ${newLister.name || newLister.email || newLister.id}`
+          })
+        });
+
+        reassignMessage.textContent = "Lead reassigned successfully.";
+        reassignMessage.classList.remove("hidden", "text-red-600");
+        reassignMessage.classList.add("text-green-700");
+
+        await loadData();
+        selectedLead = allLeads.find(x => x.id === selectedLead.id);
+        if (selectedLead) openLead(selectedLead.id);
+      } catch (error) {
+        console.error("Failed to reassign lead:", error);
+        reassignMessage.textContent = "Could not reassign lead.";
+        reassignMessage.classList.remove("hidden", "text-green-700");
+        reassignMessage.classList.add("text-red-600");
+      }
+    });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
