@@ -54,11 +54,16 @@
         <h2 class="section-title mb-4">Portal Flow</h2>
         <ol class="space-y-3 text-sm text-slate-700 list-decimal pl-4">
           <li>Staff member logs in</li>
-          <li>Selects claim type</li>
+          <li>Selects claim type or opens a lead</li>
           <li>Completes claim-specific form</li>
           <li>Submission is saved to a secure panel</li>
           <li>Manager reviews and creates assessment report</li>
         </ol>
+
+        <div id="leadNotice" class="mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 hidden">
+          <h3 class="font-bold text-emerald-900 mb-2">Lead linked</h3>
+          <p class="text-sm text-slate-700" id="leadNoticeText">This intake is linked to a lister lead and some fields were prefilled automatically.</p>
+        </div>
 
         <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
           <h3 class="font-bold text-blue-900 mb-2">Current live form</h3>
@@ -209,7 +214,9 @@
       getDoc,
       addDoc,
       collection,
-      serverTimestamp
+      serverTimestamp,
+      updateDoc,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -231,9 +238,15 @@
     const saveDraftBtn = document.getElementById("saveDraftBtn");
     const submitIntakeBtn = document.getElementById("submitIntakeBtn");
     const formMessage = document.getElementById("formMessage");
+    const leadNotice = document.getElementById("leadNotice");
+    const leadNoticeText = document.getElementById("leadNoticeText");
+
+    const params = new URLSearchParams(window.location.search);
+    const leadId = params.get("leadId");
 
     let currentUser = null;
     let currentUserData = null;
+    let currentLeadData = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -244,6 +257,23 @@
       formMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       formMessage.classList.add(isError ? "text-red-600" : "text-green-700");
       setTimeout(() => formMessage.classList.add("hidden"), 5000);
+    }
+
+    function buildAddressFromLead(lead) {
+      const parts = [
+        lead.address1 || "",
+        lead.address2 || "",
+        lead.address3 || "",
+        lead.address4 || "",
+        lead.address5 || "",
+        lead.postcode || ""
+      ].filter(Boolean);
+      return parts.join(", ");
+    }
+
+    function setInputValue(name, value) {
+      const el = solarForm.querySelector(`[name="${name}"]`);
+      if (el) el.value = value || "";
     }
 
     function getFormData() {
@@ -342,6 +372,47 @@
       return true;
     }
 
+    async function loadLeadForPrefill() {
+      if (!leadId) return;
+
+      const leadRef = doc(db, "leadAssignments", leadId);
+      const leadSnap = await getDoc(leadRef);
+
+      if (!leadSnap.exists()) {
+        alert("Linked lead not found.");
+        return;
+      }
+
+      currentLeadData = leadSnap.data();
+
+      setInputValue("firstName", currentLeadData.forename || "");
+      setInputValue("secondName", currentLeadData.surname || "");
+      setInputValue("mobile", currentLeadData.telephone || "");
+      setInputValue("address", buildAddressFromLead(currentLeadData));
+      setInputValue("product1_product", currentLeadData.hasSolar === "Y" ? "Solar Panel System" : "");
+
+      if (currentLeadData.campaign) {
+        claimType.value = currentLeadData.campaign;
+      } else {
+        claimType.value = "solar";
+      }
+
+      leadNotice.classList.remove("hidden");
+      leadNoticeText.textContent = `Lead ${leadId} loaded and prefilled for ${currentLeadData.forename || ""} ${currentLeadData.surname || ""}.`;
+
+      await updateDoc(leadRef, {
+        leadStatus: "intake_in_progress",
+        lastAction: "interested_intake_started",
+        lastUpdatedAt: serverTimestamp(),
+        actionHistory: arrayUnion({
+          action: "interested_intake_started",
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString()
+        })
+      });
+    }
+
     async function saveIntake(status = "draft") {
       const formData = getFormData();
 
@@ -362,12 +433,30 @@
           email: currentUser.email || "",
           name: currentUserData.name || "",
           role: currentUserData.role || ""
-        }
+        },
+        sourceLeadId: leadId || "",
+        sourceCampaign: currentLeadData?.campaign || ""
       };
 
       try {
         const ref = await addDoc(collection(db, "claimSubmissions"), payload);
-        console.log("Saved successfully:", ref.id);
+
+        if (leadId) {
+          await updateDoc(doc(db, "leadAssignments", leadId), {
+            convertedToSubmissionId: ref.id,
+            convertedToIntake: true,
+            leadStatus: status === "submitted" ? "converted" : "intake_draft_saved",
+            lastAction: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
+            lastUpdatedAt: serverTimestamp(),
+            actionHistory: arrayUnion({
+              action: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
+              byUid: currentUser.uid,
+              byName: currentUserData.name || "",
+              at: new Date().toISOString(),
+              submissionId: ref.id
+            })
+          });
+        }
 
         showMessage(status === "draft" ? "Draft saved successfully." : "Intake submitted successfully.");
 
@@ -412,6 +501,7 @@
       try {
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
+        await loadLeadForPrefill();
         hideLoader();
       } catch (error) {
         console.error(error);
