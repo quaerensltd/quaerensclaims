@@ -12,10 +12,11 @@
     body { font-family: 'Inter', sans-serif; }
     .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
     .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
-    .btn { border-radius: 12px; padding: 0.75rem 1rem; font-weight: 700; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
     .hidden { display: none; }
   </style>
 </head>
@@ -29,38 +30,48 @@
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Panel</h1>
-          <p class="text-sm text-slate-500">Assigned clients, appointments, and assessments</p>
+          <p class="text-sm text-slate-500">Assigned appointments, callbacks, and closed deals</p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
           <div class="text-sm text-slate-500 text-right">
-            <div id="closerStatus">Checking access...</div>
-            <div id="closerEmail" class="text-xs text-slate-400"></div>
+            <div id="staffStatus">Checking access...</div>
+            <div id="staffEmail" class="text-xs text-slate-400"></div>
           </div>
-          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">
-            Log Out
-          </button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-5 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Assignments</div>
+          <div id="totalAssignmentsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Assigned</div>
+          <div id="assignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Contacted</div>
+          <div id="contactedStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Appointment Booked</div>
+          <div id="bookedStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Closed Deals</div>
+          <div id="closedDealsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+      </section>
+
       <section class="card p-6">
         <div class="grid md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim type</label>
-            <select id="claimTypeFilter" class="input">
-              <option value="all">All claim types</option>
-              <option value="solar">Solar Panel Claims</option>
-              <option value="mortgage">Mortgage Review</option>
-              <option value="survey">Survey Review</option>
-              <option value="newbuild">New Build Issues</option>
-            </select>
-          </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Status</label>
             <select id="statusFilter" class="input">
@@ -72,9 +83,25 @@
             </select>
           </div>
 
-          <div class="md:col-span-2">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Outcome</label>
+            <select id="outcomeFilter" class="input">
+              <option value="all">All outcomes</option>
+              <option value="Interested">Interested</option>
+              <option value="Call Back">Call Back</option>
+              <option value="No Answer">No Answer</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Closed Deal">Closed Deal</option>
+            </select>
+          </div>
+
+          <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Search by client, email, phone..." />
+            <input id="searchInput" type="text" class="input" placeholder="Search client, email, phone..." />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh</button>
           </div>
         </div>
       </section>
@@ -82,10 +109,9 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">My Assigned Clients</h2>
+            <h2 class="text-xl font-extrabold text-blue-900">My Assigned Files</h2>
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading assignments...</p>
           </div>
-          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
 
         <div class="overflow-x-auto">
@@ -93,11 +119,11 @@
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Appointment</th>
-                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Email</th>
-                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Outcome</th>
+                <th class="text-left p-3">Processing</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -119,8 +145,8 @@
       getFirestore,
       doc,
       getDoc,
-      collection,
       getDocs,
+      collection,
       query,
       where
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -136,23 +162,30 @@
     const db = getFirestore(app);
 
     const authLoader = document.getElementById("authLoader");
-    const closerStatus = document.getElementById("closerStatus");
-    const closerEmail = document.getElementById("closerEmail");
+    const staffStatus = document.getElementById("staffStatus");
+    const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    const claimTypeFilter = document.getElementById("claimTypeFilter");
     const statusFilter = document.getElementById("statusFilter");
+    const outcomeFilter = document.getElementById("outcomeFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const assignmentsBody = document.getElementById("assignmentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
+    const totalAssignmentsStat = document.getElementById("totalAssignmentsStat");
+    const assignedStat = document.getElementById("assignedStat");
+    const contactedStat = document.getElementById("contactedStat");
+    const bookedStat = document.getElementById("bookedStat");
+    const closedDealsStat = document.getElementById("closedDealsStat");
+
     let currentUser = null;
     let currentUserData = null;
     let allAssignments = [];
+    let processingAssignmentIds = new Set();
 
     function hideLoader() {
-      if (authLoader) authLoader.style.display = "none";
+      authLoader.style.display = "none";
     }
 
     function formatClaimType(type) {
@@ -165,18 +198,20 @@
       }
     }
 
-    function formatAppointment(appointment) {
-      if (!appointment) return "-";
-      const date = appointment.date || "-";
-      const time = appointment.time || "-";
+    function appointmentText(item) {
+      const date = item.appointment?.date || "-";
+      const time = item.appointment?.time || "-";
       return `${date} ${time}`.trim();
     }
 
-    function badgeClass(status) {
-      if (status === "Closed") return "bg-green-100 text-green-800";
-      if (status === "Appointment Booked") return "bg-blue-100 text-blue-800";
-      if (status === "Contacted") return "bg-indigo-100 text-indigo-800";
-      return "bg-amber-100 text-amber-800";
+    function clientName(item) {
+      const first = item.client?.firstName || "";
+      const second = item.client?.secondName || "";
+      return `${first} ${second}`.trim() || "-";
+    }
+
+    function processingLabel(item) {
+      return processingAssignmentIds.has(item.id) ? "Sent to Processing" : "-";
     }
 
     async function checkCloserAccess(user) {
@@ -191,60 +226,80 @@
 
       const userData = userSnap.data();
       if (userData.role !== "closer") {
-        alert("You do not have permission to access the closer panel.");
+        alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
 
       currentUser = user;
       currentUserData = userData;
-
-      closerStatus.textContent = "Logged in as Closer";
-      closerEmail.textContent = user.email || "";
+      staffStatus.textContent = "Logged in as Closer";
+      staffEmail.textContent = user.email || "";
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadAssignments() {
       try {
-        const q = query(
+        const assignmentsQuery = query(
           collection(db, "closerAssignments"),
           where("closer.uid", "==", currentUser.uid)
         );
+        const snapshot = await getDocs(assignmentsQuery);
 
-        const snapshot = await getDocs(q);
         allAssignments = snapshot.docs.map(docSnap => ({
           id: docSnap.id,
           ...docSnap.data()
         }));
 
+        allAssignments.sort((a, b) => {
+          const aKey = `${a.appointment?.date || "9999-12-31"} ${a.appointment?.time || "23:59"}`;
+          const bKey = `${b.appointment?.date || "9999-12-31"} ${b.appointment?.time || "23:59"}`;
+          return aKey.localeCompare(bKey);
+        });
+
+        const processingSnap = await getDocs(collection(db, "processingFiles"));
+        processingAssignmentIds = new Set(
+          processingSnap.docs
+            .map(d => d.data()?.assignmentId)
+            .filter(Boolean)
+        );
+
+        renderStats();
         renderAssignments();
       } catch (error) {
-        console.error("Failed to load assignments:", error);
+        console.error("Failed to load closer assignments:", error);
         resultsSummary.textContent = "Could not load assignments.";
       }
     }
 
+    function renderStats() {
+      totalAssignmentsStat.textContent = String(allAssignments.length);
+      assignedStat.textContent = String(allAssignments.filter(x => (x.status || "Assigned") === "Assigned").length);
+      contactedStat.textContent = String(allAssignments.filter(x => x.status === "Contacted").length);
+      bookedStat.textContent = String(allAssignments.filter(x => x.status === "Appointment Booked").length);
+      closedDealsStat.textContent = String(allAssignments.filter(x => x.outcome === "Closed Deal").length);
+    }
+
     function renderAssignments() {
-      const selectedType = claimTypeFilter.value;
       const selectedStatus = statusFilter.value;
+      const selectedOutcome = outcomeFilter.value;
       const searchTerm = searchInput.value.trim().toLowerCase();
 
       const filtered = allAssignments.filter(item => {
-        const matchesType = selectedType === "all" || item.claimType === selectedType;
-        const matchesStatus = selectedStatus === "all" || item.status === selectedStatus;
+        const matchesStatus = selectedStatus === "all" || (item.status || "Assigned") === selectedStatus;
+        const matchesOutcome = selectedOutcome === "all" || (item.outcome || "") === selectedOutcome;
 
-        const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim().toLowerCase();
-        const clientEmail = (item.client?.email || "").toLowerCase();
-        const clientPhone = ((item.client?.mobile || "") + " " + (item.client?.landline || "")).toLowerCase();
+        const haystack = `
+          ${clientName(item)}
+          ${item.client?.email || ""}
+          ${item.client?.mobile || ""}
+          ${item.client?.landline || ""}
+          ${item.claimType || ""}
+        `.toLowerCase();
 
-        const matchesSearch =
-          !searchTerm ||
-          clientName.includes(searchTerm) ||
-          clientEmail.includes(searchTerm) ||
-          clientPhone.includes(searchTerm);
-
-        return matchesType && matchesStatus && matchesSearch;
+        const matchesSearch = !searchTerm || haystack.includes(searchTerm);
+        return matchesStatus && matchesOutcome && matchesSearch;
       });
 
       assignmentsBody.innerHTML = "";
@@ -252,7 +307,7 @@
       if (!filtered.length) {
         assignmentsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No assigned clients found.</td>
+            <td colspan="7" class="p-6 text-center text-slate-500">No assignments found.</td>
           </tr>
         `;
       } else {
@@ -260,28 +315,28 @@
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
 
-          const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
-
           row.innerHTML = `
-            <td class="p-3">${formatAppointment(item.appointment)}</td>
-            <td class="p-3">${formatClaimType(item.claimType)}</td>
-            <td class="p-3">${clientName}</td>
-            <td class="p-3">${item.client?.email || "-"}</td>
-            <td class="p-3">${item.client?.mobile || item.client?.landline || "-"}</td>
+            <td class="p-3">${appointmentText(item)}</td>
             <td class="p-3">
-              <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(item.status)}">
-                ${item.status || "Assigned"}
-              </span>
+              <div class="font-semibold text-slate-800">${clientName(item)}</div>
+              <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
             </td>
+            <td class="p-3">${formatClaimType(item.claimType)}</td>
+            <td class="p-3">${item.status || "Assigned"}</td>
+            <td class="p-3">${item.outcome || "-"}</td>
+            <td class="p-3">${processingLabel(item)}</td>
             <td class="p-3">
-              <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
+              <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">
+                Open File
+              </a>
             </td>
           `;
+
           assignmentsBody.appendChild(row);
         });
       }
 
-      resultsSummary.textContent = `${filtered.length} assigned client(s) shown`;
+      resultsSummary.textContent = `${filtered.length} assignment(s) shown`;
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -293,8 +348,8 @@
       try {
         const allowed = await checkCloserAccess(user);
         if (!allowed) return;
-        hideLoader();
         await loadAssignments();
+        hideLoader();
       } catch (error) {
         console.error(error);
         alert("Could not load closer panel.");
@@ -312,8 +367,8 @@
       }
     });
 
-    claimTypeFilter.addEventListener("change", renderAssignments);
     statusFilter.addEventListener("change", renderAssignments);
+    outcomeFilter.addEventListener("change", renderAssignments);
     searchInput.addEventListener("input", renderAssignments);
     refreshBtn.addEventListener("click", loadAssignments);
   </script>
