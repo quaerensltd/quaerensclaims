@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Callback Agenda</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .hidden { display: none; }
+    .disabled-actions { opacity: 0.55; pointer-events: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading callback agenda...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Callback Agenda</h1>
+          <p class="text-sm text-slate-500">Your callback and intro-email follow-up schedule</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">Back to Leads</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-4 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Scheduled</div>
+          <div id="totalScheduledStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Today</div>
+          <div id="todayStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue</div>
+          <div id="overdueStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intro Email Follow-ups</div>
+          <div id="introStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">View</label>
+            <select id="typeFilter" class="input">
+              <option value="all">All scheduled</option>
+              <option value="callback_only">Callbacks only</option>
+              <option value="intro_only">Intro email follow-ups only</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
+            <select id="timingFilter" class="input">
+              <option value="all">All timings</option>
+              <option value="today">Today</option>
+              <option value="overdue">Overdue</option>
+              <option value="future">Future</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" class="input" type="text" placeholder="Name, phone, postcode..." />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Agenda</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Scheduled Leads</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Date</th>
+                <th class="text-left p-3">Time</th>
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Type</th>
+                <th class="text-left p-3">Last Action</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="agendaBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Callback Detail</h3>
+          <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
+            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Type:</span> <span id="lead_type">-</span></div>
+            <div><span class="font-semibold text-blue-900">Scheduled:</span> <span id="lead_scheduled">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Quick Actions</h4>
+          <div id="actionWrap" class="space-y-4">
+            <div class="grid md:grid-cols-3 gap-3">
+              <button id="openIntakeBtn" class="btn btn-primary" type="button">Fill Out Intake Now</button>
+              <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule</button>
+              <button id="markCompletedBtn" class="btn btn-secondary" type="button">Mark Callback Done</button>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">New Callback Date</label>
+                <input id="callbackDate" type="date" class="input" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">New Callback Time</label>
+                <input id="callbackTime" type="time" class="input" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
+          <div id="outcomeWrap" class="space-y-4">
+            <div class="grid md:grid-cols-4 gap-3">
+              <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
+              <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
+              <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
+              <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="notesBox">Notes</label>
+              <textarea id="notesBox" class="input" rows="5" placeholder="Callback notes, outcome, next action..."></textarea>
+            </div>
+
+            <div class="flex gap-3">
+              <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
+              <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
+          <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      collection,
+      query,
+      where,
+      serverTimestamp,
+      arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const typeFilter = document.getElementById("typeFilter");
+    const timingFilter = document.getElementById("timingFilter");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    const totalScheduledStat = document.getElementById("totalScheduledStat");
+    const todayStat = document.getElementById("todayStat");
+    const overdueStat = document.getElementById("overdueStat");
+    const introStat = document.getElementById("introStat");
+
+    const agendaBody = document.getElementById("agendaBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+
+    const leadModal = document.getElementById("leadModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    const callbackDate = document.getElementById("callbackDate");
+    const callbackTime = document.getElementById("callbackTime");
+    const notesBox = document.getElementById("notesBox");
+    const modalMessage = document.getElementById("modalMessage");
+
+    const openIntakeBtn = document.getElementById("openIntakeBtn");
+    const rescheduleBtn = document.getElementById("rescheduleBtn");
+    const markCompletedBtn = document.getElementById("markCompletedBtn");
+    const noAnswerBtn = document.getElementById("noAnswerBtn");
+    const voicemailBtn = document.getElementById("voicemailBtn");
+    const wrongNumberBtn = document.getElementById("wrongNumberBtn");
+    const notInterestedBtn = document.getElementById("notInterestedBtn");
+    const saveNotesBtn = document.getElementById("saveNotesBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allLeads = [];
+    let selectedLead = null;
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showModalMessage(text, isError = false) {
+      modalMessage.textContent = text;
+      modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
+    }
+
+    function formatAddress(lead) {
+      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
+        .filter(Boolean)
+        .join(", ") || "-";
+    }
+
+    function formatAction(action) {
+      const map = {
+        no_answer: "No Answer",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested",
+        no_product: "No Relevant Product",
+        voicemail: "Voicemail",
+        callback_required: "Callback Required",
+        send_intro_email: "Send Intro Email",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
+        intake_draft_saved: "Intake Draft Saved",
+        notes_saved: "Notes Saved",
+        callback_rescheduled: "Callback Rescheduled",
+        callback_completed: "Callback Completed"
+      };
+      return map[action] || action || "-";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    function isIntroLead(lead) {
+      return !!lead.introEmailNeeded;
+    }
+
+    function getTodayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getLeadType(lead) {
+      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
+    }
+
+    function getScheduledText(lead) {
+      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    function sortLeadsBySchedule(leads) {
+      return [...leads].sort((a, b) => {
+        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
+        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
+        return aKey.localeCompare(bKey);
+      });
+    }
+
+    async function checkListerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No staff profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "staff" && userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadLeads() {
+      try {
+        const leadsQuery = query(
+          collection(db, "leadAssignments"),
+          where("assignedToUid", "==", currentUser.uid)
+        );
+
+        const snapshot = await getDocs(leadsQuery);
+        allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderStats();
+        renderAgenda();
+      } catch (error) {
+        console.error("Failed to load callbacks:", error);
+        resultsSummary.textContent = "Could not load callback agenda.";
+      }
+    }
+
+    function getScheduledLeads() {
+      return allLeads.filter(lead =>
+        !isLocked(lead) &&
+        lead.callbackRequired &&
+        lead.callbackDate
+      );
+    }
+
+    function renderStats() {
+      const scheduled = getScheduledLeads();
+      const today = getTodayIso();
+
+      totalScheduledStat.textContent = String(scheduled.length);
+      todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
+      overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
+      introStat.textContent = String(scheduled.filter(x => x.introEmailNeeded).length);
+    }
+
+    function renderAgenda() {
+      const type = typeFilter.value;
+      const timing = timingFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+      const today = getTodayIso();
+
+      let filtered = getScheduledLeads().filter(lead => {
+        const matchesType =
+          type === "all" ||
+          (type === "callback_only" && !lead.introEmailNeeded) ||
+          (type === "intro_only" && lead.introEmailNeeded);
+
+        const matchesTiming =
+          timing === "all" ||
+          (timing === "today" && lead.callbackDate === today) ||
+          (timing === "overdue" && lead.callbackDate < today) ||
+          (timing === "future" && lead.callbackDate > today);
+
+        const haystack = `
+          ${lead.forename || ""}
+          ${lead.surname || ""}
+          ${lead.telephone || ""}
+          ${lead.postcode || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesType && matchesTiming && matchesSearch;
+      });
+
+      filtered = sortLeadsBySchedule(filtered);
+
+      agendaBody.innerHTML = "";
+
+      if (!filtered.length) {
+        agendaBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-slate-500">No scheduled callbacks found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(lead => {
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+          tr.innerHTML = `
+            <td class="p-3">${lead.callbackDate || "-"}</td>
+            <td class="p-3">${lead.callbackTime || "-"}</td>
+            <td class="p-3">
+              <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+            </td>
+            <td class="p-3">${lead.telephone || "-"}</td>
+            <td class="p-3">${lead.postcode || "-"}</td>
+            <td class="p-3">${getLeadType(lead)}</td>
+            <td class="p-3">${formatAction(lead.lastAction)}</td>
+            <td class="p-3">
+              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
+                Open
+              </button>
+            </td>
+          `;
+          agendaBody.appendChild(tr);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} scheduled lead(s) shown`;
+
+      document.querySelectorAll("[data-open-lead]").forEach(btn => {
+        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+      });
+    }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    function openLead(leadId) {
+      selectedLead = allLeads.find(x => x.id === leadId);
+      if (!selectedLead) return;
+
+      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Detail";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_type").textContent = getLeadType(selectedLead);
+      document.getElementById("lead_scheduled").textContent = getScheduledText(selectedLead);
+
+      callbackDate.value = selectedLead.callbackDate || "";
+      callbackTime.value = selectedLead.callbackTime || "";
+      notesBox.value = selectedLead.notes || "";
+
+      renderHistory(selectedLead.actionHistory || []);
+      leadModal.classList.remove("hidden");
+    }
+
+    async function refreshSelectedLead() {
+      await loadLeads();
+      if (selectedLead) {
+        const updated = allLeads.find(x => x.id === selectedLead.id);
+        if (updated) {
+          selectedLead = updated;
+          openLead(updated.id);
+        } else {
+          leadModal.classList.add("hidden");
+        }
+      }
+    }
+
+    async function updateLead(patch, historyAction, notes = "") {
+      if (!selectedLead) return;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          ...patch,
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: historyAction,
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes
+          })
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Lead updated successfully.");
+      } catch (error) {
+        console.error("Lead update failed:", error);
+        showModalMessage("Could not update lead.", true);
+      }
+    }
+
+    openIntakeBtn.addEventListener("click", () => {
+      if (!selectedLead) return;
+      window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
+    });
+
+    rescheduleBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      if (!callbackDate.value || !callbackTime.value) {
+        showModalMessage("Please choose a new callback date and time.", true);
+        return;
+      }
+
+      await updateLead({
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value,
+        callbackRequired: true,
+        leadStatus: selectedLead.introEmailNeeded ? "intro_email_needed" : "callback_required",
+        lastAction: "callback_rescheduled"
+      }, "callback_rescheduled", `Rescheduled for ${callbackDate.value} ${callbackTime.value}`);
+    });
+
+    markCompletedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        callbackRequired: false,
+        callbackDate: "",
+        callbackTime: "",
+        lastAction: "callback_completed",
+        leadStatus: "new"
+      }, "callback_completed", "Callback marked as completed.");
+    });
+
+    noAnswerBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        lastAction: "no_answer",
+        lastCallAt: serverTimestamp(),
+        attemptCount: (selectedLead.attemptCount || 0) + 1
+      }, "no_answer", "No answer recorded from callback agenda.");
+    });
+
+    voicemailBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        lastAction: "voicemail",
+        lastCallAt: serverTimestamp(),
+        voicemailLeft: true,
+        voicemailAt: serverTimestamp()
+      }, "voicemail", "Voicemail left from callback agenda.");
+    });
+
+    wrongNumberBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "closed",
+        lastAction: "wrong_number",
+        closed: true,
+        usable: false,
+        callbackRequired: false
+      }, "wrong_number", "Marked as wrong number from callback agenda.");
+    });
+
+    notInterestedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "closed",
+        lastAction: "not_interested",
+        closed: true,
+        usable: false,
+        callbackRequired: false
+      }, "not_interested", "Marked as not interested from callback agenda.");
+    });
+
+    saveNotesBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          notes: notesBox.value || "",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "notes_saved",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: notesBox.value || ""
+          })
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Notes saved.");
+      } catch (error) {
+        console.error("Failed to save notes:", error);
+        showModalMessage("Could not save notes.", true);
+      }
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+      leadModal.classList.add("hidden");
+    });
+
+    leadModal.addEventListener("click", (e) => {
+      if (e.target === leadModal) {
+        leadModal.classList.add("hidden");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkListerAccess(user);
+        if (!allowed) return;
+        await loadLeads();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load callback agenda.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    typeFilter.addEventListener("change", renderAgenda);
+    timingFilter.addEventListener("change", renderAgenda);
+    searchInput.addEventListener("input", renderAgenda);
+    refreshBtn.addEventListener("click", loadLeads);
+  </script>
+</body>
+</html>
