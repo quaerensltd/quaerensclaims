@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Leads Overview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading leads overview...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Leads Overview</h1>
+          <p class="text-sm text-slate-500">Manager view across all listers, callbacks, intro emails, conversions, and locked leads</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Back to Manager Panel</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-6 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Leads</div>
+          <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Callbacks</div>
+          <div id="callbacksStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intro Emails</div>
+          <div id="introEmailStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Converted</div>
+          <div id="convertedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Locked</div>
+          <div id="lockedStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">No Answer</div>
+          <div id="noAnswerStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Lister</label>
+            <select id="listerFilter" class="input">
+              <option value="all">All listers</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
+            <select id="statusFilter" class="input">
+              <option value="all">All statuses</option>
+              <option value="new">New</option>
+              <option value="callback_required">Callback Required</option>
+              <option value="intro_email_needed">Intro Email Needed</option>
+              <option value="intake_in_progress">Intake In Progress</option>
+              <option value="converted">Converted</option>
+              <option value="closed">Closed / Unusable</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Special View</label>
+            <select id="specialFilter" class="input">
+              <option value="all">All leads</option>
+              <option value="callbacks_only">Callbacks Only</option>
+              <option value="intro_only">Intro Email Only</option>
+              <option value="converted_only">Converted Only</option>
+              <option value="locked_only">Locked Only</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Overview</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">All Leads</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Lister</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Last Action</th>
+                <th class="text-left p-3">Callback</th>
+                <th class="text-left p-3">Converted</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="overviewBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Lister Performance</h2>
+            <p class="text-sm text-slate-500 mt-1">Quick totals per lister</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Lister</th>
+                <th class="text-left p-3">Total</th>
+                <th class="text-left p-3">Callbacks</th>
+                <th class="text-left p-3">Intro Emails</th>
+                <th class="text-left p-3">Converted</th>
+                <th class="text-left p-3">Locked</th>
+              </tr>
+            </thead>
+            <tbody id="performanceBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Lead Detail</h3>
+          <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Overview</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
+            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Lister:</span> <span id="lead_lister">-</span></div>
+            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
+            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
+            <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
+            <div><span class="font-semibold text-blue-900">Usable:</span> <span id="lead_usable">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
+          <div id="lead_notes" class="text-sm text-slate-700 whitespace-pre-wrap">-</div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
+          <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const listerFilter = document.getElementById("listerFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const specialFilter = document.getElementById("specialFilter");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    const totalLeadsStat = document.getElementById("totalLeadsStat");
+    const callbacksStat = document.getElementById("callbacksStat");
+    const introEmailStat = document.getElementById("introEmailStat");
+    const convertedStat = document.getElementById("convertedStat");
+    const lockedStat = document.getElementById("lockedStat");
+    const noAnswerStat = document.getElementById("noAnswerStat");
+
+    const overviewBody = document.getElementById("overviewBody");
+    const performanceBody = document.getElementById("performanceBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+
+    const leadModal = document.getElementById("leadModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    let currentUser = null;
+    let allLeads = [];
+    let allUsers = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function formatAddress(lead) {
+      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
+        .filter(Boolean)
+        .join(", ") || "-";
+    }
+
+    function formatAction(action) {
+      const map = {
+        no_answer: "No Answer",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested",
+        no_product: "No Relevant Product",
+        voicemail: "Voicemail",
+        callback_required: "Callback Required",
+        send_intro_email: "Send Intro Email",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
+        intake_draft_saved: "Intake Draft Saved",
+        notes_saved: "Notes Saved"
+      };
+      return map[action] || action || "-";
+    }
+
+    function formatLeadStatus(lead) {
+      if (lead.closed || lead.usable === false) return "Closed";
+      if (lead.leadStatus === "callback_required") return "Callback Required";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      return "New";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    async function checkManagerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadData() {
+      const usersSnap = await getDocs(collection(db, "users"));
+      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const leadsSnap = await getDocs(collection(db, "leadAssignments"));
+      allLeads = leadsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      populateListerFilter();
+      renderStats();
+      renderOverview();
+      renderPerformance();
+    }
+
+    function populateListerFilter() {
+      const current = listerFilter.value || "all";
+      const staffUsers = allUsers.filter(u => u.role === "staff");
+
+      listerFilter.innerHTML = `<option value="all">All listers</option>`;
+      staffUsers.forEach(user => {
+        const option = document.createElement("option");
+        option.value = user.id;
+        option.textContent = user.name || user.email || user.id;
+        listerFilter.appendChild(option);
+      });
+
+      listerFilter.value = current;
+    }
+
+    function renderStats() {
+      totalLeadsStat.textContent = String(allLeads.length);
+      callbacksStat.textContent = String(allLeads.filter(x => x.callbackRequired).length);
+      introEmailStat.textContent = String(allLeads.filter(x => x.introEmailNeeded).length);
+      convertedStat.textContent = String(allLeads.filter(x => x.leadStatus === "converted").length);
+      lockedStat.textContent = String(allLeads.filter(x => isLocked(x)).length);
+      noAnswerStat.textContent = String(allLeads.filter(x => x.lastAction === "no_answer").length);
+    }
+
+    function getFilteredLeads() {
+      const lister = listerFilter.value;
+      const status = statusFilter.value;
+      const special = specialFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+
+      return allLeads.filter(lead => {
+        const currentStatus =
+          isLocked(lead) ? "closed" :
+          lead.leadStatus === "callback_required" ? "callback_required" :
+          lead.leadStatus === "intro_email_needed" ? "intro_email_needed" :
+          lead.leadStatus === "intake_in_progress" ? "intake_in_progress" :
+          lead.leadStatus === "converted" ? "converted" :
+          "new";
+
+        const matchesLister = lister === "all" || lead.assignedToUid === lister;
+        const matchesStatus = status === "all" || currentStatus === status;
+
+        const matchesSpecial =
+          special === "all" ||
+          (special === "callbacks_only" && lead.callbackRequired) ||
+          (special === "intro_only" && lead.introEmailNeeded) ||
+          (special === "converted_only" && lead.leadStatus === "converted") ||
+          (special === "locked_only" && isLocked(lead));
+
+        const haystack = `
+          ${lead.forename || ""}
+          ${lead.surname || ""}
+          ${lead.telephone || ""}
+          ${lead.postcode || ""}
+          ${lead.assignedToName || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesLister && matchesStatus && matchesSpecial && matchesSearch;
+      });
+    }
+
+    function renderOverview() {
+      const filtered = getFilteredLeads();
+      overviewBody.innerHTML = "";
+
+      if (!filtered.length) {
+        overviewBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="p-6 text-center text-slate-500">No leads found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(lead => {
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+
+          tr.innerHTML = `
+            <td class="p-3">
+              <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+            </td>
+            <td class="p-3">${lead.telephone || "-"}</td>
+            <td class="p-3">${lead.postcode || "-"}</td>
+            <td class="p-3">${lead.assignedToName || lead.assignedToEmail || "-"}</td>
+            <td class="p-3">${formatLeadStatus(lead)}</td>
+            <td class="p-3">${formatAction(lead.lastAction)}</td>
+            <td class="p-3">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
+            <td class="p-3">${lead.convertedToSubmissionId || "-"}</td>
+            <td class="p-3">
+              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
+                Open Lead
+              </button>
+            </td>
+          `;
+          overviewBody.appendChild(tr);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} lead(s) shown`;
+
+      document.querySelectorAll("[data-open-lead]").forEach(btn => {
+        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+      });
+    }
+
+    function renderPerformance() {
+      performanceBody.innerHTML = "";
+      const staffUsers = allUsers.filter(u => u.role === "staff");
+
+      if (!staffUsers.length) {
+        performanceBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-slate-500">No listers found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      staffUsers.forEach(user => {
+        const leads = allLeads.filter(x => x.assignedToUid === user.id);
+        const tr = document.createElement("tr");
+        tr.className = "border-t border-slate-200";
+
+        tr.innerHTML = `
+          <td class="p-3">${user.name || user.email || user.id}</td>
+          <td class="p-3">${leads.length}</td>
+          <td class="p-3">${leads.filter(x => x.callbackRequired).length}</td>
+          <td class="p-3">${leads.filter(x => x.introEmailNeeded).length}</td>
+          <td class="p-3">${leads.filter(x => x.leadStatus === "converted").length}</td>
+          <td class="p-3">${leads.filter(x => isLocked(x)).length}</td>
+        `;
+        performanceBody.appendChild(tr);
+      });
+    }
+
+    function openLead(leadId) {
+      const lead = allLeads.find(x => x.id === leadId);
+      if (!lead) return;
+
+      document.getElementById("modalLeadTitle").textContent = `${lead.forename || ""} ${lead.surname || ""}`.trim() || "Lead Detail";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${lead.id}`;
+      document.getElementById("lead_name").textContent = `${lead.title || ""} ${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = lead.telephone || "-";
+      document.getElementById("lead_address").textContent = formatAddress(lead);
+      document.getElementById("lead_postcode").textContent = lead.postcode || "-";
+      document.getElementById("lead_lister").textContent = lead.assignedToName || lead.assignedToEmail || "-";
+      document.getElementById("lead_status").textContent = formatLeadStatus(lead);
+      document.getElementById("lead_lastAction").textContent = formatAction(lead.lastAction);
+      document.getElementById("lead_callback").textContent = lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-";
+      document.getElementById("lead_converted").textContent = lead.convertedToSubmissionId || "-";
+      document.getElementById("lead_usable").textContent = lead.usable === false ? "No" : "Yes";
+      document.getElementById("lead_notes").textContent = lead.notes || "-";
+
+      renderHistory(lead.actionHistory || []);
+      leadModal.classList.remove("hidden");
+    }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+        await loadData();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load overview.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+      leadModal.classList.add("hidden");
+    });
+
+    leadModal.addEventListener("click", (e) => {
+      if (e.target === leadModal) {
+        leadModal.classList.add("hidden");
+      }
+    });
+
+    listerFilter.addEventListener("change", renderOverview);
+    statusFilter.addEventListener("change", renderOverview);
+    specialFilter.addEventListener("change", renderOverview);
+    searchInput.addEventListener("input", renderOverview);
+    refreshBtn.addEventListener("click", loadData);
+  </script>
+</body>
+</html>
