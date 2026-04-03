@@ -21,8 +21,8 @@
 <body class="bg-slate-50 min-h-screen flex items-center justify-center px-4">
   <div class="w-full max-w-md card p-8">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-extrabold text-blue-900">Quaerens Floor Login</h1>
-      <p class="text-slate-500 mt-2">Secure access for listers, acquisition and management</p>
+      <h1 class="text-3xl font-extrabold text-blue-900">Quaerens Staff Login</h1>
+      <p class="text-slate-500 mt-2">Secure access for staff, managers, closers and processing</p>
     </div>
 
     <form id="loginForm" class="space-y-5">
@@ -49,8 +49,14 @@
     import {
       getAuth,
       onAuthStateChanged,
-      signInWithEmailAndPassword
+      signInWithEmailAndPassword,
+      signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -60,22 +66,74 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
     const loginForm = document.getElementById("loginForm");
     const loginBtn = document.getElementById("loginBtn");
     const loginError = document.getElementById("loginError");
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.location.href = "/client-intake-portal.html";
+    function showError(message) {
+      loginError.textContent = message;
+      loginError.classList.remove("hidden");
+    }
+
+    function hideError() {
+      loginError.textContent = "";
+      loginError.classList.add("hidden");
+    }
+
+    async function redirectByRole(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        await signOut(auth);
+        showError("No staff profile found for this account.");
+        return;
+      }
+
+      const userData = userSnap.data();
+      const role = userData.role;
+
+      if (role === "staff") {
+        window.location.href = "/lister-leads.html";
+        return;
+      }
+
+      if (role === "manager") {
+        window.location.href = "/manager-panel.html";
+        return;
+      }
+
+      if (role === "closer") {
+        window.location.href = "/closer-panel.html";
+        return;
+      }
+
+      if (role === "processing") {
+        window.location.href = "/processing-panel.html";
+        return;
+      }
+
+      await signOut(auth);
+      showError("This account does not have a valid role.");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      try {
+        await redirectByRole(user);
+      } catch (error) {
+        console.error("Role redirect failed:", error);
+        showError("Could not verify access.");
       }
     });
 
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      loginError.classList.add("hidden");
-      loginError.textContent = "";
+      hideError();
       loginBtn.disabled = true;
       loginBtn.textContent = "Logging in...";
 
@@ -83,12 +141,11 @@
       const password = document.getElementById("password").value;
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        window.location.href = "/client-intake-portal.html";
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        await redirectByRole(credential.user);
       } catch (error) {
         console.error("Login failed:", error);
-        loginError.textContent = "Login failed. Please check your email and password.";
-        loginError.classList.remove("hidden");
+        showError("Login failed. Please check your email, password, and staff role.");
       } finally {
         loginBtn.disabled = false;
         loginBtn.textContent = "Log In";
