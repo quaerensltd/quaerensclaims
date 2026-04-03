@@ -46,7 +46,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Detail</h1>
-          <p class="text-sm text-slate-500">Assigned client overview, handoff, outcome, and fee tracking</p>
+          <p class="text-sm text-slate-500">Assigned client overview, handoff, and outcome tracking</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -147,64 +147,30 @@
       </section>
 
       <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Commercial / Deal Information</h3>
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal & Payment Handoff</h3>
 
         <div class="grid md:grid-cols-2 gap-4">
           <div>
-            <label class="label" for="dealStatus">Deal Status</label>
-            <select id="dealStatus" class="input">
-              <option value="">Select deal status</option>
-              <option value="Open">Open</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-              <option value="Pending">Pending</option>
-            </select>
+            <label class="label" for="amountDueNow">Amount Due Now (£)</label>
+            <input id="amountDueNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
           </div>
-
           <div>
-            <label class="label" for="feeTotal">Total Fee Agreed</label>
-            <input id="feeTotal" type="text" class="input" placeholder="e.g. 2995" />
+            <label class="label" for="amountPaidNow">Amount Paid Now (£)</label>
+            <input id="amountPaidNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
           </div>
-
           <div>
-            <label class="label" for="feeInitial">Initial Payment Amount</label>
-            <input id="feeInitial" type="text" class="input" placeholder="e.g. 995" />
+            <label class="label" for="followUpDue">Follow-Up Due (£)</label>
+            <input id="followUpDue" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
           </div>
-
           <div>
-            <label class="label" for="feeInitialPaid">Initial Payment Paid</label>
-            <select id="feeInitialPaid" class="input">
-              <option value="">Select</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-              <option value="Partly">Partly</option>
-            </select>
+            <label class="label" for="paymentLink">Payment Link</label>
+            <input id="paymentLink" class="input" type="text" placeholder="https://..." />
           </div>
+        </div>
 
-          <div class="md:col-span-2">
-            <label class="label" for="paymentLinkInitial">Initial Payment Link</label>
-            <input id="paymentLinkInitial" type="text" class="input" placeholder="Paste payment link here" />
-          </div>
-
-          <div>
-            <label class="label" for="feeFollowOn">Follow-Up Payment Amount</label>
-            <input id="feeFollowOn" type="text" class="input" placeholder="e.g. 2000" />
-          </div>
-
-          <div>
-            <label class="label" for="feeFollowOnPaid">Follow-Up Payment Paid</label>
-            <select id="feeFollowOnPaid" class="input">
-              <option value="">Select</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-              <option value="Partly">Partly</option>
-            </select>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="label" for="paymentLinkFollowOn">Follow-Up Payment Link</label>
-            <input id="paymentLinkFollowOn" type="text" class="input" placeholder="Paste follow-up payment link here" />
-          </div>
+        <div class="mt-4">
+          <label class="label" for="processingNotes">Processing Notes</label>
+          <textarea id="processingNotes" class="input" rows="5" placeholder="Payment references, instalment notes, documents to prepare, urgent remarks..."></textarea>
         </div>
 
         <div class="mt-6 flex flex-col md:flex-row gap-3">
@@ -236,7 +202,12 @@
       getFirestore,
       doc,
       getDoc,
+      getDocs,
       updateDoc,
+      addDoc,
+      collection,
+      query,
+      where,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -262,14 +233,11 @@
     const saveMessage = document.getElementById("saveMessage");
     const generatedAssessmentText = document.getElementById("generatedAssessmentText");
 
-    const dealStatus = document.getElementById("dealStatus");
-    const feeTotal = document.getElementById("feeTotal");
-    const feeInitial = document.getElementById("feeInitial");
-    const feeInitialPaid = document.getElementById("feeInitialPaid");
-    const paymentLinkInitial = document.getElementById("paymentLinkInitial");
-    const feeFollowOn = document.getElementById("feeFollowOn");
-    const feeFollowOnPaid = document.getElementById("feeFollowOnPaid");
-    const paymentLinkFollowOn = document.getElementById("paymentLinkFollowOn");
+    const amountDueNow = document.getElementById("amountDueNow");
+    const amountPaidNow = document.getElementById("amountPaidNow");
+    const followUpDue = document.getElementById("followUpDue");
+    const paymentLink = document.getElementById("paymentLink");
+    const processingNotes = document.getElementById("processingNotes");
 
     let currentUser = null;
     let currentUserData = null;
@@ -386,14 +354,11 @@
       outcomeSelect.value = assignmentData.outcome || "";
       closerNotes.value = assignmentData.closerNotes || "";
 
-      dealStatus.value = assignmentData.dealStatus || "";
-      feeTotal.value = assignmentData.feeTotal || "";
-      feeInitial.value = assignmentData.feeInitial || "";
-      feeInitialPaid.value = assignmentData.feeInitialPaid || "";
-      paymentLinkInitial.value = assignmentData.paymentLinkInitial || "";
-      feeFollowOn.value = assignmentData.feeFollowOn || "";
-      feeFollowOnPaid.value = assignmentData.feeFollowOnPaid || "";
-      paymentLinkFollowOn.value = assignmentData.paymentLinkFollowOn || "";
+      amountDueNow.value = assignmentData.amountDueNow || "";
+      amountPaidNow.value = assignmentData.amountPaidNow || "";
+      followUpDue.value = assignmentData.followUpDue || "";
+      paymentLink.value = assignmentData.paymentLink || "";
+      processingNotes.value = assignmentData.processingNotes || "";
 
       renderFieldGrid("product1Fields", assignmentData.product1 || {});
       renderFieldGrid("product2Fields", assignmentData.product2 || {});
@@ -401,31 +366,87 @@
       hideLoader();
     }
 
+    async function createOrUpdateProcessingFile() {
+      const dueNow = Number(amountDueNow.value || 0);
+      const paidNow = Number(amountPaidNow.value || 0);
+      const followUp = Number(followUpDue.value || 0);
+
+      let paymentStatus = "awaiting_payment";
+      if (paidNow > 0 && (followUp > 0 || paidNow < dueNow)) paymentStatus = "part_paid";
+      if (dueNow > 0 && paidNow >= dueNow && followUp <= 0) paymentStatus = "fully_paid";
+      if (dueNow <= 0 && followUp <= 0 && paidNow > 0) paymentStatus = "fully_paid";
+
+      const existingQuery = query(collection(db, "processingFiles"), where("assignmentId", "==", assignmentId));
+      const existingSnap = await getDocs(existingQuery);
+
+      const payload = {
+        assignmentId,
+        assessmentId: assignmentData.assessmentId || "",
+        claimType: assignmentData.claimType || "",
+        client: assignmentData.client || {},
+        closer: assignmentData.closer || {},
+        assignedBy: assignmentData.assignedBy || {},
+        outcome: outcomeSelect.value || "",
+        closerNotes: closerNotes.value || "",
+        amountDueNow: dueNow,
+        amountPaidNow: paidNow,
+        followUpDue: followUp,
+        paymentStatus,
+        paymentLink: paymentLink.value.trim(),
+        processingNotes: processingNotes.value.trim(),
+        sourceStatus: statusSelect.value || "",
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      };
+
+      if (!existingSnap.empty) {
+        const existingDoc = existingSnap.docs[0];
+        await updateDoc(doc(db, "processingFiles", existingDoc.id), payload);
+      } else {
+        await addDoc(collection(db, "processingFiles"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+      }
+    }
+
     saveCloserBtn.addEventListener("click", async () => {
       try {
-        await updateDoc(doc(db, "closerAssignments", assignmentId), {
+        const closerPayload = {
           status: statusSelect.value,
           outcome: outcomeSelect.value,
           closerNotes: closerNotes.value,
-
-          dealStatus: dealStatus.value,
-          feeTotal: feeTotal.value,
-          feeInitial: feeInitial.value,
-          feeInitialPaid: feeInitialPaid.value,
-          paymentLinkInitial: paymentLinkInitial.value,
-          feeFollowOn: feeFollowOn.value,
-          feeFollowOnPaid: feeFollowOnPaid.value,
-          paymentLinkFollowOn: paymentLinkFollowOn.value,
-
+          amountDueNow: Number(amountDueNow.value || 0),
+          amountPaidNow: Number(amountPaidNow.value || 0),
+          followUpDue: Number(followUpDue.value || 0),
+          paymentLink: paymentLink.value.trim(),
+          processingNotes: processingNotes.value.trim(),
           lastUpdatedAt: serverTimestamp(),
           lastUpdatedBy: {
             uid: currentUser.uid,
             email: currentUser.email || "",
             name: currentUserData.name || ""
           }
-        });
+        };
 
-        saveMessage.textContent = "Closer progress saved successfully.";
+        await updateDoc(doc(db, "closerAssignments", assignmentId), closerPayload);
+
+        if (outcomeSelect.value === "Closed Deal") {
+          await createOrUpdateProcessingFile();
+        }
+
+        saveMessage.textContent = outcomeSelect.value === "Closed Deal"
+          ? "Closer progress saved and sent to processing."
+          : "Closer progress saved successfully.";
         saveMessage.classList.remove("hidden");
         setTimeout(() => saveMessage.classList.add("hidden"), 3000);
       } catch (error) {
