@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Lead Upload</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Checking manager access...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Lead Upload</h1>
+          <p class="text-sm text-slate-500">Upload and assign calling leads to listers</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Back to Manager Panel</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Select CSV file</label>
+            <input id="csvFile" type="file" accept=".csv" class="input" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Assign to lister</label>
+            <select id="listerSelect" class="input">
+              <option value="">Select lister</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-3">
+          <button id="previewBtn" class="btn btn-secondary" type="button">Preview CSV</button>
+          <button id="importBtn" class="btn btn-primary" type="button">Import Leads</button>
+        </div>
+
+        <p id="uploadMessage" class="text-sm text-green-700 hidden mt-4"></p>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Preview</h2>
+            <p id="previewSummary" class="text-sm text-slate-500 mt-1">No file loaded.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Title</th>
+                <th class="text-left p-3">Forename</th>
+                <th class="text-left p-3">Surname</th>
+                <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">HomeOwner</th>
+                <th class="text-left p-3">Has Solar</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody">
+              <tr>
+                <td colspan="7" class="p-6 text-center text-slate-500">No rows to preview.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      addDoc,
+      collection,
+      query,
+      where,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const csvFile = document.getElementById("csvFile");
+    const listerSelect = document.getElementById("listerSelect");
+    const previewBtn = document.getElementById("previewBtn");
+    const importBtn = document.getElementById("importBtn");
+    const previewBody = document.getElementById("previewBody");
+    const previewSummary = document.getElementById("previewSummary");
+    const uploadMessage = document.getElementById("uploadMessage");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let parsedRows = [];
+    let listers = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showMessage(text, isError = false) {
+      uploadMessage.textContent = text;
+      uploadMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      uploadMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+    }
+
+    async function checkManagerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadListers() {
+      const q = query(collection(db, "users"), where("role", "==", "staff"));
+      const snapshot = await getDocs(q);
+
+      listers = snapshot.docs.map(d => ({
+        uid: d.id,
+        ...d.data()
+      }));
+
+      listerSelect.innerHTML = `<option value="">Select lister</option>`;
+      listers.forEach(lister => {
+        const option = document.createElement("option");
+        option.value = lister.uid;
+        option.textContent = `${lister.name || lister.email || lister.uid}`;
+        listerSelect.appendChild(option);
+      });
+    }
+
+    function renderPreview() {
+      previewBody.innerHTML = "";
+
+      if (!parsedRows.length) {
+        previewBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-slate-500">No rows to preview.</td>
+          </tr>
+        `;
+        previewSummary.textContent = "No file loaded.";
+        return;
+      }
+
+      parsedRows.slice(0, 20).forEach(row => {
+        const tr = document.createElement("tr");
+        tr.className = "border-t border-slate-200";
+        tr.innerHTML = `
+          <td class="p-3">${row.Title || ""}</td>
+          <td class="p-3">${row.Forename || ""}</td>
+          <td class="p-3">${row.Surname || ""}</td>
+          <td class="p-3">${row.Telephone || ""}</td>
+          <td class="p-3">${row.Postcode || ""}</td>
+          <td class="p-3">${row.HomeOwner || ""}</td>
+          <td class="p-3">${row.Has_Solar || ""}</td>
+        `;
+        previewBody.appendChild(tr);
+      });
+
+      previewSummary.textContent = `${parsedRows.length} row(s) loaded. Showing first ${Math.min(parsedRows.length, 20)}.`;
+    }
+
+    previewBtn.addEventListener("click", () => {
+      const file = csvFile.files[0];
+      if (!file) {
+        showMessage("Please choose a CSV file first.", true);
+        return;
+      }
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          parsedRows = results.data || [];
+          renderPreview();
+          showMessage("CSV loaded successfully.");
+        },
+        error: (error) => {
+          console.error(error);
+          showMessage("Could not parse CSV.", true);
+        }
+      });
+    });
+
+    importBtn.addEventListener("click", async () => {
+      const listerUid = listerSelect.value;
+      const lister = listers.find(x => x.uid === listerUid);
+
+      if (!parsedRows.length) {
+        showMessage("Please preview a CSV first.", true);
+        return;
+      }
+
+      if (!listerUid || !lister) {
+        showMessage("Please select a lister.", true);
+        return;
+      }
+
+      importBtn.disabled = true;
+      importBtn.textContent = "Importing...";
+
+      try {
+        for (const row of parsedRows) {
+          await addDoc(collection(db, "leadAssignments"), {
+            assignedToUid: lister.uid,
+            assignedToName: lister.name || "",
+            assignedToEmail: lister.email || "",
+
+            uploadedByUid: currentUser.uid,
+            uploadedByName: currentUserData.name || "",
+            uploadedByEmail: currentUser.email || "",
+            uploadedAt: serverTimestamp(),
+
+            title: row.Title || "",
+            forename: row.Forename || "",
+            surname: row.Surname || "",
+            address1: row.Ad1 || "",
+            address2: row.Ad2 || "",
+            address3: row.Ad3 || "",
+            address4: row.Ad4 || "",
+            address5: row.Ad5 || "",
+            postcode: row.Postcode || "",
+            telephone: row.Telephone || "",
+            homeOwner: row.HomeOwner || "",
+            hasSolar: row.Has_Solar || "",
+
+            campaign: "solar",
+            leadStatus: "new",
+            usable: true,
+            closed: false,
+            callbackRequired: false,
+            introEmailNeeded: false,
+            attemptCount: 0,
+            notes: "",
+            lastAction: "",
+            actionHistory: []
+          });
+        }
+
+        showMessage(`Imported ${parsedRows.length} lead(s) successfully.`);
+      } catch (error) {
+        console.error(error);
+        showMessage("Could not import leads.", true);
+      } finally {
+        importBtn.disabled = false;
+        importBtn.textContent = "Import Leads";
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+        await loadListers();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load page.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+  </script>
+</body>
+</html>
