@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Processing Payments</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading payment tracker...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Payments</h1>
+          <p class="text-sm text-slate-500">Track upfront payments, follow-up balances, and payment links</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
+          <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-5 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Files</div>
+          <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Due Now</div>
+          <div id="dueNowStat" class="text-3xl font-extrabold text-amber-600 mt-1">£0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Paid Now</div>
+          <div id="paidNowStat" class="text-3xl font-extrabold text-emerald-600 mt-1">£0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Follow-Up Due</div>
+          <div id="followUpStat" class="text-3xl font-extrabold text-indigo-600 mt-1">£0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Fully Paid</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
+            <select id="statusFilter" class="input">
+              <option value="all">All</option>
+              <option value="awaiting_payment">Awaiting Payment</option>
+              <option value="part_paid">Part Paid</option>
+              <option value="fully_paid">Fully Paid</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Closer</label>
+            <input id="closerSearch" type="text" class="input" placeholder="Search closer..." />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Client Search</label>
+            <input id="clientSearch" type="text" class="input" placeholder="Client, phone, email..." />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Payment Files</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading payment files...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Closer</th>
+                <th class="text-left p-3">Outcome</th>
+                <th class="text-left p-3">Due Now</th>
+                <th class="text-left p-3">Paid Now</th>
+                <th class="text-left p-3">Follow-Up Due</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="paymentModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 id="modalTitle" class="text-2xl font-extrabold text-blue-900">Payment Detail</h3>
+          <p id="modalSubtitle" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Client & Deal</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-semibold text-blue-900">Client:</span> <span id="clientNameText">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="clientEmailText">-</span></div>
+            <div><span class="font-semibold text-blue-900">Phone:</span> <span id="clientPhoneText">-</span></div>
+            <div><span class="font-semibold text-blue-900">Closer:</span> <span id="closerNameText">-</span></div>
+            <div><span class="font-semibold text-blue-900">Outcome:</span> <span id="outcomeText">-</span></div>
+            <div><span class="font-semibold text-blue-900">Assignment ID:</span> <span id="assignmentIdText">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Payment Details</h4>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Amount Due Now (£)</label>
+              <input id="amountDueNow" class="input" type="number" min="0" step="0.01" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Amount Paid Now (£)</label>
+              <input id="amountPaidNow" class="input" type="number" min="0" step="0.01" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Follow-Up Due (£)</label>
+              <input id="followUpDue" class="input" type="number" min="0" step="0.01" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
+              <select id="paymentStatus" class="input">
+                <option value="awaiting_payment">Awaiting Payment</option>
+                <option value="part_paid">Part Paid</option>
+                <option value="fully_paid">Fully Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Link</label>
+            <input id="paymentLink" class="input" type="text" placeholder="https://..." />
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Processing Notes</label>
+            <textarea id="processingNotes" class="input" rows="5" placeholder="Payment notes, reminders, references..."></textarea>
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button id="savePaymentBtn" class="btn btn-primary" type="button">Save Payment Details</button>
+            <button id="copyLinkBtn" class="btn btn-secondary" type="button">Copy Payment Link</button>
+            <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      collection,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const statusFilter = document.getElementById("statusFilter");
+    const closerSearch = document.getElementById("closerSearch");
+    const clientSearch = document.getElementById("clientSearch");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const paymentsBody = document.getElementById("paymentsBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+
+    const totalStat = document.getElementById("totalStat");
+    const dueNowStat = document.getElementById("dueNowStat");
+    const paidNowStat = document.getElementById("paidNowStat");
+    const followUpStat = document.getElementById("followUpStat");
+    const fullyPaidStat = document.getElementById("fullyPaidStat");
+
+    const paymentModal = document.getElementById("paymentModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const savePaymentBtn = document.getElementById("savePaymentBtn");
+    const copyLinkBtn = document.getElementById("copyLinkBtn");
+    const saveMessage = document.getElementById("saveMessage");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allFiles = [];
+    let selectedFile = null;
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+
+    function clientName(file) {
+      const first = file.client?.firstName || "";
+      const second = file.client?.secondName || "";
+      return `${first} ${second}`.trim() || "-";
+    }
+
+    async function checkProcessingAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "processing" && userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadFiles() {
+      const snap = await getDocs(collection(db, "processingFiles"));
+      allFiles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderStats();
+      renderFiles();
+    }
+
+    function renderStats() {
+      const totalDueNow = allFiles.reduce((s, f) => s + Number(f.amountDueNow || 0), 0);
+      const totalPaidNow = allFiles.reduce((s, f) => s + Number(f.amountPaidNow || 0), 0);
+      const totalFollowUp = allFiles.reduce((s, f) => s + Number(f.followUpDue || 0), 0);
+      const fullyPaid = allFiles.filter(f => f.paymentStatus === "fully_paid").length;
+
+      totalStat.textContent = String(allFiles.length);
+      dueNowStat.textContent = money(totalDueNow);
+      paidNowStat.textContent = money(totalPaidNow);
+      followUpStat.textContent = money(totalFollowUp);
+      fullyPaidStat.textContent = String(fullyPaid);
+    }
+
+    function renderFiles() {
+      const status = statusFilter.value;
+      const closerTerm = closerSearch.value.trim().toLowerCase();
+      const clientTerm = clientSearch.value.trim().toLowerCase();
+
+      const filtered = allFiles.filter(file => {
+        const matchesStatus = status === "all" || (file.paymentStatus || "awaiting_payment") === status;
+        const closerName = (file.closer?.name || file.closer?.email || "").toLowerCase();
+        const clientHaystack = `${clientName(file)} ${(file.client?.email || "")} ${(file.client?.mobile || "")}`.toLowerCase();
+        const matchesCloser = !closerTerm || closerName.includes(closerTerm);
+        const matchesClient = !clientTerm || clientHaystack.includes(clientTerm);
+        return matchesStatus && matchesCloser && matchesClient;
+      });
+
+      paymentsBody.innerHTML = "";
+
+      if (!filtered.length) {
+        paymentsBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-slate-500">No payment files found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(file => {
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+          tr.innerHTML = `
+            <td class="p-3">
+              <div class="font-semibold text-slate-800">${clientName(file)}</div>
+              <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
+            </td>
+            <td class="p-3">${file.closer?.name || file.closer?.email || "-"}</td>
+            <td class="p-3">${file.outcome || "-"}</td>
+            <td class="p-3">${money(file.amountDueNow)}</td>
+            <td class="p-3">${money(file.amountPaidNow)}</td>
+            <td class="p-3">${money(file.followUpDue)}</td>
+            <td class="p-3">${(file.paymentStatus || "awaiting_payment").replaceAll("_", " ")}</td>
+            <td class="p-3">
+              <button class="text-blue-600 font-semibold hover:underline" data-open-file="${file.id}">Open</button>
+            </td>
+          `;
+          paymentsBody.appendChild(tr);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} payment file(s) shown`;
+
+      document.querySelectorAll("[data-open-file]").forEach(btn => {
+        btn.addEventListener("click", () => openFile(btn.getAttribute("data-open-file")));
+      });
+    }
+
+    function openFile(fileId) {
+      selectedFile = allFiles.find(f => f.id === fileId);
+      if (!selectedFile) return;
+
+      document.getElementById("modalTitle").textContent = clientName(selectedFile);
+      document.getElementById("modalSubtitle").textContent = `Processing File ID: ${selectedFile.id}`;
+      document.getElementById("clientNameText").textContent = clientName(selectedFile);
+      document.getElementById("clientEmailText").textContent = selectedFile.client?.email || "-";
+      document.getElementById("clientPhoneText").textContent = selectedFile.client?.mobile || selectedFile.client?.landline || "-";
+      document.getElementById("closerNameText").textContent = selectedFile.closer?.name || selectedFile.closer?.email || "-";
+      document.getElementById("outcomeText").textContent = selectedFile.outcome || "-";
+      document.getElementById("assignmentIdText").textContent = selectedFile.assignmentId || "-";
+
+      document.getElementById("amountDueNow").value = selectedFile.amountDueNow || "";
+      document.getElementById("amountPaidNow").value = selectedFile.amountPaidNow || "";
+      document.getElementById("followUpDue").value = selectedFile.followUpDue || "";
+      document.getElementById("paymentStatus").value = selectedFile.paymentStatus || "awaiting_payment";
+      document.getElementById("paymentLink").value = selectedFile.paymentLink || "";
+      document.getElementById("processingNotes").value = selectedFile.processingNotes || "";
+
+      saveMessage.classList.add("hidden");
+      paymentModal.classList.remove("hidden");
+    }
+
+    savePaymentBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+
+      try {
+        await updateDoc(doc(db, "processingFiles", selectedFile.id), {
+          amountDueNow: Number(document.getElementById("amountDueNow").value || 0),
+          amountPaidNow: Number(document.getElementById("amountPaidNow").value || 0),
+          followUpDue: Number(document.getElementById("followUpDue").value || 0),
+          paymentStatus: document.getElementById("paymentStatus").value,
+          paymentLink: document.getElementById("paymentLink").value.trim(),
+          processingNotes: document.getElementById("processingNotes").value.trim(),
+          paymentUpdatedAt: serverTimestamp(),
+          paymentUpdatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        saveMessage.textContent = "Payment details saved successfully.";
+        saveMessage.classList.remove("hidden");
+        await loadFiles();
+        selectedFile = allFiles.find(f => f.id === selectedFile.id);
+      } catch (error) {
+        console.error(error);
+        alert("Could not save payment details.");
+      }
+    });
+
+    copyLinkBtn.addEventListener("click", async () => {
+      const link = document.getElementById("paymentLink").value.trim();
+      if (!link) {
+        alert("No payment link to copy.");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        saveMessage.textContent = "Payment link copied.";
+        saveMessage.classList.remove("hidden");
+      } catch (error) {
+        console.error(error);
+        alert("Could not copy payment link.");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkProcessingAccess(user);
+        if (!allowed) return;
+        await loadFiles();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load payment tracker.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+      paymentModal.classList.add("hidden");
+    });
+
+    paymentModal.addEventListener("click", (e) => {
+      if (e.target === paymentModal) paymentModal.classList.add("hidden");
+    });
+
+    statusFilter.addEventListener("change", renderFiles);
+    closerSearch.addEventListener("input", renderFiles);
+    clientSearch.addEventListener("input", renderFiles);
+    refreshBtn.addEventListener("click", loadFiles);
+  </script>
+</body>
+</html>
