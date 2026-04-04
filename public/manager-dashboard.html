@@ -16,6 +16,28 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .badge-online {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-offline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -40,15 +62,14 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Dashboard</h1>
-          <p class="text-sm text-slate-500">Full operations overview across leads, listers, closers, and processing</p>
+          <p class="text-sm text-slate-500">Overview of staff, files, and live attendance</p>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -57,47 +78,28 @@
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-6 gap-4">
         <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Staff</div>
+          <div id="totalStaffStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Online Now</div>
+          <div id="onlineStaffStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Logged In Today</div>
+          <div id="loggedInTodayStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
           <div class="text-sm text-slate-500">Total Leads</div>
-          <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+          <div id="totalLeadsStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Active Listers</div>
-          <div id="activeListersStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Callbacks Due</div>
-          <div id="callbacksDueStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Callbacks Pending</div>
+          <div id="callbacksPendingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Intro Emails Pending</div>
-          <div id="introPendingStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Closed Deals</div>
-          <div id="closedDealsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Processing Files</div>
-          <div id="processingFilesStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
-        </div>
-      </section>
-
-      <section class="grid lg:grid-cols-4 gap-4">
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Payment</div>
-          <div id="awaitingPaymentStat" class="text-3xl font-extrabold text-orange-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Part Paid</div>
-          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Fully Paid</div>
-          <div id="fullyPaidStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Intake Files</div>
-          <div id="intakeFilesStat" class="text-3xl font-extrabold text-blue-700 mt-1">0</div>
+          <div id="introPendingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
       </section>
 
@@ -105,79 +107,84 @@
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
-            <a href="/manager-lead-upload.html" class="btn btn-primary text-center">Upload New Leads</a>
+            <a href="/manager-panel.html" class="btn btn-primary text-center">Open Manager Panel</a>
             <a href="/manager-leads-overview.html" class="btn btn-primary text-center">Open Leads Overview</a>
-            <a href="/manager-intro-emails-overview.html" class="btn btn-primary text-center">Open Intro Emails</a>
-            <a href="/manager-panel.html" class="btn btn-primary text-center">Open Intake Files</a>
+            <a href="/manager-intro-emails.html" class="btn btn-primary text-center">Open Intro Emails</a>
+            <a href="/manager-weekly-attendance.html" class="btn btn-primary text-center">Weekly Attendance</a>
           </div>
         </section>
 
         <section class="card p-6">
-          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Money Snapshot</h2>
-          <div class="grid md:grid-cols-3 gap-4">
-            <div>
-              <div class="text-sm text-slate-500">Due Now</div>
-              <div id="dueNowTotal" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Today Snapshot</h2>
+          <div class="space-y-4 text-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Staff online now</span>
+              <span id="snapshotOnline" class="font-extrabold text-emerald-600">0</span>
             </div>
-            <div>
-              <div class="text-sm text-slate-500">Paid Now</div>
-              <div id="paidNowTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Staff with attendance record today</span>
+              <span id="snapshotAttendance" class="font-extrabold text-indigo-600">0</span>
             </div>
-            <div>
-              <div class="text-sm text-slate-500">Follow-Up Due</div>
-              <div id="followUpTotal" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Callbacks pending</span>
+              <span id="snapshotCallbacks" class="font-extrabold text-amber-600">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">Intro emails pending</span>
+              <span id="snapshotIntro" class="font-extrabold text-violet-600">0</span>
             </div>
           </div>
         </section>
       </section>
 
-      <section class="grid lg:grid-cols-2 gap-6">
-        <section class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-xl font-extrabold text-blue-900">Lister Performance</h2>
-              <p class="text-sm text-slate-500 mt-1">Lead totals by lister</p>
-            </div>
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Staff Attendance Today</h2>
+            <p id="attendanceSummary" class="text-sm text-slate-500 mt-1">Loading today’s attendance...</p>
           </div>
+          <button id="refreshAttendanceBtn" class="btn btn-secondary" type="button">Refresh Attendance</button>
+        </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-              <thead>
-                <tr class="bg-blue-50 text-blue-900">
-                  <th class="text-left p-3">Lister</th>
-                  <th class="text-left p-3">Total Leads</th>
-                  <th class="text-left p-3">Callbacks</th>
-                  <th class="text-left p-3">Intro Emails</th>
-                  <th class="text-left p-3">Converted</th>
-                </tr>
-              </thead>
-              <tbody id="listerPerformanceBody"></tbody>
-            </table>
-          </div>
-        </section>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">First Login</th>
+                <th class="text-left p-3">Last Login</th>
+                <th class="text-left p-3">Last Seen</th>
+                <th class="text-left p-3">Last Logout</th>
+                <th class="text-left p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody"></tbody>
+          </table>
+        </div>
+      </section>
 
-        <section class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-xl font-extrabold text-blue-900">Recent Closed Deals</h2>
-              <p class="text-sm text-slate-500 mt-1">Latest closer outcomes</p>
-            </div>
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Lead Work Summary</h2>
+            <p class="text-sm text-slate-500 mt-1">Current workload from assigned staff leads</p>
           </div>
+        </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-              <thead>
-                <tr class="bg-blue-50 text-blue-900">
-                  <th class="text-left p-3">Client</th>
-                  <th class="text-left p-3">Closer</th>
-                  <th class="text-left p-3">Claim Type</th>
-                  <th class="text-left p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody id="closedDealsBody"></tbody>
-            </table>
-          </div>
-        </section>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff UID</th>
+                <th class="text-left p-3">Assigned Leads</th>
+                <th class="text-left p-3">Callbacks</th>
+                <th class="text-left p-3">Intro Emails</th>
+                <th class="text-left p-3">Converted</th>
+              </tr>
+            </thead>
+            <tbody id="leadSummaryBody"></tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>
@@ -209,36 +216,45 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const refreshAttendanceBtn = document.getElementById("refreshAttendanceBtn");
+    const attendanceBody = document.getElementById("attendanceBody");
+    const attendanceSummary = document.getElementById("attendanceSummary");
+    const leadSummaryBody = document.getElementById("leadSummaryBody");
 
-    let allUsers = [];
-    let allLeads = [];
-    let allCloserAssignments = [];
-    let allProcessingFiles = [];
-    let allClaimSubmissions = [];
+    let currentUser = null;
+    let attendanceDocs = [];
+    let leadAssignments = [];
+    let userDocs = [];
 
     function hideLoader() {
       authLoader.style.display = "none";
     }
 
-    function money(n) {
-      const num = Number(n || 0);
-      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
     }
 
-    function formatClaimType(type) {
-      switch (type) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
+    function formatTimestamp(ts) {
+      if (!ts) return "-";
+      try {
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return d.toLocaleString("en-GB");
+      } catch {
+        return "-";
       }
     }
 
-    function clientNameFromClient(client) {
-      const first = client?.firstName || "";
-      const second = client?.secondName || "";
-      return `${first} ${second}`.trim() || "-";
+    function statusBadge(isOnline) {
+      return isOnline
+        ? `<span class="badge-online">● Online</span>`
+        : `<span class="badge-offline">● Offline</span>`;
+    }
+
+    function isStaleOnline(docData) {
+      if (!docData.isOnline || !docData.lastSeenAt?.toDate) return false;
+      const lastSeen = docData.lastSeenAt.toDate().getTime();
+      const now = Date.now();
+      return now - lastSeen > 10 * 60 * 1000;
     }
 
     async function checkManagerAccess(user) {
@@ -246,7 +262,7 @@
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        alert("No user profile found.");
+        alert("No manager profile found.");
         window.location.href = "/login.html";
         return false;
       }
@@ -258,124 +274,137 @@
         return false;
       }
 
+      currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
-    async function loadData() {
-      const [usersSnap, leadsSnap, closerSnap, processingSnap, intakeSnap] = await Promise.all([
-        getDocs(collection(db, "users")),
+    async function loadDashboardData() {
+      const [attendanceSnap, leadSnap, usersSnap] = await Promise.all([
+        getDocs(collection(db, "staffAttendance")),
         getDocs(collection(db, "leadAssignments")),
-        getDocs(collection(db, "closerAssignments")),
-        getDocs(collection(db, "processingFiles")),
-        getDocs(collection(db, "claimSubmissions"))
+        getDocs(collection(db, "users"))
       ]);
 
-      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      allLeads = leadsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      allCloserAssignments = closerSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      allProcessingFiles = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      allClaimSubmissions = intakeSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const today = todayIso();
+
+      attendanceDocs = attendanceSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(d => d.date === today);
+
+      leadAssignments = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       renderStats();
-      renderListerPerformance();
-      renderClosedDeals();
+      renderAttendance();
+      renderLeadSummary();
     }
 
     function renderStats() {
-      const staffUsers = allUsers.filter(u => u.role === "staff");
-      const callbacksDue = allLeads.filter(l => l.callbackRequired).length;
-      const introPending = allLeads.filter(l => l.introEmailNeeded && !l.introEmailSent).length;
-      const closedDeals = allCloserAssignments.filter(a => a.outcome === "Closed Deal").length;
+      const staffUsers = userDocs.filter(u => u.role === "staff");
+      const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
+      const callbacksPending = leadAssignments.filter(l => l.callbackRequired && !(l.closed === true || l.usable === false)).length;
+      const introPending = leadAssignments.filter(l => l.introEmailNeeded && !l.introEmailSent && !(l.closed === true || l.usable === false)).length;
 
-      const awaitingPayment = allProcessingFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length;
-      const partPaid = allProcessingFiles.filter(f => f.paymentStatus === "part_paid").length;
-      const fullyPaid = allProcessingFiles.filter(f => f.paymentStatus === "fully_paid").length;
-
-      const dueNow = allProcessingFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
-      const paidNow = allProcessingFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
-      const followUp = allProcessingFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
-
-      document.getElementById("totalLeadsStat").textContent = String(allLeads.length);
-      document.getElementById("activeListersStat").textContent = String(staffUsers.length);
-      document.getElementById("callbacksDueStat").textContent = String(callbacksDue);
+      document.getElementById("totalStaffStat").textContent = String(staffUsers.length);
+      document.getElementById("onlineStaffStat").textContent = String(onlineNow);
+      document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
+      document.getElementById("totalLeadsStat").textContent = String(leadAssignments.length);
+      document.getElementById("callbacksPendingStat").textContent = String(callbacksPending);
       document.getElementById("introPendingStat").textContent = String(introPending);
-      document.getElementById("closedDealsStat").textContent = String(closedDeals);
-      document.getElementById("processingFilesStat").textContent = String(allProcessingFiles.length);
 
-      document.getElementById("awaitingPaymentStat").textContent = String(awaitingPayment);
-      document.getElementById("partPaidStat").textContent = String(partPaid);
-      document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
-      document.getElementById("intakeFilesStat").textContent = String(allClaimSubmissions.length);
-
-      document.getElementById("dueNowTotal").textContent = money(dueNow);
-      document.getElementById("paidNowTotal").textContent = money(paidNow);
-      document.getElementById("followUpTotal").textContent = money(followUp);
+      document.getElementById("snapshotOnline").textContent = String(onlineNow);
+      document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
+      document.getElementById("snapshotCallbacks").textContent = String(callbacksPending);
+      document.getElementById("snapshotIntro").textContent = String(introPending);
     }
 
-    function renderListerPerformance() {
-      const body = document.getElementById("listerPerformanceBody");
-      body.innerHTML = "";
+    function renderAttendance() {
+      attendanceBody.innerHTML = "";
 
-      const staffUsers = allUsers.filter(u => u.role === "staff");
-
-      if (!staffUsers.length) {
-        body.innerHTML = `
-          <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No listers found.</td>
-          </tr>
-        `;
-        return;
-      }
-
-      staffUsers.forEach(user => {
-        const leads = allLeads.filter(l => l.assignedToUid === user.id);
-
-        const row = document.createElement("tr");
-        row.className = "border-t border-slate-200";
-        row.innerHTML = `
-          <td class="p-3">${user.name || user.email || user.id}</td>
-          <td class="p-3">${leads.length}</td>
-          <td class="p-3">${leads.filter(l => l.callbackRequired).length}</td>
-          <td class="p-3">${leads.filter(l => l.introEmailNeeded).length}</td>
-          <td class="p-3">${leads.filter(l => l.leadStatus === "converted" || l.convertedToSubmissionId).length}</td>
-        `;
-        body.appendChild(row);
+      const sorted = [...attendanceDocs].sort((a, b) => {
+        const aName = (a.name || "").toLowerCase();
+        const bName = (b.name || "").toLowerCase();
+        return aName.localeCompare(bName);
       });
+
+      if (!sorted.length) {
+        attendanceBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-slate-500">No attendance records found for today.</td>
+          </tr>
+        `;
+        attendanceSummary.textContent = "No attendance records found for today.";
+        return;
+      }
+
+      sorted.forEach(item => {
+        const trulyOnline = item.isOnline && !isStaleOnline(item);
+
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${item.name || "-"}</div>
+            <div class="text-xs text-slate-500">${item.email || "-"}</div>
+          </td>
+          <td class="p-3">${formatTimestamp(item.firstLoginAt)}</td>
+          <td class="p-3">${formatTimestamp(item.lastLoginAt)}</td>
+          <td class="p-3">${formatTimestamp(item.lastSeenAt)}</td>
+          <td class="p-3">${formatTimestamp(item.lastLogoutAt)}</td>
+          <td class="p-3">${statusBadge(trulyOnline)}</td>
+        `;
+        attendanceBody.appendChild(row);
+      });
+
+      attendanceSummary.textContent = `${sorted.length} staff attendance record(s) for today.`;
     }
 
-    function renderClosedDeals() {
-      const body = document.getElementById("closedDealsBody");
-      body.innerHTML = "";
+    function renderLeadSummary() {
+      leadSummaryBody.innerHTML = "";
 
-      const closedDeals = allCloserAssignments
-        .filter(a => a.outcome === "Closed Deal")
-        .slice(0, 8);
+      const grouped = {};
 
-      if (!closedDeals.length) {
-        body.innerHTML = `
+      leadAssignments.forEach(lead => {
+        const uid = lead.assignedToUid || "unassigned";
+        if (!grouped[uid]) {
+          grouped[uid] = {
+            uid,
+            assigned: 0,
+            callbacks: 0,
+            intro: 0,
+            converted: 0
+          };
+        }
+
+        grouped[uid].assigned += 1;
+        if (lead.callbackRequired && !(lead.closed === true || lead.usable === false)) grouped[uid].callbacks += 1;
+        if (lead.introEmailNeeded && !lead.introEmailSent && !(lead.closed === true || lead.usable === false)) grouped[uid].intro += 1;
+        if (lead.leadStatus === "converted" || lead.convertedToSubmissionId) grouped[uid].converted += 1;
+      });
+
+      const rows = Object.values(grouped);
+
+      if (!rows.length) {
+        leadSummaryBody.innerHTML = `
           <tr>
-            <td colspan="4" class="p-6 text-center text-slate-500">No closed deals found.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No lead data found.</td>
           </tr>
         `;
         return;
       }
 
-      closedDeals.forEach(item => {
+      rows.forEach(item => {
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientNameFromClient(item.client)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
-          </td>
-          <td class="p-3">${item.closer?.name || item.closer?.email || "-"}</td>
-          <td class="p-3">${formatClaimType(item.claimType)}</td>
-          <td class="p-3">
-            <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
-          </td>
+          <td class="p-3">${item.uid}</td>
+          <td class="p-3">${item.assigned}</td>
+          <td class="p-3">${item.callbacks}</td>
+          <td class="p-3">${item.intro}</td>
+          <td class="p-3">${item.converted}</td>
         `;
-        body.appendChild(row);
+        leadSummaryBody.appendChild(row);
       });
     }
 
@@ -388,12 +417,21 @@
       try {
         const allowed = await checkManagerAccess(user);
         if (!allowed) return;
-        await loadData();
+        await loadDashboardData();
         hideLoader();
       } catch (error) {
         console.error(error);
         alert("Could not load manager dashboard.");
         window.location.href = "/login.html";
+      }
+    });
+
+    refreshAttendanceBtn.addEventListener("click", async () => {
+      try {
+        await loadDashboardData();
+      } catch (error) {
+        console.error("Could not refresh attendance:", error);
+        alert("Could not refresh attendance.");
       }
     });
 
