@@ -244,7 +244,8 @@
       query,
       where,
       serverTimestamp,
-      arrayUnion
+      arrayUnion,
+      setDoc
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -306,6 +307,24 @@
       modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
       setTimeout(() => modalMessage.classList.add("hidden"), 3000);
+    }
+
+    function getTodayAttendanceId(uid) {
+      const today = new Date().toISOString().slice(0, 10);
+      return `${uid}_${today}`;
+    }
+
+    async function recordStaffLogout() {
+      if (!currentUser) return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        lastLogoutAt: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
     }
 
     function formatAddress(lead) {
@@ -726,6 +745,7 @@
 
     logoutBtn.addEventListener("click", async () => {
       try {
+        await recordStaffLogout();
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
