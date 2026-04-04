@@ -25,6 +25,19 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -42,7 +55,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Dashboard</h1>
           <p class="text-sm text-slate-500">Appointments, callbacks, closed deals, and processing handoff overview</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Closer Panel</a>
@@ -74,7 +86,7 @@
           <div id="sentToProcessingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Not Interested</div>
+          <div class="text-sm text-slate-500">Not Interested / Closed</div>
           <div id="notInterestedStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
       </section>
@@ -84,7 +96,7 @@
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
             <a href="/closer-panel.html" class="btn btn-primary text-center">Open Closer Panel</a>
-            <a href="/closer-panel.html" class="btn btn-primary text-center">View Assigned Files</a>
+            <a href="/closer-panel.html" class="btn btn-primary text-center">View Assigned Leads</a>
           </div>
         </section>
 
@@ -115,7 +127,6 @@
               <p class="text-sm text-slate-500 mt-1">Next assignments in date order</p>
             </div>
           </div>
-
           <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
               <thead>
@@ -138,7 +149,6 @@
               <p class="text-sm text-slate-500 mt-1">Latest successful outcomes</p>
             </div>
           </div>
-
           <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
               <thead>
@@ -189,27 +199,32 @@
 
     let currentUser = null;
     let allAssignments = [];
-    let processingAssignmentIds = new Set();
+    let processingLeadIds = new Set();
 
     function hideLoader() {
       authLoader.style.display = "none";
     }
 
-    function appointmentText(item) {
-      const date = item.appointment?.date || "-";
-      const time = item.appointment?.time || "-";
-      return `${date} ${time}`.trim();
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
     }
 
     function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
-      return `${first} ${second}`.trim() || "-";
+      return `${item.forename || ""} ${item.surname || ""}`.trim() || "-";
+    }
+
+    function appointmentText(item) {
+      const date = item.closerAppointmentDate || "-";
+      const time = item.closerAppointmentTime || "-";
+      return `${date} ${time}`.trim();
     }
 
     function money(n) {
       const num = Number(n || 0);
-      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `£${num.toLocaleString("en-GB", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      })}`;
     }
 
     function formatClaimType(type) {
@@ -222,12 +237,44 @@
       }
     }
 
-    function todayIso() {
-      return new Date().toISOString().slice(0, 10);
+    function isClosedDeal(item) {
+      return (
+        item.leadStatus === "converted" ||
+        item.outcome === "Closed Deal" ||
+        item.status === "Closed"
+      );
     }
 
-    function isClosedDeal(item) {
-      return item.outcome === "Closed Deal" || item.status === "Closed";
+    function isCallback(item) {
+      return item.outcome === "Call Back" || item.leadStatus === "callback_required";
+    }
+
+    function isNotInterested(item) {
+      return (
+        item.outcome === "Not Interested" ||
+        item.leadStatus === "closed" ||
+        item.closed === true ||
+        item.usable === false
+      );
+    }
+
+    function statusBadge(item) {
+      if (item.leadStatus === "converted") {
+        return `<span class="badge badge-green">Converted</span>`;
+      }
+      if (item.leadStatus === "sent_to_closer") {
+        return `<span class="badge badge-blue">Sent to Closer</span>`;
+      }
+      if (item.outcome === "Call Back") {
+        return `<span class="badge badge-amber">Call Back</span>`;
+      }
+      if (item.outcome === "Closed Deal") {
+        return `<span class="badge badge-green">Closed Deal</span>`;
+      }
+      if (item.outcome === "Not Interested" || item.leadStatus === "closed") {
+        return `<span class="badge badge-slate">Closed</span>`;
+      }
+      return `<span class="badge badge-slate">${item.leadStatus || "Assigned"}</span>`;
     }
 
     async function checkCloserAccess(user) {
@@ -254,22 +301,23 @@
 
     async function loadData() {
       const assignmentsQuery = query(
-        collection(db, "closerAssignments"),
-        where("closer.uid", "==", currentUser.uid)
+        collection(db, "leadAssignments"),
+        where("closerUid", "==", currentUser.uid)
       );
       const assignmentsSnap = await getDocs(assignmentsQuery);
-
       allAssignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       allAssignments.sort((a, b) => {
-        const aKey = `${a.appointment?.date || "9999-12-31"} ${a.appointment?.time || "23:59"}`;
-        const bKey = `${b.appointment?.date || "9999-12-31"} ${b.appointment?.time || "23:59"}`;
+        const aKey = `${a.closerAppointmentDate || "9999-12-31"} ${a.closerAppointmentTime || "23:59"}`;
+        const bKey = `${b.closerAppointmentDate || "9999-12-31"} ${b.closerAppointmentTime || "23:59"}`;
         return aKey.localeCompare(bKey);
       });
 
       const processingSnap = await getDocs(collection(db, "processingFiles"));
-      processingAssignmentIds = new Set(
-        processingSnap.docs.map(d => d.data()?.assignmentId).filter(Boolean)
+      processingLeadIds = new Set(
+        processingSnap.docs
+          .map(d => d.data()?.leadAssignmentId || d.data()?.assignmentId)
+          .filter(Boolean)
       );
 
       renderStats();
@@ -280,16 +328,25 @@
     function renderStats() {
       const today = todayIso();
       const closedDeals = allAssignments.filter(isClosedDeal);
+
       const dueNow = closedDeals.reduce((sum, x) => sum + Number(x.amountDueNow || 0), 0);
       const paidNow = closedDeals.reduce((sum, x) => sum + Number(x.amountPaidNow || 0), 0);
       const followUp = closedDeals.reduce((sum, x) => sum + Number(x.followUpDue || 0), 0);
 
       document.getElementById("totalAssignmentsStat").textContent = String(allAssignments.length);
-      document.getElementById("todayAppointmentsStat").textContent = String(allAssignments.filter(x => x.appointment?.date === today).length);
-      document.getElementById("callbacksStat").textContent = String(allAssignments.filter(x => x.outcome === "Call Back").length);
+      document.getElementById("todayAppointmentsStat").textContent = String(
+        allAssignments.filter(x => x.closerAppointmentDate === today).length
+      );
+      document.getElementById("callbacksStat").textContent = String(
+        allAssignments.filter(isCallback).length
+      );
       document.getElementById("closedDealsStat").textContent = String(closedDeals.length);
-      document.getElementById("sentToProcessingStat").textContent = String(allAssignments.filter(x => processingAssignmentIds.has(x.id)).length);
-      document.getElementById("notInterestedStat").textContent = String(allAssignments.filter(x => x.outcome === "Not Interested").length);
+      document.getElementById("sentToProcessingStat").textContent = String(
+        allAssignments.filter(x => processingLeadIds.has(x.id)).length
+      );
+      document.getElementById("notInterestedStat").textContent = String(
+        allAssignments.filter(isNotInterested).length
+      );
 
       document.getElementById("dueNowTotal").textContent = money(dueNow);
       document.getElementById("paidNowTotal").textContent = money(paidNow);
@@ -318,9 +375,9 @@
           <td class="p-3">${appointmentText(item)}</td>
           <td class="p-3">
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${item.email || "-"}</div>
           </td>
-          <td class="p-3">${item.status || "Assigned"}</td>
+          <td class="p-3">${statusBadge(item)}</td>
           <td class="p-3">
             <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
@@ -345,15 +402,15 @@
       }
 
       deals.forEach(item => {
-        const sent = processingAssignmentIds.has(item.id) ? "Sent to Processing" : "Not Sent";
+        const sent = processingLeadIds.has(item.id) ? "Sent to Processing" : "Not Sent";
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
           <td class="p-3">
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${item.email || "-"}</div>
           </td>
-          <td class="p-3">${formatClaimType(item.claimType)}</td>
+          <td class="p-3">${formatClaimType(item.claimType || item.type)}</td>
           <td class="p-3">${sent}</td>
           <td class="p-3">
             <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>

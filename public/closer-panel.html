@@ -26,6 +26,19 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -43,7 +56,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Panel</h1>
           <p class="text-sm text-slate-500">Assigned appointments, callbacks, and closed deals</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Closer Panel</a>
@@ -63,11 +75,11 @@
           <div id="totalAssignmentsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Assigned</div>
+          <div class="text-sm text-slate-500">Sent to Closer</div>
           <div id="assignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Contacted</div>
+          <div class="text-sm text-slate-500">Call Backs</div>
           <div id="contactedStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -86,10 +98,10 @@
             <label class="block text-sm font-semibold text-blue-900 mb-2">Status</label>
             <select id="statusFilter" class="input">
               <option value="all">All statuses</option>
-              <option value="Assigned">Assigned</option>
-              <option value="Contacted">Contacted</option>
-              <option value="Appointment Booked">Appointment Booked</option>
-              <option value="Closed">Closed</option>
+              <option value="sent_to_closer">Sent to Closer</option>
+              <option value="callback_required">Call Back</option>
+              <option value="converted">Closed Deal</option>
+              <option value="closed">Closed / Not Interested</option>
             </select>
           </div>
 
@@ -97,11 +109,10 @@
             <label class="block text-sm font-semibold text-blue-900 mb-2">Outcome</label>
             <select id="outcomeFilter" class="input">
               <option value="all">All outcomes</option>
-              <option value="Interested">Interested</option>
-              <option value="Call Back">Call Back</option>
-              <option value="No Answer">No Answer</option>
-              <option value="Not Interested">Not Interested</option>
-              <option value="Closed Deal">Closed Deal</option>
+              <option value="call_back">Call Back</option>
+              <option value="closed_deal">Closed Deal</option>
+              <option value="not_interested">Not Interested / Closed</option>
+              <option value="sent_to_processing">Sent to Processing</option>
             </select>
           </div>
 
@@ -175,14 +186,12 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const statusFilter = document.getElementById("statusFilter");
     const outcomeFilter = document.getElementById("outcomeFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const assignmentsBody = document.getElementById("assignmentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const totalAssignmentsStat = document.getElementById("totalAssignmentsStat");
     const assignedStat = document.getElementById("assignedStat");
     const contactedStat = document.getElementById("contactedStat");
@@ -192,7 +201,7 @@
     let currentUser = null;
     let currentUserData = null;
     let allAssignments = [];
-    let processingAssignmentIds = new Set();
+    let processingLeadIds = new Set();
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -209,19 +218,58 @@
     }
 
     function appointmentText(item) {
-      const date = item.appointment?.date || "-";
-      const time = item.appointment?.time || "-";
+      const date = item.closerAppointmentDate || "-";
+      const time = item.closerAppointmentTime || "-";
       return `${date} ${time}`.trim();
     }
 
     function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
+      const first = item.forename || "";
+      const second = item.surname || "";
       return `${first} ${second}`.trim() || "-";
     }
 
     function processingLabel(item) {
-      return processingAssignmentIds.has(item.id) ? "Sent to Processing" : "-";
+      return processingLeadIds.has(item.id)
+        ? `<span class="badge badge-violet">Sent to Processing</span>`
+        : "-";
+    }
+
+    function outcomeLabel(item) {
+      if (item.leadStatus === "converted" || item.outcome === "Closed Deal") {
+        return `<span class="badge badge-green">Closed Deal</span>`;
+      }
+      if (item.outcome === "Call Back" || item.leadStatus === "callback_required") {
+        return `<span class="badge badge-amber">Call Back</span>`;
+      }
+      if (item.outcome === "Not Interested" || item.leadStatus === "closed" || item.closed === true || item.usable === false) {
+        return `<span class="badge badge-slate">Not Interested / Closed</span>`;
+      }
+      return "-";
+    }
+
+    function statusLabel(item) {
+      if (item.leadStatus === "converted") {
+        return `<span class="badge badge-green">Converted</span>`;
+      }
+      if (item.leadStatus === "callback_required") {
+        return `<span class="badge badge-amber">Callback Required</span>`;
+      }
+      if (item.leadStatus === "sent_to_closer") {
+        return `<span class="badge badge-blue">Sent to Closer</span>`;
+      }
+      if (item.leadStatus === "closed") {
+        return `<span class="badge badge-red">Closed</span>`;
+      }
+      return `<span class="badge badge-slate">${item.leadStatus || "Assigned"}</span>`;
+    }
+
+    function isClosedDeal(item) {
+      return item.leadStatus === "converted" || item.outcome === "Closed Deal";
+    }
+
+    function isCallback(item) {
+      return item.outcome === "Call Back" || item.leadStatus === "callback_required";
     }
 
     async function checkCloserAccess(user) {
@@ -252,26 +300,26 @@
     async function loadAssignments() {
       try {
         const assignmentsQuery = query(
-          collection(db, "closerAssignments"),
-          where("closer.uid", "==", currentUser.uid)
+          collection(db, "leadAssignments"),
+          where("closerUid", "==", currentUser.uid)
         );
-        const snapshot = await getDocs(assignmentsQuery);
 
+        const snapshot = await getDocs(assignmentsQuery);
         allAssignments = snapshot.docs.map(docSnap => ({
           id: docSnap.id,
           ...docSnap.data()
         }));
 
         allAssignments.sort((a, b) => {
-          const aKey = `${a.appointment?.date || "9999-12-31"} ${a.appointment?.time || "23:59"}`;
-          const bKey = `${b.appointment?.date || "9999-12-31"} ${b.appointment?.time || "23:59"}`;
+          const aKey = `${a.closerAppointmentDate || "9999-12-31"} ${a.closerAppointmentTime || "23:59"}`;
+          const bKey = `${b.closerAppointmentDate || "9999-12-31"} ${b.closerAppointmentTime || "23:59"}`;
           return aKey.localeCompare(bKey);
         });
 
         const processingSnap = await getDocs(collection(db, "processingFiles"));
-        processingAssignmentIds = new Set(
+        processingLeadIds = new Set(
           processingSnap.docs
-            .map(d => d.data()?.assignmentId)
+            .map(d => d.data()?.leadAssignmentId || d.data()?.assignmentId)
             .filter(Boolean)
         );
 
@@ -285,10 +333,10 @@
 
     function renderStats() {
       totalAssignmentsStat.textContent = String(allAssignments.length);
-      assignedStat.textContent = String(allAssignments.filter(x => (x.status || "Assigned") === "Assigned").length);
-      contactedStat.textContent = String(allAssignments.filter(x => x.status === "Contacted").length);
-      bookedStat.textContent = String(allAssignments.filter(x => x.status === "Appointment Booked").length);
-      closedDealsStat.textContent = String(allAssignments.filter(x => x.outcome === "Closed Deal" || x.status === "Closed").length);
+      assignedStat.textContent = String(allAssignments.filter(x => x.leadStatus === "sent_to_closer").length);
+      contactedStat.textContent = String(allAssignments.filter(isCallback).length);
+      bookedStat.textContent = String(allAssignments.filter(x => x.closerAppointmentDate).length);
+      closedDealsStat.textContent = String(allAssignments.filter(isClosedDeal).length);
     }
 
     function renderAssignments() {
@@ -297,18 +345,27 @@
       const searchTerm = searchInput.value.trim().toLowerCase();
 
       const filtered = allAssignments.filter(item => {
-        const matchesStatus = selectedStatus === "all" || (item.status || "Assigned") === selectedStatus;
-        const matchesOutcome = selectedOutcome === "all" || (item.outcome || "") === selectedOutcome;
+        const matchesStatus =
+          selectedStatus === "all" ||
+          item.leadStatus === selectedStatus;
+
+        const matchesOutcome =
+          selectedOutcome === "all" ||
+          (selectedOutcome === "call_back" && isCallback(item)) ||
+          (selectedOutcome === "closed_deal" && isClosedDeal(item)) ||
+          (selectedOutcome === "not_interested" && (item.outcome === "Not Interested" || item.leadStatus === "closed" || item.closed === true || item.usable === false)) ||
+          (selectedOutcome === "sent_to_processing" && processingLeadIds.has(item.id));
 
         const haystack = `
           ${clientName(item)}
-          ${item.client?.email || ""}
-          ${item.client?.mobile || ""}
-          ${item.client?.landline || ""}
+          ${item.email || ""}
+          ${item.telephone || ""}
           ${item.claimType || ""}
+          ${item.type || ""}
         `.toLowerCase();
 
         const matchesSearch = !searchTerm || haystack.includes(searchTerm);
+
         return matchesStatus && matchesOutcome && matchesSearch;
       });
 
@@ -324,16 +381,15 @@
         filtered.forEach(item => {
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
-
           row.innerHTML = `
             <td class="p-3">${appointmentText(item)}</td>
             <td class="p-3">
               <div class="font-semibold text-slate-800">${clientName(item)}</div>
-              <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+              <div class="text-xs text-slate-500">${item.email || "-"}</div>
             </td>
-            <td class="p-3">${formatClaimType(item.claimType)}</td>
-            <td class="p-3">${item.status || "Assigned"}</td>
-            <td class="p-3">${item.outcome || "-"}</td>
+            <td class="p-3">${formatClaimType(item.claimType || item.type)}</td>
+            <td class="p-3">${statusLabel(item)}</td>
+            <td class="p-3">${outcomeLabel(item)}</td>
             <td class="p-3">${processingLabel(item)}</td>
             <td class="p-3">
               <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">
@@ -341,7 +397,6 @@
               </a>
             </td>
           `;
-
           assignmentsBody.appendChild(row);
         });
       }
