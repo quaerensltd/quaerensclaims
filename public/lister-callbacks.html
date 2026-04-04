@@ -327,18 +327,18 @@
       return !!lead.introEmailNeeded;
     }
 
-    function getTodayIso() {
+    function todayIso() {
       return new Date().toISOString().slice(0, 10);
     }
 
     function getTodayAttendanceId(uid) {
-      return `${uid}_${getTodayIso()}`;
+      return `${uid}_${todayIso()}`;
     }
 
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
 
-      const today = getTodayIso();
+      const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -353,11 +353,14 @@
           firstLoginAt: serverTimestamp(),
           lastLoginAt: serverTimestamp(),
           lastSeenAt: serverTimestamp(),
+          currentSessionStartAt: serverTimestamp(),
+          totalLoggedInMs: 0,
           isOnline: true
         });
       } else {
         const existingData = attendanceSnap.data() || {};
-        await setDoc(attendanceRef, {
+
+        const updateData = {
           uid: currentUser.uid,
           name: currentUserData.name || "",
           email: currentUser.email || "",
@@ -367,7 +370,17 @@
           lastLoginAt: serverTimestamp(),
           lastSeenAt: serverTimestamp(),
           isOnline: true
-        }, { merge: true });
+        };
+
+        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
+          updateData.currentSessionStartAt = serverTimestamp();
+        }
+
+        if (typeof existingData.totalLoggedInMs !== "number") {
+          updateData.totalLoggedInMs = 0;
+        }
+
+        await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
 
@@ -382,14 +395,16 @@
         name: currentUserData.name || "",
         email: currentUser.email || "",
         role: currentUserData.role || "staff",
-        date: getTodayIso(),
+        date: todayIso(),
         lastSeenAt: serverTimestamp(),
         isOnline: true
       }, { merge: true });
     }
 
     function startAttendanceHeartbeat() {
-      if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
+      if (attendanceHeartbeatInterval) {
+        clearInterval(attendanceHeartbeatInterval);
+      }
 
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
@@ -405,9 +420,33 @@
 
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          lastLogoutAt: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
+        return;
+      }
+
+      const data = attendanceSnap.data() || {};
+      const now = Date.now();
+
+      let extraMs = 0;
+      if (data.currentSessionStartAt?.toDate) {
+        const sessionStart = data.currentSessionStartAt.toDate().getTime();
+        extraMs = Math.max(0, now - sessionStart);
+      }
+
+      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
+      const newTotal = existingTotal + extraMs;
 
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
+        totalLoggedInMs: newTotal,
+        currentSessionStartAt: null,
         lastLogoutAt: serverTimestamp(),
         isOnline: false
       }, { merge: true });
@@ -479,7 +518,7 @@
 
     function renderStats() {
       const scheduled = getScheduledLeads();
-      const today = getTodayIso();
+      const today = todayIso();
 
       totalScheduledStat.textContent = String(scheduled.length);
       todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
@@ -491,7 +530,7 @@
       const type = typeFilter.value;
       const timing = timingFilter.value;
       const term = searchInput.value.trim().toLowerCase();
-      const today = getTodayIso();
+      const today = todayIso();
 
       let filtered = getScheduledLeads().filter(lead => {
         const matchesType =
