@@ -236,12 +236,15 @@
           isOnline: true
         });
       } else {
+        const existingData = attendanceSnap.data() || {};
+
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
           name: currentUserData.name || "",
           email: currentUser.email || "",
           role: currentUserData.role || "staff",
           date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
           lastLoginAt: serverTimestamp(),
           lastSeenAt: serverTimestamp(),
           isOnline: true
@@ -425,12 +428,10 @@
         if (!allowed) return;
 
         try {
-        console.log("Running recordStaffLoginFromPage...");
-        await recordStaffLoginFromPage();
-        console.log("recordStaffLoginFromPage finished");
+          await recordStaffLoginFromPage();
         } catch (attendanceError) {
-        console.error("Attendance login-from-page failed:", attendanceError);
-      }    
+          console.error("Attendance login-from-page failed:", attendanceError);
+        }
 
         await loadLeads();
         hideLoader();
