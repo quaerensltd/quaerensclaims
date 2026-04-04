@@ -22,7 +22,7 @@
     .hidden { display: none; }
     .readonly-box {
       width: 100%;
-      min-height: 260px;
+      min-height: 220px;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       padding: 1rem;
@@ -31,6 +31,14 @@
       white-space: pre-wrap;
       line-height: 1.6;
       font-size: 0.95rem;
+    }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
     }
   </style>
 </head>
@@ -47,10 +55,11 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Detail</h1>
-          <p class="text-sm text-slate-500">Processing review, payment tracking, and completion workflow</p>
+          <p class="text-sm text-slate-500">Client file, payment tracking, and processing notes</p>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
@@ -66,8 +75,8 @@
             <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
           </div>
           <div class="text-sm text-slate-500">
-            <div id="createdAtText"></div>
-            <div id="updatedAtText"></div>
+            <div id="assignmentText"></div>
+            <div id="sourceStatusText"></div>
           </div>
         </div>
       </section>
@@ -88,7 +97,7 @@
         </div>
 
         <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal Summary</h3>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal Overview</h3>
           <div class="space-y-4">
             <div>
               <span class="label">Claim Type</span>
@@ -97,6 +106,10 @@
             <div>
               <span class="label">Closer</span>
               <div class="value" id="closerText">-</div>
+            </div>
+            <div>
+              <span class="label">Assigned By</span>
+              <div class="value" id="assignedByText">-</div>
             </div>
             <div>
               <span class="label">Outcome</span>
@@ -110,69 +123,64 @@
         </div>
       </section>
 
-      <section class="grid lg:grid-cols-2 gap-6">
-        <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Payment Tracking</h3>
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Payment Tracking</h3>
 
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <label class="label" for="amountDueNow">Amount Due Now (£)</label>
-              <input id="amountDueNow" class="input" type="number" min="0" step="0.01" />
-            </div>
-            <div>
-              <label class="label" for="amountPaidNow">Amount Paid Now (£)</label>
-              <input id="amountPaidNow" class="input" type="number" min="0" step="0.01" />
-            </div>
-            <div>
-              <label class="label" for="followUpDue">Follow-Up Due (£)</label>
-              <input id="followUpDue" class="input" type="number" min="0" step="0.01" />
-            </div>
-            <div>
-              <label class="label" for="paymentStatus">Payment Status</label>
-              <select id="paymentStatus" class="input">
-                <option value="awaiting_payment">Awaiting Payment</option>
-                <option value="part_paid">Part Paid</option>
-                <option value="fully_paid">Fully Paid</option>
-              </select>
-            </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label class="label" for="amountDueNow">Amount Due Now (£)</label>
+            <input id="amountDueNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
           </div>
-
-          <div class="mt-4">
-            <label class="label" for="paymentLink">Payment Link</label>
-            <input id="paymentLink" class="input" type="text" placeholder="https://..." />
+          <div>
+            <label class="label" for="amountPaidNow">Amount Paid Now (£)</label>
+            <input id="amountPaidNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <label class="label" for="followUpDue">Follow-Up Due (£)</label>
+            <input id="followUpDue" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <label class="label" for="paymentStatus">Payment Status</label>
+            <select id="paymentStatus" class="input">
+              <option value="awaiting_payment">Awaiting Payment</option>
+              <option value="part_paid">Part Paid</option>
+              <option value="fully_paid">Fully Paid</option>
+            </select>
           </div>
         </div>
 
-        <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Processing Controls</h3>
+        <div class="mt-4">
+          <label class="label" for="paymentLink">Payment Link</label>
+          <input id="paymentLink" class="input" type="text" placeholder="https://..." />
+        </div>
 
-          <div class="space-y-4">
-            <div>
-              <label class="label" for="processingStatus">Processing Status</label>
-              <select id="processingStatus" class="input">
-                <option value="awaiting_processing">Awaiting Processing</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
+        <div class="mt-4">
+          <label class="label" for="processingNotes">Processing Notes</label>
+          <textarea id="processingNotes" class="input" rows="6" placeholder="Payment notes, documents requested, instalments, admin progress..."></textarea>
+        </div>
 
-            <div>
-              <label class="label" for="processingNotes">Processing Notes</label>
-              <textarea id="processingNotes" class="input" rows="8" placeholder="Documents requested, payment references, onboarding steps, next actions..."></textarea>
-            </div>
-
-            <div class="flex flex-col md:flex-row gap-3">
-              <button id="saveProcessingBtn" class="btn btn-primary" type="button">Save Processing File</button>
-              <button id="copyLinkBtn" class="btn btn-secondary" type="button">Copy Payment Link</button>
-              <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
-            </div>
-          </div>
+        <div class="mt-6 flex flex-col md:flex-row gap-3">
+          <button id="saveProcessingBtn" class="btn btn-primary" type="button">Save Processing Update</button>
+          <a id="openPaymentLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary text-center hidden">Open Payment Link</a>
+          <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
         </div>
       </section>
 
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
+          <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
+        </section>
+
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
+          <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
+        </section>
+      </section>
+
       <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Internal Notes Snapshot</h3>
-        <div id="notesSnapshot" class="readonly-box">No notes available.</div>
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
+        <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
       </section>
     </main>
   </div>
@@ -207,12 +215,17 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const amountDueNow = document.getElementById("amountDueNow");
+    const amountPaidNow = document.getElementById("amountPaidNow");
+    const followUpDue = document.getElementById("followUpDue");
+    const paymentStatus = document.getElementById("paymentStatus");
+    const paymentLink = document.getElementById("paymentLink");
+    const processingNotes = document.getElementById("processingNotes");
     const saveProcessingBtn = document.getElementById("saveProcessingBtn");
-    const copyLinkBtn = document.getElementById("copyLinkBtn");
     const saveMessage = document.getElementById("saveMessage");
+    const openPaymentLinkBtn = document.getElementById("openPaymentLinkBtn");
 
     let currentUser = null;
-    let currentUserData = null;
     let fileData = null;
 
     function hideLoader() {
@@ -229,14 +242,40 @@
       }
     }
 
-    function formatDate(timestamp) {
-      if (!timestamp?.toDate) return "-";
-      return timestamp.toDate().toLocaleString();
-    }
-
     function setValue(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "-";
+    }
+
+    function renderFieldGrid(containerId, data) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      const entries = Object.entries(data || {});
+      if (!entries.length) {
+        container.innerHTML = `<div class="value">No data available.</div>`;
+        return;
+      }
+
+      entries.forEach(([key, value]) => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
+          <div class="value">${value || "-"}</div>
+        `;
+        container.appendChild(wrapper);
+      });
+    }
+
+    function updatePaymentLinkButton() {
+      const link = (paymentLink.value || "").trim();
+      if (link) {
+        openPaymentLinkBtn.href = link;
+        openPaymentLinkBtn.classList.remove("hidden");
+      } else {
+        openPaymentLinkBtn.href = "#";
+        openPaymentLinkBtn.classList.add("hidden");
+      }
     }
 
     async function checkProcessingAccess(user) {
@@ -250,14 +289,13 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing" && userData.role !== "manager") {
+      if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
 
       currentUser = user;
-      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -280,10 +318,10 @@
 
       fileData = fileSnap.data();
 
-      document.getElementById("detailTitle").textContent = clientFullName(fileData);
+      document.getElementById("detailTitle").textContent = formatClaimType(fileData.claimType);
       document.getElementById("detailSubtitle").textContent = `Processing File ID: ${fileId}`;
-      document.getElementById("createdAtText").textContent = `Created: ${formatDate(fileData.createdAt)}`;
-      document.getElementById("updatedAtText").textContent = `Updated: ${formatDate(fileData.updatedAt || fileData.createdAt)}`;
+      document.getElementById("assignmentText").textContent = `Assignment ID: ${fileData.assignmentId || "-"}`;
+      document.getElementById("sourceStatusText").textContent = `Source Status: ${fileData.sourceStatus || "-"}`;
 
       setValue("client_firstName", fileData.client?.firstName);
       setValue("client_secondName", fileData.client?.secondName);
@@ -296,78 +334,54 @@
 
       setValue("claimTypeText", formatClaimType(fileData.claimType));
       setValue("closerText", fileData.closer?.name || fileData.closer?.email);
+      setValue("assignedByText", fileData.assignedBy?.name || fileData.assignedBy?.email);
       setValue("outcomeText", fileData.outcome);
       setValue("closerNotesText", fileData.closerNotes);
 
-      document.getElementById("amountDueNow").value = fileData.amountDueNow || "";
-      document.getElementById("amountPaidNow").value = fileData.amountPaidNow || "";
-      document.getElementById("followUpDue").value = fileData.followUpDue || "";
-      document.getElementById("paymentStatus").value = fileData.paymentStatus || "awaiting_payment";
-      document.getElementById("paymentLink").value = fileData.paymentLink || "";
-      document.getElementById("processingStatus").value = fileData.processingStatus || "awaiting_processing";
-      document.getElementById("processingNotes").value = fileData.processingNotes || "";
+      amountDueNow.value = fileData.amountDueNow || "";
+      amountPaidNow.value = fileData.amountPaidNow || "";
+      followUpDue.value = fileData.followUpDue || "";
+      paymentStatus.value = fileData.paymentStatus || "awaiting_payment";
+      paymentLink.value = fileData.paymentLink || "";
+      processingNotes.value = fileData.processingNotes || "";
 
-      document.getElementById("notesSnapshot").textContent =
-        [
-          fileData.closerNotes ? `Closer Notes:\n${fileData.closerNotes}` : "",
-          fileData.processingNotes ? `Processing Notes:\n${fileData.processingNotes}` : ""
-        ].filter(Boolean).join("\n\n") || "No notes available.";
+      renderFieldGrid("product1Fields", fileData.product1 || {});
+      renderFieldGrid("product2Fields", fileData.product2 || {});
 
+      document.getElementById("assessmentSummaryBox").textContent =
+        fileData.assessmentSummary || fileData.generatedAssessmentText || "No assessment summary available.";
+
+      updatePaymentLinkButton();
       hideLoader();
-    }
-
-    function clientFullName(file) {
-      const first = file.client?.firstName || "";
-      const second = file.client?.secondName || "";
-      return `${first} ${second}`.trim() || "Processing File";
     }
 
     saveProcessingBtn.addEventListener("click", async () => {
       try {
         await updateDoc(doc(db, "processingFiles", fileId), {
-          amountDueNow: Number(document.getElementById("amountDueNow").value || 0),
-          amountPaidNow: Number(document.getElementById("amountPaidNow").value || 0),
-          followUpDue: Number(document.getElementById("followUpDue").value || 0),
-          paymentStatus: document.getElementById("paymentStatus").value,
-          paymentLink: document.getElementById("paymentLink").value.trim(),
-          processingStatus: document.getElementById("processingStatus").value,
-          processingNotes: document.getElementById("processingNotes").value.trim(),
+          amountDueNow: Number(amountDueNow.value || 0),
+          amountPaidNow: Number(amountPaidNow.value || 0),
+          followUpDue: Number(followUpDue.value || 0),
+          paymentStatus: paymentStatus.value,
+          paymentLink: paymentLink.value.trim(),
+          processingNotes: processingNotes.value.trim(),
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
-            name: currentUserData.name || "",
             email: currentUser.email || ""
           }
         });
 
-        saveMessage.textContent = "Processing file saved successfully.";
+        saveMessage.textContent = "Processing file updated successfully.";
         saveMessage.classList.remove("hidden");
+        updatePaymentLinkButton();
         setTimeout(() => saveMessage.classList.add("hidden"), 3000);
-
-        await loadFile();
       } catch (error) {
-        console.error("Failed to save processing file:", error);
-        alert("Could not save processing file.");
+        console.error("Failed to update processing file:", error);
+        alert("Could not update processing file.");
       }
     });
 
-    copyLinkBtn.addEventListener("click", async () => {
-      const link = document.getElementById("paymentLink").value.trim();
-      if (!link) {
-        alert("No payment link to copy.");
-        return;
-      }
-
-      try {
-        await navigator.clipboard.writeText(link);
-        saveMessage.textContent = "Payment link copied.";
-        saveMessage.classList.remove("hidden");
-        setTimeout(() => saveMessage.classList.add("hidden"), 3000);
-      } catch (error) {
-        console.error("Copy failed:", error);
-        alert("Could not copy payment link.");
-      }
-    });
+    paymentLink.addEventListener("input", updatePaymentLinkButton);
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -393,6 +407,15 @@
       } catch (error) {
         console.error("Logout failed:", error);
         alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
       }
     });
   </script>

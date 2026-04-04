@@ -18,13 +18,21 @@
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
     .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-slate-600 font-medium">Loading processing files...</p>
+      <p class="text-slate-600 font-medium">Loading processing panel...</p>
     </div>
   </div>
 
@@ -33,10 +41,11 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Panel</h1>
-          <p class="text-sm text-slate-500">Files handed over after closed deals for processing and follow-up</p>
+          <p class="text-sm text-slate-500">All processing files from closed deals</p>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
@@ -45,45 +54,55 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-4 gap-4">
+      <section class="grid lg:grid-cols-5 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Files</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Work</div>
+          <div class="text-sm text-slate-500">Awaiting Payment</div>
           <div id="awaitingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">In Progress</div>
-          <div id="inProgressStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Part Paid</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Completed</div>
-          <div id="completedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Fully Paid</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Needs Follow-Up</div>
+          <div id="followUpStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
       </section>
 
       <section class="card p-6">
         <div class="grid md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Processing Status</label>
-            <select id="statusFilter" class="input">
-              <option value="all">All statuses</option>
-              <option value="awaiting_processing">Awaiting Processing</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
+            <select id="paymentStatusFilter" class="input">
+              <option value="all">All payment statuses</option>
+              <option value="awaiting_payment">Awaiting Payment</option>
+              <option value="part_paid">Part Paid</option>
+              <option value="fully_paid">Fully Paid</option>
             </select>
           </div>
 
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
-            <input id="claimTypeSearch" type="text" class="input" placeholder="Search claim type..." />
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+              <option value="solar">Solar Panel Claims</option>
+              <option value="mortgage">Mortgage Review</option>
+              <option value="survey">Survey Review</option>
+              <option value="newbuild">New Build Issues</option>
+            </select>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Client Search</label>
-            <input id="clientSearch" type="text" class="input" placeholder="Client, phone, email..." />
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, closer..." />
           </div>
 
           <div class="flex items-end">
@@ -107,13 +126,14 @@
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Closer</th>
-                <th class="text-left p-3">Outcome</th>
-                <th class="text-left p-3">Status</th>
-                <th class="text-left p-3">Updated</th>
+                <th class="text-left p-3">Due Now</th>
+                <th class="text-left p-3">Paid</th>
+                <th class="text-left p-3">Follow-Up</th>
+                <th class="text-left p-3">Payment Status</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
-            <tbody id="processingBody"></tbody>
+            <tbody id="filesBody"></tbody>
           </table>
         </div>
       </section>
@@ -147,17 +167,12 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-    const statusFilter = document.getElementById("statusFilter");
-    const claimTypeSearch = document.getElementById("claimTypeSearch");
-    const clientSearch = document.getElementById("clientSearch");
+    const paymentStatusFilter = document.getElementById("paymentStatusFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
-    const processingBody = document.getElementById("processingBody");
+    const filesBody = document.getElementById("filesBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
-    const totalFilesStat = document.getElementById("totalFilesStat");
-    const awaitingStat = document.getElementById("awaitingStat");
-    const inProgressStat = document.getElementById("inProgressStat");
-    const completedStat = document.getElementById("completedStat");
 
     let allFiles = [];
 
@@ -165,9 +180,9 @@
       authLoader.style.display = "none";
     }
 
-    function formatDate(timestamp) {
-      if (!timestamp?.toDate) return "-";
-      return timestamp.toDate().toLocaleString();
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
     function formatClaimType(type) {
@@ -180,25 +195,20 @@
       }
     }
 
-    function formatStatus(status) {
-      switch (status) {
-        case "awaiting_processing": return "Awaiting Processing";
-        case "in_progress": return "In Progress";
-        case "completed": return "Completed";
-        default: return status || "Awaiting Processing";
-      }
-    }
-
-    function badgeClass(status) {
-      if (status === "completed") return "bg-green-100 text-green-800";
-      if (status === "in_progress") return "bg-blue-100 text-blue-800";
-      return "bg-amber-100 text-amber-800";
+    function paymentStatusLabel(status) {
+      if (status === "part_paid") return "Part Paid";
+      if (status === "fully_paid") return "Fully Paid";
+      return "Awaiting Payment";
     }
 
     function clientName(file) {
       const first = file.client?.firstName || "";
       const second = file.client?.secondName || "";
       return `${first} ${second}`.trim() || "-";
+    }
+
+    function closerName(file) {
+      return file.closer?.name || file.closer?.email || "-";
     }
 
     async function checkProcessingAccess(user) {
@@ -212,7 +222,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing" && userData.role !== "manager") {
+      if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -223,73 +233,77 @@
     }
 
     async function loadFiles() {
-      const snap = await getDocs(collection(db, "processingFiles"));
-      allFiles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      allFiles.sort((a, b) => {
-        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0;
-        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0;
-        return bTime - aTime;
-      });
-
-      renderStats();
-      renderFiles();
+      try {
+        const snapshot = await getDocs(collection(db, "processingFiles"));
+        allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderStats();
+        renderFiles();
+      } catch (error) {
+        console.error("Failed to load processing files:", error);
+        resultsSummary.textContent = "Could not load processing files.";
+      }
     }
 
     function renderStats() {
-      totalFilesStat.textContent = String(allFiles.length);
-      awaitingStat.textContent = String(allFiles.filter(f => (f.processingStatus || "awaiting_processing") === "awaiting_processing").length);
-      inProgressStat.textContent = String(allFiles.filter(f => f.processingStatus === "in_progress").length);
-      completedStat.textContent = String(allFiles.filter(f => f.processingStatus === "completed").length);
+      document.getElementById("totalFilesStat").textContent = String(allFiles.length);
+      document.getElementById("awaitingStat").textContent = String(allFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length);
+      document.getElementById("partPaidStat").textContent = String(allFiles.filter(f => f.paymentStatus === "part_paid").length);
+      document.getElementById("fullyPaidStat").textContent = String(allFiles.filter(f => f.paymentStatus === "fully_paid").length);
+      document.getElementById("followUpStat").textContent = String(allFiles.filter(f => Number(f.followUpDue || 0) > 0).length);
+    }
+
+    function getFilteredFiles() {
+      const paymentFilter = paymentStatusFilter.value;
+      const claimFilter = claimTypeFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+
+      return allFiles.filter(file => {
+        const matchesPayment = paymentFilter === "all" || (file.paymentStatus || "awaiting_payment") === paymentFilter;
+        const matchesClaim = claimFilter === "all" || file.claimType === claimFilter;
+
+        const haystack = `
+          ${clientName(file)}
+          ${file.client?.email || ""}
+          ${closerName(file)}
+          ${file.claimType || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesPayment && matchesClaim && matchesSearch;
+      });
     }
 
     function renderFiles() {
-      const status = statusFilter.value;
-      const claimTerm = claimTypeSearch.value.trim().toLowerCase();
-      const clientTerm = clientSearch.value.trim().toLowerCase();
-
-      const filtered = allFiles.filter(file => {
-        const matchesStatus = status === "all" || (file.processingStatus || "awaiting_processing") === status;
-        const matchesClaim = !claimTerm || (file.claimType || "").toLowerCase().includes(claimTerm);
-        const haystack = `${clientName(file)} ${(file.client?.email || "")} ${(file.client?.mobile || "")} ${(file.client?.landline || "")}`.toLowerCase();
-        const matchesClient = !clientTerm || haystack.includes(clientTerm);
-        return matchesStatus && matchesClaim && matchesClient;
-      });
-
-      processingBody.innerHTML = "";
+      const filtered = getFilteredFiles();
+      filesBody.innerHTML = "";
 
       if (!filtered.length) {
-        processingBody.innerHTML = `
+        filesBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No processing files found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No processing files found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(file => {
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
-
-          const currentStatus = file.processingStatus || "awaiting_processing";
-
           row.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${clientName(file)}</div>
               <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
             </td>
             <td class="p-3">${formatClaimType(file.claimType)}</td>
-            <td class="p-3">${file.closer?.name || file.closer?.email || "-"}</td>
-            <td class="p-3">${file.outcome || "-"}</td>
-            <td class="p-3">
-              <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(currentStatus)}">
-                ${formatStatus(currentStatus)}
-              </span>
-            </td>
-            <td class="p-3">${formatDate(file.updatedAt || file.createdAt)}</td>
+            <td class="p-3">${closerName(file)}</td>
+            <td class="p-3">${money(file.amountDueNow)}</td>
+            <td class="p-3">${money(file.amountPaidNow)}</td>
+            <td class="p-3">${money(file.followUpDue)}</td>
+            <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
             <td class="p-3">
               <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
             </td>
           `;
-          processingBody.appendChild(row);
+          filesBody.appendChild(row);
         });
       }
 
@@ -309,7 +323,7 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load processing files.");
+        alert("Could not load processing panel.");
         window.location.href = "/login.html";
       }
     });
@@ -324,10 +338,19 @@
       }
     });
 
-    statusFilter.addEventListener("change", renderFiles);
-    claimTypeSearch.addEventListener("input", renderFiles);
-    clientSearch.addEventListener("input", renderFiles);
+    paymentStatusFilter.addEventListener("change", renderFiles);
+    claimTypeFilter.addEventListener("change", renderFiles);
+    searchInput.addEventListener("input", renderFiles);
     refreshBtn.addEventListener("click", loadFiles);
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
   </script>
 </body>
 </html>

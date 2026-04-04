@@ -32,6 +32,14 @@
       line-height: 1.6;
       font-size: 0.95rem;
     }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -396,7 +404,7 @@
         paymentStatus,
         paymentLink: paymentLink.value.trim(),
         processingNotes: processingNotes.value.trim(),
-        sourceStatus: statusSelect.value || "",
+        sourceStatus: outcomeSelect.value === "Closed Deal" ? "Closed" : (statusSelect.value || ""),
         updatedAt: serverTimestamp(),
         updatedBy: {
           uid: currentUser.uid,
@@ -424,7 +432,7 @@
     saveCloserBtn.addEventListener("click", async () => {
       try {
         const closerPayload = {
-          status: statusSelect.value,
+          status: outcomeSelect.value === "Closed Deal" ? "Closed" : statusSelect.value,
           outcome: outcomeSelect.value,
           closerNotes: closerNotes.value,
           amountDueNow: Number(amountDueNow.value || 0),
@@ -481,6 +489,15 @@
       } catch (error) {
         console.error("Logout failed:", error);
         alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
       }
     });
   </script>

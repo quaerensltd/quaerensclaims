@@ -17,6 +17,14 @@
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
     .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -32,7 +40,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
-          <p class="text-sm text-slate-500">Overview of processing files, payments, and completion status</p>
+          <p class="text-sm text-slate-500">Processing workload, payment tracking, and file status overview</p>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
@@ -51,24 +59,24 @@
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Processing</div>
-          <div id="awaitingProcessingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">In Progress</div>
-          <div id="inProgressStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
           <div class="text-sm text-slate-500">Awaiting Payment</div>
-          <div id="awaitingPaymentStat" class="text-3xl font-extrabold text-orange-600 mt-1">0</div>
+          <div id="awaitingPaymentStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Part Paid</div>
-          <div id="partPaidStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Fully Paid</div>
           <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Needs Follow-Up</div>
+          <div id="followUpStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Payment Link</div>
+          <div id="paymentLinkStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
       </section>
 
@@ -76,13 +84,13 @@
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
-            <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Files</a>
-            <a href="/processing-payments.html" class="btn btn-primary text-center">Open Payments Tracker</a>
+            <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Panel</a>
+            <a href="/processing-payments.html" class="btn btn-primary text-center">Open Payments</a>
           </div>
         </section>
 
         <section class="card p-6">
-          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Money Overview</h2>
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Money Snapshot</h2>
           <div class="grid md:grid-cols-3 gap-4">
             <div>
               <div class="text-sm text-slate-500">Due Now</div>
@@ -105,7 +113,7 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <h2 class="text-xl font-extrabold text-blue-900">Recent Processing Files</h2>
-              <p class="text-sm text-slate-500 mt-1">Latest updated files</p>
+              <p class="text-sm text-slate-500 mt-1">Latest files received from closers</p>
             </div>
           </div>
 
@@ -114,8 +122,8 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
-                  <th class="text-left p-3">Status</th>
-                  <th class="text-left p-3">Updated</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Payment Status</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -128,7 +136,7 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <h2 class="text-xl font-extrabold text-blue-900">Payment Priority</h2>
-              <p class="text-sm text-slate-500 mt-1">Files that still need payment attention</p>
+              <p class="text-sm text-slate-500 mt-1">Files needing payment attention</p>
             </div>
           </div>
 
@@ -137,8 +145,9 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
-                  <th class="text-left p-3">Payment Status</th>
                   <th class="text-left p-3">Due Now</th>
+                  <th class="text-left p-3">Paid</th>
+                  <th class="text-left p-3">Follow-Up</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -178,6 +187,7 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
 
+    let currentUser = null;
     let allFiles = [];
 
     function hideLoader() {
@@ -189,9 +199,14 @@
       return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
-    function formatDate(timestamp) {
-      if (!timestamp?.toDate) return "-";
-      return timestamp.toDate().toLocaleString();
+    function formatClaimType(type) {
+      switch (type) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
     }
 
     function clientName(file) {
@@ -200,22 +215,10 @@
       return `${first} ${second}`.trim() || "-";
     }
 
-    function formatProcessingStatus(status) {
-      switch (status) {
-        case "awaiting_processing": return "Awaiting Processing";
-        case "in_progress": return "In Progress";
-        case "completed": return "Completed";
-        default: return status || "Awaiting Processing";
-      }
-    }
-
-    function formatPaymentStatus(status) {
-      switch (status) {
-        case "awaiting_payment": return "Awaiting Payment";
-        case "part_paid": return "Part Paid";
-        case "fully_paid": return "Fully Paid";
-        default: return status || "Awaiting Payment";
-      }
+    function paymentStatusLabel(status) {
+      if (status === "part_paid") return "Part Paid";
+      if (status === "fully_paid") return "Fully Paid";
+      return "Awaiting Payment";
     }
 
     async function checkProcessingAccess(user) {
@@ -229,25 +232,20 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing" && userData.role !== "manager") {
+      if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
 
+      currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadFiles() {
-      const snap = await getDocs(collection(db, "processingFiles"));
-      allFiles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      allFiles.sort((a, b) => {
-        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-        return bTime - aTime;
-      });
+      const snapshot = await getDocs(collection(db, "processingFiles"));
+      allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       renderStats();
       renderRecentFiles();
@@ -255,23 +253,22 @@
     }
 
     function renderStats() {
-      const total = allFiles.length;
-      const awaitingProcessing = allFiles.filter(f => (f.processingStatus || "awaiting_processing") === "awaiting_processing").length;
-      const inProgress = allFiles.filter(f => f.processingStatus === "in_progress").length;
-      const awaitingPayment = allFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length;
+      const awaiting = allFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length;
       const partPaid = allFiles.filter(f => f.paymentStatus === "part_paid").length;
       const fullyPaid = allFiles.filter(f => f.paymentStatus === "fully_paid").length;
+      const followUps = allFiles.filter(f => Number(f.followUpDue || 0) > 0).length;
+      const withLinks = allFiles.filter(f => (f.paymentLink || "").trim()).length;
 
       const dueNow = allFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
       const paidNow = allFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
       const followUp = allFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
 
-      document.getElementById("totalFilesStat").textContent = String(total);
-      document.getElementById("awaitingProcessingStat").textContent = String(awaitingProcessing);
-      document.getElementById("inProgressStat").textContent = String(inProgress);
-      document.getElementById("awaitingPaymentStat").textContent = String(awaitingPayment);
+      document.getElementById("totalFilesStat").textContent = String(allFiles.length);
+      document.getElementById("awaitingPaymentStat").textContent = String(awaiting);
       document.getElementById("partPaidStat").textContent = String(partPaid);
       document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
+      document.getElementById("followUpStat").textContent = String(followUps);
+      document.getElementById("paymentLinkStat").textContent = String(withLinks);
 
       document.getElementById("dueNowTotal").textContent = money(dueNow);
       document.getElementById("paidNowTotal").textContent = money(paidNow);
@@ -282,7 +279,13 @@
       const body = document.getElementById("recentFilesBody");
       body.innerHTML = "";
 
-      const recent = allFiles.slice(0, 8);
+      const recent = [...allFiles]
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+          const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+          return bTime - aTime;
+        })
+        .slice(0, 8);
 
       if (!recent.length) {
         body.innerHTML = `
@@ -301,8 +304,8 @@
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
             <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
           </td>
-          <td class="p-3">${formatProcessingStatus(file.processingStatus)}</td>
-          <td class="p-3">${formatDate(file.updatedAt || file.createdAt)}</td>
+          <td class="p-3">${formatClaimType(file.claimType)}</td>
+          <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
           <td class="p-3">
             <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
@@ -315,15 +318,15 @@
       const body = document.getElementById("priorityPaymentsBody");
       body.innerHTML = "";
 
-      const priority = allFiles
-        .filter(file => (file.paymentStatus || "awaiting_payment") !== "fully_paid")
+      const priority = [...allFiles]
+        .filter(f => (f.paymentStatus || "awaiting_payment") !== "fully_paid" || Number(f.followUpDue || 0) > 0)
         .sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0))
         .slice(0, 8);
 
       if (!priority.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="4" class="p-6 text-center text-slate-500">No payment priorities found.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No payment priority files found.</td>
           </tr>
         `;
         return;
@@ -335,12 +338,13 @@
         row.innerHTML = `
           <td class="p-3">
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
-            <div class="text-xs text-slate-500">${file.closer?.name || file.closer?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${paymentStatusLabel(file.paymentStatus)}</div>
           </td>
-          <td class="p-3">${formatPaymentStatus(file.paymentStatus)}</td>
           <td class="p-3">${money(file.amountDueNow)}</td>
+          <td class="p-3">${money(file.amountPaidNow)}</td>
+          <td class="p-3">${money(file.followUpDue)}</td>
           <td class="p-3">
-            <a href="/processing-payments.html" class="text-blue-600 font-semibold hover:underline">Open Payments</a>
+            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -372,6 +376,15 @@
       } catch (error) {
         console.error(error);
         alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
       }
     });
   </script>
