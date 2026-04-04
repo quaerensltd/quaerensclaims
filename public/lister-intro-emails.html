@@ -269,6 +269,7 @@
     let currentUserData = null;
     let allLeads = [];
     let selectedLead = null;
+    let attendanceHeartbeatInterval = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -286,8 +287,72 @@
     }
 
     function getTodayAttendanceId(uid) {
-      const today = new Date().toISOString().slice(0, 10);
-      return `${uid}_${today}`;
+      return `${uid}_${getTodayIso()}`;
+    }
+
+    async function recordStaffLoginFromPage() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const today = getTodayIso();
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        });
+      } else {
+        const existingData = attendanceSnap.data() || {};
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        }, { merge: true });
+      }
+    }
+
+    async function updateStaffHeartbeat() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        name: currentUserData.name || "",
+        email: currentUser.email || "",
+        role: currentUserData.role || "staff",
+        date: getTodayIso(),
+        lastSeenAt: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    }
+
+    function startAttendanceHeartbeat() {
+      if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
+
+      attendanceHeartbeatInterval = setInterval(async () => {
+        try {
+          await updateStaffHeartbeat();
+        } catch (error) {
+          console.error("Attendance heartbeat failed:", error);
+        }
+      }, 2 * 60 * 1000);
     }
 
     async function recordStaffLogout() {
@@ -661,6 +726,14 @@ Quaerens`;
       try {
         const allowed = await checkListerAccess(user);
         if (!allowed) return;
+
+        try {
+          await recordStaffLoginFromPage();
+          startAttendanceHeartbeat();
+        } catch (attendanceError) {
+          console.error("Attendance login-from-page failed:", attendanceError);
+        }
+
         await loadLeads();
         hideLoader();
       } catch (error) {
@@ -672,12 +745,24 @@ Quaerens`;
 
     logoutBtn.addEventListener("click", async () => {
       try {
-        await recordStaffLogout();
+        try {
+          await recordStaffLogout();
+        } catch (attendanceError) {
+          console.error("Attendance logout failed:", attendanceError);
+        }
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
         console.error(error);
         alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", async () => {
+      try {
+        await recordStaffLogout();
+      } catch (error) {
+        console.error("Attendance beforeunload failed:", error);
       }
     });
 
