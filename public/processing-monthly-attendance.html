@@ -469,10 +469,18 @@
     }
 
     function renderAll() {
-      const monthDates = getMonthDates(monthInput.value);
+      const monthValue = monthInput.value;
       const selectedStaff = staffFilter.value;
       const selectedStatus = statusFilter.value;
 
+      if (!monthValue) {
+        filteredRows = [];
+        renderStats();
+        renderTable();
+        return;
+      }
+
+      const monthDates = getMonthDates(monthValue);
       filteredRows = [];
 
       staffUsers.forEach(user => {
@@ -505,14 +513,17 @@
     }
 
     function renderStats() {
-      const selectedStaffCount = staffFilter.value === "all" ? staffUsers.length : 1;
+      const selectedStaffCount = staffFilter.value === "all"
+        ? staffUsers.length
+        : (staffFilter.value ? 1 : 0);
 
-      const presentDays = filteredRows.filter(r => r.rec).length;
+      const presentDays = filteredRows.filter(r => !!r.rec).length;
       const onTimeDays = filteredRows.filter(r => r.dayStatus === "on_time").length;
       const lateDays = filteredRows.filter(r => r.dayStatus === "late").length;
       const absentDays = filteredRows.filter(r => r.dayStatus === "absent").length;
       const totalMs = filteredRows.reduce((sum, r) => sum + r.workedMs, 0);
       const onlineNow = filteredRows.filter(r => r.rec && r.rec.isOnline && !isStaleOnline(r.rec)).length;
+      const actualRecords = filteredRows.filter(r => !!r.rec).length;
 
       document.getElementById("staffCountStat").textContent = String(selectedStaffCount);
       document.getElementById("presentDaysStat").textContent = String(presentDays);
@@ -520,13 +531,13 @@
       document.getElementById("lateDaysStat").textContent = String(lateDays);
       document.getElementById("absentDaysStat").textContent = String(absentDays);
       document.getElementById("totalHoursStat").textContent = formatDuration(totalMs);
-      document.getElementById("recordsCountStat").textContent = String(filteredRows.filter(r => r.rec).length);
+      document.getElementById("recordsCountStat").textContent = String(actualRecords);
+
       document.getElementById("snapshotMonth").textContent = monthInput.value || "-";
       document.getElementById("snapshotStaff").textContent = String(selectedStaffCount);
       document.getElementById("snapshotPresent").textContent = String(presentDays);
       document.getElementById("snapshotLate").textContent = String(lateDays);
       document.getElementById("snapshotAbsent").textContent = String(absentDays);
-
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
     }
 
@@ -646,7 +657,7 @@
         await loadBaseData();
         hideLoader();
       } catch (error) {
-        console.error(error);
+        console.error("Monthly attendance load error:", error);
         alert("Could not load monthly attendance.");
         window.location.href = "/login.html";
       }
