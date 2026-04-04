@@ -88,7 +88,7 @@
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-slate-600 font-medium">Loading manager dashboard...</p>
+      <p class="text-slate-600 font-medium">Loading staff attendance dashboard...</p>
     </div>
   </div>
 
@@ -96,15 +96,13 @@
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Dashboard</h1>
-          <p class="text-sm text-slate-500">Overview of staff, files, and live attendance</p>
+          <h1 class="text-2xl font-extrabold text-blue-900">Staff Attendance Dashboard</h1>
+          <p class="text-sm text-slate-500">Overview of staff attendance, status, and work time</p>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
-          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
-          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
+          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -150,9 +148,7 @@
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
-            <a href="/manager-panel.html" class="btn btn-primary text-center">Open Manager Panel</a>
-            <a href="/manager-leads-overview.html" class="btn btn-primary text-center">Open Leads Overview</a>
-            <a href="/manager-intro-emails.html" class="btn btn-primary text-center">Open Intro Emails</a>
+            <a href="/manager-dashboard.html" class="btn btn-primary text-center">Daily Attendance</a>
             <a href="/manager-weekly-attendance.html" class="btn btn-primary text-center">Weekly Attendance</a>
           </div>
         </section>
@@ -279,7 +275,6 @@
     const LATE_CUTOFF_HOUR = 10;
     const LATE_CUTOFF_MINUTE = 0;
 
-    let currentUser = null;
     let attendanceDocs = [];
     let leadAssignments = [];
     let userDocs = [];
@@ -288,10 +283,6 @@
 
     function hideLoader() {
       authLoader.style.display = "none";
-    }
-
-    function todayIso() {
-      return new Date().toISOString().slice(0, 10);
     }
 
     function formatTimestamp(ts) {
@@ -336,7 +327,7 @@
       return now - lastSeen > 10 * 60 * 1000;
     }
 
-    function statusBadge(isOnline) {
+    function liveStatusBadge(isOnline) {
       return isOnline
         ? `<span class="badge-online">● Online</span>`
         : `<span class="badge-offline">● Offline</span>`;
@@ -351,57 +342,46 @@
     }
 
     function getLateCutoffForToday() {
-      const now = new Date();
-      now.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
-      return now;
+      const cutoff = new Date();
+      cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
+      return cutoff;
     }
 
     function getTodayStatusForUser(userId) {
       const attendanceMap = todayAttendanceMap();
       const rec = attendanceMap[userId];
 
-      if (!rec || !rec.firstLoginAt?.toDate) {
-        return "absent";
-      }
+      if (!rec || !rec.firstLoginAt?.toDate) return "absent";
 
       const firstLogin = rec.firstLoginAt.toDate();
       const cutoff = getLateCutoffForToday();
 
-      if (firstLogin.getTime() > cutoff.getTime()) {
-        return "late";
-      }
-
-      return "on_time";
+      return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
     function todayStatusBadge(status) {
-      if (status === "on_time") {
-        return `<span class="badge-ontime">● On Time</span>`;
-      }
-      if (status === "late") {
-        return `<span class="badge-late">● Late</span>`;
-      }
+      if (status === "on_time") return `<span class="badge-ontime">● On Time</span>`;
+      if (status === "late") return `<span class="badge-late">● Late</span>`;
       return `<span class="badge-absent">● Absent</span>`;
     }
 
-    async function checkManagerAccess(user) {
+    async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        alert("No manager profile found.");
+        alert("No user profile found.");
         window.location.href = "/login.html";
         return false;
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "manager") {
+      if (userData.role !== "manager" && userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
 
-      currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -417,7 +397,7 @@
           getDocs(collection(db, "users"))
         ]);
 
-        const today = todayIso();
+        const today = new Date().toISOString().slice(0, 10);
 
         attendanceDocs = attendanceSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
@@ -493,8 +473,7 @@
 
       staffUsers.forEach(user => {
         const item = attendanceMap[user.id] || null;
-        const status = getTodayStatusForUser(user.id);
-
+        const todayStatus = getTodayStatusForUser(user.id);
         const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
         const workedMs = item ? getLiveWorkedMs(item) : 0;
 
@@ -510,13 +489,13 @@
           <td class="p-3">${item ? formatTimestamp(item.lastSeenAt) : "-"}</td>
           <td class="p-3">${item ? formatTimestamp(item.lastLogoutAt) : "-"}</td>
           <td class="p-3 font-semibold text-blue-900">${formatDuration(workedMs)}</td>
-          <td class="p-3">${todayStatusBadge(status)}</td>
-          <td class="p-3">${statusBadge(trulyOnline)}</td>
+          <td class="p-3">${todayStatusBadge(todayStatus)}</td>
+          <td class="p-3">${liveStatusBadge(trulyOnline)}</td>
         `;
         attendanceBody.appendChild(row);
       });
 
-      attendanceSummary.textContent = `${staffUsers.length} staff member(s) shown for today. Late cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")}.`;
+      attendanceSummary.textContent = `${staffUsers.length} staff member(s) shown for today. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
     }
 
     function renderLeadSummary() {
@@ -568,9 +547,7 @@
     }
 
     function startAutoRefresh() {
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-      }
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
 
       autoRefreshInterval = setInterval(async () => {
         try {
@@ -588,14 +565,14 @@
       }
 
       try {
-        const allowed = await checkManagerAccess(user);
+        const allowed = await checkAccess(user);
         if (!allowed) return;
         await loadDashboardData(true);
         startAutoRefresh();
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load manager dashboard.");
+        alert("Could not load staff attendance dashboard.");
         window.location.href = "/login.html";
       }
     });

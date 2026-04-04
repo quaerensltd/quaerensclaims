@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manager Weekly Attendance | Quaerens</title>
+  <title>Staff Weekly Attendance | Quaerens</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,15 +112,12 @@
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Manager Weekly Attendance</h1>
+          <h1 class="text-2xl font-extrabold text-blue-900">Staff Weekly Attendance</h1>
           <p class="text-sm text-slate-500">Weekly attendance overview for staff activity and login history</p>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
-          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
-          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
@@ -342,7 +339,7 @@
     }
 
     function isStaleOnline(docData) {
-      if (!docData.isOnline || !docData.lastSeenAt?.toDate) return false;
+      if (!docData?.isOnline || !docData.lastSeenAt?.toDate) return false;
       const lastSeen = docData.lastSeenAt.toDate().getTime();
       const now = Date.now();
       return now - lastSeen > 10 * 60 * 1000;
@@ -390,18 +387,18 @@
       return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
-    async function checkManagerAccess(user) {
+    async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        alert("No manager profile found.");
+        alert("No user profile found.");
         window.location.href = "/login.html";
         return false;
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "manager") {
+      if (userData.role !== "manager" && userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -581,7 +578,7 @@
           weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
         });
 
-      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}. Late cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")}.`;
+      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
     }
 
     function renderDailyView() {
@@ -671,7 +668,7 @@
       }
 
       try {
-        const allowed = await checkManagerAccess(user);
+        const allowed = await checkAccess(user);
         if (!allowed) return;
         setDefaultWeekStart();
         await loadBaseData(true);
@@ -679,7 +676,7 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load weekly attendance.");
+        alert("Could not load staff weekly attendance.");
         window.location.href = "/login.html";
       }
     });
