@@ -65,6 +65,39 @@
       font-weight: 700;
       font-size: 0.8rem;
     }
+    .badge-ontime {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-late {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-absent {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -95,7 +128,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Staff Count</div>
           <div id="staffCountStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -109,12 +142,24 @@
           <div id="presentDaysStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
         <div class="card p-5">
+          <div class="text-sm text-slate-500">Late Days</div>
+          <div id="lateDaysStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Absent Days</div>
+          <div id="absentDaysStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
           <div class="text-sm text-slate-500">Missing Days</div>
-          <div id="missingDaysStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+          <div id="missingDaysStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Online Right Now</div>
-          <div id="onlineNowStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div id="onlineNowStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">On Time Days</div>
+          <div id="onTimeDaysStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
         </div>
       </section>
 
@@ -173,7 +218,8 @@
                 <th class="text-left p-3">Last Seen</th>
                 <th class="text-left p-3">Last Logout</th>
                 <th class="text-left p-3">Logged In</th>
-                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Day Status</th>
+                <th class="text-left p-3">Live Status</th>
               </tr>
             </thead>
             <tbody id="dailyAttendanceBody"></tbody>
@@ -222,6 +268,9 @@
     const dailyAttendanceBody = document.getElementById("dailyAttendanceBody");
     const summaryViewWrap = document.getElementById("summaryViewWrap");
     const dailyViewWrap = document.getElementById("dailyViewWrap");
+
+    const LATE_CUTOFF_HOUR = 9;
+    const LATE_CUTOFF_MINUTE = 0;
 
     let staffUsers = [];
     let attendanceDocs = [];
@@ -299,15 +348,18 @@
       return now - lastSeen > 10 * 60 * 1000;
     }
 
-    function statusBadge(docData) {
-      if (!docData) {
-        return `<span class="badge-missing">● No Record</span>`;
-      }
-
+    function liveStatusBadge(docData) {
+      if (!docData) return `<span class="badge-missing">● No Record</span>`;
       const online = docData.isOnline && !isStaleOnline(docData);
       return online
         ? `<span class="badge-online">● Online</span>`
         : `<span class="badge-offline">● Offline</span>`;
+    }
+
+    function dayStatusBadge(status) {
+      if (status === "on_time") return `<span class="badge-ontime">● On Time</span>`;
+      if (status === "late") return `<span class="badge-late">● Late</span>`;
+      return `<span class="badge-absent">● Absent</span>`;
     }
 
     function getWorkedMs(docData) {
@@ -326,6 +378,16 @@
       }
 
       return baseMs;
+    }
+
+    function getDayStatus(rec, dateStr) {
+      if (!rec || !rec.firstLoginAt?.toDate) return "absent";
+
+      const firstLogin = rec.firstLoginAt.toDate();
+      const cutoff = new Date(`${dateStr}T00:00:00`);
+      cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
+
+      return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
     async function checkManagerAccess(user) {
@@ -415,16 +477,25 @@
 
       let recordCount = 0;
       let presentDays = 0;
+      let lateDays = 0;
+      let absentDays = 0;
       let missingDays = 0;
       let onlineNow = 0;
+      let onTimeDays = 0;
 
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
+
           if (rec) {
             recordCount += 1;
             presentDays += 1;
+
+            const status = getDayStatus(rec, dateStr);
+            if (status === "late") lateDays += 1;
+            if (status === "on_time") onTimeDays += 1;
           } else {
+            absentDays += 1;
             missingDays += 1;
           }
         });
@@ -438,8 +509,11 @@
       document.getElementById("staffCountStat").textContent = String(filteredStaff.length);
       document.getElementById("recordsCountStat").textContent = String(recordCount);
       document.getElementById("presentDaysStat").textContent = String(presentDays);
+      document.getElementById("lateDaysStat").textContent = String(lateDays);
+      document.getElementById("absentDaysStat").textContent = String(absentDays);
       document.getElementById("missingDaysStat").textContent = String(missingDays);
       document.getElementById("onlineNowStat").textContent = String(onlineNow);
+      document.getElementById("onTimeDaysStat").textContent = String(onTimeDays);
     }
 
     function renderWeeklySummary() {
@@ -479,13 +553,15 @@
           currentWeekDates.forEach(dateStr => {
             const rec = getAttendanceFor(user.id, dateStr);
             const workedMs = getWorkedMs(rec);
+            const dayStatus = getDayStatus(rec, dateStr);
             weeklyMs += workedMs;
 
             if (rec) {
               rowHtml += `
                 <td class="p-3">
                   <div class="font-semibold text-slate-800">${formatDuration(workedMs)}</div>
-                  <div class="mt-2">${statusBadge(rec)}</div>
+                  <div class="mt-2">${dayStatusBadge(dayStatus)}</div>
+                  <div class="mt-2">${liveStatusBadge(rec)}</div>
                   <div class="text-xs text-slate-500 mt-2">First: ${formatTimestamp(rec.firstLoginAt)}</div>
                   <div class="text-xs text-slate-500">Last: ${formatTimestamp(rec.lastLogoutAt || rec.lastSeenAt || rec.lastLoginAt)}</div>
                 </td>
@@ -494,6 +570,7 @@
               rowHtml += `
                 <td class="p-3">
                   <div class="font-semibold text-slate-800">0m</div>
+                  <div class="mt-2">${dayStatusBadge("absent")}</div>
                   <div class="mt-2"><span class="badge-missing">● No Record</span></div>
                 </td>
               `;
@@ -504,7 +581,7 @@
           weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
         });
 
-      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}.`;
+      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}. Late cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")}.`;
     }
 
     function renderDailyView() {
@@ -533,7 +610,7 @@
       if (!rows.length) {
         dailyAttendanceBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No attendance rows found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No attendance rows found.</td>
           </tr>
         `;
         return;
@@ -542,6 +619,7 @@
       rows.forEach(item => {
         const rec = item.rec;
         const workedMs = getWorkedMs(rec);
+        const dayStatus = getDayStatus(rec, item.date);
 
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
@@ -556,7 +634,8 @@
           <td class="p-3">${rec ? formatTimestamp(rec.lastSeenAt) : "-"}</td>
           <td class="p-3">${rec ? formatTimestamp(rec.lastLogoutAt) : "-"}</td>
           <td class="p-3 font-semibold text-blue-900">${formatDuration(workedMs)}</td>
-          <td class="p-3">${rec ? statusBadge(rec) : `<span class="badge-missing">● No Record</span>`}</td>
+          <td class="p-3">${dayStatusBadge(dayStatus)}</td>
+          <td class="p-3">${liveStatusBadge(rec)}</td>
         `;
         dailyAttendanceBody.appendChild(row);
       });
@@ -574,9 +653,7 @@
     }
 
     function startAutoRefresh() {
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-      }
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
 
       autoRefreshInterval = setInterval(async () => {
         try {
@@ -622,9 +699,7 @@
 
     logoutBtn.addEventListener("click", async () => {
       try {
-        if (autoRefreshInterval) {
-          clearInterval(autoRefreshInterval);
-        }
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
@@ -634,9 +709,7 @@
     });
 
     window.addEventListener("beforeunload", () => {
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-      }
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     });
 
     const currentPath = window.location.pathname.split("/").pop();

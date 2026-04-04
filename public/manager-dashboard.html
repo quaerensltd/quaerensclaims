@@ -16,6 +16,7 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+
     .badge-online {
       display: inline-flex;
       align-items: center;
@@ -38,6 +39,40 @@
       font-weight: 700;
       font-size: 0.8rem;
     }
+    .badge-ontime {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-late {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-absent {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -76,7 +111,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-6 gap-4">
+      <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Staff</div>
           <div id="totalStaffStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -90,8 +125,16 @@
           <div id="loggedInTodayStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Leads</div>
-          <div id="totalLeadsStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">On Time</div>
+          <div id="onTimeStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Late</div>
+          <div id="lateStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Absent</div>
+          <div id="absentStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Callbacks Pending</div>
@@ -126,6 +169,14 @@
               <span id="snapshotAttendance" class="font-extrabold text-indigo-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Late starters today</span>
+              <span id="snapshotLate" class="font-extrabold text-amber-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Absent today</span>
+              <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <span class="text-slate-600">Callbacks pending</span>
               <span id="snapshotCallbacks" class="font-extrabold text-amber-600">0</span>
             </div>
@@ -157,7 +208,8 @@
                 <th class="text-left p-3">Last Seen</th>
                 <th class="text-left p-3">Last Logout</th>
                 <th class="text-left p-3">Logged In Today</th>
-                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Today Status</th>
+                <th class="text-left p-3">Live Status</th>
               </tr>
             </thead>
             <tbody id="attendanceBody"></tbody>
@@ -224,6 +276,9 @@
     const leadSummaryBody = document.getElementById("leadSummaryBody");
     const autoRefreshStatus = document.getElementById("autoRefreshStatus");
 
+    const LATE_CUTOFF_HOUR = 9;
+    const LATE_CUTOFF_MINUTE = 0;
+
     let currentUser = null;
     let attendanceDocs = [];
     let leadAssignments = [];
@@ -274,17 +329,59 @@
       return baseMs;
     }
 
+    function isStaleOnline(docData) {
+      if (!docData.isOnline || !docData.lastSeenAt?.toDate) return false;
+      const lastSeen = docData.lastSeenAt.toDate().getTime();
+      const now = Date.now();
+      return now - lastSeen > 10 * 60 * 1000;
+    }
+
     function statusBadge(isOnline) {
       return isOnline
         ? `<span class="badge-online">● Online</span>`
         : `<span class="badge-offline">● Offline</span>`;
     }
 
-    function isStaleOnline(docData) {
-      if (!docData.isOnline || !docData.lastSeenAt?.toDate) return false;
-      const lastSeen = docData.lastSeenAt.toDate().getTime();
-      const now = Date.now();
-      return now - lastSeen > 10 * 60 * 1000;
+    function todayAttendanceMap() {
+      const map = {};
+      attendanceDocs.forEach(doc => {
+        if (doc.uid) map[doc.uid] = doc;
+      });
+      return map;
+    }
+
+    function getLateCutoffForToday() {
+      const now = new Date();
+      now.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
+      return now;
+    }
+
+    function getTodayStatusForUser(userId) {
+      const attendanceMap = todayAttendanceMap();
+      const rec = attendanceMap[userId];
+
+      if (!rec || !rec.firstLoginAt?.toDate) {
+        return "absent";
+      }
+
+      const firstLogin = rec.firstLoginAt.toDate();
+      const cutoff = getLateCutoffForToday();
+
+      if (firstLogin.getTime() > cutoff.getTime()) {
+        return "late";
+      }
+
+      return "on_time";
+    }
+
+    function todayStatusBadge(status) {
+      if (status === "on_time") {
+        return `<span class="badge-ontime">● On Time</span>`;
+      }
+      if (status === "late") {
+        return `<span class="badge-late">● Late</span>`;
+      }
+      return `<span class="badge-absent">● Absent</span>`;
     }
 
     async function checkManagerAccess(user) {
@@ -347,15 +444,30 @@
       const callbacksPending = leadAssignments.filter(l => l.callbackRequired && !(l.closed === true || l.usable === false)).length;
       const introPending = leadAssignments.filter(l => l.introEmailNeeded && !l.introEmailSent && !(l.closed === true || l.usable === false)).length;
 
+      let onTimeCount = 0;
+      let lateCount = 0;
+      let absentCount = 0;
+
+      staffUsers.forEach(user => {
+        const status = getTodayStatusForUser(user.id);
+        if (status === "on_time") onTimeCount += 1;
+        else if (status === "late") lateCount += 1;
+        else absentCount += 1;
+      });
+
       document.getElementById("totalStaffStat").textContent = String(staffUsers.length);
       document.getElementById("onlineStaffStat").textContent = String(onlineNow);
       document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
-      document.getElementById("totalLeadsStat").textContent = String(leadAssignments.length);
+      document.getElementById("onTimeStat").textContent = String(onTimeCount);
+      document.getElementById("lateStat").textContent = String(lateCount);
+      document.getElementById("absentStat").textContent = String(absentCount);
       document.getElementById("callbacksPendingStat").textContent = String(callbacksPending);
       document.getElementById("introPendingStat").textContent = String(introPending);
 
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
       document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
+      document.getElementById("snapshotLate").textContent = String(lateCount);
+      document.getElementById("snapshotAbsent").textContent = String(absentCount);
       document.getElementById("snapshotCallbacks").textContent = String(callbacksPending);
       document.getElementById("snapshotIntro").textContent = String(introPending);
     }
@@ -363,44 +475,48 @@
     function renderAttendance() {
       attendanceBody.innerHTML = "";
 
-      const sorted = [...attendanceDocs].sort((a, b) => {
-        const aName = (a.name || "").toLowerCase();
-        const bName = (b.name || "").toLowerCase();
-        return aName.localeCompare(bName);
-      });
+      const staffUsers = userDocs
+        .filter(u => u.role === "staff")
+        .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
-      if (!sorted.length) {
+      const attendanceMap = todayAttendanceMap();
+
+      if (!staffUsers.length) {
         attendanceBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No attendance records found for today.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No staff users found.</td>
           </tr>
         `;
-        attendanceSummary.textContent = "No attendance records found for today.";
+        attendanceSummary.textContent = "No staff users found.";
         return;
       }
 
-      sorted.forEach(item => {
-        const trulyOnline = item.isOnline && !isStaleOnline(item);
-        const workedMs = getLiveWorkedMs(item);
+      staffUsers.forEach(user => {
+        const item = attendanceMap[user.id] || null;
+        const status = getTodayStatusForUser(user.id);
+
+        const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
+        const workedMs = item ? getLiveWorkedMs(item) : 0;
 
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
           <td class="p-3">
-            <div class="font-semibold text-slate-800">${item.name || "-"}</div>
-            <div class="text-xs text-slate-500">${item.email || "-"}</div>
+            <div class="font-semibold text-slate-800">${user.name || "-"}</div>
+            <div class="text-xs text-slate-500">${user.email || "-"}</div>
           </td>
-          <td class="p-3">${formatTimestamp(item.firstLoginAt)}</td>
-          <td class="p-3">${formatTimestamp(item.lastLoginAt)}</td>
-          <td class="p-3">${formatTimestamp(item.lastSeenAt)}</td>
-          <td class="p-3">${formatTimestamp(item.lastLogoutAt)}</td>
+          <td class="p-3">${item ? formatTimestamp(item.firstLoginAt) : "-"}</td>
+          <td class="p-3">${item ? formatTimestamp(item.lastLoginAt) : "-"}</td>
+          <td class="p-3">${item ? formatTimestamp(item.lastSeenAt) : "-"}</td>
+          <td class="p-3">${item ? formatTimestamp(item.lastLogoutAt) : "-"}</td>
           <td class="p-3 font-semibold text-blue-900">${formatDuration(workedMs)}</td>
+          <td class="p-3">${todayStatusBadge(status)}</td>
           <td class="p-3">${statusBadge(trulyOnline)}</td>
         `;
         attendanceBody.appendChild(row);
       });
 
-      attendanceSummary.textContent = `${sorted.length} staff attendance record(s) for today.`;
+      attendanceSummary.textContent = `${staffUsers.length} staff member(s) shown for today. Late cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")}.`;
     }
 
     function renderLeadSummary() {
@@ -495,9 +611,7 @@
 
     logoutBtn.addEventListener("click", async () => {
       try {
-        if (autoRefreshInterval) {
-          clearInterval(autoRefreshInterval);
-        }
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
@@ -507,9 +621,7 @@
     });
 
     window.addEventListener("beforeunload", () => {
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-      }
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     });
 
     const currentPath = window.location.pathname.split("/").pop();
