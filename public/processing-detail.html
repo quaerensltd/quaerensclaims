@@ -19,6 +19,8 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
     .readonly-box {
       width: 100%;
@@ -52,6 +54,20 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+    .notice {
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .notice-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .notice-amber { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .notice-red { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .section-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+      user-select: none;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -67,7 +83,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Detail</h1>
-          <p class="text-sm text-slate-500">Client file, payment tracking, and processing notes</p>
+          <p class="text-sm text-slate-500">Client file, payment tracking, ownership, and processing notes</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -80,15 +96,31 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="card p-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Processing File</h2>
             <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
           </div>
-          <div class="text-sm text-slate-500">
+          <div class="text-sm text-slate-500 space-y-1">
             <div id="assignmentText"></div>
             <div id="sourceStatusText"></div>
-            <div id="paymentStatusText" class="mt-1"></div>
+            <div id="paymentStatusText"></div>
+            <div id="ownerText"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="ownershipNoticeWrap" class="hidden"></section>
+
+      <section class="card p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-extrabold text-blue-900">Processing Ownership</h3>
+            <p class="text-sm text-slate-500 mt-1">Claim this file before making changes.</p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button id="claimFileBtn" class="btn btn-primary hidden" type="button">Claim File</button>
+            <button id="releaseFileBtn" class="btn btn-danger hidden" type="button">Release File</button>
           </div>
         </div>
       </section>
@@ -143,57 +175,58 @@
         </div>
       </section>
 
-      <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Payment Tracking</h3>
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label class="label" for="amountDueNow">Amount Due Now (£)</label>
-            <input id="amountDueNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
-          </div>
-          <div>
-            <label class="label" for="amountPaidNow">Amount Paid Now (£)</label>
-            <input id="amountPaidNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
-          </div>
-          <div>
-            <label class="label" for="followUpDue">Follow-Up Due (£)</label>
-            <input id="followUpDue" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
-          </div>
-          <div>
-            <label class="label" for="paymentStatus">Payment Status</label>
-            <select id="paymentStatus" class="input">
-              <option value="awaiting_payment">Awaiting Payment</option>
-              <option value="part_paid">Part Paid</option>
-              <option value="fully_paid">Fully Paid</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <label class="label" for="paymentLink">Payment Link</label>
-          <input id="paymentLink" class="input" type="text" placeholder="https://..." />
-        </div>
-
-        <div class="mt-4">
-          <label class="label" for="processingNotes">Processing Notes</label>
-          <textarea id="processingNotes" class="input" rows="6" placeholder="Payment notes, documents requested, instalments, admin progress..."></textarea>
-        </div>
-
-        <div class="mt-6 flex flex-col md:flex-row gap-3">
-          <button id="saveProcessingBtn" class="btn btn-primary" type="button">Save Processing Update</button>
-          <a id="openPaymentLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary text-center hidden">Open Payment Link</a>
-          <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
-        </div>
-      </section>
-
-      <section class="grid lg:grid-cols-2 gap-6">
+      <section id="editableArea" class="space-y-6">
         <section class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
-          <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Payment Tracking</h3>
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="label" for="amountDueNow">Amount Due Now (£)</label>
+              <input id="amountDueNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="label" for="amountPaidNow">Amount Paid Now (£)</label>
+              <input id="amountPaidNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="label" for="followUpDue">Follow-Up Due (£)</label>
+              <input id="followUpDue" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="label" for="paymentStatus">Payment Status</label>
+              <select id="paymentStatus" class="input">
+                <option value="awaiting_payment">Awaiting Payment</option>
+                <option value="part_paid">Part Paid</option>
+                <option value="fully_paid">Fully Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="label" for="paymentLink">Payment Link</label>
+            <input id="paymentLink" class="input" type="text" placeholder="https://..." />
+          </div>
+
+          <div class="mt-4">
+            <label class="label" for="processingNotes">Processing Notes</label>
+            <textarea id="processingNotes" class="input" rows="6" placeholder="Payment notes, documents requested, instalments, admin progress..."></textarea>
+          </div>
+
+          <div class="mt-6 flex flex-col md:flex-row gap-3">
+            <button id="saveProcessingBtn" class="btn btn-primary" type="button">Save Processing Update</button>
+            <a id="openPaymentLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary text-center hidden">Open Payment Link</a>
+            <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
         </section>
 
-        <section class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
-          <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
+        <section class="grid lg:grid-cols-2 gap-6">
+          <section class="card p-6">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
+            <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
+          </section>
+          <section class="card p-6">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
+            <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
+          </section>
         </section>
       </section>
 
@@ -202,7 +235,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
           <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Generated Assessment Report</h3>
           <div id="generatedAssessmentBox" class="readonly-box">No generated assessment report available.</div>
@@ -250,8 +282,13 @@
     const saveProcessingBtn = document.getElementById("saveProcessingBtn");
     const saveMessage = document.getElementById("saveMessage");
     const openPaymentLinkBtn = document.getElementById("openPaymentLinkBtn");
+    const claimFileBtn = document.getElementById("claimFileBtn");
+    const releaseFileBtn = document.getElementById("releaseFileBtn");
+    const editableArea = document.getElementById("editableArea");
+    const ownershipNoticeWrap = document.getElementById("ownershipNoticeWrap");
 
     let currentUser = null;
+    let currentUserData = null;
     let fileData = null;
 
     function hideLoader() {
@@ -276,7 +313,6 @@
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
-
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
@@ -315,11 +351,9 @@
       if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) {
         return "part_paid";
       }
-
       if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) {
         return "fully_paid";
       }
-
       return "awaiting_payment";
     }
 
@@ -327,6 +361,69 @@
       if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
       if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
       return `<span class="badge badge-amber">Awaiting Payment</span>`;
+    }
+
+    function ownerBadgeText(data) {
+      if (!data.processingAssignedToUid) return `<span class="badge badge-amber">Unassigned</span>`;
+      if (data.processingAssignedToUid === currentUser.uid) return `<span class="badge badge-green">Mine</span>`;
+      return `<span class="badge badge-slate">${data.processingAssignedToName || data.processingAssignedToEmail || "Assigned"}</span>`;
+    }
+
+    function isMine(data) {
+      return data?.processingAssignedToUid === currentUser?.uid;
+    }
+
+    function isUnassigned(data) {
+      return !data?.processingAssignedToUid;
+    }
+
+    function isOwnedByOther(data) {
+      return !!data?.processingAssignedToUid && data.processingAssignedToUid !== currentUser?.uid;
+    }
+
+    function renderOwnershipState() {
+      ownershipNoticeWrap.classList.add("hidden");
+      ownershipNoticeWrap.innerHTML = "";
+
+      claimFileBtn.classList.add("hidden");
+      releaseFileBtn.classList.add("hidden");
+      editableArea.classList.remove("section-disabled");
+      saveProcessingBtn.disabled = false;
+
+      if (isUnassigned(fileData)) {
+        claimFileBtn.classList.remove("hidden");
+        editableArea.classList.add("section-disabled");
+        saveProcessingBtn.disabled = true;
+        ownershipNoticeWrap.classList.remove("hidden");
+        ownershipNoticeWrap.innerHTML = `
+          <div class="notice notice-amber">
+            This file is currently unassigned. Claim it first to edit payment tracking and processing notes.
+          </div>
+        `;
+        return;
+      }
+
+      if (isMine(fileData)) {
+        releaseFileBtn.classList.remove("hidden");
+        ownershipNoticeWrap.classList.remove("hidden");
+        ownershipNoticeWrap.innerHTML = `
+          <div class="notice notice-blue">
+            You currently own this file and can edit it.
+          </div>
+        `;
+        return;
+      }
+
+      if (isOwnedByOther(fileData)) {
+        editableArea.classList.add("section-disabled");
+        saveProcessingBtn.disabled = true;
+        ownershipNoticeWrap.classList.remove("hidden");
+        ownershipNoticeWrap.innerHTML = `
+          <div class="notice notice-red">
+            This file is currently assigned to ${fileData.processingAssignedToName || fileData.processingAssignedToEmail || "another processing user"}. You can view it, but only the assigned owner can edit it.
+          </div>
+        `;
+      }
     }
 
     async function checkProcessingAccess(user) {
@@ -347,6 +444,7 @@
       }
 
       currentUser = user;
+      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -374,6 +472,7 @@
       document.getElementById("assignmentText").textContent = `Assignment ID: ${fileData.assignmentId || "-"}`;
       document.getElementById("sourceStatusText").textContent = `Source Status: ${fileData.sourceStatus || "-"}`;
       document.getElementById("paymentStatusText").innerHTML = `Payment Status: ${paymentStatusBadge(fileData.paymentStatus || "awaiting_payment")}`;
+      document.getElementById("ownerText").innerHTML = `Owner: ${ownerBadgeText(fileData)}`;
 
       setValue("client_firstName", fileData.client?.firstName);
       setValue("client_secondName", fileData.client?.secondName);
@@ -409,6 +508,7 @@
         fileData.generatedAssessmentText || "No generated assessment report available.";
 
       updatePaymentLinkButton();
+      renderOwnershipState();
       hideLoader();
     }
 
@@ -421,12 +521,66 @@
       paymentStatus.value = derived;
     }
 
+    async function claimFile() {
+      try {
+        await updateDoc(doc(db, "processingFiles", fileId), {
+          processingAssignedToUid: currentUser.uid,
+          processingAssignedToName: currentUserData.name || "",
+          processingAssignedToEmail: currentUser.email || "",
+          processingAssignedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+        await loadFile();
+      } catch (error) {
+        console.error("Claim file failed:", error);
+        alert("Could not claim this file.");
+      }
+    }
+
+    async function releaseFile() {
+      try {
+        await updateDoc(doc(db, "processingFiles", fileId), {
+          processingAssignedToUid: "",
+          processingAssignedToName: "",
+          processingAssignedToEmail: "",
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+        await loadFile();
+      } catch (error) {
+        console.error("Release file failed:", error);
+        alert("Could not release this file.");
+      }
+    }
+
     amountDueNow.addEventListener("input", syncPaymentStatusFromAmounts);
     amountPaidNow.addEventListener("input", syncPaymentStatusFromAmounts);
     followUpDue.addEventListener("input", syncPaymentStatusFromAmounts);
     paymentLink.addEventListener("input", updatePaymentLinkButton);
 
+    claimFileBtn.addEventListener("click", async () => {
+      await claimFile();
+    });
+
+    releaseFileBtn.addEventListener("click", async () => {
+      await releaseFile();
+    });
+
     saveProcessingBtn.addEventListener("click", async () => {
+      if (!isMine(fileData)) {
+        alert("You must claim this file before saving changes.");
+        return;
+      }
+
       try {
         const payload = {
           amountDueNow: Number(amountDueNow.value || 0),
@@ -438,7 +592,8 @@
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
-            email: currentUser.email || ""
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
           }
         };
 

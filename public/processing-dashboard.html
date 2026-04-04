@@ -16,6 +16,16 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -24,6 +34,39 @@
     .active-nav:hover {
       background: #1d4ed8;
       color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -35,12 +78,14 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
-          <p class="text-sm text-slate-500">Processing workload, payment tracking, and file status overview</p>
+          <p class="text-sm text-slate-500">Processing workload, payment tracking, ownership, and queue overview</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -55,10 +100,18 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-6 gap-4">
+      <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Files</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">My Files</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Awaiting Payment</div>
@@ -117,6 +170,52 @@
         <section class="card p-6">
           <div class="flex items-center justify-between mb-4">
             <div>
+              <h2 class="text-xl font-extrabold text-blue-900">My Files</h2>
+              <p class="text-sm text-slate-500 mt-1">Files currently assigned to you</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Payment Status</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="myFilesBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Unassigned Queue</h2>
+              <p class="text-sm text-slate-500 mt-1">Available files that can be claimed</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Payment Status</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="unassignedFilesBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
               <h2 class="text-xl font-extrabold text-blue-900">Recent Processing Files</h2>
               <p class="text-sm text-slate-500 mt-1">Latest files received from closers</p>
             </div>
@@ -127,6 +226,7 @@
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
                   <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Owner</th>
                   <th class="text-left p-3">Payment Status</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
@@ -148,6 +248,7 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Owner</th>
                   <th class="text-left p-3">Due Now</th>
                   <th class="text-left p-3">Paid</th>
                   <th class="text-left p-3">Follow-Up</th>
@@ -174,7 +275,9 @@
       doc,
       getDoc,
       getDocs,
-      collection
+      updateDoc,
+      collection,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -191,10 +294,18 @@
     const logoutBtn = document.getElementById("logoutBtn");
 
     let currentUser = null;
+    let currentUserData = null;
     let allFiles = [];
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
     function money(n) {
@@ -219,9 +330,23 @@
     }
 
     function paymentStatusLabel(status) {
-      if (status === "part_paid") return "Part Paid";
-      if (status === "fully_paid") return "Fully Paid";
-      return "Awaiting Payment";
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
+    }
+
+    function ownerName(file) {
+      return file.processingAssignedToName || file.processingAssignedToEmail || "-";
+    }
+
+    function ownerBadge(file) {
+      if (!file.processingAssignedToUid) {
+        return `<span class="badge badge-amber">Unassigned</span>`;
+      }
+      if (file.processingAssignedToUid === currentUser.uid) {
+        return `<span class="badge badge-green">Mine</span>`;
+      }
+      return `<span class="badge badge-slate">${ownerName(file)}</span>`;
     }
 
     async function checkProcessingAccess(user) {
@@ -242,6 +367,7 @@
       }
 
       currentUser = user;
+      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -249,10 +375,34 @@
     async function loadFiles() {
       const snapshot = await getDocs(collection(db, "processingFiles"));
       allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
       renderStats();
+      renderMyFiles();
+      renderUnassignedFiles();
       renderRecentFiles();
       renderPriorityPayments();
+    }
+
+    async function claimFile(fileId) {
+      try {
+        await updateDoc(doc(db, "processingFiles", fileId), {
+          processingAssignedToUid: currentUser.uid,
+          processingAssignedToName: currentUserData.name || "",
+          processingAssignedToEmail: currentUser.email || "",
+          processingAssignedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        showToast("File claimed.");
+        await loadFiles();
+      } catch (error) {
+        console.error("Claim failed:", error);
+        showToast("Could not claim file.");
+      }
     }
 
     function renderStats() {
@@ -261,21 +411,101 @@
       const fullyPaid = allFiles.filter(f => f.paymentStatus === "fully_paid").length;
       const followUps = allFiles.filter(f => Number(f.followUpDue || 0) > 0).length;
       const withLinks = allFiles.filter(f => (f.paymentLink || "").trim()).length;
-
       const dueNow = allFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
       const paidNow = allFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
       const followUp = allFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
+      const myFiles = allFiles.filter(f => f.processingAssignedToUid === currentUser.uid).length;
+      const unassigned = allFiles.filter(f => !f.processingAssignedToUid).length;
 
       document.getElementById("totalFilesStat").textContent = String(allFiles.length);
+      document.getElementById("myFilesStat").textContent = String(myFiles);
+      document.getElementById("unassignedStat").textContent = String(unassigned);
       document.getElementById("awaitingPaymentStat").textContent = String(awaiting);
       document.getElementById("partPaidStat").textContent = String(partPaid);
       document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
       document.getElementById("followUpStat").textContent = String(followUps);
       document.getElementById("paymentLinkStat").textContent = String(withLinks);
-
       document.getElementById("dueNowTotal").textContent = money(dueNow);
       document.getElementById("paidNowTotal").textContent = money(paidNow);
       document.getElementById("followUpTotal").textContent = money(followUp);
+    }
+
+    function renderMyFiles() {
+      const body = document.getElementById("myFilesBody");
+      body.innerHTML = "";
+
+      const mine = [...allFiles]
+        .filter(f => f.processingAssignedToUid === currentUser.uid)
+        .sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0))
+        .slice(0, 8);
+
+      if (!mine.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No files assigned to you.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      mine.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
+          </td>
+          <td class="p-3">${formatClaimType(file.claimType)}</td>
+          <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
+          <td class="p-3">
+            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderUnassignedFiles() {
+      const body = document.getElementById("unassignedFilesBody");
+      body.innerHTML = "";
+
+      const unassigned = [...allFiles]
+        .filter(f => !f.processingAssignedToUid)
+        .sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0))
+        .slice(0, 8);
+
+      if (!unassigned.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No unassigned files.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      unassigned.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
+          </td>
+          <td class="p-3">${formatClaimType(file.claimType)}</td>
+          <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
+          <td class="p-3">
+            <button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+
+      document.querySelectorAll("[data-claim-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await claimFile(btn.getAttribute("data-claim-id"));
+        });
+      });
     }
 
     function renderRecentFiles() {
@@ -293,7 +523,7 @@
       if (!recent.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="4" class="p-6 text-center text-slate-500">No processing files found.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No processing files found.</td>
           </tr>
         `;
         return;
@@ -308,6 +538,7 @@
             <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
+          <td class="p-3">${ownerBadge(file)}</td>
           <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
           <td class="p-3">
             <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
@@ -329,7 +560,7 @@
       if (!priority.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No payment priority files found.</td>
+            <td colspan="6" class="p-6 text-center text-slate-500">No payment priority files found.</td>
           </tr>
         `;
         return;
@@ -343,6 +574,7 @@
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
             <div class="text-xs text-slate-500">${paymentStatusLabel(file.paymentStatus)}</div>
           </td>
+          <td class="p-3">${ownerBadge(file)}</td>
           <td class="p-3">${money(file.amountDueNow)}</td>
           <td class="p-3">${money(file.amountPaidNow)}</td>
           <td class="p-3">${money(file.followUpDue)}</td>

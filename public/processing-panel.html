@@ -17,6 +17,22 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
+    .btn-red { background: #fee2e2; color: #991b1b; }
+    .btn-red:hover { background: #fecaca; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -25,6 +41,39 @@
     .active-nav:hover {
       background: #1d4ed8;
       color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -36,14 +85,15 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Panel</h1>
-          <p class="text-sm text-slate-500">All processing files from closed deals</p>
+          <p class="text-sm text-slate-500">Shared processing queue with ownership and payment tracking</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
@@ -54,10 +104,18 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid lg:grid-cols-6 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Files</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">My Files</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Awaiting Payment</div>
@@ -71,14 +129,19 @@
           <div class="text-sm text-slate-500">Fully Paid</div>
           <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Needs Follow-Up</div>
-          <div id="followUpStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
-        </div>
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership View</label>
+            <select id="ownershipFilter" class="input">
+              <option value="all">All files</option>
+              <option value="mine">My files</option>
+              <option value="unassigned">Unassigned only</option>
+              <option value="others">Assigned to others</option>
+            </select>
+          </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
             <select id="paymentStatusFilter" class="input">
@@ -88,7 +151,6 @@
               <option value="fully_paid">Fully Paid</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeFilter" class="input">
@@ -99,12 +161,10 @@
               <option value="newbuild">New Build Issues</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, email, closer..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, closer, owner..." />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Files</button>
           </div>
@@ -118,7 +178,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading processing files...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -126,6 +185,7 @@
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Closer</th>
+                <th class="text-left p-3">Owner</th>
                 <th class="text-left p-3">Due Now</th>
                 <th class="text-left p-3">Paid</th>
                 <th class="text-left p-3">Follow-Up</th>
@@ -152,7 +212,9 @@
       doc,
       getDoc,
       getDocs,
-      collection
+      updateDoc,
+      collection,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -167,6 +229,7 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const ownershipFilter = document.getElementById("ownershipFilter");
     const paymentStatusFilter = document.getElementById("paymentStatusFilter");
     const claimTypeFilter = document.getElementById("claimTypeFilter");
     const searchInput = document.getElementById("searchInput");
@@ -174,10 +237,19 @@
     const filesBody = document.getElementById("filesBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
+    let currentUser = null;
+    let currentUserData = null;
     let allFiles = [];
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
     function money(n) {
@@ -195,12 +267,6 @@
       }
     }
 
-    function paymentStatusLabel(status) {
-      if (status === "part_paid") return "Part Paid";
-      if (status === "fully_paid") return "Fully Paid";
-      return "Awaiting Payment";
-    }
-
     function clientName(file) {
       const first = file.client?.firstName || "";
       const second = file.client?.secondName || "";
@@ -209,6 +275,42 @@
 
     function closerName(file) {
       return file.closer?.name || file.closer?.email || "-";
+    }
+
+    function ownerName(file) {
+      return file.processingAssignedToName || file.processingAssignedToEmail || "-";
+    }
+
+    function getEffectivePaymentStatus(file) {
+      if (file.paymentStatus) return file.paymentStatus;
+
+      const dueNow = Number(file.amountDueNow || 0);
+      const paidNow = Number(file.amountPaidNow || 0);
+      const followUpDue = Number(file.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
+      }
+      return "awaiting_payment";
+    }
+
+    function paymentStatusLabel(status) {
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
+    }
+
+    function ownerBadge(file) {
+      if (!file.processingAssignedToUid) {
+        return `<span class="badge badge-amber">Unassigned</span>`;
+      }
+      if (file.processingAssignedToUid === currentUser.uid) {
+        return `<span class="badge badge-green">Mine</span>`;
+      }
+      return `<span class="badge badge-slate">${ownerName(file)}</span>`;
     }
 
     async function checkProcessingAccess(user) {
@@ -228,6 +330,8 @@
         return false;
       }
 
+      currentUser = user;
+      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -246,32 +350,117 @@
 
     function renderStats() {
       document.getElementById("totalFilesStat").textContent = String(allFiles.length);
-      document.getElementById("awaitingStat").textContent = String(allFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length);
-      document.getElementById("partPaidStat").textContent = String(allFiles.filter(f => f.paymentStatus === "part_paid").length);
-      document.getElementById("fullyPaidStat").textContent = String(allFiles.filter(f => f.paymentStatus === "fully_paid").length);
-      document.getElementById("followUpStat").textContent = String(allFiles.filter(f => Number(f.followUpDue || 0) > 0).length);
+      document.getElementById("myFilesStat").textContent = String(
+        allFiles.filter(f => f.processingAssignedToUid === currentUser.uid).length
+      );
+      document.getElementById("unassignedStat").textContent = String(
+        allFiles.filter(f => !f.processingAssignedToUid).length
+      );
+      document.getElementById("awaitingStat").textContent = String(
+        allFiles.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
+      );
+      document.getElementById("partPaidStat").textContent = String(
+        allFiles.filter(f => getEffectivePaymentStatus(f) === "part_paid").length
+      );
+      document.getElementById("fullyPaidStat").textContent = String(
+        allFiles.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length
+      );
     }
 
     function getFilteredFiles() {
+      const ownership = ownershipFilter.value;
       const paymentFilter = paymentStatusFilter.value;
       const claimFilter = claimTypeFilter.value;
       const term = searchInput.value.trim().toLowerCase();
 
       return allFiles.filter(file => {
-        const matchesPayment = paymentFilter === "all" || (file.paymentStatus || "awaiting_payment") === paymentFilter;
-        const matchesClaim = claimFilter === "all" || file.claimType === claimFilter;
+        const effectiveStatus = getEffectivePaymentStatus(file);
+
+        const matchesOwnership =
+          ownership === "all" ||
+          (ownership === "mine" && file.processingAssignedToUid === currentUser.uid) ||
+          (ownership === "unassigned" && !file.processingAssignedToUid) ||
+          (ownership === "others" && file.processingAssignedToUid && file.processingAssignedToUid !== currentUser.uid);
+
+        const matchesPayment =
+          paymentFilter === "all" ||
+          effectiveStatus === paymentFilter;
+
+        const matchesClaim =
+          claimFilter === "all" ||
+          file.claimType === claimFilter;
 
         const haystack = `
           ${clientName(file)}
           ${file.client?.email || ""}
           ${closerName(file)}
+          ${ownerName(file)}
           ${file.claimType || ""}
+          ${file.processingNotes || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
-        return matchesPayment && matchesClaim && matchesSearch;
+        return matchesOwnership && matchesPayment && matchesClaim && matchesSearch;
+      }).sort((a, b) => {
+        const aMine = a.processingAssignedToUid === currentUser.uid ? 0 : 1;
+        const bMine = b.processingAssignedToUid === currentUser.uid ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+
+        const aUnassigned = a.processingAssignedToUid ? 1 : 0;
+        const bUnassigned = b.processingAssignedToUid ? 1 : 0;
+        if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
+
+        const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
+        const bPriority = Number(b.followUpDue || 0) + Number(b.amountDueNow || 0);
+        return bPriority - aPriority;
       });
+    }
+
+    async function claimFile(fileId) {
+      try {
+        await updateDoc(doc(db, "processingFiles", fileId), {
+          processingAssignedToUid: currentUser.uid,
+          processingAssignedToName: currentUserData.name || "",
+          processingAssignedToEmail: currentUser.email || "",
+          processingAssignedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        showToast("File claimed.");
+        await loadFiles();
+      } catch (error) {
+        console.error("Claim failed:", error);
+        showToast("Could not claim file.");
+      }
+    }
+
+    async function releaseFile(fileId) {
+      try {
+        await updateDoc(doc(db, "processingFiles", fileId), {
+          processingAssignedToUid: "",
+          processingAssignedToName: "",
+          processingAssignedToEmail: "",
+          processingAssignedAt: null,
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        showToast("File released.");
+        await loadFiles();
+      } catch (error) {
+        console.error("Release failed:", error);
+        showToast("Could not release file.");
+      }
     }
 
     function renderFiles() {
@@ -281,13 +470,29 @@
       if (!filtered.length) {
         filesBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No processing files found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No processing files found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(file => {
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
+
+          const isMine = file.processingAssignedToUid === currentUser.uid;
+          const isUnassigned = !file.processingAssignedToUid;
+
+          let actionButtons = `
+            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline mr-3">Open File</a>
+          `;
+
+          if (isUnassigned) {
+            actionButtons += `<button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>`;
+          } else if (isMine) {
+            actionButtons += `<button class="btn-small btn-red" data-release-id="${file.id}">Release</button>`;
+          }
+
+          const effectiveStatus = getEffectivePaymentStatus(file);
+
           row.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${clientName(file)}</div>
@@ -295,19 +500,33 @@
             </td>
             <td class="p-3">${formatClaimType(file.claimType)}</td>
             <td class="p-3">${closerName(file)}</td>
+            <td class="p-3">
+              <div>${ownerBadge(file)}</div>
+            </td>
             <td class="p-3">${money(file.amountDueNow)}</td>
             <td class="p-3">${money(file.amountPaidNow)}</td>
             <td class="p-3">${money(file.followUpDue)}</td>
-            <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
-            <td class="p-3">
-              <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
-            </td>
+            <td class="p-3">${paymentStatusLabel(effectiveStatus)}</td>
+            <td class="p-3">${actionButtons}</td>
           `;
+
           filesBody.appendChild(row);
         });
       }
 
       resultsSummary.textContent = `${filtered.length} processing file(s) shown`;
+
+      document.querySelectorAll("[data-claim-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await claimFile(btn.getAttribute("data-claim-id"));
+        });
+      });
+
+      document.querySelectorAll("[data-release-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await releaseFile(btn.getAttribute("data-release-id"));
+        });
+      });
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -338,6 +557,7 @@
       }
     });
 
+    ownershipFilter.addEventListener("change", renderFiles);
     paymentStatusFilter.addEventListener("change", renderFiles);
     claimTypeFilter.addEventListener("change", renderFiles);
     searchInput.addEventListener("input", renderFiles);
