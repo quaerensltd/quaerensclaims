@@ -199,6 +199,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
 
     let currentUser = null;
+    let currentUserData = null;
     let allLeads = [];
 
     function hideLoader() {
@@ -212,6 +213,47 @@
     function getTodayAttendanceId(uid) {
       const today = new Date().toISOString().slice(0, 10);
       return `${uid}_${today}`;
+    }
+
+    async function recordStaffLoginFromPage() {
+      if (!currentUser) return;
+
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return;
+
+      const userData = userSnap.data();
+      if (userData.role !== "staff") return;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: userData.name || "",
+          email: currentUser.email || "",
+          role: userData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        });
+      } else {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: userData.name || "",
+          email: currentUser.email || "",
+          role: userData.role || "staff",
+          date: today,
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        }, { merge: true });
+      }
     }
 
     async function recordStaffLogout() {
@@ -265,6 +307,7 @@
       }
 
       currentUser = user;
+      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -387,6 +430,7 @@
       try {
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
+        await recordStaffLoginFromPage();
         await loadLeads();
         hideLoader();
       } catch (error) {
