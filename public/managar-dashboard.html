@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Manager Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading manager dashboard...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Dashboard</h1>
+          <p class="text-sm text-slate-500">Full operations overview across leads, listers, closers, and processing</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-6 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Leads</div>
+          <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Active Listers</div>
+          <div id="activeListersStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Callbacks Due</div>
+          <div id="callbacksDueStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intro Emails Pending</div>
+          <div id="introPendingStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Closed Deals</div>
+          <div id="closedDealsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Processing Files</div>
+          <div id="processingFilesStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-4 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Payment</div>
+          <div id="awaitingPaymentStat" class="text-3xl font-extrabold text-orange-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Part Paid</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Fully Paid</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Intake Files</div>
+          <div id="intakeFilesStat" class="text-3xl font-extrabold text-blue-700 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <a href="/manager-lead-upload.html" class="btn btn-primary text-center">Upload New Leads</a>
+            <a href="/manager-leads-overview.html" class="btn btn-primary text-center">Open Leads Overview</a>
+            <a href="/manager-intro-emails-overview.html" class="btn btn-primary text-center">Open Intro Emails</a>
+            <a href="/manager-panel.html" class="btn btn-primary text-center">Open Intake Files</a>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Money Snapshot</h2>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <div class="text-sm text-slate-500">Due Now</div>
+              <div id="dueNowTotal" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Paid Now</div>
+              <div id="paidNowTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Follow-Up Due</div>
+              <div id="followUpTotal" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Lister Performance</h2>
+              <p class="text-sm text-slate-500 mt-1">Lead totals by lister</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Lister</th>
+                  <th class="text-left p-3">Total Leads</th>
+                  <th class="text-left p-3">Callbacks</th>
+                  <th class="text-left p-3">Intro Emails</th>
+                  <th class="text-left p-3">Converted</th>
+                </tr>
+              </thead>
+              <tbody id="listerPerformanceBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Recent Closed Deals</h2>
+              <p class="text-sm text-slate-500 mt-1">Latest closer outcomes</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Closer</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="closedDealsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    let allUsers = [];
+    let allLeads = [];
+    let allCloserAssignments = [];
+    let allProcessingFiles = [];
+    let allClaimSubmissions = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+
+    function formatClaimType(type) {
+      switch (type) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
+    }
+
+    function clientNameFromClient(client) {
+      const first = client?.firstName || "";
+      const second = client?.secondName || "";
+      return `${first} ${second}`.trim() || "-";
+    }
+
+    function clientNameFromLead(lead) {
+      const first = lead?.forename || "";
+      const second = lead?.surname || "";
+      return `${first} ${second}`.trim() || "-";
+    }
+
+    async function checkManagerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadData() {
+      const [usersSnap, leadsSnap, closerSnap, processingSnap, intakeSnap] = await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "leadAssignments")),
+        getDocs(collection(db, "closerAssignments")),
+        getDocs(collection(db, "processingFiles")),
+        getDocs(collection(db, "claimSubmissions"))
+      ]);
+
+      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allLeads = leadsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allCloserAssignments = closerSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allProcessingFiles = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allClaimSubmissions = intakeSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      renderStats();
+      renderListerPerformance();
+      renderClosedDeals();
+    }
+
+    function renderStats() {
+      const staffUsers = allUsers.filter(u => u.role === "staff");
+      const callbacksDue = allLeads.filter(l => l.callbackRequired).length;
+      const introPending = allLeads.filter(l => l.introEmailNeeded && !l.introEmailSent).length;
+      const closedDeals = allCloserAssignments.filter(a => a.outcome === "Closed Deal").length;
+
+      const awaitingPayment = allProcessingFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length;
+      const partPaid = allProcessingFiles.filter(f => f.paymentStatus === "part_paid").length;
+      const fullyPaid = allProcessingFiles.filter(f => f.paymentStatus === "fully_paid").length;
+
+      const dueNow = allProcessingFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
+      const paidNow = allProcessingFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
+      const followUp = allProcessingFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
+
+      document.getElementById("totalLeadsStat").textContent = String(allLeads.length);
+      document.getElementById("activeListersStat").textContent = String(staffUsers.length);
+      document.getElementById("callbacksDueStat").textContent = String(callbacksDue);
+      document.getElementById("introPendingStat").textContent = String(introPending);
+      document.getElementById("closedDealsStat").textContent = String(closedDeals);
+      document.getElementById("processingFilesStat").textContent = String(allProcessingFiles.length);
+
+      document.getElementById("awaitingPaymentStat").textContent = String(awaitingPayment);
+      document.getElementById("partPaidStat").textContent = String(partPaid);
+      document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
+      document.getElementById("intakeFilesStat").textContent = String(allClaimSubmissions.length);
+
+      document.getElementById("dueNowTotal").textContent = money(dueNow);
+      document.getElementById("paidNowTotal").textContent = money(paidNow);
+      document.getElementById("followUpTotal").textContent = money(followUp);
+    }
+
+    function renderListerPerformance() {
+      const body = document.getElementById("listerPerformanceBody");
+      body.innerHTML = "";
+
+      const staffUsers = allUsers.filter(u => u.role === "staff");
+
+      if (!staffUsers.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No listers found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      staffUsers.forEach(user => {
+        const leads = allLeads.filter(l => l.assignedToUid === user.id);
+
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${user.name || user.email || user.id}</td>
+          <td class="p-3">${leads.length}</td>
+          <td class="p-3">${leads.filter(l => l.callbackRequired).length}</td>
+          <td class="p-3">${leads.filter(l => l.introEmailNeeded).length}</td>
+          <td class="p-3">${leads.filter(l => l.leadStatus === "converted" || l.convertedToSubmissionId).length}</td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderClosedDeals() {
+      const body = document.getElementById("closedDealsBody");
+      body.innerHTML = "";
+
+      const closedDeals = allCloserAssignments
+        .filter(a => a.outcome === "Closed Deal")
+        .slice(0, 8);
+
+      if (!closedDeals.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No closed deals found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      closedDeals.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientNameFromClient(item.client)}</div>
+            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+          </td>
+          <td class="p-3">${item.closer?.name || item.closer?.email || "-"}</td>
+          <td class="p-3">${formatClaimType(item.claimType)}</td>
+          <td class="p-3">
+            <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+        await loadData();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load manager dashboard.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+  </script>
+</body>
+</html>
