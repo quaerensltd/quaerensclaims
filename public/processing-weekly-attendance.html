@@ -113,15 +113,15 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Weekly Attendance</h1>
-          <p class="text-sm text-slate-500">Weekly staff attendance, hours, and day status overview</p>
+          <p class="text-sm text-slate-500">Weekly processing team attendance, hours, and day status overview</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
           <a href="/processing-daily-attendance.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
           <a href="/processing-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <a href="/processing-monthly-attendance.html" class="btn btn-secondary py-2 px-4">Monthly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -130,7 +130,7 @@
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Staff Count</div>
+          <div class="text-sm text-slate-500">Processing Staff Count</div>
           <div id="staffCountStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -169,14 +169,12 @@
             <label class="block text-sm font-semibold text-blue-900 mb-2">Week Starting</label>
             <input id="weekStartInput" type="date" class="input" />
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Staff Filter</label>
             <select id="staffFilter" class="input">
-              <option value="all">All staff</option>
+              <option value="all">All processing staff</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">View</label>
             <select id="viewFilter" class="input">
@@ -184,7 +182,6 @@
               <option value="daily">Daily records</option>
             </select>
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Week</button>
           </div>
@@ -194,9 +191,10 @@
       <section class="grid lg:grid-cols-2 gap-6">
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
-          <div class="grid md:grid-cols-2 gap-4">
+          <div class="grid md:grid-cols-3 gap-4">
             <a href="/processing-dashboard.html" class="btn btn-primary text-center">Back to Dashboard</a>
-            <a href="/processing-daily-attendance.html" class="btn btn-primary text-center">Open Daily Attendance</a>
+            <a href="/processing-daily-attendance.html" class="btn btn-primary text-center">Daily Attendance</a>
+            <a href="/processing-monthly-attendance.html" class="btn btn-primary text-center">Monthly Attendance</a>
           </div>
         </section>
 
@@ -204,7 +202,7 @@
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Week Snapshot</h2>
           <div class="space-y-4 text-sm">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Staff in selected view</span>
+              <span class="text-slate-600">Processing staff in selected view</span>
               <span id="snapshotStaff" class="font-extrabold text-blue-900">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -302,7 +300,6 @@
     const weekStartInput = document.getElementById("weekStartInput");
     const staffFilter = document.getElementById("staffFilter");
     const viewFilter = document.getElementById("viewFilter");
-
     const summaryText = document.getElementById("summaryText");
     const autoRefreshStatus = document.getElementById("autoRefreshStatus");
     const weeklySummaryHead = document.getElementById("weeklySummaryHead");
@@ -314,7 +311,7 @@
     const LATE_CUTOFF_HOUR = 10;
     const LATE_CUTOFF_MINUTE = 0;
 
-    let staffUsers = [];
+    let processingUsers = [];
     let attendanceDocs = [];
     let currentWeekDates = [];
     let autoRefreshInterval = null;
@@ -406,9 +403,7 @@
 
     function getWorkedMs(docData) {
       if (!docData) return 0;
-
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
-
       if (
         docData.isOnline &&
         docData.currentSessionStartAt?.toDate &&
@@ -418,17 +413,14 @@
         const liveExtra = Math.max(0, Date.now() - sessionStart);
         return baseMs + liveExtra;
       }
-
       return baseMs;
     }
 
     function getDayStatus(rec, dateStr) {
       if (!rec || !rec.firstLoginAt?.toDate) return "absent";
-
       const firstLogin = rec.firstLoginAt.toDate();
       const cutoff = new Date(`${dateStr}T00:00:00`);
       cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
-
       return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
@@ -463,9 +455,9 @@
           getDocs(collection(db, "staffAttendance"))
         ]);
 
-        staffUsers = usersSnap.docs
+        processingUsers = usersSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.role === "staff");
+          .filter(u => u.role === "processing");
 
         attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -482,9 +474,9 @@
 
     function populateStaffFilter() {
       const currentValue = staffFilter.value || "all";
-      staffFilter.innerHTML = `<option value="all">All staff</option>`;
+      staffFilter.innerHTML = `<option value="all">All processing staff</option>`;
 
-      [...staffUsers]
+      [...processingUsers]
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
         .forEach(user => {
           const option = document.createElement("option");
@@ -506,17 +498,16 @@
     }
 
     function getFilteredStaff() {
-      if (staffFilter.value === "all") return staffUsers;
-      return staffUsers.filter(u => u.id === staffFilter.value);
+      if (staffFilter.value === "all") return processingUsers;
+      return processingUsers.filter(u => u.id === staffFilter.value);
     }
 
     function getAttendanceFor(uid, dateStr) {
-      return attendanceDocs.find(doc => doc.uid === uid && doc.date === dateStr) || null;
+      return attendanceDocs.find(docItem => docItem.uid === uid && docItem.date === dateStr) || null;
     }
 
     function renderStats() {
       const filteredStaff = getFilteredStaff();
-
       let recordCount = 0;
       let presentDays = 0;
       let lateDays = 0;
@@ -528,11 +519,9 @@
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
-
           if (rec) {
             recordCount += 1;
             presentDays += 1;
-
             const status = getDayStatus(rec, dateStr);
             if (status === "late") lateDays += 1;
             if (status === "on_time") onTimeDays += 1;
@@ -579,10 +568,10 @@
       if (!filteredStaff.length) {
         weeklySummaryBody.innerHTML = `
           <tr>
-            <td colspan="${currentWeekDates.length + 2}" class="p-6 text-center text-slate-500">No staff found.</td>
+            <td colspan="${currentWeekDates.length + 2}" class="p-6 text-center text-slate-500">No processing staff found.</td>
           </tr>
         `;
-        summaryText.textContent = "No staff found for this filter.";
+        summaryText.textContent = "No processing staff found for this filter.";
         return;
       }
 
@@ -629,13 +618,12 @@
           weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
         });
 
-      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+      summaryText.textContent = `${filteredStaff.length} processing staff member(s) shown for week starting ${weekStartInput.value}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
     }
 
     function renderDailyView() {
       const filteredStaff = getFilteredStaff();
       dailyAttendanceBody.innerHTML = "";
-
       const rows = [];
 
       filteredStaff.forEach(user => {
@@ -710,7 +698,6 @@
 
     function downloadWeeklyCsv() {
       const filteredStaff = getFilteredStaff().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
       const headers = [
         "Week Start",
         "Date",
@@ -768,7 +755,6 @@
 
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-
       autoRefreshInterval = setInterval(async () => {
         try {
           await loadBaseData(true);

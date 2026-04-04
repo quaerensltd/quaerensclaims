@@ -28,6 +28,18 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -45,7 +57,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Payments</h1>
           <p class="text-sm text-slate-500">Track amounts due, paid, follow-up balances, and payment links</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
@@ -103,7 +114,7 @@
         </section>
 
         <section class="card p-6 lg:col-span-2">
-          <div class="grid md:grid-cols-4 gap-4">
+          <div class="grid md:grid-cols-5 gap-4">
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
               <select id="paymentStatusFilter" class="input">
@@ -113,7 +124,6 @@
                 <option value="fully_paid">Fully Paid</option>
               </select>
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Link</label>
               <select id="linkFilter" class="input">
@@ -122,12 +132,18 @@
                 <option value="without_link">Without Link</option>
               </select>
             </div>
-
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Follow-Up</label>
+              <select id="followUpFilter" class="input">
+                <option value="all">All</option>
+                <option value="with_followup">With Follow-Up Due</option>
+                <option value="without_followup">Without Follow-Up Due</option>
+              </select>
+            </div>
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
               <input id="searchInput" type="text" class="input" placeholder="Client, email, closer..." />
             </div>
-
             <div class="flex items-end">
               <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Payments</button>
             </div>
@@ -142,7 +158,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading payment files...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -193,6 +208,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const paymentStatusFilter = document.getElementById("paymentStatusFilter");
     const linkFilter = document.getElementById("linkFilter");
+    const followUpFilter = document.getElementById("followUpFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const paymentsBody = document.getElementById("paymentsBody");
@@ -220,13 +236,35 @@
     }
 
     function paymentStatusLabel(status) {
-      if (status === "part_paid") return "Part Paid";
-      if (status === "fully_paid") return "Fully Paid";
-      return "Awaiting Payment";
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
     }
 
     function hasPaymentLink(file) {
       return !!(file.paymentLink || "").trim();
+    }
+
+    function hasFollowUpDue(file) {
+      return Number(file.followUpDue || 0) > 0;
+    }
+
+    function getEffectivePaymentStatus(file) {
+      if (file.paymentStatus) return file.paymentStatus;
+
+      const dueNow = Number(file.amountDueNow || 0);
+      const paidNow = Number(file.amountPaidNow || 0);
+      const followUpDue = Number(file.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
+      }
+
+      return "awaiting_payment";
     }
 
     async function checkProcessingAccess(user) {
@@ -264,40 +302,62 @@
 
     function renderStats() {
       document.getElementById("totalFilesStat").textContent = String(allFiles.length);
-      document.getElementById("awaitingStat").textContent = String(allFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length);
-      document.getElementById("partPaidStat").textContent = String(allFiles.filter(f => f.paymentStatus === "part_paid").length);
-      document.getElementById("fullyPaidStat").textContent = String(allFiles.filter(f => f.paymentStatus === "fully_paid").length);
-      document.getElementById("followUpCountStat").textContent = String(allFiles.filter(f => Number(f.followUpDue || 0) > 0).length);
+      document.getElementById("awaitingStat").textContent = String(allFiles.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length);
+      document.getElementById("partPaidStat").textContent = String(allFiles.filter(f => getEffectivePaymentStatus(f) === "part_paid").length);
+      document.getElementById("fullyPaidStat").textContent = String(allFiles.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length);
+      document.getElementById("followUpCountStat").textContent = String(allFiles.filter(f => hasFollowUpDue(f)).length);
       document.getElementById("paymentLinkStat").textContent = String(allFiles.filter(f => hasPaymentLink(f)).length);
 
-      document.getElementById("dueNowTotal").textContent = money(allFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0));
-      document.getElementById("paidNowTotal").textContent = money(allFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0));
-      document.getElementById("followUpTotal").textContent = money(allFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0));
+      document.getElementById("dueNowTotal").textContent = money(
+        allFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0)
+      );
+      document.getElementById("paidNowTotal").textContent = money(
+        allFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0)
+      );
+      document.getElementById("followUpTotal").textContent = money(
+        allFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0)
+      );
     }
 
     function getFilteredFiles() {
       const paymentFilter = paymentStatusFilter.value;
       const currentLinkFilter = linkFilter.value;
+      const currentFollowUpFilter = followUpFilter.value;
       const term = searchInput.value.trim().toLowerCase();
 
       return allFiles.filter(file => {
-        const matchesPayment = paymentFilter === "all" || (file.paymentStatus || "awaiting_payment") === paymentFilter;
+        const effectiveStatus = getEffectivePaymentStatus(file);
+
+        const matchesPayment =
+          paymentFilter === "all" || effectiveStatus === paymentFilter;
+
         const matchesLink =
           currentLinkFilter === "all" ||
           (currentLinkFilter === "with_link" && hasPaymentLink(file)) ||
           (currentLinkFilter === "without_link" && !hasPaymentLink(file));
+
+        const matchesFollowUp =
+          currentFollowUpFilter === "all" ||
+          (currentFollowUpFilter === "with_followup" && hasFollowUpDue(file)) ||
+          (currentFollowUpFilter === "without_followup" && !hasFollowUpDue(file));
 
         const haystack = `
           ${clientName(file)}
           ${file.client?.email || ""}
           ${closerName(file)}
           ${file.paymentLink || ""}
+          ${file.processingNotes || ""}
+          ${file.claimType || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
-        return matchesPayment && matchesLink && matchesSearch;
-      }).sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0));
+        return matchesPayment && matchesLink && matchesFollowUp && matchesSearch;
+      }).sort((a, b) => {
+        const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
+        const bPriority = Number(b.followUpDue || 0) + Number(b.amountDueNow || 0);
+        return bPriority - aPriority;
+      });
     }
 
     function renderPayments() {
@@ -316,6 +376,8 @@
             ? `<a href="${file.paymentLink}" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline">Open Link</a>`
             : "-";
 
+          const effectiveStatus = getEffectivePaymentStatus(file);
+
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
           row.innerHTML = `
@@ -327,7 +389,7 @@
             <td class="p-3">${money(file.amountDueNow)}</td>
             <td class="p-3">${money(file.amountPaidNow)}</td>
             <td class="p-3">${money(file.followUpDue)}</td>
-            <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
+            <td class="p-3">${paymentStatusLabel(effectiveStatus)}</td>
             <td class="p-3">${linkText}</td>
             <td class="p-3">
               <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
@@ -370,6 +432,7 @@
 
     paymentStatusFilter.addEventListener("change", renderPayments);
     linkFilter.addEventListener("change", renderPayments);
+    followUpFilter.addEventListener("change", renderPayments);
     searchInput.addEventListener("input", renderPayments);
     refreshBtn.addEventListener("click", loadFiles);
 
