@@ -262,18 +262,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      getDocs,
-      collection
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -347,7 +337,7 @@
     }
 
     function isStaleOnline(docData) {
-      if (!docData?.isOnline || !docData.lastSeenAt?.toDate) return false;
+      if (!docData || !docData.isOnline || !docData.lastSeenAt?.toDate) return false;
       const lastSeen = docData.lastSeenAt.toDate().getTime();
       return Date.now() - lastSeen > 10 * 60 * 1000;
     }
@@ -357,14 +347,9 @@
 
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
 
-      if (
-        docData.isOnline &&
-        docData.currentSessionStartAt?.toDate &&
-        !isStaleOnline(docData)
-      ) {
+      if (docData.isOnline && docData.currentSessionStartAt?.toDate && !isStaleOnline(docData)) {
         const sessionStart = docData.currentSessionStartAt.toDate().getTime();
-        const liveExtra = Math.max(0, Date.now() - sessionStart);
-        return baseMs + liveExtra;
+        return baseMs + Math.max(0, Date.now() - sessionStart);
       }
 
       return baseMs;
@@ -415,6 +400,27 @@
       return true;
     }
 
+    function setDefaultMonth() {
+      const now = new Date();
+      monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function getMonthDates(monthStr) {
+      if (!monthStr) return [];
+      const [year, month] = monthStr.split("-").map(Number);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 0);
+      const dates = [];
+      const cursor = new Date(start);
+
+      while (cursor <= end) {
+        dates.push(toIsoDate(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      return dates;
+    }
+
     async function loadBaseData() {
       const [usersSnap, attendanceSnap] = await Promise.all([
         getDocs(collection(db, "users")),
@@ -448,46 +454,19 @@
       staffFilter.value = exists ? currentValue : "all";
     }
 
-    function getMonthDateRange(monthStr) {
-      const [year, month] = monthStr.split("-").map(Number);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 0);
-      return { start, end };
-    }
-
-    function getMonthDates(monthStr) {
-      const { start, end } = getMonthDateRange(monthStr);
-      const dates = [];
-      const cursor = new Date(start);
-
-      while (cursor <= end) {
-        dates.push(toIsoDate(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-
-      return dates;
-    }
-
     function renderAll() {
       const monthValue = monthInput.value;
+      const monthDates = getMonthDates(monthValue);
       const selectedStaff = staffFilter.value;
       const selectedStatus = statusFilter.value;
 
-      if (!monthValue) {
-        filteredRows = [];
-        renderStats();
-        renderTable();
-        return;
-      }
-
-      const monthDates = getMonthDates(monthValue);
       filteredRows = [];
 
       staffUsers.forEach(user => {
         if (selectedStaff !== "all" && user.id !== selectedStaff) return;
 
         monthDates.forEach(dateStr => {
-          const rec = attendanceDocs.find(doc => doc.uid === user.id && doc.date === dateStr) || null;
+          const rec = attendanceDocs.find(docu => docu.uid === user.id && docu.date === dateStr) || null;
           const dayStatus = getDayStatus(rec, dateStr);
 
           if (selectedStatus !== "all" && dayStatus !== selectedStatus) return;
@@ -513,17 +492,13 @@
     }
 
     function renderStats() {
-      const selectedStaffCount = staffFilter.value === "all"
-        ? staffUsers.length
-        : (staffFilter.value ? 1 : 0);
-
+      const selectedStaffCount = staffFilter.value === "all" ? staffUsers.length : (staffFilter.value ? 1 : 0);
       const presentDays = filteredRows.filter(r => !!r.rec).length;
       const onTimeDays = filteredRows.filter(r => r.dayStatus === "on_time").length;
       const lateDays = filteredRows.filter(r => r.dayStatus === "late").length;
       const absentDays = filteredRows.filter(r => r.dayStatus === "absent").length;
       const totalMs = filteredRows.reduce((sum, r) => sum + r.workedMs, 0);
-      const onlineNow = filteredRows.filter(r => r.rec && r.rec.isOnline && !isStaleOnline(r.rec)).length;
-      const actualRecords = filteredRows.filter(r => !!r.rec).length;
+      const recordsCount = filteredRows.filter(r => !!r.rec).length;
 
       document.getElementById("staffCountStat").textContent = String(selectedStaffCount);
       document.getElementById("presentDaysStat").textContent = String(presentDays);
@@ -531,14 +506,13 @@
       document.getElementById("lateDaysStat").textContent = String(lateDays);
       document.getElementById("absentDaysStat").textContent = String(absentDays);
       document.getElementById("totalHoursStat").textContent = formatDuration(totalMs);
-      document.getElementById("recordsCountStat").textContent = String(actualRecords);
+      document.getElementById("recordsCountStat").textContent = String(recordsCount);
 
       document.getElementById("snapshotMonth").textContent = monthInput.value || "-";
       document.getElementById("snapshotStaff").textContent = String(selectedStaffCount);
       document.getElementById("snapshotPresent").textContent = String(presentDays);
       document.getElementById("snapshotLate").textContent = String(lateDays);
       document.getElementById("snapshotAbsent").textContent = String(absentDays);
-      document.getElementById("snapshotOnline").textContent = String(onlineNow);
     }
 
     function renderTable() {
@@ -628,11 +602,6 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }
-
-    function setDefaultMonth() {
-      const now = new Date();
-      monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     }
 
     async function refreshMonth() {
