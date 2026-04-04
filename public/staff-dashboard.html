@@ -216,14 +216,7 @@
     }
 
     async function recordStaffLoginFromPage() {
-      if (!currentUser) return;
-
-      const userRef = doc(db, "users", currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return;
-
-      const userData = userSnap.data();
-      if (userData.role !== "staff") return;
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
 
       const today = new Date().toISOString().slice(0, 10);
       const attendanceId = getTodayAttendanceId(currentUser.uid);
@@ -233,9 +226,9 @@
       if (!attendanceSnap.exists()) {
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
-          name: userData.name || "",
+          name: currentUserData.name || "",
           email: currentUser.email || "",
-          role: userData.role || "staff",
+          role: currentUserData.role || "staff",
           date: today,
           firstLoginAt: serverTimestamp(),
           lastLoginAt: serverTimestamp(),
@@ -245,9 +238,9 @@
       } else {
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
-          name: userData.name || "",
+          name: currentUserData.name || "",
           email: currentUser.email || "",
-          role: userData.role || "staff",
+          role: currentUserData.role || "staff",
           date: today,
           lastLoginAt: serverTimestamp(),
           lastSeenAt: serverTimestamp(),
@@ -430,7 +423,13 @@
       try {
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
-        await recordStaffLoginFromPage();
+
+        try {
+          await recordStaffLoginFromPage();
+        } catch (attendanceError) {
+          console.error("Attendance login-from-page failed:", attendanceError);
+        }
+
         await loadLeads();
         hideLoader();
       } catch (error) {
@@ -442,7 +441,11 @@
 
     logoutBtn.addEventListener("click", async () => {
       try {
-        await recordStaffLogout();
+        try {
+          await recordStaffLogout();
+        } catch (attendanceError) {
+          console.error("Attendance logout failed:", attendanceError);
+        }
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
