@@ -29,6 +29,18 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -46,7 +58,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Callback Agenda</h1>
           <p class="text-sm text-slate-500">Your callback and intro-email follow-up schedule</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
@@ -58,7 +69,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-4 gap-4">
+      <section class="grid lg:grid-cols-5 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Scheduled</div>
           <div id="totalScheduledStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -75,6 +86,10 @@
           <div class="text-sm text-slate-500">Intro Email Follow-ups</div>
           <div id="introStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Qualified</div>
+          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
       </section>
 
       <section class="card p-6">
@@ -87,7 +102,6 @@
               <option value="intro_only">Intro email follow-ups only</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
             <select id="timingFilter" class="input">
@@ -97,12 +111,10 @@
               <option value="future">Future</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" class="input" type="text" placeholder="Name, phone, postcode..." />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Agenda</button>
           </div>
@@ -116,7 +128,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -127,7 +138,7 @@
                 <th class="text-left p-3">Phone</th>
                 <th class="text-left p-3">Postcode</th>
                 <th class="text-left p-3">Type</th>
-                <th class="text-left p-3">Last Action</th>
+                <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -158,18 +169,25 @@
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Type:</span> <span id="lead_type">-</span></div>
             <div><span class="font-semibold text-blue-900">Scheduled:</span> <span id="lead_scheduled">-</span></div>
+            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
           </div>
         </section>
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Quick Actions</h4>
           <div id="actionWrap" class="space-y-4">
-            <div class="grid md:grid-cols-3 gap-3">
+            <div class="grid md:grid-cols-4 gap-3">
               <button id="openIntakeBtn" class="btn btn-primary" type="button">Fill Out Intake Now</button>
-              <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule</button>
+              <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+              <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
               <button id="markCompletedBtn" class="btn btn-secondary" type="button">Mark Callback Done</button>
             </div>
-
+            <div class="grid md:grid-cols-3 gap-3">
+              <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule</button>
+              <button id="keepIntroBtn" class="btn btn-secondary" type="button">Keep as Intro Follow-up</button>
+              <button id="keepCallbackBtn" class="btn btn-secondary" type="button">Keep as Callback</button>
+            </div>
             <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">New Callback Date</label>
@@ -192,12 +210,10 @@
               <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
               <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="notesBox">Notes</label>
               <textarea id="notesBox" class="input" rows="5" placeholder="Callback notes, outcome, next action..."></textarea>
             </div>
-
             <div class="flex gap-3">
               <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
               <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
@@ -246,30 +262,29 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const typeFilter = document.getElementById("typeFilter");
     const timingFilter = document.getElementById("timingFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
-
     const totalScheduledStat = document.getElementById("totalScheduledStat");
     const todayStat = document.getElementById("todayStat");
     const overdueStat = document.getElementById("overdueStat");
     const introStat = document.getElementById("introStat");
-
+    const qualifiedStat = document.getElementById("qualifiedStat");
     const agendaBody = document.getElementById("agendaBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const rescheduleBtn = document.getElementById("rescheduleBtn");
+    const keepIntroBtn = document.getElementById("keepIntroBtn");
+    const keepCallbackBtn = document.getElementById("keepCallbackBtn");
+    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
+    const sendToManagerBtn = document.getElementById("sendToManagerBtn");
     const markCompletedBtn = document.getElementById("markCompletedBtn");
     const noAnswerBtn = document.getElementById("noAnswerBtn");
     const voicemailBtn = document.getElementById("voicemailBtn");
@@ -314,7 +329,9 @@
         intake_draft_saved: "Intake Draft Saved",
         notes_saved: "Notes Saved",
         callback_rescheduled: "Callback Rescheduled",
-        callback_completed: "Callback Completed"
+        callback_completed: "Callback Completed",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review"
       };
       return map[action] || action || "-";
     }
@@ -325,6 +342,34 @@
 
     function isIntroLead(lead) {
       return !!lead.introEmailNeeded;
+    }
+
+    function isQualified(lead) {
+      return lead.leadStatus === "qualified";
+    }
+
+    function formatLeadStatus(lead) {
+      if (isLocked(lead)) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      return "New";
+    }
+
+    function leadStatusBadge(lead) {
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-blue">Intro Email Needed</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
     }
 
     function todayIso() {
@@ -359,7 +404,6 @@
         });
       } else {
         const existingData = attendanceSnap.data() || {};
-
         const updateData = {
           uid: currentUser.uid,
           name: currentUserData.name || "",
@@ -371,15 +415,12 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
-
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -405,7 +446,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -433,8 +473,8 @@
 
       const data = attendanceSnap.data() || {};
       const now = Date.now();
-
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
@@ -497,7 +537,6 @@
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid)
         );
-
         const snapshot = await getDocs(leadsQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         renderStats();
@@ -519,11 +558,11 @@
     function renderStats() {
       const scheduled = getScheduledLeads();
       const today = todayIso();
-
       totalScheduledStat.textContent = String(scheduled.length);
       todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
       overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
       introStat.textContent = String(scheduled.filter(x => x.introEmailNeeded).length);
+      qualifiedStat.textContent = String(scheduled.filter(x => isQualified(x)).length);
     }
 
     function renderAgenda() {
@@ -552,12 +591,10 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesType && matchesTiming && matchesSearch;
       });
 
       filtered = sortLeadsBySchedule(filtered);
-
       agendaBody.innerHTML = "";
 
       if (!filtered.length) {
@@ -580,7 +617,7 @@
             <td class="p-3">${lead.telephone || "-"}</td>
             <td class="p-3">${lead.postcode || "-"}</td>
             <td class="p-3">${getLeadType(lead)}</td>
-            <td class="p-3">${formatAction(lead.lastAction)}</td>
+            <td class="p-3">${leadStatusBadge(lead)}</td>
             <td class="p-3">
               <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
                 Open
@@ -631,11 +668,12 @@
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
       document.getElementById("lead_type").textContent = getLeadType(selectedLead);
       document.getElementById("lead_scheduled").textContent = getScheduledText(selectedLead);
+      document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
 
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
-
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
@@ -677,13 +715,20 @@
       }
     }
 
-    openIntakeBtn.addEventListener("click", () => {
+    openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "intake_in_progress",
+        lastAction: "interested_intake_started"
+      }, "interested_intake_started", "Lead moved to intake from callback agenda.");
+
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose a new callback date and time.", true);
         return;
@@ -696,6 +741,49 @@
         leadStatus: selectedLead.introEmailNeeded ? "intro_email_needed" : "callback_required",
         lastAction: "callback_rescheduled"
       }, "callback_rescheduled", `Rescheduled for ${callbackDate.value} ${callbackTime.value}`);
+    });
+
+    keepIntroBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        introEmailNeeded: true,
+        callbackRequired: true,
+        leadStatus: "intro_email_needed",
+        lastAction: "send_intro_email"
+      }, "send_intro_email", "Kept as intro email follow-up.");
+    });
+
+    keepCallbackBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        introEmailNeeded: false,
+        callbackRequired: true,
+        leadStatus: "callback_required",
+        lastAction: "callback_required"
+      }, "callback_required", "Kept as normal callback.");
+    });
+
+    markQualifiedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "qualified",
+        callbackRequired: false,
+        qualifiedAt: serverTimestamp(),
+        lastAction: "qualified"
+      }, "qualified", "Lead marked as qualified from callback agenda.");
+    });
+
+    sendToManagerBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "awaiting_manager",
+        sentToManagerAt: serverTimestamp(),
+        lastAction: "awaiting_manager"
+      }, "awaiting_manager", "Lead sent to manager from callback agenda.");
     });
 
     markCompletedBtn.addEventListener("click", async () => {
@@ -714,6 +802,7 @@
       if (!selectedLead) return;
 
       await updateLead({
+        leadStatus: "no_answer",
         lastAction: "no_answer",
         lastCallAt: serverTimestamp(),
         attemptCount: (selectedLead.attemptCount || 0) + 1
@@ -739,7 +828,8 @@
         lastAction: "wrong_number",
         closed: true,
         usable: false,
-        callbackRequired: false
+        callbackRequired: false,
+        introEmailNeeded: false
       }, "wrong_number", "Marked as wrong number from callback agenda.");
     });
 
@@ -751,7 +841,8 @@
         lastAction: "not_interested",
         closed: true,
         usable: false,
-        callbackRequired: false
+        callbackRequired: false,
+        introEmailNeeded: false
       }, "not_interested", "Marked as not interested from callback agenda.");
     });
 

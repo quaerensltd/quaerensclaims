@@ -28,6 +28,18 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -56,7 +68,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-4 gap-4">
+      <section class="grid lg:grid-cols-5 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Intro Emails</div>
           <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -73,6 +85,10 @@
           <div class="text-sm text-slate-500">With Callback</div>
           <div id="callbackStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Qualified</div>
+          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
       </section>
 
       <section class="card p-6">
@@ -85,7 +101,6 @@
               <option value="sent">Sent</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
             <select id="timingFilter" class="input">
@@ -95,12 +110,10 @@
               <option value="future">Future</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Queue</button>
           </div>
@@ -114,7 +127,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading queue...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -124,7 +136,7 @@
                 <th class="text-left p-3">Postcode</th>
                 <th class="text-left p-3">Callback</th>
                 <th class="text-left p-3">Email Status</th>
-                <th class="text-left p-3">Last Action</th>
+                <th class="text-left p-3">Lead Status</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -155,6 +167,8 @@
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
             <div><span class="font-semibold text-blue-900">Email Sent:</span> <span id="lead_emailSent">-</span></div>
+            <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
           </div>
         </section>
 
@@ -164,6 +178,8 @@
           <div class="mt-4 flex flex-wrap gap-3">
             <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
             <button id="markSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
+            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+            <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
             <button id="openIntakeBtn" class="btn btn-secondary" type="button">Fill Out Intake Now</button>
           </div>
         </section>
@@ -180,7 +196,6 @@
               <input id="callbackTime" type="time" class="input" />
             </div>
           </div>
-
           <div class="mt-4 flex flex-wrap gap-3">
             <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule Follow-up</button>
             <button id="markDoneBtn" class="btn btn-secondary" type="button">Mark Queue Done</button>
@@ -244,17 +259,18 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const queueBody = document.getElementById("queueBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const totalStat = document.getElementById("totalStat");
     const sentStat = document.getElementById("sentStat");
     const notSentStat = document.getElementById("notSentStat");
     const callbackStat = document.getElementById("callbackStat");
-
+    const qualifiedStat = document.getElementById("qualifiedStat");
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const emailTemplate = document.getElementById("emailTemplate");
     const copyEmailBtn = document.getElementById("copyEmailBtn");
     const markSentBtn = document.getElementById("markSentBtn");
+    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
+    const sendToManagerBtn = document.getElementById("sendToManagerBtn");
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
@@ -314,7 +330,6 @@
         });
       } else {
         const existingData = attendanceSnap.data() || {};
-
         const updateData = {
           uid: currentUser.uid,
           name: currentUserData.name || "",
@@ -326,15 +341,12 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
-
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -360,7 +372,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -388,8 +399,8 @@
 
       const data = attendanceSnap.data() || {};
       const now = Date.now();
-
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
@@ -422,7 +433,9 @@
         not_interested: "Not Interested",
         notes_saved: "Notes Saved",
         interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted"
+        intake_submitted: "Intake Submitted",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review"
       };
       return map[action] || action || "-";
     }
@@ -434,20 +447,31 @@
     function buildEmailTemplate(lead) {
       const name = `${lead.forename || ""} ${lead.surname || ""}`.trim();
       return `Subject: Information about your potential solar claim
-
 Dear ${name || "Client"},
-
 Thank you for speaking with us.
-
 As discussed, we are sending you some introductory information regarding a possible solar-related claim review. This is an initial contact only and helps explain the next steps if you wish to proceed.
-
 At this stage, we may ask you for some basic information and documents so we can understand your situation properly and see whether your matter is suitable for a full intake and review.
-
 If you would like to continue, we can speak again at the arranged follow-up time.
-
 Kind regards,
 ${currentUserData?.name || "Quaerens Team"}
 Quaerens`;
+    }
+
+    function isQualified(lead) {
+      return lead.leadStatus === "qualified";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    function leadStatusBadge(lead) {
+      if (isLocked(lead)) return `<span class="badge badge-red">Closed</span>`;
+      if (lead.leadStatus === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (lead.leadStatus === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (lead.leadStatus === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (lead.introEmailSent) return `<span class="badge badge-blue">Email Sent</span>`;
+      return `<span class="badge badge-amber">Intro Email Needed</span>`;
     }
 
     async function checkListerAccess(user) {
@@ -480,10 +504,8 @@ Quaerens`;
           where("assignedToUid", "==", currentUser.uid),
           where("introEmailNeeded", "==", true)
         );
-
         const snapshot = await getDocs(introQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
         renderStats();
         renderQueue();
       } catch (error) {
@@ -497,6 +519,7 @@ Quaerens`;
       sentStat.textContent = String(allLeads.filter(x => x.introEmailSent).length);
       notSentStat.textContent = String(allLeads.filter(x => !x.introEmailSent).length);
       callbackStat.textContent = String(allLeads.filter(x => x.callbackDate).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => isQualified(x)).length);
     }
 
     function renderQueue() {
@@ -526,7 +549,6 @@ Quaerens`;
           `.toLowerCase();
 
           const matchesSearch = !term || haystack.includes(term);
-
           return matchesStatus && matchesTiming && matchesSearch;
         })
         .sort((a, b) => {
@@ -555,8 +577,8 @@ Quaerens`;
             <td class="p-3">${lead.telephone || "-"}</td>
             <td class="p-3">${lead.postcode || "-"}</td>
             <td class="p-3">${getScheduledText(lead)}</td>
-            <td class="p-3">${lead.introEmailSent ? "Sent" : "Not Sent"}</td>
-            <td class="p-3">${formatAction(lead.lastAction)}</td>
+            <td class="p-3">${lead.introEmailSent ? '<span class="badge badge-green">Sent</span>' : '<span class="badge badge-amber">Not Sent</span>'}</td>
+            <td class="p-3">${leadStatusBadge(lead)}</td>
             <td class="p-3">
               <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button>
             </td>
@@ -605,12 +627,13 @@ Quaerens`;
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
       document.getElementById("lead_callback").textContent = getScheduledText(selectedLead);
       document.getElementById("lead_emailSent").textContent = selectedLead.introEmailSent ? "Yes" : "No";
+      document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
 
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
       emailTemplate.value = selectedLead.introEmailBody || buildEmailTemplate(selectedLead);
-
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
@@ -673,13 +696,46 @@ Quaerens`;
       }, "intro_email_sent", "Introduction email marked as sent.");
     });
 
-    openIntakeBtn.addEventListener("click", () => {
+    markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "qualified",
+        introEmailNeeded: true,
+        introEmailBody: emailTemplate.value || "",
+        qualifiedAt: serverTimestamp(),
+        lastAction: "qualified"
+      }, "qualified", "Lead marked as qualified from intro email queue.");
+    });
+
+    sendToManagerBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "awaiting_manager",
+        introEmailNeeded: false,
+        callbackRequired: false,
+        introEmailBody: emailTemplate.value || "",
+        sentToManagerAt: serverTimestamp(),
+        lastAction: "awaiting_manager"
+      }, "awaiting_manager", "Lead sent to manager from intro email queue.");
+    });
+
+    openIntakeBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "intake_in_progress",
+        lastAction: "interested_intake_started",
+        introEmailBody: emailTemplate.value || ""
+      }, "interested_intake_started", "Lead moved to intake from intro email queue.");
+
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time.", true);
         return;

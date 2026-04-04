@@ -19,6 +19,24 @@
     .btn-secondary:hover { background: #dbeafe; }
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .btn-red { background: #fee2e2; color: #991b1b; }
+    .btn-red:hover { background: #fecaca; }
+    .btn-amber { background: #fef3c7; color: #92400e; }
+    .btn-amber:hover { background: #fde68a; }
+    .btn-green { background: #dcfce7; color: #166534; }
+    .btn-green:hover { background: #bbf7d0; }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
     .hidden { display: none; }
     .disabled-actions { opacity: 0.55; pointer-events: none; }
     .active-nav {
@@ -29,6 +47,18 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -46,7 +76,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens My Leads</h1>
           <p class="text-sm text-slate-500">Your assigned calling leads and action workflow</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
@@ -72,16 +101,16 @@
           <div id="introEmailStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Converted</div>
-          <div id="convertedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Qualified</div>
+          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Manager</div>
+          <div id="awaitingManagerStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Locked</div>
           <div id="lockedStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">No Answer</div>
-          <div id="noAnswerStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
       </section>
 
@@ -92,30 +121,31 @@
             <select id="statusFilter" class="input">
               <option value="all">All statuses</option>
               <option value="new">New</option>
-              <option value="callback_required">Callback Required</option>
+              <option value="no_answer">No Answer</option>
+              <option value="callback_required">Callback Booked</option>
               <option value="intro_email_needed">Intro Email Needed</option>
-              <option value="intake_in_progress">Intake In Progress</option>
+              <option value="qualified">Qualified</option>
+              <option value="awaiting_manager">Awaiting Manager</option>
               <option value="converted">Converted</option>
               <option value="closed">Closed / Unusable</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Special View</label>
             <select id="specialFilter" class="input">
               <option value="all">All leads</option>
               <option value="callbacks_only">Callbacks Only</option>
               <option value="intro_only">Intro Email Only</option>
+              <option value="qualified_only">Qualified Only</option>
+              <option value="awaiting_manager_only">Awaiting Manager</option>
               <option value="converted_only">Converted Only</option>
               <option value="locked_only">Locked Only</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Leads</button>
           </div>
@@ -129,7 +159,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -182,6 +211,8 @@
             <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake</button>
             <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
             <button id="callbackRequiredBtn" class="btn btn-secondary" type="button">Interested — Call Back</button>
+            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+            <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
             <button id="saveLeadBtn" class="btn btn-secondary" type="button">Save Lead</button>
           </div>
         </section>
@@ -260,20 +291,18 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const statusFilter = document.getElementById("statusFilter");
     const specialFilter = document.getElementById("specialFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const callbacksStat = document.getElementById("callbacksStat");
     const introEmailStat = document.getElementById("introEmailStat");
-    const convertedStat = document.getElementById("convertedStat");
+    const qualifiedStat = document.getElementById("qualifiedStat");
+    const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
-    const noAnswerStat = document.getElementById("noAnswerStat");
 
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
@@ -281,12 +310,12 @@
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const callbackRequiredBtn = document.getElementById("callbackRequiredBtn");
+    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
+    const sendToManagerBtn = document.getElementById("sendToManagerBtn");
     const saveLeadBtn = document.getElementById("saveLeadBtn");
-
     const noAnswerBtn = document.getElementById("noAnswerBtn");
     const voicemailBtn = document.getElementById("voicemailBtn");
     const wrongNumberBtn = document.getElementById("wrongNumberBtn");
@@ -342,7 +371,6 @@
         });
       } else {
         const existingData = attendanceSnap.data() || {};
-
         const updateData = {
           uid: currentUser.uid,
           name: currentUserData.name || "",
@@ -354,15 +382,12 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
-
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -388,7 +413,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -416,8 +440,8 @@
 
       const data = attendanceSnap.data() || {};
       const now = Date.now();
-
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
@@ -454,22 +478,42 @@
         intake_submitted: "Intake Submitted",
         intake_draft_saved: "Intake Draft Saved",
         notes_saved: "Notes Saved",
-        callback_rescheduled: "Callback Rescheduled"
+        callback_rescheduled: "Callback Rescheduled",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review"
       };
       return map[action] || action || "-";
     }
 
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    function isConverted(lead) {
+      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
+    }
+
     function formatLeadStatus(lead) {
-      if (lead.closed || lead.usable === false) return "Closed";
-      if (lead.leadStatus === "callback_required") return "Callback Required";
+      if (isLocked(lead)) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
       if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
       if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
       if (lead.leadStatus === "converted") return "Converted";
       return "New";
     }
 
-    function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
+    function leadStatusBadge(lead) {
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
     }
 
     async function checkStaffAccess(user) {
@@ -501,10 +545,8 @@
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid)
         );
-
         const snapshot = await getDocs(leadsQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
         renderStats();
         renderLeads();
       } catch (error) {
@@ -517,9 +559,9 @@
       totalLeadsStat.textContent = String(allLeads.length);
       callbacksStat.textContent = String(allLeads.filter(x => x.callbackRequired).length);
       introEmailStat.textContent = String(allLeads.filter(x => x.introEmailNeeded).length);
-      convertedStat.textContent = String(allLeads.filter(x => x.leadStatus === "converted" || x.convertedToSubmissionId).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
+      awaitingManagerStat.textContent = String(allLeads.filter(x => x.leadStatus === "awaiting_manager" || x.sentToManagerAt).length);
       lockedStat.textContent = String(allLeads.filter(x => isLocked(x)).length);
-      noAnswerStat.textContent = String(allLeads.filter(x => x.lastAction === "no_answer").length);
     }
 
     function getFilteredLeads() {
@@ -530,6 +572,9 @@
       return allLeads.filter(lead => {
         const currentStatus =
           isLocked(lead) ? "closed" :
+          lead.leadStatus === "awaiting_manager" ? "awaiting_manager" :
+          lead.leadStatus === "qualified" ? "qualified" :
+          lead.leadStatus === "no_answer" ? "no_answer" :
           lead.leadStatus === "callback_required" ? "callback_required" :
           lead.leadStatus === "intro_email_needed" ? "intro_email_needed" :
           lead.leadStatus === "intake_in_progress" ? "intake_in_progress" :
@@ -542,7 +587,9 @@
           special === "all" ||
           (special === "callbacks_only" && lead.callbackRequired) ||
           (special === "intro_only" && lead.introEmailNeeded) ||
-          (special === "converted_only" && (lead.leadStatus === "converted" || lead.convertedToSubmissionId)) ||
+          (special === "qualified_only" && lead.leadStatus === "qualified") ||
+          (special === "awaiting_manager_only" && (lead.leadStatus === "awaiting_manager" || lead.sentToManagerAt)) ||
+          (special === "converted_only" && isConverted(lead)) ||
           (special === "locked_only" && isLocked(lead));
 
         const haystack = `
@@ -550,10 +597,11 @@
           ${lead.surname || ""}
           ${lead.telephone || ""}
           ${lead.postcode || ""}
+          ${lead.claimType || ""}
+          ${lead.type || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesSpecial && matchesSearch;
       });
     }
@@ -579,7 +627,7 @@
             </td>
             <td class="p-3">${lead.telephone || "-"}</td>
             <td class="p-3">${lead.postcode || "-"}</td>
-            <td class="p-3">${formatLeadStatus(lead)}</td>
+            <td class="p-3">${leadStatusBadge(lead)}</td>
             <td class="p-3">${formatAction(lead.lastAction)}</td>
             <td class="p-3">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
             <td class="p-3">${lead.convertedToSubmissionId || "-"}</td>
@@ -634,7 +682,7 @@
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
-      document.getElementById("lead_status").textContent = formatLeadStatus(selectedLead);
+      document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_callback").textContent =
         selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
@@ -642,7 +690,6 @@
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
-
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
@@ -686,7 +733,6 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateLead({
           leadStatus: "intake_in_progress",
@@ -700,7 +746,6 @@
 
     sendIntroEmailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time first.", true);
         return;
@@ -718,7 +763,6 @@
 
     callbackRequiredBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time first.", true);
         return;
@@ -733,9 +777,29 @@
       }, "callback_required", `Callback set for ${callbackDate.value} ${callbackTime.value}`);
     });
 
-    saveLeadBtn.addEventListener("click", async () => {
+    markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
+      await updateLead({
+        leadStatus: "qualified",
+        callbackRequired: false,
+        qualifiedAt: serverTimestamp(),
+        lastAction: "qualified"
+      }, "qualified", "Lead marked as qualified.");
+    });
+
+    sendToManagerBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: "awaiting_manager",
+        sentToManagerAt: serverTimestamp(),
+        lastAction: "awaiting_manager"
+      }, "awaiting_manager", "Lead sent to manager.");
+    });
+
+    saveLeadBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -743,7 +807,6 @@
           callbackTime: callbackTime.value || "",
           lastUpdatedAt: serverTimestamp()
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead saved.");
       } catch (error) {
@@ -756,6 +819,7 @@
       if (!selectedLead) return;
 
       await updateLead({
+        leadStatus: "no_answer",
         lastAction: "no_answer",
         lastCallAt: serverTimestamp(),
         attemptCount: (selectedLead.attemptCount || 0) + 1
@@ -801,7 +865,6 @@
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -814,7 +877,6 @@
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {

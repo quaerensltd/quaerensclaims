@@ -16,6 +16,24 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .btn-red { background: #fee2e2; color: #991b1b; }
+    .btn-red:hover { background: #fecaca; }
+    .btn-amber { background: #fef3c7; color: #92400e; }
+    .btn-amber:hover { background: #fde68a; }
+    .btn-green { background: #dcfce7; color: #166534; }
+    .btn-green:hover { background: #bbf7d0; }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -24,6 +42,38 @@
     .active-nav:hover {
       background: #1d4ed8;
       color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -35,6 +85,8 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
@@ -42,7 +94,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Staff Dashboard</h1>
           <p class="text-sm text-slate-500">Your leads, callbacks, intro emails, and conversions</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
@@ -60,6 +111,10 @@
           <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
+          <div class="text-sm text-slate-500">Untouched Leads</div>
+          <div id="untouchedLeadsStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
           <div class="text-sm text-slate-500">Callbacks Today</div>
           <div id="callbacksTodayStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
@@ -72,12 +127,8 @@
           <div id="introPendingStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Converted Leads</div>
-          <div id="convertedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Locked / Unusable</div>
-          <div id="lockedStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+          <div class="text-sm text-slate-500">Qualified / Awaiting Manager</div>
+          <div id="qualifiedReadyStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
       </section>
 
@@ -96,6 +147,10 @@
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Today’s Priorities</h2>
           <div class="space-y-4 text-sm">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Untouched leads</span>
+              <span id="priorityUntouched" class="font-extrabold text-sky-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <span class="text-slate-600">Callbacks due today</span>
               <span id="priorityCallbacksToday" class="font-extrabold text-amber-600">0</span>
             </div>
@@ -108,9 +163,101 @@
               <span id="priorityIntroPending" class="font-extrabold text-indigo-600">0</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-600">Converted leads</span>
-              <span id="priorityConverted" class="font-extrabold text-emerald-600">0</span>
+              <span class="text-slate-600">Qualified / ready for manager</span>
+              <span id="priorityQualified" class="font-extrabold text-emerald-600">0</span>
             </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Untouched Leads</h2>
+              <p class="text-sm text-slate-500 mt-1">Leads with no clear follow-up set yet</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Type</th>
+                  <th class="text-left p-3">Status</th>
+                  <th class="text-left p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="untouchedBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Qualified / Ready for Manager</h2>
+              <p class="text-sm text-slate-500 mt-1">Leads ready to move onward</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Phone</th>
+                  <th class="text-left p-3">Status</th>
+                  <th class="text-left p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="qualifiedBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Callbacks Due Today</h2>
+              <p class="text-sm text-slate-500 mt-1">Your priority callbacks for today</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Time</th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Type</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="callbacksTodayBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Overdue Callbacks</h2>
+              <p class="text-sm text-slate-500 mt-1">Follow-ups that need attention now</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Date</th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Phone</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="overdueBody"></tbody>
+            </table>
           </div>
         </section>
       </section>
@@ -123,7 +270,6 @@
               <p class="text-sm text-slate-500 mt-1">Your next scheduled follow-ups</p>
             </div>
           </div>
-
           <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
               <thead>
@@ -147,7 +293,6 @@
               <p class="text-sm text-slate-500 mt-1">Leads waiting for intro email action</p>
             </div>
           </div>
-
           <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
               <thead>
@@ -182,6 +327,7 @@
       query,
       where,
       setDoc,
+      updateDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -202,6 +348,13 @@
     let currentUserData = null;
     let allLeads = [];
     let attendanceHeartbeatInterval = null;
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -240,7 +393,6 @@
         });
       } else {
         const existingData = attendanceSnap.data() || {};
-
         const updateData = {
           uid: currentUser.uid,
           name: currentUserData.name || "",
@@ -314,8 +466,8 @@
 
       const data = attendanceSnap.data() || {};
       const now = Date.now();
-
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
@@ -345,12 +497,92 @@
       return lead.closed === true || lead.usable === false;
     }
 
+    function isConverted(lead) {
+      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
+    }
+
+    function isQualified(lead) {
+      const status = (lead.leadStatus || "").toString().toLowerCase();
+      return status === "qualified" || status === "ready" || status === "qualified_ready";
+    }
+
+    function isAwaitingManager(lead) {
+      const status = (lead.leadStatus || "").toString().toLowerCase();
+      return status === "awaiting_manager" || !!lead.sentToManagerAt;
+    }
+
+    function isUntouchedLead(lead) {
+      if (isLocked(lead) || isConverted(lead) || isAwaitingManager(lead)) return false;
+
+      const status = (lead.leadStatus || "").toString().toLowerCase();
+      const noUsefulStatus = !status || status === "new" || status === "pending";
+      const noCallbackSet = !lead.callbackRequired && !lead.callbackDate;
+      const noIntroProgress = !lead.introEmailNeeded && !lead.introEmailSent;
+
+      return noUsefulStatus && noCallbackSet && noIntroProgress;
+    }
+
     function appointmentKey(lead) {
       return `${lead.callbackDate || "9999-12-31"} ${lead.callbackTime || "23:59"}`;
     }
 
     function formatScheduled(lead) {
       return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    function statusBadge(status) {
+      const clean = (status || "new").toString().toLowerCase();
+
+      if (clean === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (clean === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (clean === "no_answer") return `<span class="badge badge-amber">No Answer</span>`;
+      if (clean === "not_interested") return `<span class="badge badge-red">Not Interested</span>`;
+      if (clean === "converted") return `<span class="badge badge-green">Converted</span>`;
+      return `<span class="badge badge-slate">${status || "New"}</span>`;
+    }
+
+    async function updateLeadQuick(id, patch, successMessage) {
+      try {
+        const leadRef = doc(db, "leadAssignments", id);
+        await updateDoc(leadRef, {
+          ...patch,
+          updatedAt: serverTimestamp()
+        });
+        showToast(successMessage);
+        await loadLeads();
+      } catch (error) {
+        console.error("Quick update failed:", error);
+        showToast("Could not update lead.");
+      }
+    }
+
+    async function markNoAnswer(id) {
+      await updateLeadQuick(id, {
+        leadStatus: "no_answer",
+        callbackRequired: true
+      }, "Marked as no answer.");
+    }
+
+    async function markNotInterested(id) {
+      await updateLeadQuick(id, {
+        leadStatus: "not_interested",
+        usable: false,
+        closed: true
+      }, "Marked as not interested.");
+    }
+
+    async function markQualified(id) {
+      await updateLeadQuick(id, {
+        leadStatus: "qualified",
+        qualifiedAt: serverTimestamp()
+      }, "Lead marked as qualified.");
+    }
+
+    async function sendToManager(id) {
+      await updateLeadQuick(id, {
+        leadStatus: "awaiting_manager",
+        sentToManagerAt: serverTimestamp()
+      }, "Lead sent to manager.");
     }
 
     async function checkStaffAccess(user) {
@@ -386,6 +618,10 @@
       allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       renderStats();
+      renderUntouchedLeads();
+      renderQualifiedReady();
+      renderCallbacksToday();
+      renderOverdueCallbacks();
       renderCallbacks();
       renderIntroEmails();
     }
@@ -396,20 +632,167 @@
       const callbacksToday = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate === today).length;
       const overdueCallbacks = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate && l.callbackDate < today).length;
       const introPending = allLeads.filter(l => !isLocked(l) && l.introEmailNeeded && !l.introEmailSent).length;
-      const converted = allLeads.filter(l => l.leadStatus === "converted" || l.convertedToSubmissionId).length;
-      const locked = allLeads.filter(l => isLocked(l)).length;
+      const untouched = allLeads.filter(l => isUntouchedLead(l)).length;
+      const qualifiedReady = allLeads.filter(l => !isLocked(l) && isQualified(l) && !isAwaitingManager(l)).length;
 
       document.getElementById("totalLeadsStat").textContent = String(allLeads.length);
+      document.getElementById("untouchedLeadsStat").textContent = String(untouched);
       document.getElementById("callbacksTodayStat").textContent = String(callbacksToday);
       document.getElementById("overdueCallbacksStat").textContent = String(overdueCallbacks);
       document.getElementById("introPendingStat").textContent = String(introPending);
-      document.getElementById("convertedStat").textContent = String(converted);
-      document.getElementById("lockedStat").textContent = String(locked);
+      document.getElementById("qualifiedReadyStat").textContent = String(qualifiedReady);
 
+      document.getElementById("priorityUntouched").textContent = String(untouched);
       document.getElementById("priorityCallbacksToday").textContent = String(callbacksToday);
       document.getElementById("priorityOverdue").textContent = String(overdueCallbacks);
       document.getElementById("priorityIntroPending").textContent = String(introPending);
-      document.getElementById("priorityConverted").textContent = String(converted);
+      document.getElementById("priorityQualified").textContent = String(qualifiedReady);
+    }
+
+    function renderUntouchedLeads() {
+      const body = document.getElementById("untouchedBody");
+      body.innerHTML = "";
+
+      const leads = allLeads
+        .filter(l => isUntouchedLead(l))
+        .slice(0, 8);
+
+      if (!leads.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No untouched leads found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      leads.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          </td>
+          <td class="p-3">${lead.claimType || lead.type || "-"}</td>
+          <td class="p-3">${statusBadge(lead.leadStatus || "new")}</td>
+          <td class="p-3">
+            <button class="btn-small btn-amber" data-action="no-answer" data-id="${lead.id}">No Answer</button>
+            <button class="btn-small btn-red" data-action="not-interested" data-id="${lead.id}">Not Interested</button>
+            <button class="btn-small btn-green" data-action="qualified" data-id="${lead.id}">Qualified</button>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderQualifiedReady() {
+      const body = document.getElementById("qualifiedBody");
+      body.innerHTML = "";
+
+      const leads = allLeads
+        .filter(l => !isLocked(l) && isQualified(l) && !isAwaitingManager(l))
+        .slice(0, 8);
+
+      if (!leads.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No qualified leads ready to send.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      leads.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.claimType || lead.type || "-"}</div>
+          </td>
+          <td class="p-3">${lead.telephone || "-"}</td>
+          <td class="p-3">${statusBadge(lead.leadStatus || "qualified")}</td>
+          <td class="p-3">
+            <button class="btn-small btn-blue" data-action="send-to-manager" data-id="${lead.id}">Send to Manager</button>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderCallbacksToday() {
+      const body = document.getElementById("callbacksTodayBody");
+      body.innerHTML = "";
+
+      const today = todayIso();
+      const leads = allLeads
+        .filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate === today)
+        .sort((a, b) => appointmentKey(a).localeCompare(appointmentKey(b)))
+        .slice(0, 8);
+
+      if (!leads.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No callbacks due today.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      leads.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${lead.callbackTime || "-"}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          </td>
+          <td class="p-3">${callbackType(lead)}</td>
+          <td class="p-3">
+            <a href="/lister-callbacks.html" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderOverdueCallbacks() {
+      const body = document.getElementById("overdueBody");
+      body.innerHTML = "";
+
+      const today = todayIso();
+      const leads = allLeads
+        .filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate && l.callbackDate < today)
+        .sort((a, b) => appointmentKey(a).localeCompare(appointmentKey(b)))
+        .slice(0, 8);
+
+      if (!leads.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No overdue callbacks found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      leads.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${lead.callbackDate || "-"}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.claimType || lead.type || "-"}</div>
+          </td>
+          <td class="p-3">${lead.telephone || "-"}</td>
+          <td class="p-3">
+            <a href="/lister-callbacks.html" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
     }
 
     function renderCallbacks() {
@@ -485,6 +868,20 @@
       });
     }
 
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+
+      const action = button.getAttribute("data-action");
+      const id = button.getAttribute("data-id");
+      if (!id) return;
+
+      if (action === "no-answer") await markNoAnswer(id);
+      if (action === "not-interested") await markNotInterested(id);
+      if (action === "qualified") await markQualified(id);
+      if (action === "send-to-manager") await sendToManager(id);
+    });
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
@@ -518,6 +915,7 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
@@ -535,11 +933,11 @@
     });
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll('a[href]').forEach(link => {
-      const href = link.getAttribute('href');
+    document.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add('active-nav');
+        link.classList.add("active-nav");
       }
     });
   </script>
