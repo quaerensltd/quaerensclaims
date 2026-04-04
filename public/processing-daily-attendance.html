@@ -194,7 +194,10 @@
             <p id="attendanceSummary" class="text-sm text-slate-500 mt-1">Loading today’s attendance...</p>
             <p id="autoRefreshStatus" class="text-xs text-slate-400 mt-1">Auto-refresh every 2 minutes.</p>
           </div>
-          <button id="refreshAttendanceBtn" class="btn btn-secondary" type="button">Refresh Attendance</button>
+          <div class="flex gap-3 flex-wrap">
+            <button id="downloadCsvBtn" class="btn btn-secondary" type="button">Download CSV</button>
+            <button id="refreshAttendanceBtn" class="btn btn-secondary" type="button">Refresh Attendance</button>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -270,6 +273,7 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const refreshAttendanceBtn = document.getElementById("refreshAttendanceBtn");
+    const downloadCsvBtn = document.getElementById("downloadCsvBtn");
     const attendanceBody = document.getElementById("attendanceBody");
     const attendanceSummary = document.getElementById("attendanceSummary");
     const leadSummaryBody = document.getElementById("leadSummaryBody");
@@ -286,6 +290,10 @@
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
     }
 
     function formatTimestamp(ts) {
@@ -400,7 +408,7 @@
           getDocs(collection(db, "users"))
         ]);
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayIso();
 
         attendanceDocs = attendanceSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
@@ -549,6 +557,70 @@
       });
     }
 
+    function escapeCsv(value) {
+      const str = String(value ?? "");
+      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }
+
+    function downloadDailyCsv() {
+      const staffUsers = userDocs
+        .filter(u => u.role === "staff")
+        .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
+
+      const attendanceMap = todayAttendanceMap();
+
+      const headers = [
+        "Date",
+        "Staff Name",
+        "Staff Email",
+        "First Login",
+        "Last Login",
+        "Last Seen",
+        "Last Logout",
+        "Logged In Today",
+        "Today Status",
+        "Live Status"
+      ];
+
+      const rows = staffUsers.map(user => {
+        const item = attendanceMap[user.id] || null;
+        const todayStatus = getTodayStatusForUser(user.id);
+        const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
+        const workedMs = item ? getLiveWorkedMs(item) : 0;
+
+        return [
+          todayIso(),
+          user.name || "",
+          user.email || "",
+          item ? formatTimestamp(item.firstLoginAt) : "",
+          item ? formatTimestamp(item.lastLoginAt) : "",
+          item ? formatTimestamp(item.lastSeenAt) : "",
+          item ? formatTimestamp(item.lastLogoutAt) : "",
+          formatDuration(workedMs),
+          todayStatus === "on_time" ? "On Time" : todayStatus === "late" ? "Late" : "Absent",
+          trulyOnline ? "Online" : "Offline"
+        ];
+      });
+
+      const csv = [
+        headers.map(escapeCsv).join(","),
+        ...rows.map(row => row.map(escapeCsv).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `processing-daily-attendance-${todayIso()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
 
@@ -586,6 +658,15 @@
       } catch (error) {
         console.error("Could not refresh attendance:", error);
         alert("Could not refresh attendance.");
+      }
+    });
+
+    downloadCsvBtn.addEventListener("click", () => {
+      try {
+        downloadDailyCsv();
+      } catch (error) {
+        console.error("Could not download CSV:", error);
+        alert("Could not download CSV.");
       }
     });
 

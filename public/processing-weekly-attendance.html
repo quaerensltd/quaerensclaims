@@ -234,6 +234,10 @@
             <p id="summaryText" class="text-sm text-slate-500 mt-1">Loading weekly attendance...</p>
             <p id="autoRefreshStatus" class="text-xs text-slate-400 mt-1">Auto-refresh every 2 minutes.</p>
           </div>
+          <div class="flex gap-3 flex-wrap">
+            <button id="downloadCsvBtn" class="btn btn-secondary" type="button">Download CSV</button>
+            <button id="refreshBtnTop" class="btn btn-secondary" type="button">Refresh Week</button>
+          </div>
         </div>
 
         <div id="summaryViewWrap" class="overflow-x-auto">
@@ -293,6 +297,8 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const refreshBtn = document.getElementById("refreshBtn");
+    const refreshBtnTop = document.getElementById("refreshBtnTop");
+    const downloadCsvBtn = document.getElementById("downloadCsvBtn");
     const weekStartInput = document.getElementById("weekStartInput");
     const staffFilter = document.getElementById("staffFilter");
     const viewFilter = document.getElementById("viewFilter");
@@ -694,6 +700,72 @@
       weekStartInput.value = toIsoDate(monday);
     }
 
+    function escapeCsv(value) {
+      const str = String(value ?? "");
+      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }
+
+    function downloadWeeklyCsv() {
+      const filteredStaff = getFilteredStaff().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+      const headers = [
+        "Week Start",
+        "Date",
+        "Staff Name",
+        "Staff Email",
+        "First Login",
+        "Last Login",
+        "Last Seen",
+        "Last Logout",
+        "Logged In",
+        "Day Status",
+        "Live Status"
+      ];
+
+      const rows = [];
+
+      filteredStaff.forEach(user => {
+        currentWeekDates.forEach(dateStr => {
+          const rec = getAttendanceFor(user.id, dateStr);
+          const workedMs = getWorkedMs(rec);
+          const dayStatus = getDayStatus(rec, dateStr);
+          const liveStatus = rec && rec.isOnline && !isStaleOnline(rec) ? "Online" : (rec ? "Offline" : "No Record");
+
+          rows.push([
+            weekStartInput.value,
+            dateStr,
+            user.name || "",
+            user.email || user.id,
+            rec ? formatTimestamp(rec.firstLoginAt) : "",
+            rec ? formatTimestamp(rec.lastLoginAt) : "",
+            rec ? formatTimestamp(rec.lastSeenAt) : "",
+            rec ? formatTimestamp(rec.lastLogoutAt) : "",
+            formatDuration(workedMs),
+            dayStatus === "on_time" ? "On Time" : dayStatus === "late" ? "Late" : "Absent",
+            liveStatus
+          ]);
+        });
+      });
+
+      const csv = [
+        headers.map(escapeCsv).join(","),
+        ...rows.map(row => row.map(escapeCsv).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `processing-weekly-attendance-${weekStartInput.value}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
 
@@ -726,12 +798,24 @@
       }
     });
 
-    refreshBtn.addEventListener("click", async () => {
+    async function refreshWeek() {
       try {
         await loadBaseData(true);
       } catch (error) {
         console.error("Refresh failed:", error);
         alert("Could not refresh weekly attendance.");
+      }
+    }
+
+    refreshBtn.addEventListener("click", refreshWeek);
+    refreshBtnTop.addEventListener("click", refreshWeek);
+
+    downloadCsvBtn.addEventListener("click", () => {
+      try {
+        downloadWeeklyCsv();
+      } catch (error) {
+        console.error("Could not download CSV:", error);
+        alert("Could not download CSV.");
       }
     });
 
