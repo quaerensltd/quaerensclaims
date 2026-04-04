@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Staff Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading staff dashboard...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Staff Dashboard</h1>
+          <p class="text-sm text-slate-500">Your leads, callbacks, intro emails, and conversions</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
+          <a href="/lister-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Email Queue</a>
+          <a href="/lister-callbacks.html" class="btn btn-secondary py-2 px-4">Callback Agenda</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-6 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Leads</div>
+          <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Callbacks Today</div>
+          <div id="callbacksTodayStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue Callbacks</div>
+          <div id="overdueCallbacksStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intro Emails Pending</div>
+          <div id="introPendingStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Converted Leads</div>
+          <div id="convertedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Locked / Unusable</div>
+          <div id="lockedStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <a href="/lister-leads.html" class="btn btn-primary text-center">Open My Leads</a>
+            <a href="/lister-intro-emails.html" class="btn btn-primary text-center">Open Intro Email Queue</a>
+            <a href="/lister-callbacks.html" class="btn btn-primary text-center">Open Callback Agenda</a>
+            <a href="/client-intake-portal.html" class="btn btn-primary text-center">Open Intake Portal</a>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Today’s Priorities</h2>
+          <div class="space-y-4 text-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Callbacks due today</span>
+              <span id="priorityCallbacksToday" class="font-extrabold text-amber-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Overdue follow-ups</span>
+              <span id="priorityOverdue" class="font-extrabold text-red-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Intro emails not yet sent</span>
+              <span id="priorityIntroPending" class="font-extrabold text-indigo-600">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">Converted leads</span>
+              <span id="priorityConverted" class="font-extrabold text-emerald-600">0</span>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Today & Upcoming Callbacks</h2>
+              <p class="text-sm text-slate-500 mt-1">Your next scheduled follow-ups</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Date</th>
+                  <th class="text-left p-3">Time</th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Type</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="callbacksBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Pending Intro Emails</h2>
+              <p class="text-sm text-slate-500 mt-1">Leads waiting for intro email action</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Phone</th>
+                  <th class="text-left p-3">Callback</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="introBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection,
+      query,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    let currentUser = null;
+    let allLeads = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function clientName(lead) {
+      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+    }
+
+    function callbackType(lead) {
+      return lead.introEmailNeeded ? "Intro Email Follow-up" : "Callback";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    function appointmentKey(lead) {
+      return `${lead.callbackDate || "9999-12-31"} ${lead.callbackTime || "23:59"}`;
+    }
+
+    function formatScheduled(lead) {
+      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    async function checkStaffAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "staff") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadLeads() {
+      const leadsQuery = query(
+        collection(db, "leadAssignments"),
+        where("assignedToUid", "==", currentUser.uid)
+      );
+
+      const snapshot = await getDocs(leadsQuery);
+      allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      renderStats();
+      renderCallbacks();
+      renderIntroEmails();
+    }
+
+    function renderStats() {
+      const today = todayIso();
+
+      const callbacksToday = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate === today).length;
+      const overdueCallbacks = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate && l.callbackDate < today).length;
+      const introPending = allLeads.filter(l => !isLocked(l) && l.introEmailNeeded && !l.introEmailSent).length;
+      const converted = allLeads.filter(l => l.leadStatus === "converted" || l.convertedToSubmissionId).length;
+      const locked = allLeads.filter(l => isLocked(l)).length;
+
+      document.getElementById("totalLeadsStat").textContent = String(allLeads.length);
+      document.getElementById("callbacksTodayStat").textContent = String(callbacksToday);
+      document.getElementById("overdueCallbacksStat").textContent = String(overdueCallbacks);
+      document.getElementById("introPendingStat").textContent = String(introPending);
+      document.getElementById("convertedStat").textContent = String(converted);
+      document.getElementById("lockedStat").textContent = String(locked);
+
+      document.getElementById("priorityCallbacksToday").textContent = String(callbacksToday);
+      document.getElementById("priorityOverdue").textContent = String(overdueCallbacks);
+      document.getElementById("priorityIntroPending").textContent = String(introPending);
+      document.getElementById("priorityConverted").textContent = String(converted);
+    }
+
+    function renderCallbacks() {
+      const body = document.getElementById("callbacksBody");
+      body.innerHTML = "";
+
+      const scheduled = allLeads
+        .filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate)
+        .sort((a, b) => appointmentKey(a).localeCompare(appointmentKey(b)))
+        .slice(0, 8);
+
+      if (!scheduled.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No scheduled callbacks found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      scheduled.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${lead.callbackDate || "-"}</td>
+          <td class="p-3">${lead.callbackTime || "-"}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          </td>
+          <td class="p-3">${callbackType(lead)}</td>
+          <td class="p-3">
+            <a href="/lister-callbacks.html" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderIntroEmails() {
+      const body = document.getElementById("introBody");
+      body.innerHTML = "";
+
+      const pending = allLeads
+        .filter(l => !isLocked(l) && l.introEmailNeeded && !l.introEmailSent)
+        .sort((a, b) => appointmentKey(a).localeCompare(appointmentKey(b)))
+        .slice(0, 8);
+
+      if (!pending.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-slate-500">No pending intro emails found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      pending.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.postcode || "-"}</div>
+          </td>
+          <td class="p-3">${lead.telephone || "-"}</td>
+          <td class="p-3">${formatScheduled(lead)}</td>
+          <td class="p-3">
+            <a href="/lister-intro-emails.html" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkStaffAccess(user);
+        if (!allowed) return;
+        await loadLeads();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load staff dashboard.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+  </script>
+</body>
+</html>

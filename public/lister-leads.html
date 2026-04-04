@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quaerens Lister Leads</title>
+  <title>Quaerens My Leads</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,8 +12,7 @@
     body { font-family: 'Inter', sans-serif; }
     .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
     .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
-    .label { display: block; font-size: 0.92rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.35rem; }
-    .btn { border-radius: 12px; padding: 0.75rem 0.95rem; font-weight: 700; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
@@ -34,25 +33,24 @@
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Lister Leads</h1>
-          <p class="text-sm text-slate-500">Your assigned leads, callbacks, and contact actions</p>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens My Leads</h1>
+          <p class="text-sm text-slate-500">Your assigned calling leads and action workflow</p>
         </div>
-        <div class="flex items-center gap-3">
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
           <a href="/lister-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Email Queue</a>
           <a href="/lister-callbacks.html" class="btn btn-secondary py-2 px-4">Callback Agenda</a>
-          <div class="text-sm text-slate-500 text-right">
-            <div id="staffStatus">Checking access...</div>
-            <div id="staffEmail" class="text-xs text-slate-400"></div>
-          </div>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-4 gap-4">
+      <section class="grid lg:grid-cols-6 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Leads</div>
           <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -66,15 +64,23 @@
           <div id="introEmailStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Locked / Unusable</div>
+          <div class="text-sm text-slate-500">Converted</div>
+          <div id="convertedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Locked</div>
           <div id="lockedStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">No Answer</div>
+          <div id="noAnswerStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
       </section>
 
       <section class="card p-6">
         <div class="grid md:grid-cols-4 gap-4">
           <div>
-            <label class="label" for="statusFilter">Lead Status</label>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
             <select id="statusFilter" class="input">
               <option value="all">All statuses</option>
               <option value="new">New</option>
@@ -87,17 +93,19 @@
           </div>
 
           <div>
-            <label class="label" for="callbackFilter">Callback View</label>
-            <select id="callbackFilter" class="input">
-              <option value="all">All</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Special View</label>
+            <select id="specialFilter" class="input">
+              <option value="all">All leads</option>
               <option value="callbacks_only">Callbacks Only</option>
               <option value="intro_only">Intro Email Only</option>
+              <option value="converted_only">Converted Only</option>
+              <option value="locked_only">Locked Only</option>
             </select>
           </div>
 
           <div>
-            <label class="label" for="searchInput">Search</label>
-            <input id="searchInput" class="input" type="text" placeholder="Name, phone, postcode..." />
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
           </div>
 
           <div class="flex items-end">
@@ -109,7 +117,7 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">My Leads</h2>
+            <h2 class="text-xl font-extrabold text-blue-900">Assigned Leads</h2>
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
           </div>
         </div>
@@ -124,6 +132,7 @@
                 <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Last Action</th>
                 <th class="text-left p-3">Callback</th>
+                <th class="text-left p-3">Converted</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -148,76 +157,55 @@
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
           <div class="grid md:grid-cols-2 gap-4 text-sm">
-            <div><span class="label">Name</span><div id="lead_name"></div></div>
-            <div><span class="label">Telephone</span><div id="lead_phone"></div></div>
-            <div><span class="label">Address</span><div id="lead_address"></div></div>
-            <div><span class="label">Postcode</span><div id="lead_postcode"></div></div>
-            <div><span class="label">Homeowner</span><div id="lead_homeowner"></div></div>
-            <div><span class="label">Has Solar</span><div id="lead_hasSolar"></div></div>
+            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
+            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
+            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Interested Actions</h4>
-          <div id="interestedActionsWrap" class="space-y-4">
-            <div class="grid md:grid-cols-3 gap-3">
-              <button id="startIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake Now</button>
-              <button id="markCallbackBtn" class="btn btn-secondary" type="button">Interested — Requires Callback</button>
-              <button id="markIntroBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-4">
-              <div>
-                <label class="label" for="callbackDate">Callback Date</label>
-                <input id="callbackDate" type="date" class="input" />
-              </div>
-              <div>
-                <label class="label" for="callbackTime">Callback Time</label>
-                <input id="callbackTime" type="time" class="input" />
-              </div>
-            </div>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Priority Actions</h4>
+          <div id="priorityActionsWrap" class="grid md:grid-cols-2 gap-3">
+            <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake</button>
+            <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
+            <button id="callbackRequiredBtn" class="btn btn-secondary" type="button">Interested — Call Back</button>
+            <button id="saveLeadBtn" class="btn btn-secondary" type="button">Save Lead</button>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Other Outcomes</h4>
-          <div id="otherActionsWrap" class="space-y-4">
-            <div class="grid md:grid-cols-4 gap-3">
-              <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
-              <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
-              <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
-              <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
-            </div>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
+          <div id="outcomeWrap" class="grid md:grid-cols-4 gap-3">
+            <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
+            <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
+            <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
+            <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+          </div>
+        </section>
 
-            <div class="grid md:grid-cols-2 gap-4">
-              <div>
-                <label class="label" for="hasProductSelect">Do they have the product?</label>
-                <select id="hasProductSelect" class="input">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </div>
-              <div class="flex items-end">
-                <button id="saveProductStatusBtn" class="btn btn-secondary w-full" type="button">Save Product Status</button>
-              </div>
-            </div>
-
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Callback Scheduling</h4>
+          <div class="grid md:grid-cols-2 gap-4">
             <div>
-              <label class="label" for="voicemailLeftSelect">Was a voicemail left?</label>
-              <select id="voicemailLeftSelect" class="input">
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
+              <input id="callbackDate" type="date" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
+              <input id="callbackTime" type="time" class="input" />
             </div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lister Notes</h4>
-          <textarea id="leadNotes" class="input" rows="5" placeholder="Call notes, comments, anything relevant..."></textarea>
-          <div class="mt-4 flex gap-3">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
+          <textarea id="notesBox" class="input" rows="6" placeholder="Call notes, outcome, follow-up details..."></textarea>
+          <div class="mt-4 flex gap-3 flex-wrap">
             <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
             <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
           </div>
@@ -262,12 +250,10 @@
     const db = getFirestore(app);
 
     const authLoader = document.getElementById("authLoader");
-    const staffStatus = document.getElementById("staffStatus");
-    const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
 
     const statusFilter = document.getElementById("statusFilter");
-    const callbackFilter = document.getElementById("callbackFilter");
+    const specialFilter = document.getElementById("specialFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
@@ -276,31 +262,26 @@
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const callbacksStat = document.getElementById("callbacksStat");
     const introEmailStat = document.getElementById("introEmailStat");
+    const convertedStat = document.getElementById("convertedStat");
     const lockedStat = document.getElementById("lockedStat");
+    const noAnswerStat = document.getElementById("noAnswerStat");
 
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const modalLeadTitle = document.getElementById("modalLeadTitle");
-    const modalLeadSubtitle = document.getElementById("modalLeadSubtitle");
-    const modalMessage = document.getElementById("modalMessage");
-
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
-    const leadNotes = document.getElementById("leadNotes");
-    const voicemailLeftSelect = document.getElementById("voicemailLeftSelect");
-    const hasProductSelect = document.getElementById("hasProductSelect");
+    const notesBox = document.getElementById("notesBox");
+    const modalMessage = document.getElementById("modalMessage");
 
-    const interestedActionsWrap = document.getElementById("interestedActionsWrap");
-    const otherActionsWrap = document.getElementById("otherActionsWrap");
+    const openIntakeBtn = document.getElementById("openIntakeBtn");
+    const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
+    const callbackRequiredBtn = document.getElementById("callbackRequiredBtn");
+    const saveLeadBtn = document.getElementById("saveLeadBtn");
 
-    const startIntakeBtn = document.getElementById("startIntakeBtn");
-    const markCallbackBtn = document.getElementById("markCallbackBtn");
-    const markIntroBtn = document.getElementById("markIntroBtn");
     const noAnswerBtn = document.getElementById("noAnswerBtn");
     const voicemailBtn = document.getElementById("voicemailBtn");
     const wrongNumberBtn = document.getElementById("wrongNumberBtn");
     const notInterestedBtn = document.getElementById("notInterestedBtn");
-    const saveProductStatusBtn = document.getElementById("saveProductStatusBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
 
     let currentUser = null;
@@ -319,13 +300,10 @@
       setTimeout(() => modalMessage.classList.add("hidden"), 3000);
     }
 
-    function formatLeadStatus(status, closed, usable) {
-      if (closed || usable === false) return "Closed";
-      if (status === "callback_required") return "Callback Required";
-      if (status === "intro_email_needed") return "Intro Email Needed";
-      if (status === "intake_in_progress") return "Intake In Progress";
-      if (status === "converted") return "Converted";
-      return "New";
+    function formatAddress(lead) {
+      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
+        .filter(Boolean)
+        .join(", ") || "-";
     }
 
     function formatAction(action) {
@@ -340,22 +318,26 @@
         interested_intake_started: "Intake Started",
         intake_submitted: "Intake Submitted",
         intake_draft_saved: "Intake Draft Saved",
-        notes_saved: "Notes Saved"
+        notes_saved: "Notes Saved",
+        callback_rescheduled: "Callback Rescheduled"
       };
       return map[action] || action || "-";
     }
 
-    function formatAddress(lead) {
-      return [
-        lead.address1, lead.address2, lead.address3, lead.address4, lead.address5
-      ].filter(Boolean).join(", ") || "-";
+    function formatLeadStatus(lead) {
+      if (lead.closed || lead.usable === false) return "Closed";
+      if (lead.leadStatus === "callback_required") return "Callback Required";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      return "New";
     }
 
     function isLocked(lead) {
-      return lead.usable === false || lead.closed === true;
+      return lead.closed === true || lead.usable === false;
     }
 
-    async function checkListerAccess(user) {
+    async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
@@ -366,7 +348,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "staff" && userData.role !== "manager") {
+      if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -374,8 +356,6 @@
 
       currentUser = user;
       currentUserData = userData;
-      staffStatus.textContent = `Logged in as ${userData.role}`;
-      staffEmail.textContent = user.email || "";
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -402,29 +382,33 @@
       totalLeadsStat.textContent = String(allLeads.length);
       callbacksStat.textContent = String(allLeads.filter(x => x.callbackRequired).length);
       introEmailStat.textContent = String(allLeads.filter(x => x.introEmailNeeded).length);
+      convertedStat.textContent = String(allLeads.filter(x => x.leadStatus === "converted" || x.convertedToSubmissionId).length);
       lockedStat.textContent = String(allLeads.filter(x => isLocked(x)).length);
+      noAnswerStat.textContent = String(allLeads.filter(x => x.lastAction === "no_answer").length);
     }
 
-    function renderLeads() {
-      const selectedStatus = statusFilter.value;
-      const selectedCallbackView = callbackFilter.value;
+    function getFilteredLeads() {
+      const status = statusFilter.value;
+      const special = specialFilter.value;
       const term = searchInput.value.trim().toLowerCase();
 
-      const filtered = allLeads.filter(lead => {
-        const leadStatus = lead.leadStatus || "new";
-        const computedStatus =
+      return allLeads.filter(lead => {
+        const currentStatus =
           isLocked(lead) ? "closed" :
-          leadStatus === "callback_required" ? "callback_required" :
-          leadStatus === "intro_email_needed" ? "intro_email_needed" :
-          leadStatus === "intake_in_progress" ? "intake_in_progress" :
-          leadStatus === "converted" ? "converted" :
+          lead.leadStatus === "callback_required" ? "callback_required" :
+          lead.leadStatus === "intro_email_needed" ? "intro_email_needed" :
+          lead.leadStatus === "intake_in_progress" ? "intake_in_progress" :
+          lead.leadStatus === "converted" ? "converted" :
           "new";
 
-        const matchesStatus = selectedStatus === "all" || computedStatus === selectedStatus;
-        const matchesCallback =
-          selectedCallbackView === "all" ||
-          (selectedCallbackView === "callbacks_only" && lead.callbackRequired) ||
-          (selectedCallbackView === "intro_only" && lead.introEmailNeeded);
+        const matchesStatus = status === "all" || currentStatus === status;
+
+        const matchesSpecial =
+          special === "all" ||
+          (special === "callbacks_only" && lead.callbackRequired) ||
+          (special === "intro_only" && lead.introEmailNeeded) ||
+          (special === "converted_only" && (lead.leadStatus === "converted" || lead.convertedToSubmissionId)) ||
+          (special === "locked_only" && isLocked(lead));
 
         const haystack = `
           ${lead.forename || ""}
@@ -435,40 +419,42 @@
 
         const matchesSearch = !term || haystack.includes(term);
 
-        return matchesStatus && matchesCallback && matchesSearch;
+        return matchesStatus && matchesSpecial && matchesSearch;
       });
+    }
 
+    function renderLeads() {
+      const filtered = getFilteredLeads();
       leadsBody.innerHTML = "";
 
       if (!filtered.length) {
         leadsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No leads found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No leads found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(lead => {
-          const row = document.createElement("tr");
-          row.className = "border-t border-slate-200";
-
-          row.innerHTML = `
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+          tr.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
               <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
             </td>
             <td class="p-3">${lead.telephone || "-"}</td>
             <td class="p-3">${lead.postcode || "-"}</td>
-            <td class="p-3">${formatLeadStatus(lead.leadStatus, lead.closed, lead.usable)}</td>
+            <td class="p-3">${formatLeadStatus(lead)}</td>
             <td class="p-3">${formatAction(lead.lastAction)}</td>
             <td class="p-3">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
+            <td class="p-3">${lead.convertedToSubmissionId || "-"}</td>
             <td class="p-3">
               <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
                 Open Lead
               </button>
             </td>
           `;
-
-          leadsBody.appendChild(row);
+          leadsBody.appendChild(tr);
         });
       }
 
@@ -477,32 +463,6 @@
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
       });
-    }
-
-    async function openLead(leadId) {
-      selectedLead = allLeads.find(x => x.id === leadId);
-      if (!selectedLead) return;
-
-      modalLeadTitle.textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
-      modalLeadSubtitle.textContent = `Lead ID: ${selectedLead.id}`;
-
-      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
-      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
-      document.getElementById("lead_homeowner").textContent = selectedLead.homeOwner || "-";
-      document.getElementById("lead_hasSolar").textContent = selectedLead.hasSolar || "-";
-
-      callbackDate.value = selectedLead.callbackDate || "";
-      callbackTime.value = selectedLead.callbackTime || "";
-      leadNotes.value = selectedLead.notes || "";
-      voicemailLeftSelect.value = selectedLead.voicemailLeft ? "yes" : "";
-      hasProductSelect.value = "";
-
-      renderHistory(selectedLead.actionHistory || []);
-      applyLockedState(selectedLead);
-
-      leadModal.classList.remove("hidden");
     }
 
     function renderHistory(history) {
@@ -526,12 +486,42 @@
       });
     }
 
-    function applyLockedState(lead) {
-      const locked = isLocked(lead);
-      interestedActionsWrap.classList.toggle("disabled-actions", locked);
-      otherActionsWrap.classList.toggle("disabled-actions", locked);
-      if (locked) {
-        showModalMessage("This lead is locked and no further actions can be taken.");
+    function openLead(leadId) {
+      selectedLead = allLeads.find(x => x.id === leadId);
+      if (!selectedLead) return;
+
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
+      document.getElementById("lead_status").textContent = formatLeadStatus(selectedLead);
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_callback").textContent =
+        selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
+
+      callbackDate.value = selectedLead.callbackDate || "";
+      callbackTime.value = selectedLead.callbackTime || "";
+      notesBox.value = selectedLead.notes || "";
+
+      renderHistory(selectedLead.actionHistory || []);
+      leadModal.classList.remove("hidden");
+    }
+
+    async function refreshSelectedLead() {
+      await loadLeads();
+      if (selectedLead) {
+        const updated = allLeads.find(x => x.id === selectedLead.id);
+        if (updated) {
+          selectedLead = updated;
+          openLead(updated.id);
+        } else {
+          leadModal.classList.add("hidden");
+        }
       }
     }
 
@@ -551,13 +541,7 @@
           })
         });
 
-        await loadLeads();
-        const refreshed = allLeads.find(x => x.id === selectedLead.id);
-        if (refreshed) {
-          selectedLead = refreshed;
-          openLead(refreshed.id);
-        }
-
+        await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
         console.error("Lead update failed:", error);
@@ -565,33 +549,25 @@
       }
     }
 
-    startIntakeBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
-      window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
-    });
+    openIntakeBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
 
-    markCallbackBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
-      if (!callbackDate.value || !callbackTime.value) {
-        showModalMessage("Please choose callback date and time.", true);
-        return;
+      try {
+        await updateLead({
+          leadStatus: "intake_in_progress",
+          lastAction: "interested_intake_started"
+        }, "interested_intake_started", "Lead moved to intake.");
+        window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
+      } catch (error) {
+        console.error(error);
       }
-
-      await updateLead({
-        leadStatus: "callback_required",
-        callbackRequired: true,
-        callbackDate: callbackDate.value,
-        callbackTime: callbackTime.value,
-        lastAction: "callback_required",
-        closed: false,
-        usable: true
-      }, "callback_required", `Callback set for ${callbackDate.value} ${callbackTime.value}`);
     });
 
-    markIntroBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
+    sendIntroEmailBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
       if (!callbackDate.value || !callbackTime.value) {
-        showModalMessage("Please choose callback date and time.", true);
+        showModalMessage("Please choose callback date and time first.", true);
         return;
       }
 
@@ -601,14 +577,49 @@
         callbackRequired: true,
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
-        lastAction: "send_intro_email",
-        closed: false,
-        usable: true
-      }, "send_intro_email", `Intro email needed. Callback set for ${callbackDate.value} ${callbackTime.value}`);
+        lastAction: "send_intro_email"
+      }, "send_intro_email", `Intro email needed. Follow-up set for ${callbackDate.value} ${callbackTime.value}`);
+    });
+
+    callbackRequiredBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!callbackDate.value || !callbackTime.value) {
+        showModalMessage("Please choose callback date and time first.", true);
+        return;
+      }
+
+      await updateLead({
+        leadStatus: "callback_required",
+        callbackRequired: true,
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value,
+        lastAction: "callback_required"
+      }, "callback_required", `Callback set for ${callbackDate.value} ${callbackTime.value}`);
+    });
+
+    saveLeadBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          notes: notesBox.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
+          lastUpdatedAt: serverTimestamp()
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Lead saved.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not save lead.", true);
+      }
     });
 
     noAnswerBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
+      if (!selectedLead) return;
+
       await updateLead({
         lastAction: "no_answer",
         lastCallAt: serverTimestamp(),
@@ -617,51 +628,40 @@
     });
 
     voicemailBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
-      const voicemailLeft = voicemailLeftSelect.value === "yes";
+      if (!selectedLead) return;
 
       await updateLead({
         lastAction: "voicemail",
         lastCallAt: serverTimestamp(),
-        voicemailLeft,
+        voicemailLeft: true,
         voicemailAt: serverTimestamp()
-      }, "voicemail", voicemailLeft ? "Voicemail left." : "Voicemail, none left.");
+      }, "voicemail", "Voicemail left.");
     });
 
     wrongNumberBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
+      if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         lastAction: "wrong_number",
         closed: true,
-        usable: false
+        usable: false,
+        callbackRequired: false,
+        introEmailNeeded: false
       }, "wrong_number", "Marked as wrong number.");
     });
 
     notInterestedBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
+      if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         lastAction: "not_interested",
         closed: true,
-        usable: false
+        usable: false,
+        callbackRequired: false,
+        introEmailNeeded: false
       }, "not_interested", "Marked as not interested.");
-    });
-
-    saveProductStatusBtn.addEventListener("click", async () => {
-      if (!selectedLead || isLocked(selectedLead)) return;
-      if (hasProductSelect.value === "no") {
-        await updateLead({
-          leadStatus: "closed",
-          lastAction: "no_product",
-          closed: true,
-          usable: false
-        }, "no_product", "Client does not have the relevant product.");
-      } else if (hasProductSelect.value === "yes") {
-        showModalMessage("Product confirmed.");
-      } else {
-        showModalMessage("Please choose an option first.", true);
-      }
     });
 
     saveNotesBtn.addEventListener("click", async () => {
@@ -669,24 +669,18 @@
 
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          notes: leadNotes.value || "",
+          notes: notesBox.value || "",
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
             action: "notes_saved",
             byUid: currentUser.uid,
             byName: currentUserData.name || "",
             at: new Date().toISOString(),
-            notes: leadNotes.value || ""
+            notes: notesBox.value || ""
           })
         });
 
-        await loadLeads();
-        const refreshed = allLeads.find(x => x.id === selectedLead.id);
-        if (refreshed) {
-          selectedLead = refreshed;
-          openLead(refreshed.id);
-        }
-
+        await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
         console.error("Failed to save notes:", error);
@@ -711,13 +705,13 @@
       }
 
       try {
-        const allowed = await checkListerAccess(user);
+        const allowed = await checkStaffAccess(user);
         if (!allowed) return;
         await loadLeads();
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load leads.");
+        alert("Could not load your leads.");
         window.location.href = "/login.html";
       }
     });
@@ -733,7 +727,7 @@
     });
 
     statusFilter.addEventListener("change", renderLeads);
-    callbackFilter.addEventListener("change", renderLeads);
+    specialFilter.addEventListener("change", renderLeads);
     searchInput.addEventListener("input", renderLeads);
     refreshBtn.addEventListener("click", loadLeads);
   </script>
