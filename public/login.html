@@ -72,7 +72,8 @@
     import {
       getAuth,
       signInWithEmailAndPassword,
-      onAuthStateChanged
+      onAuthStateChanged,
+      signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import {
       getFirestore,
@@ -155,7 +156,11 @@
       }
 
       if (role === "staff") {
-        await recordStaffLogin(user, userData);
+        try {
+          await recordStaffLogin(user, userData);
+        } catch (attendanceError) {
+          console.error("Attendance logging failed:", attendanceError);
+        }
         window.location.href = "/staff-dashboard.html";
         return;
       }
@@ -170,7 +175,9 @@
         return;
       }
 
+      await signOut(auth);
       showMessage("No valid role found for this account.", true);
+      setLoading(false);
     }
 
     loginForm.addEventListener("submit", async (e) => {
@@ -195,6 +202,7 @@
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
+          await signOut(auth);
           showMessage("No user profile found for this account.", true);
           setLoading(false);
           return;
@@ -216,7 +224,7 @@
         } else if (error.code === "auth/too-many-requests") {
           showMessage("Too many attempts. Please try again later.", true);
         } else {
-          showMessage("Could not log in. Please try again.", true);
+          showMessage(error.message || "Could not log in. Please try again.", true);
         }
 
         setLoading(false);
