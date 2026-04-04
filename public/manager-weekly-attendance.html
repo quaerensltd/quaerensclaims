@@ -151,6 +151,7 @@
           <div>
             <h2 class="text-xl font-extrabold text-blue-900">Weekly Attendance Summary</h2>
             <p id="summaryText" class="text-sm text-slate-500 mt-1">Loading weekly attendance...</p>
+            <p id="autoRefreshStatus" class="text-xs text-slate-400 mt-1">Auto-refresh every 2 minutes.</p>
           </div>
         </div>
 
@@ -215,6 +216,7 @@
     const viewFilter = document.getElementById("viewFilter");
 
     const summaryText = document.getElementById("summaryText");
+    const autoRefreshStatus = document.getElementById("autoRefreshStatus");
     const weeklySummaryHead = document.getElementById("weeklySummaryHead");
     const weeklySummaryBody = document.getElementById("weeklySummaryBody");
     const dailyAttendanceBody = document.getElementById("dailyAttendanceBody");
@@ -224,6 +226,8 @@
     let staffUsers = [];
     let attendanceDocs = [];
     let currentWeekDates = [];
+    let autoRefreshInterval = null;
+    let refreshInProgress = false;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -264,7 +268,6 @@
       const totalMinutes = Math.floor(safeMs / 60000);
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
-
       if (hours <= 0) return `${minutes}m`;
       return `${hours}h ${minutes}m`;
     }
@@ -346,20 +349,31 @@
       return true;
     }
 
-    async function loadBaseData() {
-      const [usersSnap, attendanceSnap] = await Promise.all([
-        getDocs(collection(db, "users")),
-        getDocs(collection(db, "staffAttendance"))
-      ]);
+    async function loadBaseData(showRefreshStamp = true) {
+      if (refreshInProgress) return;
+      refreshInProgress = true;
 
-      staffUsers = usersSnap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.role === "staff");
+      try {
+        const [usersSnap, attendanceSnap] = await Promise.all([
+          getDocs(collection(db, "users")),
+          getDocs(collection(db, "staffAttendance"))
+        ]);
 
-      attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        staffUsers = usersSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(u => u.role === "staff");
 
-      populateStaffFilter();
-      renderAll();
+        attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        populateStaffFilter();
+        renderAll();
+
+        if (showRefreshStamp) {
+          autoRefreshStatus.textContent = `Auto-refresh every 2 minutes. Last updated: ${new Date().toLocaleTimeString("en-GB")}`;
+        }
+      } finally {
+        refreshInProgress = false;
+      }
     }
 
     function populateStaffFilter() {
@@ -415,8 +429,7 @@
           }
         });
 
-        const todayIso = toIsoDate(new Date());
-        const todayRecord = getAttendanceFor(user.id, todayIso);
+        const todayRecord = getAttendanceFor(user.id, toIsoDate(new Date()));
         if (todayRecord && todayRecord.isOnline && !isStaleOnline(todayRecord)) {
           onlineNow += 1;
         }
@@ -560,6 +573,20 @@
       weekStartInput.value = toIsoDate(monday);
     }
 
+    function startAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+      }
+
+      autoRefreshInterval = setInterval(async () => {
+        try {
+          await loadBaseData(true);
+        } catch (error) {
+          console.error("Auto-refresh failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
@@ -570,7 +597,8 @@
         const allowed = await checkManagerAccess(user);
         if (!allowed) return;
         setDefaultWeekStart();
-        await loadBaseData();
+        await loadBaseData(true);
+        startAutoRefresh();
         hideLoader();
       } catch (error) {
         console.error(error);
@@ -581,7 +609,7 @@
 
     refreshBtn.addEventListener("click", async () => {
       try {
-        await loadBaseData();
+        await loadBaseData(true);
       } catch (error) {
         console.error("Refresh failed:", error);
         alert("Could not refresh weekly attendance.");
@@ -594,11 +622,20 @@
 
     logoutBtn.addEventListener("click", async () => {
       try {
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+        }
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
         console.error(error);
         alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
       }
     });
 
