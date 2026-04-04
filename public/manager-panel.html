@@ -17,6 +17,8 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -26,6 +28,18 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -41,56 +55,79 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Panel</h1>
-          <p class="text-sm text-slate-500">Secure review area for internal claim submissions</p>
+          <p class="text-sm text-slate-500">Review qualified leads, assign closers, and book appointments</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
-
+          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <div class="text-sm text-slate-500 text-right">
             <div id="staffStatus">Checking access...</div>
             <div id="staffEmail" class="text-xs text-slate-400"></div>
           </div>
-
-          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">
-            Log Out
-          </button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-5 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Manager</div>
+          <div id="awaitingManagerStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Booked Today</div>
+          <div id="bookedTodayStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Sent to Closer</div>
+          <div id="sentToCloserStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Qualified</div>
+          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue Reviews</div>
+          <div id="overdueStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+      </section>
+
       <section class="card p-6">
         <div class="grid md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim type</label>
-            <select id="claimTypeFilter" class="input">
-              <option value="all">All claim types</option>
-              <option value="solar">Solar Panel Claims</option>
-              <option value="mortgage">Mortgage Review</option>
-              <option value="survey">Survey Review</option>
-              <option value="newbuild">New Build Issues</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Status</label>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
             <select id="statusFilter" class="input">
               <option value="all">All statuses</option>
-              <option value="draft">Draft</option>
-              <option value="submitted">Awaiting Review</option>
-              <option value="in_review">In Review</option>
-              <option value="assessment_complete">Assessment Complete</option>
+              <option value="awaiting_manager">Awaiting Manager</option>
+              <option value="qualified">Qualified</option>
+              <option value="sent_to_closer">Sent to Closer</option>
+              <option value="converted">Converted</option>
+              <option value="closed">Closed</option>
             </select>
           </div>
-
-          <div class="md:col-span-2">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Appointment Timing</label>
+            <select id="timingFilter" class="input">
+              <option value="all">All timings</option>
+              <option value="today">Today</option>
+              <option value="future">Future</option>
+              <option value="overdue">Overdue</option>
+              <option value="none">No appointment set</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Closer</label>
+            <select id="closerFilter" class="input">
+              <option value="all">All closers</option>
+            </select>
+          </div>
+          <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Search client, email, staff member..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, phone, postcode..." />
           </div>
         </div>
       </section>
@@ -98,30 +135,110 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Submitted Intakes</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading submissions...</p>
+            <h2 class="text-xl font-extrabold text-blue-900">Manager Review Queue</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
           </div>
           <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="bg-blue-50 text-blue-900">
-                <th class="text-left p-3">Received</th>
-                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Client Email</th>
-                <th class="text-left p-3">Submitted By</th>
+                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Lister</th>
                 <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Appointment</th>
+                <th class="text-left p-3">Closer</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
-            <tbody id="submissionsBody"></tbody>
+            <tbody id="leadsBody"></tbody>
           </table>
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Manager Lead Review</h3>
+          <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
+            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
+            <div><span class="font-semibold text-blue-900">Lister:</span> <span id="lead_lister">-</span></div>
+            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
+            <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
+            <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Actions</h4>
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="closerSelect">Assign Closer</label>
+              <select id="closerSelect" class="input"></select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerStatusSelect">Lead Status</label>
+              <select id="managerStatusSelect" class="input">
+                <option value="awaiting_manager">Awaiting Manager</option>
+                <option value="qualified">Qualified</option>
+                <option value="sent_to_closer">Sent to Closer</option>
+                <option value="converted">Converted</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentDate">Appointment Date</label>
+              <input id="appointmentDate" type="date" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentTime">Appointment Time</label>
+              <input id="appointmentTime" type="time" class="input" />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+            <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Closer Appointment</button>
+            <button id="sendToCloserBtn" class="btn btn-secondary" type="button">Send to Closer</button>
+            <button id="markConvertedBtn" class="btn btn-secondary" type="button">Mark Converted</button>
+            <button id="markClosedBtn" class="btn btn-danger" type="button">Close Lead</button>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Notes</h4>
+          <textarea id="notesBox" class="input" rows="6" placeholder="Manager notes, booking details, closer handoff notes..."></textarea>
+          <div class="mt-4 flex gap-3 flex-wrap">
+            <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
+            <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
+          <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+        </section>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -135,8 +252,13 @@
       getFirestore,
       doc,
       getDoc,
+      getDocs,
+      updateDoc,
       collection,
-      getDocs
+      query,
+      where,
+      serverTimestamp,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -153,47 +275,140 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
-    const claimTypeFilter = document.getElementById("claimTypeFilter");
+
     const statusFilter = document.getElementById("statusFilter");
+    const timingFilter = document.getElementById("timingFilter");
+    const closerFilter = document.getElementById("closerFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
-    const submissionsBody = document.getElementById("submissionsBody");
+    const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
-    let allSubmissions = [];
+    const awaitingManagerStat = document.getElementById("awaitingManagerStat");
+    const bookedTodayStat = document.getElementById("bookedTodayStat");
+    const sentToCloserStat = document.getElementById("sentToCloserStat");
+    const qualifiedStat = document.getElementById("qualifiedStat");
+    const overdueStat = document.getElementById("overdueStat");
+
+    const leadModal = document.getElementById("leadModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const closerSelect = document.getElementById("closerSelect");
+    const managerStatusSelect = document.getElementById("managerStatusSelect");
+    const appointmentDate = document.getElementById("appointmentDate");
+    const appointmentTime = document.getElementById("appointmentTime");
+    const notesBox = document.getElementById("notesBox");
+    const modalMessage = document.getElementById("modalMessage");
+
+    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
+    const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
+    const sendToCloserBtn = document.getElementById("sendToCloserBtn");
+    const markConvertedBtn = document.getElementById("markConvertedBtn");
+    const markClosedBtn = document.getElementById("markClosedBtn");
+    const saveNotesBtn = document.getElementById("saveNotesBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allLeads = [];
+    let allUsers = [];
+    let closerUsers = [];
+    let selectedLead = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
     }
 
-    function formatDate(timestamp) {
-      if (!timestamp?.toDate) return "-";
-      return timestamp.toDate().toLocaleString();
+    function showModalMessage(text, isError = false) {
+      modalMessage.textContent = text;
+      modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
     }
 
-    function formatClaimType(type) {
-      switch (type) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
     }
 
-    function normalizeStatus(status) {
-      if (status === "draft") return "Draft";
-      if (status === "submitted") return "Awaiting Review";
-      if (status === "in_review") return "In Review";
-      if (status === "assessment_complete") return "Assessment Complete";
-      return status || "Awaiting Review";
+    function formatAddress(lead) {
+      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
+        .filter(Boolean)
+        .join(", ") || "-";
     }
 
-    function badgeClass(status) {
-      if (status === "assessment_complete") return "bg-green-100 text-green-800";
-      if (status === "in_review") return "bg-blue-100 text-blue-800";
-      if (status === "draft") return "bg-slate-100 text-slate-700";
-      return "bg-amber-100 text-amber-800";
+    function clientName(lead) {
+      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+    }
+
+    function formatAction(action) {
+      const map = {
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager",
+        sent_to_closer: "Sent to Closer",
+        closer_appointment_booked: "Closer Appointment Booked",
+        converted: "Converted",
+        closed: "Closed",
+        notes_saved: "Notes Saved",
+        callback_required: "Callback Required",
+        send_intro_email: "Send Intro Email",
+        no_answer: "No Answer",
+        voicemail: "Voicemail",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested"
+      };
+      return map[action] || action || "-";
+    }
+
+    function findUserById(uid) {
+      return allUsers.find(user => user.id === uid) || null;
+    }
+
+    function userDisplay(uid) {
+      if (!uid) return "-";
+      const user = findUserById(uid);
+      return user?.name || user?.email || uid;
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
+    }
+
+    function statusBadge(lead) {
+      const status = lead.leadStatus || "new";
+      if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "sent_to_closer") return `<span class="badge badge-indigo badge-blue">Sent to Closer</span>`;
+      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
+    }
+
+    function getAppointmentText(lead) {
+      const date = lead.closerAppointmentDate || "";
+      const time = lead.closerAppointmentTime || "";
+      return date ? `${date} ${time}`.trim() : "-";
+    }
+
+    function isOverdueManagerLead(lead) {
+      if (lead.leadStatus !== "awaiting_manager") return false;
+      const sentAt = lead.sentToManagerAt?.toDate ? lead.sentToManagerAt.toDate().getTime() : 0;
+      if (!sentAt) return false;
+      return Date.now() - sentAt > 24 * 60 * 60 * 1000;
+    }
+
+    function populateCloserFilters() {
+      closerFilter.innerHTML = `<option value="all">All closers</option>`;
+      closerSelect.innerHTML = `<option value="">Select closer</option>`;
+
+      closerUsers.forEach(user => {
+        const option1 = document.createElement("option");
+        option1.value = user.id;
+        option1.textContent = user.name || user.email || user.id;
+        closerFilter.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = user.id;
+        option2.textContent = user.name || user.email || user.id;
+        closerSelect.appendChild(option2);
+      });
     }
 
     async function checkManagerAccess(user) {
@@ -204,127 +419,354 @@
         if (!userSnap.exists()) {
           alert("No staff profile found for this account.");
           window.location.href = "/login.html";
-          return;
+          return false;
         }
 
         const userData = userSnap.data();
-
         if (userData.role !== "manager") {
           alert("You do not have permission to access the manager panel.");
-          window.location.href = "/client-intake-portal.html";
-          return;
+          window.location.href = "/login.html";
+          return false;
         }
 
+        currentUser = user;
+        currentUserData = userData;
         staffStatus.textContent = "Logged in as Manager";
         staffEmail.textContent = user.email || "";
         logoutBtn.classList.remove("hidden");
-        hideLoader();
-        await loadSubmissions();
+        return true;
       } catch (error) {
         console.error("Manager access check failed:", error);
         alert("There was a problem checking access.");
         window.location.href = "/login.html";
+        return false;
       }
     }
 
-    async function loadSubmissions() {
+    async function loadLeads() {
       try {
-        const snapshot = await getDocs(collection(db, "claimSubmissions"));
+        const [leadSnap, userSnap] = await Promise.all([
+          getDocs(collection(db, "leadAssignments")),
+          getDocs(collection(db, "users"))
+        ]);
 
-        allSubmissions = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data()
-        }));
+        allLeads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allUsers = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        closerUsers = allUsers.filter(user => user.role === "closer");
 
-        allSubmissions.sort((a, b) => {
-          const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-          const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        populateCloserFilters();
+        renderStats();
+        renderLeads();
+      } catch (error) {
+        console.error("Failed to load manager leads:", error);
+        resultsSummary.textContent = "Could not load leads.";
+        leadsBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-red-600">Error loading leads.</td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderStats() {
+      const today = todayIso();
+      awaitingManagerStat.textContent = String(allLeads.filter(x => x.leadStatus === "awaiting_manager" && !isLocked(x)).length);
+      bookedTodayStat.textContent = String(allLeads.filter(x => x.closerAppointmentDate === today && !isLocked(x)).length);
+      sentToCloserStat.textContent = String(allLeads.filter(x => x.leadStatus === "sent_to_closer" || x.sentToCloserAt).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
+      overdueStat.textContent = String(allLeads.filter(x => isOverdueManagerLead(x)).length);
+    }
+
+    function getFilteredLeads() {
+      const selectedStatus = statusFilter.value;
+      const selectedTiming = timingFilter.value;
+      const selectedCloser = closerFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+      const today = todayIso();
+
+      return allLeads.filter(lead => {
+        const leadStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
+        const appointmentDateValue = lead.closerAppointmentDate || "";
+        const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
+
+        const matchesTiming =
+          selectedTiming === "all" ||
+          (selectedTiming === "today" && appointmentDateValue === today) ||
+          (selectedTiming === "future" && appointmentDateValue && appointmentDateValue > today) ||
+          (selectedTiming === "overdue" && appointmentDateValue && appointmentDateValue < today) ||
+          (selectedTiming === "none" && !appointmentDateValue);
+
+        const matchesCloser =
+          selectedCloser === "all" ||
+          (lead.closerUid || "") === selectedCloser;
+
+        const haystack = `
+          ${lead.forename || ""}
+          ${lead.surname || ""}
+          ${lead.telephone || ""}
+          ${lead.postcode || ""}
+          ${lead.claimType || ""}
+          ${lead.type || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesStatus && matchesTiming && matchesCloser && matchesSearch;
+      });
+    }
+
+    function renderLeads() {
+      const filtered = getFilteredLeads()
+        .sort((a, b) => {
+          const aTime = a.sentToManagerAt?.toDate ? a.sentToManagerAt.toDate().getTime() : 0;
+          const bTime = b.sentToManagerAt?.toDate ? b.sentToManagerAt.toDate().getTime() : 0;
           return bTime - aTime;
         });
 
-        renderSubmissions();
-      } catch (error) {
-        console.error("Failed to load submissions:", error);
-        resultsSummary.textContent = "Could not load submissions.";
-        submissionsBody.innerHTML = `
-          <tr>
-            <td colspan="7" class="p-6 text-center text-red-600">Error loading submissions.</td>
-          </tr>
-        `;
-      }
-    }
-
-    function renderSubmissions() {
-      const selectedType = claimTypeFilter.value;
-      const selectedStatus = statusFilter.value;
-      const searchTerm = searchInput.value.trim().toLowerCase();
-
-      const filtered = allSubmissions.filter(item => {
-        const matchesType = selectedType === "all" || item.claimType === selectedType;
-        const matchesStatus = selectedStatus === "all" || (item.status || "submitted") === selectedStatus;
-
-        const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim().toLowerCase();
-        const clientEmail = (item.client?.email || "").toLowerCase();
-        const staffName = (item.submittedBy?.name || "").toLowerCase();
-        const staffEmailValue = (item.submittedBy?.email || "").toLowerCase();
-
-        const matchesSearch =
-          !searchTerm ||
-          clientName.includes(searchTerm) ||
-          clientEmail.includes(searchTerm) ||
-          staffName.includes(searchTerm) ||
-          staffEmailValue.includes(searchTerm);
-
-        return matchesType && matchesStatus && matchesSearch;
-      });
-
-      submissionsBody.innerHTML = "";
+      leadsBody.innerHTML = "";
 
       if (!filtered.length) {
-        submissionsBody.innerHTML = `
+        leadsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No submissions found.</td>
+            <td colspan="7" class="p-6 text-center text-slate-500">No manager leads found.</td>
           </tr>
         `;
       } else {
-        filtered.forEach(item => {
-          const row = document.createElement("tr");
-          row.className = "border-t border-slate-200";
-
-          const clientName = `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
-          const clientEmail = item.client?.email || "-";
-          const submittedBy = item.submittedBy?.name || item.submittedBy?.email || "-";
-          const rawStatus = item.status || "submitted";
-
-          row.innerHTML = `
-            <td class="p-3">${formatDate(item.createdAt)}</td>
-            <td class="p-3">${formatClaimType(item.claimType)}</td>
-            <td class="p-3">${clientName}</td>
-            <td class="p-3">${clientEmail}</td>
-            <td class="p-3">${submittedBy}</td>
+        filtered.forEach(lead => {
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+          tr.innerHTML = `
             <td class="p-3">
-              <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass(rawStatus)}">
-                ${normalizeStatus(rawStatus)}
-              </span>
+              <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+              <div class="text-xs text-slate-500">${lead.claimType || lead.type || "-"}</div>
             </td>
+            <td class="p-3">${lead.telephone || "-"}</td>
+            <td class="p-3">${userDisplay(lead.assignedToUid)}</td>
+            <td class="p-3">${statusBadge(lead)}</td>
+            <td class="p-3">${getAppointmentText(lead)}</td>
+            <td class="p-3">${userDisplay(lead.closerUid)}</td>
             <td class="p-3">
-              <a href="/intake-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
+              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
+                Open
+              </button>
             </td>
           `;
-
-          submissionsBody.appendChild(row);
+          leadsBody.appendChild(tr);
         });
       }
 
-      resultsSummary.textContent = `${filtered.length} submission(s) shown`;
+      resultsSummary.textContent = `${filtered.length} lead(s) shown`;
+
+      document.querySelectorAll("[data-open-lead]").forEach(btn => {
+        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+      });
     }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    function openLead(leadId) {
+      selectedLead = allLeads.find(x => x.id === leadId);
+      if (!selectedLead) return;
+
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Manager Lead Review";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
+      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || "-";
+      document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
+      document.getElementById("lead_status").innerHTML = statusBadge(selectedLead);
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
+      document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
+
+      closerSelect.value = selectedLead.closerUid || "";
+      managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
+      appointmentDate.value = selectedLead.closerAppointmentDate || "";
+      appointmentTime.value = selectedLead.closerAppointmentTime || "";
+      notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
+
+      renderHistory(selectedLead.actionHistory || []);
+      leadModal.classList.remove("hidden");
+    }
+
+    async function refreshSelectedLead() {
+      await loadLeads();
+      if (selectedLead) {
+        const updated = allLeads.find(x => x.id === selectedLead.id);
+        if (updated) {
+          selectedLead = updated;
+          openLead(updated.id);
+        } else {
+          leadModal.classList.add("hidden");
+        }
+      }
+    }
+
+    async function updateLead(patch, historyAction, notes = "") {
+      if (!selectedLead) return;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          ...patch,
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: historyAction,
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes
+          })
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Lead updated successfully.");
+      } catch (error) {
+        console.error("Lead update failed:", error);
+        showModalMessage("Could not update lead.", true);
+      }
+    }
+
+    markQualifiedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "qualified",
+        lastAction: "qualified"
+      }, "qualified", "Manager marked lead as qualified.");
+    });
+
+    bookAppointmentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!closerSelect.value) {
+        showModalMessage("Please choose a closer first.", true);
+        return;
+      }
+      if (!appointmentDate.value || !appointmentTime.value) {
+        showModalMessage("Please choose appointment date and time.", true);
+        return;
+      }
+
+      await updateLead({
+        leadStatus: "sent_to_closer",
+        closerUid: closerSelect.value,
+        closerAppointmentDate: appointmentDate.value,
+        closerAppointmentTime: appointmentTime.value,
+        sentToCloserAt: serverTimestamp(),
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "closer_appointment_booked"
+      }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
+    });
+
+    sendToCloserBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!closerSelect.value) {
+        showModalMessage("Please choose a closer first.", true);
+        return;
+      }
+
+      await updateLead({
+        leadStatus: "sent_to_closer",
+        closerUid: closerSelect.value,
+        sentToCloserAt: serverTimestamp(),
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "sent_to_closer"
+      }, "sent_to_closer", "Lead sent to closer by manager.");
+    });
+
+    markConvertedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "converted",
+        convertedAt: serverTimestamp(),
+        lastAction: "converted"
+      }, "converted", "Lead marked as converted by manager.");
+    });
+
+    markClosedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "closed",
+        closed: true,
+        usable: false,
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "closed"
+      }, "closed", "Lead closed by manager.");
+    });
+
+    saveNotesBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          managerNotes: notesBox.value || "",
+          closerUid: closerSelect.value || "",
+          closerAppointmentDate: appointmentDate.value || "",
+          closerAppointmentTime: appointmentTime.value || "",
+          leadStatus: managerStatusSelect.value || selectedLead.leadStatus || "awaiting_manager",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "notes_saved",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: notesBox.value || ""
+          })
+        });
+        await refreshSelectedLead();
+        showModalMessage("Notes saved.");
+      } catch (error) {
+        console.error("Failed to save notes:", error);
+        showModalMessage("Could not save notes.", true);
+      }
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+      leadModal.classList.add("hidden");
+    });
+
+    leadModal.addEventListener("click", (e) => {
+      if (e.target === leadModal) {
+        leadModal.classList.add("hidden");
+      }
+    });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
         return;
       }
-      await checkManagerAccess(user);
+      const allowed = await checkManagerAccess(user);
+      if (!allowed) return;
+      hideLoader();
+      await loadLeads();
     });
 
     logoutBtn.addEventListener("click", async () => {
@@ -337,10 +779,11 @@
       }
     });
 
-    claimTypeFilter.addEventListener("change", renderSubmissions);
-    statusFilter.addEventListener("change", renderSubmissions);
-    searchInput.addEventListener("input", renderSubmissions);
-    refreshBtn.addEventListener("click", loadSubmissions);
+    statusFilter.addEventListener("change", renderLeads);
+    timingFilter.addEventListener("change", renderLeads);
+    closerFilter.addEventListener("change", renderLeads);
+    searchInput.addEventListener("input", renderLeads);
+    refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {

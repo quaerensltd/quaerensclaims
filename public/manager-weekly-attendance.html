@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Weekly Attendance | Quaerens</title>
+  <title>Quaerens Manager Weekly Attendance</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,12 +112,14 @@
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Staff Weekly Attendance</h1>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Weekly Attendance</h1>
           <p class="text-sm text-slate-500">Weekly attendance overview for staff activity and login history</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
-          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
@@ -166,14 +168,12 @@
             <label class="block text-sm font-semibold text-blue-900 mb-2">Week Starting</label>
             <input id="weekStartInput" type="date" class="input" />
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Staff Filter</label>
             <select id="staffFilter" class="input">
               <option value="all">All staff</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">View</label>
             <select id="viewFilter" class="input">
@@ -181,7 +181,6 @@
               <option value="daily">Daily records</option>
             </select>
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Week</button>
           </div>
@@ -257,7 +256,6 @@
     const weekStartInput = document.getElementById("weekStartInput");
     const staffFilter = document.getElementById("staffFilter");
     const viewFilter = document.getElementById("viewFilter");
-
     const summaryText = document.getElementById("summaryText");
     const autoRefreshStatus = document.getElementById("autoRefreshStatus");
     const weeklySummaryHead = document.getElementById("weeklySummaryHead");
@@ -341,8 +339,7 @@
     function isStaleOnline(docData) {
       if (!docData?.isOnline || !docData.lastSeenAt?.toDate) return false;
       const lastSeen = docData.lastSeenAt.toDate().getTime();
-      const now = Date.now();
-      return now - lastSeen > 10 * 60 * 1000;
+      return Date.now() - lastSeen > 10 * 60 * 1000;
     }
 
     function liveStatusBadge(docData) {
@@ -361,7 +358,6 @@
 
     function getWorkedMs(docData) {
       if (!docData) return 0;
-
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
 
       if (
@@ -379,11 +375,9 @@
 
     function getDayStatus(rec, dateStr) {
       if (!rec || !rec.firstLoginAt?.toDate) return "absent";
-
       const firstLogin = rec.firstLoginAt.toDate();
       const cutoff = new Date(`${dateStr}T00:00:00`);
       cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
-
       return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
@@ -471,7 +465,6 @@
 
     function renderStats() {
       const filteredStaff = getFilteredStaff();
-
       let recordCount = 0;
       let presentDays = 0;
       let lateDays = 0;
@@ -483,11 +476,9 @@
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
-
           if (rec) {
             recordCount += 1;
             presentDays += 1;
-
             const status = getDayStatus(rec, dateStr);
             if (status === "late") lateDays += 1;
             if (status === "on_time") onTimeDays += 1;
@@ -584,7 +575,6 @@
     function renderDailyView() {
       const filteredStaff = getFilteredStaff();
       dailyAttendanceBody.innerHTML = "";
-
       const rows = [];
 
       filteredStaff.forEach(user => {
@@ -651,7 +641,6 @@
 
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-
       autoRefreshInterval = setInterval(async () => {
         try {
           await loadBaseData(true);

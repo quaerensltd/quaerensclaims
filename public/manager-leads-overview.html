@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quaerens Leads Overview</title>
+  <title>Quaerens Manager Leads Overview</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,11 +12,13 @@
     body { font-family: 'Inter', sans-serif; }
     .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
     .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
-    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn { border-radius: 12px; padding: 0.75rem 1rem; font-weight: 700; }
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -26,6 +28,19 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -40,50 +55,85 @@
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Leads Overview</h1>
-          <p class="text-sm text-slate-500">Manager view across all listers, callbacks, intro emails, conversions, and locked leads</p>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Leads Overview</h1>
+          <p class="text-sm text-slate-500">Full oversight of lister, manager, and closer pipeline</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <div class="text-sm text-slate-500 text-right">
+            <div id="staffStatus">Checking access...</div>
+            <div id="staffEmail" class="text-xs text-slate-400"></div>
+          </div>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-6 gap-4">
+      <section class="grid lg:grid-cols-7 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Leads</div>
           <div id="totalLeadsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Callbacks</div>
-          <div id="callbacksStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Awaiting Manager</div>
+          <div id="awaitingManagerStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Intro Emails</div>
-          <div id="introEmailStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Qualified</div>
+          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Sent to Closer</div>
+          <div id="sentToCloserStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Converted</div>
-          <div id="convertedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div id="convertedStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Locked</div>
-          <div id="lockedStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Closed</div>
+          <div id="closedStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">No Answer</div>
-          <div id="noAnswerStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+          <div class="text-sm text-slate-500">Booked Today</div>
+          <div id="bookedTodayStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
       </section>
 
       <section class="card p-6">
         <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
+            <select id="statusFilter" class="input">
+              <option value="all">All statuses</option>
+              <option value="new">New</option>
+              <option value="no_answer">No Answer</option>
+              <option value="callback_required">Callback Required</option>
+              <option value="intro_email_needed">Intro Email Needed</option>
+              <option value="qualified">Qualified</option>
+              <option value="awaiting_manager">Awaiting Manager</option>
+              <option value="sent_to_closer">Sent to Closer</option>
+              <option value="converted">Converted</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Appointment Timing</label>
+            <select id="timingFilter" class="input">
+              <option value="all">All timings</option>
+              <option value="today">Today</option>
+              <option value="future">Future</option>
+              <option value="overdue">Overdue</option>
+              <option value="none">No appointment set</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Lister</label>
             <select id="listerFilter" class="input">
@@ -92,36 +142,15 @@
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
-            <select id="statusFilter" class="input">
-              <option value="all">All statuses</option>
-              <option value="new">New</option>
-              <option value="callback_required">Callback Required</option>
-              <option value="intro_email_needed">Intro Email Needed</option>
-              <option value="intake_in_progress">Intake In Progress</option>
-              <option value="converted">Converted</option>
-              <option value="closed">Closed / Unusable</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Special View</label>
-            <select id="specialFilter" class="input">
-              <option value="all">All leads</option>
-              <option value="callbacks_only">Callbacks Only</option>
-              <option value="intro_only">Intro Email Only</option>
-              <option value="converted_only">Converted Only</option>
-              <option value="locked_only">Locked Only</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Closer</label>
+            <select id="closerFilter" class="input">
+              <option value="all">All closers</option>
             </select>
           </div>
 
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
-          </div>
-
-          <div class="flex items-end">
-            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Overview</button>
+            <input id="searchInput" type="text" class="input" placeholder="Client, phone, postcode..." />
           </div>
         </div>
       </section>
@@ -129,9 +158,10 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">All Leads</h2>
+            <h2 class="text-xl font-extrabold text-blue-900">All Leads Overview</h2>
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
           </div>
+          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
 
         <div class="overflow-x-auto">
@@ -140,41 +170,15 @@
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Phone</th>
-                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Lister</th>
                 <th class="text-left p-3">Status</th>
-                <th class="text-left p-3">Last Action</th>
-                <th class="text-left p-3">Callback</th>
-                <th class="text-left p-3">Converted</th>
+                <th class="text-left p-3">Appointment</th>
+                <th class="text-left p-3">Closer</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
-            <tbody id="overviewBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="card p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Lister Performance</h2>
-            <p class="text-sm text-slate-500 mt-1">Quick totals per lister</p>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-blue-50 text-blue-900">
-                <th class="text-left p-3">Lister</th>
-                <th class="text-left p-3">Total</th>
-                <th class="text-left p-3">Callbacks</th>
-                <th class="text-left p-3">Intro Emails</th>
-                <th class="text-left p-3">Converted</th>
-                <th class="text-left p-3">Locked</th>
-              </tr>
-            </thead>
-            <tbody id="performanceBody"></tbody>
+            <tbody id="leadsBody"></tbody>
           </table>
         </div>
       </section>
@@ -182,10 +186,10 @@
   </div>
 
   <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
-    <div class="max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
         <div>
-          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Lead Detail</h3>
+          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Lead Review</h3>
           <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
         </div>
         <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
@@ -193,35 +197,65 @@
 
       <div class="p-6 space-y-6">
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Overview</h4>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
             <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
             <div><span class="font-semibold text-blue-900">Lister:</span> <span id="lead_lister">-</span></div>
             <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
-            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
-            <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
-            <div><span class="font-semibold text-blue-900">Usable:</span> <span id="lead_usable">-</span></div>
+            <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
+            <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Reassign Lead</h4>
-          <div class="grid md:grid-cols-[1fr_auto] gap-3">
-            <select id="reassignListerSelect" class="input">
-              <option value="">Select lister</option>
-            </select>
-            <button id="reassignLeadBtn" class="btn btn-primary" type="button">Reassign</button>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Pipeline Actions</h4>
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="closerSelect">Assign Closer</label>
+              <select id="closerSelect" class="input"></select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerStatusSelect">Lead Status</label>
+              <select id="managerStatusSelect" class="input">
+                <option value="awaiting_manager">Awaiting Manager</option>
+                <option value="qualified">Qualified</option>
+                <option value="sent_to_closer">Sent to Closer</option>
+                <option value="converted">Converted</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentDate">Appointment Date</label>
+              <input id="appointmentDate" type="date" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentTime">Appointment Time</label>
+              <input id="appointmentTime" type="time" class="input" />
+            </div>
           </div>
-          <p id="reassignMessage" class="text-sm text-green-700 hidden mt-3"></p>
+
+          <div class="flex flex-wrap gap-3">
+            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+            <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Appointment</button>
+            <button id="sendToCloserBtn" class="btn btn-secondary" type="button">Send to Closer</button>
+            <button id="markConvertedBtn" class="btn btn-secondary" type="button">Mark Converted</button>
+            <button id="markClosedBtn" class="btn btn-danger" type="button">Close Lead</button>
+          </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
-          <div id="lead_notes" class="text-sm text-slate-700 whitespace-pre-wrap">-</div>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Notes</h4>
+          <textarea id="notesBox" class="input" rows="6" placeholder="Manager notes, booking details, closer handoff notes..."></textarea>
+          <div class="mt-4 flex gap-3 flex-wrap">
+            <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
+            <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
         </section>
 
         <section class="card p-5">
@@ -246,8 +280,8 @@
       getDocs,
       updateDoc,
       collection,
-      arrayUnion,
-      serverTimestamp
+      serverTimestamp,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -261,39 +295,64 @@
     const db = getFirestore(app);
 
     const authLoader = document.getElementById("authLoader");
+    const staffStatus = document.getElementById("staffStatus");
+    const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    const listerFilter = document.getElementById("listerFilter");
     const statusFilter = document.getElementById("statusFilter");
-    const specialFilter = document.getElementById("specialFilter");
+    const timingFilter = document.getElementById("timingFilter");
+    const listerFilter = document.getElementById("listerFilter");
+    const closerFilter = document.getElementById("closerFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
+    const leadsBody = document.getElementById("leadsBody");
+    const resultsSummary = document.getElementById("resultsSummary");
 
     const totalLeadsStat = document.getElementById("totalLeadsStat");
-    const callbacksStat = document.getElementById("callbacksStat");
-    const introEmailStat = document.getElementById("introEmailStat");
+    const awaitingManagerStat = document.getElementById("awaitingManagerStat");
+    const qualifiedStat = document.getElementById("qualifiedStat");
+    const sentToCloserStat = document.getElementById("sentToCloserStat");
     const convertedStat = document.getElementById("convertedStat");
-    const lockedStat = document.getElementById("lockedStat");
-    const noAnswerStat = document.getElementById("noAnswerStat");
-
-    const overviewBody = document.getElementById("overviewBody");
-    const performanceBody = document.getElementById("performanceBody");
-    const resultsSummary = document.getElementById("resultsSummary");
+    const closedStat = document.getElementById("closedStat");
+    const bookedTodayStat = document.getElementById("bookedTodayStat");
 
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const reassignListerSelect = document.getElementById("reassignListerSelect");
-    const reassignLeadBtn = document.getElementById("reassignLeadBtn");
-    const reassignMessage = document.getElementById("reassignMessage");
+    const closerSelect = document.getElementById("closerSelect");
+    const managerStatusSelect = document.getElementById("managerStatusSelect");
+    const appointmentDate = document.getElementById("appointmentDate");
+    const appointmentTime = document.getElementById("appointmentTime");
+    const notesBox = document.getElementById("notesBox");
+    const modalMessage = document.getElementById("modalMessage");
+
+    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
+    const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
+    const sendToCloserBtn = document.getElementById("sendToCloserBtn");
+    const markConvertedBtn = document.getElementById("markConvertedBtn");
+    const markClosedBtn = document.getElementById("markClosedBtn");
+    const saveNotesBtn = document.getElementById("saveNotesBtn");
 
     let currentUser = null;
     let currentUserData = null;
     let allLeads = [];
     let allUsers = [];
+    let listerUsers = [];
+    let closerUsers = [];
     let selectedLead = null;
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
+    }
+
+    function showModalMessage(text, isError = false) {
+      modalMessage.textContent = text;
+      modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
     }
 
     function formatAddress(lead) {
@@ -302,182 +361,237 @@
         .join(", ") || "-";
     }
 
+    function clientName(lead) {
+      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+    }
+
     function formatAction(action) {
       const map = {
-        no_answer: "No Answer",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        no_product: "No Relevant Product",
-        voicemail: "Voicemail",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager",
+        sent_to_closer: "Sent to Closer",
+        closer_appointment_booked: "Closer Appointment Booked",
+        converted: "Converted",
+        closed: "Closed",
+        notes_saved: "Notes Saved",
         callback_required: "Callback Required",
         send_intro_email: "Send Intro Email",
-        interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted",
-        intake_draft_saved: "Intake Draft Saved",
-        notes_saved: "Notes Saved",
-        reassigned: "Reassigned"
+        no_answer: "No Answer",
+        voicemail: "Voicemail",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested"
       };
       return map[action] || action || "-";
     }
 
-    function formatLeadStatus(lead) {
-      if (lead.closed || lead.usable === false) return "Closed";
-      if (lead.leadStatus === "callback_required") return "Callback Required";
-      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
-      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
-      if (lead.leadStatus === "converted") return "Converted";
-      return "New";
+    function findUserById(uid) {
+      return allUsers.find(user => user.id === uid) || null;
+    }
+
+    function userDisplay(uid) {
+      if (!uid) return "-";
+      const user = findUserById(uid);
+      return user?.name || user?.email || uid;
     }
 
     function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
     }
 
-    async function checkManagerAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
-      if (userData.role !== "manager") {
-        alert("You do not have permission to access this page.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      currentUser = user;
-      currentUserData = userData;
-      logoutBtn.classList.remove("hidden");
-      return true;
+    function statusBadge(lead) {
+      const status = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
+      if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
+      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "intro_email_needed") return `<span class="badge badge-blue">Intro Email Needed</span>`;
+      if (status === "callback_required") return `<span class="badge badge-amber">Callback Required</span>`;
+      if (status === "no_answer") return `<span class="badge badge-slate">No Answer</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
     }
 
-    async function loadData() {
-      const usersSnap = await getDocs(collection(db, "users"));
-      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      const leadsSnap = await getDocs(collection(db, "leadAssignments"));
-      allLeads = leadsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      populateListerFilter();
-      populateReassignSelect();
-      renderStats();
-      renderOverview();
-      renderPerformance();
+    function getAppointmentText(lead) {
+      const date = lead.closerAppointmentDate || "";
+      const time = lead.closerAppointmentTime || "";
+      return date ? `${date} ${time}`.trim() : "-";
     }
 
-    function populateListerFilter() {
-      const current = listerFilter.value || "all";
-      const staffUsers = allUsers.filter(u => u.role === "staff");
-
+    function populateUserFilters() {
       listerFilter.innerHTML = `<option value="all">All listers</option>`;
-      staffUsers.forEach(user => {
+      closerFilter.innerHTML = `<option value="all">All closers</option>`;
+      closerSelect.innerHTML = `<option value="">Select closer</option>`;
+
+      listerUsers.forEach(user => {
         const option = document.createElement("option");
         option.value = user.id;
         option.textContent = user.name || user.email || user.id;
         listerFilter.appendChild(option);
       });
 
-      listerFilter.value = current;
-    }
+      closerUsers.forEach(user => {
+        const option1 = document.createElement("option");
+        option1.value = user.id;
+        option1.textContent = user.name || user.email || user.id;
+        closerFilter.appendChild(option1);
 
-    function populateReassignSelect() {
-      const staffUsers = allUsers.filter(u => u.role === "staff");
-      reassignListerSelect.innerHTML = `<option value="">Select lister</option>`;
-      staffUsers.forEach(user => {
-        const option = document.createElement("option");
-        option.value = user.id;
-        option.textContent = user.name || user.email || user.id;
-        reassignListerSelect.appendChild(option);
+        const option2 = document.createElement("option");
+        option2.value = user.id;
+        option2.textContent = user.name || user.email || user.id;
+        closerSelect.appendChild(option2);
       });
     }
 
+    async function checkManagerAccess(user) {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          alert("No staff profile found for this account.");
+          window.location.href = "/login.html";
+          return false;
+        }
+
+        const userData = userSnap.data();
+        if (userData.role !== "manager") {
+          alert("You do not have permission to access this page.");
+          window.location.href = "/login.html";
+          return false;
+        }
+
+        currentUser = user;
+        currentUserData = userData;
+        staffStatus.textContent = "Logged in as Manager";
+        staffEmail.textContent = user.email || "";
+        logoutBtn.classList.remove("hidden");
+        return true;
+      } catch (error) {
+        console.error("Manager access check failed:", error);
+        alert("There was a problem checking access.");
+        window.location.href = "/login.html";
+        return false;
+      }
+    }
+
+    async function loadLeads() {
+      try {
+        const [leadSnap, userSnap] = await Promise.all([
+          getDocs(collection(db, "leadAssignments")),
+          getDocs(collection(db, "users"))
+        ]);
+
+        allLeads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allUsers = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        listerUsers = allUsers.filter(user => user.role === "staff");
+        closerUsers = allUsers.filter(user => user.role === "closer");
+
+        populateUserFilters();
+        renderStats();
+        renderLeads();
+      } catch (error) {
+        console.error("Failed to load leads:", error);
+        resultsSummary.textContent = "Could not load leads.";
+        leadsBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-red-600">Error loading leads.</td>
+          </tr>
+        `;
+      }
+    }
+
     function renderStats() {
+      const today = todayIso();
       totalLeadsStat.textContent = String(allLeads.length);
-      callbacksStat.textContent = String(allLeads.filter(x => x.callbackRequired).length);
-      introEmailStat.textContent = String(allLeads.filter(x => x.introEmailNeeded).length);
-      convertedStat.textContent = String(allLeads.filter(x => x.leadStatus === "converted").length);
-      lockedStat.textContent = String(allLeads.filter(x => isLocked(x)).length);
-      noAnswerStat.textContent = String(allLeads.filter(x => x.lastAction === "no_answer").length);
+      awaitingManagerStat.textContent = String(allLeads.filter(x => x.leadStatus === "awaiting_manager" && !isLocked(x)).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified" && !isLocked(x)).length);
+      sentToCloserStat.textContent = String(allLeads.filter(x => x.leadStatus === "sent_to_closer" || x.sentToCloserAt).length);
+      convertedStat.textContent = String(allLeads.filter(x => x.leadStatus === "converted" || x.convertedToSubmissionId).length);
+      closedStat.textContent = String(allLeads.filter(x => isLocked(x)).length);
+      bookedTodayStat.textContent = String(allLeads.filter(x => x.closerAppointmentDate === today && !isLocked(x)).length);
     }
 
     function getFilteredLeads() {
-      const lister = listerFilter.value;
-      const status = statusFilter.value;
-      const special = specialFilter.value;
+      const selectedStatus = statusFilter.value;
+      const selectedTiming = timingFilter.value;
+      const selectedLister = listerFilter.value;
+      const selectedCloser = closerFilter.value;
       const term = searchInput.value.trim().toLowerCase();
+      const today = todayIso();
 
       return allLeads.filter(lead => {
-        const currentStatus =
-          isLocked(lead) ? "closed" :
-          lead.leadStatus === "callback_required" ? "callback_required" :
-          lead.leadStatus === "intro_email_needed" ? "intro_email_needed" :
-          lead.leadStatus === "intake_in_progress" ? "intake_in_progress" :
-          lead.leadStatus === "converted" ? "converted" :
-          "new";
+        const leadStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
+        const appointmentDateValue = lead.closerAppointmentDate || "";
 
-        const matchesLister = lister === "all" || lead.assignedToUid === lister;
-        const matchesStatus = status === "all" || currentStatus === status;
+        const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
 
-        const matchesSpecial =
-          special === "all" ||
-          (special === "callbacks_only" && lead.callbackRequired) ||
-          (special === "intro_only" && lead.introEmailNeeded) ||
-          (special === "converted_only" && lead.leadStatus === "converted") ||
-          (special === "locked_only" && isLocked(lead));
+        const matchesTiming =
+          selectedTiming === "all" ||
+          (selectedTiming === "today" && appointmentDateValue === today) ||
+          (selectedTiming === "future" && appointmentDateValue && appointmentDateValue > today) ||
+          (selectedTiming === "overdue" && appointmentDateValue && appointmentDateValue < today) ||
+          (selectedTiming === "none" && !appointmentDateValue);
+
+        const matchesLister =
+          selectedLister === "all" ||
+          (lead.assignedToUid || "") === selectedLister;
+
+        const matchesCloser =
+          selectedCloser === "all" ||
+          (lead.closerUid || "") === selectedCloser;
 
         const haystack = `
           ${lead.forename || ""}
           ${lead.surname || ""}
           ${lead.telephone || ""}
           ${lead.postcode || ""}
-          ${lead.assignedToName || ""}
+          ${lead.claimType || ""}
+          ${lead.type || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
-        return matchesLister && matchesStatus && matchesSpecial && matchesSearch;
+        return matchesStatus && matchesTiming && matchesLister && matchesCloser && matchesSearch;
       });
     }
 
-    function renderOverview() {
-      const filtered = getFilteredLeads();
-      overviewBody.innerHTML = "";
+    function renderLeads() {
+      const filtered = getFilteredLeads().sort((a, b) => {
+        const aTime = a.lastUpdatedAt?.toDate ? a.lastUpdatedAt.toDate().getTime() : 0;
+        const bTime = b.lastUpdatedAt?.toDate ? b.lastUpdatedAt.toDate().getTime() : 0;
+        return bTime - aTime;
+      });
+
+      leadsBody.innerHTML = "";
 
       if (!filtered.length) {
-        overviewBody.innerHTML = `
+        leadsBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No leads found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No leads found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
-
           tr.innerHTML = `
             <td class="p-3">
-              <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
-              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+              <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+              <div class="text-xs text-slate-500">${lead.postcode || "-"}</div>
             </td>
             <td class="p-3">${lead.telephone || "-"}</td>
-            <td class="p-3">${lead.postcode || "-"}</td>
-            <td class="p-3">${lead.assignedToName || lead.assignedToEmail || "-"}</td>
-            <td class="p-3">${formatLeadStatus(lead)}</td>
-            <td class="p-3">${formatAction(lead.lastAction)}</td>
-            <td class="p-3">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
-            <td class="p-3">${lead.convertedToSubmissionId || "-"}</td>
+            <td class="p-3">${lead.claimType || lead.type || "-"}</td>
+            <td class="p-3">${userDisplay(lead.assignedToUid)}</td>
+            <td class="p-3">${statusBadge(lead)}</td>
+            <td class="p-3">${getAppointmentText(lead)}</td>
+            <td class="p-3">${userDisplay(lead.closerUid)}</td>
             <td class="p-3">
               <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
-                Open Lead
+                Open
               </button>
             </td>
           `;
-          overviewBody.appendChild(tr);
+          leadsBody.appendChild(tr);
         });
       }
 
@@ -486,61 +600,6 @@
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
       });
-    }
-
-    function renderPerformance() {
-      performanceBody.innerHTML = "";
-      const staffUsers = allUsers.filter(u => u.role === "staff");
-
-      if (!staffUsers.length) {
-        performanceBody.innerHTML = `
-          <tr>
-            <td colspan="6" class="p-6 text-center text-slate-500">No listers found.</td>
-          </tr>
-        `;
-        return;
-      }
-
-      staffUsers.forEach(user => {
-        const leads = allLeads.filter(x => x.assignedToUid === user.id);
-        const tr = document.createElement("tr");
-        tr.className = "border-t border-slate-200";
-
-        tr.innerHTML = `
-          <td class="p-3">${user.name || user.email || user.id}</td>
-          <td class="p-3">${leads.length}</td>
-          <td class="p-3">${leads.filter(x => x.callbackRequired).length}</td>
-          <td class="p-3">${leads.filter(x => x.introEmailNeeded).length}</td>
-          <td class="p-3">${leads.filter(x => x.leadStatus === "converted").length}</td>
-          <td class="p-3">${leads.filter(x => isLocked(x)).length}</td>
-        `;
-        performanceBody.appendChild(tr);
-      });
-    }
-
-    function openLead(leadId) {
-      selectedLead = allLeads.find(x => x.id === leadId);
-      if (!selectedLead) return;
-
-      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
-      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
-      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
-      document.getElementById("lead_lister").textContent = selectedLead.assignedToName || selectedLead.assignedToEmail || "-";
-      document.getElementById("lead_status").textContent = formatLeadStatus(selectedLead);
-      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
-      document.getElementById("lead_callback").textContent = selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
-      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
-      document.getElementById("lead_usable").textContent = selectedLead.usable === false ? "No" : "Yes";
-      document.getElementById("lead_notes").textContent = selectedLead.notes || "-";
-
-      reassignListerSelect.value = selectedLead.assignedToUid || "";
-      reassignMessage.classList.add("hidden");
-
-      renderHistory(selectedLead.actionHistory || []);
-      leadModal.classList.remove("hidden");
     }
 
     function renderHistory(history) {
@@ -564,81 +623,168 @@
       });
     }
 
-    reassignLeadBtn.addEventListener("click", async () => {
+    function openLead(leadId) {
+      selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
-      const newUid = reassignListerSelect.value;
-      const newLister = allUsers.find(u => u.id === newUid && u.role === "staff");
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
 
-      if (!newUid || !newLister) {
-        reassignMessage.textContent = "Please select a lister.";
-        reassignMessage.classList.remove("hidden", "text-green-700");
-        reassignMessage.classList.add("text-red-600");
-        return;
-      }
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
+      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || "-";
+      document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
+      document.getElementById("lead_status").innerHTML = statusBadge(selectedLead);
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
+      document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
 
-      if (newUid === selectedLead.assignedToUid) {
-        reassignMessage.textContent = "This lead is already assigned to that lister.";
-        reassignMessage.classList.remove("hidden", "text-green-700");
-        reassignMessage.classList.add("text-red-600");
-        return;
+      closerSelect.value = selectedLead.closerUid || "";
+      managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
+      appointmentDate.value = selectedLead.closerAppointmentDate || "";
+      appointmentTime.value = selectedLead.closerAppointmentTime || "";
+      notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
+
+      renderHistory(selectedLead.actionHistory || []);
+      leadModal.classList.remove("hidden");
+    }
+
+    async function refreshSelectedLead() {
+      await loadLeads();
+      if (selectedLead) {
+        const updated = allLeads.find(x => x.id === selectedLead.id);
+        if (updated) {
+          selectedLead = updated;
+          openLead(updated.id);
+        } else {
+          leadModal.classList.add("hidden");
+        }
       }
+    }
+
+    async function updateLead(patch, historyAction, notes = "") {
+      if (!selectedLead) return;
 
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          assignedToUid: newLister.id,
-          assignedToName: newLister.name || "",
-          assignedToEmail: newLister.email || "",
+          ...patch,
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
-            action: "reassigned",
+            action: historyAction,
             byUid: currentUser.uid,
             byName: currentUserData.name || "",
             at: new Date().toISOString(),
-            notes: `Reassigned to ${newLister.name || newLister.email || newLister.id}`
+            notes
           })
         });
 
-        reassignMessage.textContent = "Lead reassigned successfully.";
-        reassignMessage.classList.remove("hidden", "text-red-600");
-        reassignMessage.classList.add("text-green-700");
-
-        await loadData();
-        selectedLead = allLeads.find(x => x.id === selectedLead.id);
-        if (selectedLead) openLead(selectedLead.id);
+        await refreshSelectedLead();
+        showModalMessage("Lead updated successfully.");
       } catch (error) {
-        console.error("Failed to reassign lead:", error);
-        reassignMessage.textContent = "Could not reassign lead.";
-        reassignMessage.classList.remove("hidden", "text-green-700");
-        reassignMessage.classList.add("text-red-600");
+        console.error("Lead update failed:", error);
+        showModalMessage("Could not update lead.", true);
       }
+    }
+
+    markQualifiedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "qualified",
+        lastAction: "qualified"
+      }, "qualified", "Manager marked lead as qualified.");
     });
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "/login.html";
+    bookAppointmentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!closerSelect.value) {
+        showModalMessage("Please choose a closer first.", true);
+        return;
+      }
+      if (!appointmentDate.value || !appointmentTime.value) {
+        showModalMessage("Please choose appointment date and time.", true);
         return;
       }
 
-      try {
-        const allowed = await checkManagerAccess(user);
-        if (!allowed) return;
-        await loadData();
-        hideLoader();
-      } catch (error) {
-        console.error(error);
-        alert("Could not load overview.");
-        window.location.href = "/login.html";
-      }
+      await updateLead({
+        leadStatus: "sent_to_closer",
+        closerUid: closerSelect.value,
+        closerAppointmentDate: appointmentDate.value,
+        closerAppointmentTime: appointmentTime.value,
+        sentToCloserAt: serverTimestamp(),
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "closer_appointment_booked"
+      }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
     });
 
-    logoutBtn.addEventListener("click", async () => {
+    sendToCloserBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!closerSelect.value) {
+        showModalMessage("Please choose a closer first.", true);
+        return;
+      }
+
+      await updateLead({
+        leadStatus: "sent_to_closer",
+        closerUid: closerSelect.value,
+        sentToCloserAt: serverTimestamp(),
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "sent_to_closer"
+      }, "sent_to_closer", "Lead sent to closer by manager.");
+    });
+
+    markConvertedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "converted",
+        convertedAt: serverTimestamp(),
+        lastAction: "converted"
+      }, "converted", "Lead marked as converted by manager.");
+    });
+
+    markClosedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "closed",
+        closed: true,
+        usable: false,
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "closed"
+      }, "closed", "Lead closed by manager.");
+    });
+
+    saveNotesBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
       try {
-        await signOut(auth);
-        window.location.href = "/login.html";
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          managerNotes: notesBox.value || "",
+          closerUid: closerSelect.value || "",
+          closerAppointmentDate: appointmentDate.value || "",
+          closerAppointmentTime: appointmentTime.value || "",
+          leadStatus: managerStatusSelect.value || selectedLead.leadStatus || "awaiting_manager",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "notes_saved",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: notesBox.value || ""
+          })
+        });
+        await refreshSelectedLead();
+        showModalMessage("Notes saved.");
       } catch (error) {
-        console.error(error);
-        alert("Could not log out.");
+        console.error("Failed to save notes:", error);
+        showModalMessage("Could not save notes.", true);
       }
     });
 
@@ -652,11 +798,33 @@
       }
     });
 
-    listerFilter.addEventListener("change", renderOverview);
-    statusFilter.addEventListener("change", renderOverview);
-    specialFilter.addEventListener("change", renderOverview);
-    searchInput.addEventListener("input", renderOverview);
-    refreshBtn.addEventListener("click", loadData);
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+      const allowed = await checkManagerAccess(user);
+      if (!allowed) return;
+      hideLoader();
+      await loadLeads();
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out. Please try again.");
+      }
+    });
+
+    statusFilter.addEventListener("change", renderLeads);
+    timingFilter.addEventListener("change", renderLeads);
+    listerFilter.addEventListener("change", renderLeads);
+    closerFilter.addEventListener("change", renderLeads);
+    searchInput.addEventListener("input", renderLeads);
+    refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {

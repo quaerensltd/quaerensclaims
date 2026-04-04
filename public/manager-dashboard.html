@@ -16,7 +16,6 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
-
     .badge-online {
       display: inline-flex;
       align-items: center;
@@ -72,7 +71,39 @@
       font-weight: 700;
       font-size: 0.8rem;
     }
-
+    .badge-awaiting {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-booked {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .badge-overdue {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -97,9 +128,8 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Dashboard</h1>
-          <p class="text-sm text-slate-500">Manager tools, staff attendance, and live work overview</p>
+          <p class="text-sm text-slate-500">Manager review queue, closer appointments, staff attendance, and live work overview</p>
         </div>
-
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
@@ -112,7 +142,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-8 gap-4">
+      <section class="grid lg:grid-cols-10 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Staff</div>
           <div id="totalStaffStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -138,12 +168,20 @@
           <div id="absentStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Callbacks Pending</div>
-          <div id="callbacksPendingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Awaiting Manager</div>
+          <div id="awaitingManagerStat" class="text-3xl font-extrabold text-blue-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Intro Emails Pending</div>
-          <div id="introPendingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Closer Bookings</div>
+          <div id="closerBookingsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Today Appointments</div>
+          <div id="todayAppointmentsStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue Reviews</div>
+          <div id="overdueManagerStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
         </div>
       </section>
 
@@ -170,12 +208,12 @@
               <span id="snapshotAttendance" class="font-extrabold text-indigo-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Late starters today</span>
-              <span id="snapshotLate" class="font-extrabold text-amber-600">0</span>
+              <span class="text-slate-600">Awaiting manager review</span>
+              <span id="snapshotAwaitingManager" class="font-extrabold text-blue-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Absent today</span>
-              <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
+              <span class="text-slate-600">Closer appointments today</span>
+              <span id="snapshotAppointments" class="font-extrabold text-violet-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <span class="text-slate-600">Callbacks pending</span>
@@ -189,6 +227,54 @@
         </section>
       </section>
 
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Awaiting Manager Review</h2>
+              <p class="text-sm text-slate-500 mt-1">Qualified leads sent by listers for manager action</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Phone</th>
+                  <th class="text-left p-3">Lister</th>
+                  <th class="text-left p-3">Status</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="awaitingManagerBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Closer Appointments</h2>
+              <p class="text-sm text-slate-500 mt-1">Upcoming booked appointments and closer handoffs</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Date</th>
+                  <th class="text-left p-3">Time</th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Closer</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="closerAppointmentsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
@@ -198,7 +284,6 @@
           </div>
           <button id="refreshAttendanceBtn" class="btn btn-secondary" type="button">Refresh Attendance</button>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -225,7 +310,6 @@
             <p class="text-sm text-slate-500 mt-1">Current workload from assigned staff leads</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -234,6 +318,7 @@
                 <th class="text-left p-3">Assigned Leads</th>
                 <th class="text-left p-3">Callbacks</th>
                 <th class="text-left p-3">Intro Emails</th>
+                <th class="text-left p-3">Awaiting Manager</th>
                 <th class="text-left p-3">Converted</th>
               </tr>
             </thead>
@@ -311,7 +396,6 @@
 
     function getLiveWorkedMs(docData) {
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
-
       if (
         docData.isOnline &&
         docData.currentSessionStartAt?.toDate &&
@@ -321,7 +405,6 @@
         const liveExtra = Math.max(0, Date.now() - sessionStart);
         return baseMs + liveExtra;
       }
-
       return baseMs;
     }
 
@@ -336,6 +419,18 @@
       return isOnline
         ? `<span class="badge-online">● Online</span>`
         : `<span class="badge-offline">● Offline</span>`;
+    }
+
+    function awaitingManagerBadge() {
+      return `<span class="badge-awaiting">● Awaiting Manager</span>`;
+    }
+
+    function bookedBadge() {
+      return `<span class="badge-booked">● Booked</span>`;
+    }
+
+    function overdueBadge() {
+      return `<span class="badge-overdue">● Overdue</span>`;
     }
 
     function todayAttendanceMap() {
@@ -355,12 +450,9 @@
     function getTodayStatusForUser(userId) {
       const attendanceMap = todayAttendanceMap();
       const rec = attendanceMap[userId];
-
       if (!rec || !rec.firstLoginAt?.toDate) return "absent";
-
       const firstLogin = rec.firstLoginAt.toDate();
       const cutoff = getLateCutoffForToday();
-
       return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
@@ -368,6 +460,45 @@
       if (status === "on_time") return `<span class="badge-ontime">● On Time</span>`;
       if (status === "late") return `<span class="badge-late">● Late</span>`;
       return `<span class="badge-absent">● Absent</span>`;
+    }
+
+    function clientName(lead) {
+      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+    }
+
+    function findUserName(uid) {
+      if (!uid) return "-";
+      const user = userDocs.find(u => u.id === uid);
+      return user?.name || user?.email || uid;
+    }
+
+    function isAwaitingManager(lead) {
+      return lead.leadStatus === "awaiting_manager" || !!lead.sentToManagerAt;
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    function hasCloserBooking(lead) {
+      return (
+        lead.leadStatus === "sent_to_closer" ||
+        !!lead.sentToCloserAt ||
+        !!lead.closerUid ||
+        !!lead.closerAppointmentDate
+      );
+    }
+
+    function getCloserDisplay(lead) {
+      return findUserName(lead.closerUid);
+    }
+
+    function getAppointmentDate(lead) {
+      return lead.closerAppointmentDate || lead.callbackDate || "";
+    }
+
+    function getAppointmentTime(lead) {
+      return lead.closerAppointmentTime || lead.callbackTime || "";
     }
 
     async function checkAccess(user) {
@@ -412,6 +543,8 @@
         userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderStats();
+        renderAwaitingManager();
+        renderCloserAppointments();
         renderAttendance();
         renderLeadSummary();
 
@@ -428,6 +561,19 @@
       const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
       const callbacksPending = leadAssignments.filter(l => l.callbackRequired && !(l.closed === true || l.usable === false)).length;
       const introPending = leadAssignments.filter(l => l.introEmailNeeded && !l.introEmailSent && !(l.closed === true || l.usable === false)).length;
+
+      const awaitingManager = leadAssignments.filter(l => !isLocked(l) && isAwaitingManager(l)).length;
+      const closerBookings = leadAssignments.filter(l => !isLocked(l) && hasCloserBooking(l)).length;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const todayAppointments = leadAssignments.filter(l => !isLocked(l) && hasCloserBooking(l) && getAppointmentDate(l) === today).length;
+
+      const overdueManager = leadAssignments.filter(l => {
+        if (isLocked(l) || !isAwaitingManager(l)) return false;
+        const sentAt = l.sentToManagerAt?.toDate ? l.sentToManagerAt.toDate().getTime() : 0;
+        if (!sentAt) return false;
+        return Date.now() - sentAt > 24 * 60 * 60 * 1000;
+      }).length;
 
       let onTimeCount = 0;
       let lateCount = 0;
@@ -446,15 +592,102 @@
       document.getElementById("onTimeStat").textContent = String(onTimeCount);
       document.getElementById("lateStat").textContent = String(lateCount);
       document.getElementById("absentStat").textContent = String(absentCount);
-      document.getElementById("callbacksPendingStat").textContent = String(callbacksPending);
-      document.getElementById("introPendingStat").textContent = String(introPending);
+      document.getElementById("awaitingManagerStat").textContent = String(awaitingManager);
+      document.getElementById("closerBookingsStat").textContent = String(closerBookings);
+      document.getElementById("todayAppointmentsStat").textContent = String(todayAppointments);
+      document.getElementById("overdueManagerStat").textContent = String(overdueManager);
 
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
       document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
-      document.getElementById("snapshotLate").textContent = String(lateCount);
-      document.getElementById("snapshotAbsent").textContent = String(absentCount);
+      document.getElementById("snapshotAwaitingManager").textContent = String(awaitingManager);
+      document.getElementById("snapshotAppointments").textContent = String(todayAppointments);
       document.getElementById("snapshotCallbacks").textContent = String(callbacksPending);
       document.getElementById("snapshotIntro").textContent = String(introPending);
+    }
+
+    function renderAwaitingManager() {
+      const body = document.getElementById("awaitingManagerBody");
+      body.innerHTML = "";
+
+      const rows = leadAssignments
+        .filter(l => !isLocked(l) && isAwaitingManager(l))
+        .sort((a, b) => {
+          const aTime = a.sentToManagerAt?.toDate ? a.sentToManagerAt.toDate().getTime() : 0;
+          const bTime = b.sentToManagerAt?.toDate ? b.sentToManagerAt.toDate().getTime() : 0;
+          return bTime - aTime;
+        })
+        .slice(0, 8);
+
+      if (!rows.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No leads awaiting manager review.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(lead => {
+        const sentAt = lead.sentToManagerAt?.toDate ? lead.sentToManagerAt.toDate().getTime() : 0;
+        const overdue = sentAt && (Date.now() - sentAt > 24 * 60 * 60 * 1000);
+
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.claimType || lead.type || "-"}</div>
+          </td>
+          <td class="p-3">${lead.telephone || "-"}</td>
+          <td class="p-3">${findUserName(lead.assignedToUid)}</td>
+          <td class="p-3">${overdue ? overdueBadge() : awaitingManagerBadge()}</td>
+          <td class="p-3">
+            <a href="/manager-panel.html" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderCloserAppointments() {
+      const body = document.getElementById("closerAppointmentsBody");
+      body.innerHTML = "";
+
+      const rows = leadAssignments
+        .filter(l => !isLocked(l) && hasCloserBooking(l))
+        .sort((a, b) => {
+          const aKey = `${getAppointmentDate(a) || "9999-12-31"} ${getAppointmentTime(a) || "23:59"}`;
+          const bKey = `${getAppointmentDate(b) || "9999-12-31"} ${getAppointmentTime(b) || "23:59"}`;
+          return aKey.localeCompare(bKey);
+        })
+        .slice(0, 8);
+
+      if (!rows.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No closer appointments booked yet.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${getAppointmentDate(lead) || "-"}</td>
+          <td class="p-3">${getAppointmentTime(lead) || "-"}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          </td>
+          <td class="p-3">${getCloserDisplay(lead)}</td>
+          <td class="p-3">
+            <span class="badge-booked">● Booked</span>
+          </td>
+        `;
+        body.appendChild(row);
+      });
     }
 
     function renderAttendance() {
@@ -505,7 +738,6 @@
 
     function renderLeadSummary() {
       leadSummaryBody.innerHTML = "";
-
       const grouped = {};
 
       leadAssignments.forEach(lead => {
@@ -516,6 +748,7 @@
             assigned: 0,
             callbacks: 0,
             intro: 0,
+            awaitingManager: 0,
             converted: 0
           };
         }
@@ -523,6 +756,7 @@
         grouped[uid].assigned += 1;
         if (lead.callbackRequired && !(lead.closed === true || lead.usable === false)) grouped[uid].callbacks += 1;
         if (lead.introEmailNeeded && !lead.introEmailSent && !(lead.closed === true || lead.usable === false)) grouped[uid].intro += 1;
+        if (isAwaitingManager(lead) && !(lead.closed === true || lead.usable === false)) grouped[uid].awaitingManager += 1;
         if (lead.leadStatus === "converted" || lead.convertedToSubmissionId) grouped[uid].converted += 1;
       });
 
@@ -531,7 +765,7 @@
       if (!rows.length) {
         leadSummaryBody.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No lead data found.</td>
+            <td colspan="6" class="p-6 text-center text-slate-500">No lead data found.</td>
           </tr>
         `;
         return;
@@ -541,10 +775,11 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${item.uid}</td>
+          <td class="p-3">${findUserName(item.uid)}</td>
           <td class="p-3">${item.assigned}</td>
           <td class="p-3">${item.callbacks}</td>
           <td class="p-3">${item.intro}</td>
+          <td class="p-3">${item.awaitingManager}</td>
           <td class="p-3">${item.converted}</td>
         `;
         leadSummaryBody.appendChild(row);
@@ -553,7 +788,6 @@
 
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-
       autoRefreshInterval = setInterval(async () => {
         try {
           await loadDashboardData(true);

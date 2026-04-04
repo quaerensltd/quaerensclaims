@@ -26,6 +26,19 @@
       background: #1d4ed8;
       color: white;
     }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -40,22 +53,22 @@
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Intro Email Overview</h1>
-          <p class="text-sm text-slate-500">Manager view of intro emails across all listers</p>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Intro Emails</h1>
+          <p class="text-sm text-slate-500">Manager oversight of intro emails across all listers</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid lg:grid-cols-7 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Queue</div>
           <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -69,8 +82,16 @@
           <div id="notSentStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
+          <div class="text-sm text-slate-500">Qualified</div>
+          <div id="qualifiedStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Sent to Closer</div>
+          <div id="sentToCloserStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
           <div class="text-sm text-slate-500">Converted</div>
-          <div id="convertedStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div id="convertedStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Overdue Follow-ups</div>
@@ -86,7 +107,6 @@
               <option value="all">All listers</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Email Status</label>
             <select id="statusFilter" class="input">
@@ -95,7 +115,6 @@
               <option value="sent">Sent</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
             <select id="timingFilter" class="input">
@@ -105,15 +124,24 @@
               <option value="future">Future</option>
             </select>
           </div>
-
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Pipeline Status</label>
+            <select id="pipelineFilter" class="input">
+              <option value="all">All pipeline stages</option>
+              <option value="intro_email_needed">Intro Email Needed</option>
+              <option value="qualified">Qualified</option>
+              <option value="sent_to_closer">Sent to Closer</option>
+              <option value="converted">Converted</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
           </div>
-
-          <div class="flex items-end">
-            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Overview</button>
-          </div>
+        </div>
+        <div class="mt-4">
+          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh Overview</button>
         </div>
       </section>
 
@@ -124,7 +152,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading intro email leads...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -135,7 +162,7 @@
                 <th class="text-left p-3">Postcode</th>
                 <th class="text-left p-3">Callback</th>
                 <th class="text-left p-3">Email Status</th>
-                <th class="text-left p-3">Converted</th>
+                <th class="text-left p-3">Lead Status</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -166,8 +193,10 @@
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
             <div><span class="font-semibold text-blue-900">Email Sent:</span> <span id="lead_emailSent">-</span></div>
+            <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
+            <div><span class="font-semibold text-blue-900">Closer:</span> <span id="lead_closer">-</span></div>
           </div>
         </section>
 
@@ -219,18 +248,20 @@
     const listerFilter = document.getElementById("listerFilter");
     const statusFilter = document.getElementById("statusFilter");
     const timingFilter = document.getElementById("timingFilter");
+    const pipelineFilter = document.getElementById("pipelineFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
 
     const totalStat = document.getElementById("totalStat");
     const sentStat = document.getElementById("sentStat");
     const notSentStat = document.getElementById("notSentStat");
+    const qualifiedStat = document.getElementById("qualifiedStat");
+    const sentToCloserStat = document.getElementById("sentToCloserStat");
     const convertedStat = document.getElementById("convertedStat");
     const overdueStat = document.getElementById("overdueStat");
 
     const overviewBody = document.getElementById("overviewBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
 
@@ -260,13 +291,35 @@
         not_interested: "Not Interested",
         notes_saved: "Notes Saved",
         interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted"
+        intake_submitted: "Intake Submitted",
+        qualified: "Qualified",
+        sent_to_closer: "Sent to Closer",
+        converted: "Converted"
       };
       return map[action] || action || "-";
     }
 
     function getScheduledText(lead) {
       return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    function userDisplay(uid, fallbackName = "", fallbackEmail = "") {
+      if (!uid) return fallbackName || fallbackEmail || "-";
+      const user = allUsers.find(u => u.id === uid);
+      return user?.name || user?.email || fallbackName || fallbackEmail || uid;
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
+    }
+
+    function leadStatusBadge(lead) {
+      if (isLocked(lead)) return `<span class="badge badge-red">Closed</span>`;
+      if (lead.leadStatus === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
+      if (lead.leadStatus === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (lead.leadStatus === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (lead.introEmailSent) return `<span class="badge badge-blue">Email Sent</span>`;
+      return `<span class="badge badge-amber">Intro Email Needed</span>`;
     }
 
     async function checkManagerAccess(user) {
@@ -297,7 +350,7 @@
       const leadsSnap = await getDocs(collection(db, "leadAssignments"));
       allLeads = leadsSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(lead => lead.introEmailNeeded || lead.introEmailSent);
+        .filter(lead => lead.introEmailNeeded || lead.introEmailSent || lead.introEmailBody);
 
       populateListerFilter();
       renderStats();
@@ -315,6 +368,7 @@
         option.textContent = user.name || user.email || user.id;
         listerFilter.appendChild(option);
       });
+
       listerFilter.value = current;
     }
 
@@ -323,23 +377,29 @@
       totalStat.textContent = String(allLeads.length);
       sentStat.textContent = String(allLeads.filter(x => x.introEmailSent).length);
       notSentStat.textContent = String(allLeads.filter(x => !x.introEmailSent).length);
-      convertedStat.textContent = String(allLeads.filter(x => x.convertedToSubmissionId).length);
-      overdueStat.textContent = String(allLeads.filter(x => x.callbackDate && x.callbackDate < today && !x.convertedToSubmissionId).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
+      sentToCloserStat.textContent = String(allLeads.filter(x => x.leadStatus === "sent_to_closer" || x.sentToCloserAt).length);
+      convertedStat.textContent = String(allLeads.filter(x => x.convertedToSubmissionId || x.leadStatus === "converted").length);
+      overdueStat.textContent = String(
+        allLeads.filter(x => x.callbackDate && x.callbackDate < today && !x.convertedToSubmissionId && !isLocked(x)).length
+      );
     }
 
     function getFilteredLeads() {
       const lister = listerFilter.value;
-      const status = statusFilter.value;
+      const emailStatus = statusFilter.value;
       const timing = timingFilter.value;
+      const pipeline = pipelineFilter.value;
       const term = searchInput.value.trim().toLowerCase();
       const today = getTodayIso();
 
       return allLeads.filter(lead => {
         const matchesLister = lister === "all" || lead.assignedToUid === lister;
-        const matchesStatus =
-          status === "all" ||
-          (status === "sent" && lead.introEmailSent) ||
-          (status === "not_sent" && !lead.introEmailSent);
+
+        const matchesEmailStatus =
+          emailStatus === "all" ||
+          (emailStatus === "sent" && lead.introEmailSent) ||
+          (emailStatus === "not_sent" && !lead.introEmailSent);
 
         const matchesTiming =
           timing === "all" ||
@@ -347,17 +407,21 @@
           (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
           (timing === "future" && lead.callbackDate && lead.callbackDate > today);
 
+        const effectiveStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "intro_email_needed");
+        const matchesPipeline = pipeline === "all" || effectiveStatus === pipeline;
+
         const haystack = `
           ${lead.forename || ""}
           ${lead.surname || ""}
           ${lead.telephone || ""}
           ${lead.postcode || ""}
           ${lead.assignedToName || ""}
+          ${lead.assignedToEmail || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
-        return matchesLister && matchesStatus && matchesTiming && matchesSearch;
+        return matchesLister && matchesEmailStatus && matchesTiming && matchesPipeline && matchesSearch;
       }).sort((a, b) => {
         const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
         const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
@@ -384,12 +448,12 @@
               <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
               <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3">${lead.assignedToName || lead.assignedToEmail || "-"}</td>
+            <td class="p-3">${userDisplay(lead.assignedToUid, lead.assignedToName, lead.assignedToEmail)}</td>
             <td class="p-3">${lead.telephone || "-"}</td>
             <td class="p-3">${lead.postcode || "-"}</td>
             <td class="p-3">${getScheduledText(lead)}</td>
-            <td class="p-3">${lead.introEmailSent ? "Sent" : "Not Sent"}</td>
-            <td class="p-3">${lead.convertedToSubmissionId || "-"}</td>
+            <td class="p-3">${lead.introEmailSent ? '<span class="badge badge-green">Sent</span>' : '<span class="badge badge-amber">Not Sent</span>'}</td>
+            <td class="p-3">${leadStatusBadge(lead)}</td>
             <td class="p-3">
               <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button>
             </td>
@@ -433,16 +497,19 @@
       document.getElementById("modalLeadTitle").textContent = `${lead.forename || ""} ${lead.surname || ""}`.trim() || "Intro Email Detail";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${lead.id}`;
       document.getElementById("lead_name").textContent = `${lead.title || ""} ${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_lister").textContent = lead.assignedToName || lead.assignedToEmail || "-";
+      document.getElementById("lead_lister").textContent = userDisplay(lead.assignedToUid, lead.assignedToName, lead.assignedToEmail);
       document.getElementById("lead_phone").textContent = lead.telephone || "-";
       document.getElementById("lead_postcode").textContent = lead.postcode || "-";
       document.getElementById("lead_callback").textContent = getScheduledText(lead);
       document.getElementById("lead_emailSent").textContent = lead.introEmailSent ? "Yes" : "No";
+      document.getElementById("lead_status").innerHTML = leadStatusBadge(lead);
       document.getElementById("lead_converted").textContent = lead.convertedToSubmissionId || "-";
       document.getElementById("lead_lastAction").textContent = formatAction(lead.lastAction);
-      document.getElementById("lead_notes").textContent = lead.notes || "-";
+      document.getElementById("lead_closer").textContent = userDisplay(lead.closerUid, lead.closerName, lead.closerEmail);
+      document.getElementById("lead_notes").textContent = lead.managerNotes || lead.notes || "-";
       document.getElementById("lead_emailBody").value = lead.introEmailBody || "";
       renderHistory(lead.actionHistory || []);
+
       leadModal.classList.remove("hidden");
     }
 
@@ -487,6 +554,7 @@
     listerFilter.addEventListener("change", renderOverview);
     statusFilter.addEventListener("change", renderOverview);
     timingFilter.addEventListener("change", renderOverview);
+    pipelineFilter.addEventListener("change", renderOverview);
     searchInput.addEventListener("input", renderOverview);
     refreshBtn.addEventListener("click", loadData);
 
