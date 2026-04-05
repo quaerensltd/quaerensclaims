@@ -95,7 +95,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Daily Attendance</h1>
-          <p class="text-sm text-slate-500">Daily processing team attendance, hours, and live status</p>
+          <p class="text-sm text-slate-500">Daily staff attendance, hours, and live status</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -110,9 +110,9 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-6 gap-4">
+      <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Processing Staff</div>
+          <div class="text-sm text-slate-500">Total Staff</div>
           <div id="totalStaffStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -135,15 +135,22 @@
           <div class="text-sm text-slate-500">Absent</div>
           <div id="absentStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Callbacks Pending</div>
+          <div id="callbacksPendingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intro Emails Pending</div>
+          <div id="introPendingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
       </section>
 
       <section class="grid lg:grid-cols-2 gap-6">
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
-          <div class="grid md:grid-cols-3 gap-4">
+          <div class="grid md:grid-cols-2 gap-4">
             <a href="/processing-dashboard.html" class="btn btn-primary text-center">Back to Dashboard</a>
-            <a href="/processing-weekly-attendance.html" class="btn btn-primary text-center">Weekly Attendance</a>
-            <a href="/processing-monthly-attendance.html" class="btn btn-primary text-center">Monthly Attendance</a>
+            <a href="/processing-weekly-attendance.html" class="btn btn-primary text-center">Open Weekly Attendance</a>
           </div>
         </section>
 
@@ -151,24 +158,28 @@
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Today Snapshot</h2>
           <div class="space-y-4 text-sm">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Processing staff online now</span>
+              <span class="text-slate-600">Staff online now</span>
               <span id="snapshotOnline" class="font-extrabold text-emerald-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Processing staff with attendance today</span>
+              <span class="text-slate-600">Staff with attendance record today</span>
               <span id="snapshotAttendance" class="font-extrabold text-indigo-600">0</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">On time today</span>
-              <span id="snapshotOnTime" class="font-extrabold text-emerald-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <span class="text-slate-600">Late starters today</span>
               <span id="snapshotLate" class="font-extrabold text-amber-600">0</span>
             </div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <span class="text-slate-600">Absent today</span>
               <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Callbacks pending</span>
+              <span id="snapshotCallbacks" class="font-extrabold text-amber-600">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">Intro emails pending</span>
+              <span id="snapshotIntro" class="font-extrabold text-violet-600">0</span>
             </div>
           </div>
         </section>
@@ -177,7 +188,7 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Processing Staff Attendance Today</h2>
+            <h2 class="text-xl font-extrabold text-blue-900">Staff Attendance Today</h2>
             <p id="attendanceSummary" class="text-sm text-slate-500 mt-1">Loading today’s attendance...</p>
             <p id="autoRefreshStatus" class="text-xs text-slate-400 mt-1">Auto-refresh every 2 minutes.</p>
           </div>
@@ -202,6 +213,29 @@
               </tr>
             </thead>
             <tbody id="attendanceBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Lead Work Summary</h2>
+            <p class="text-sm text-slate-500 mt-1">Current workload from assigned staff leads</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff UID</th>
+                <th class="text-left p-3">Assigned Leads</th>
+                <th class="text-left p-3">Callbacks</th>
+                <th class="text-left p-3">Intro Emails</th>
+                <th class="text-left p-3">Converted</th>
+              </tr>
+            </thead>
+            <tbody id="leadSummaryBody"></tbody>
           </table>
         </div>
       </section>
@@ -239,12 +273,14 @@
     const downloadCsvBtn = document.getElementById("downloadCsvBtn");
     const attendanceBody = document.getElementById("attendanceBody");
     const attendanceSummary = document.getElementById("attendanceSummary");
+    const leadSummaryBody = document.getElementById("leadSummaryBody");
     const autoRefreshStatus = document.getElementById("autoRefreshStatus");
 
     const LATE_CUTOFF_HOUR = 10;
     const LATE_CUTOFF_MINUTE = 0;
 
     let attendanceDocs = [];
+    let leadAssignments = [];
     let userDocs = [];
     let autoRefreshInterval = null;
     let refreshInProgress = false;
@@ -305,8 +341,8 @@
 
     function todayAttendanceMap() {
       const map = {};
-      attendanceDocs.forEach(item => {
-        if (item.uid) map[item.uid] = item;
+      attendanceDocs.forEach(docItem => {
+        if (docItem.uid) map[docItem.uid] = docItem;
       });
       return map;
     }
@@ -358,8 +394,9 @@
       refreshInProgress = true;
 
       try {
-        const [attendanceSnap, usersSnap] = await Promise.all([
+        const [attendanceSnap, leadSnap, usersSnap] = await Promise.all([
           getDocs(collection(db, "staffAttendance")),
+          getDocs(collection(db, "leadAssignments")),
           getDocs(collection(db, "users"))
         ]);
 
@@ -369,11 +406,12 @@
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(d => d.date === today);
 
-        userDocs = usersSnap.docs
-          .map(d => ({ id: d.id, ...d.data() }));
+        leadAssignments = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderStats();
         renderAttendance();
+        renderLeadSummary();
 
         if (showRefreshStamp) {
           autoRefreshStatus.textContent = `Auto-refresh every 2 minutes. Last updated: ${new Date().toLocaleTimeString("en-GB")}`;
@@ -384,59 +422,59 @@
     }
 
     function renderStats() {
-      const processingUsers = userDocs.filter(u => u.role === "processing");
-      const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a) && processingUsers.some(u => u.id === a.uid)).length;
+      const staffUsers = userDocs.filter(u => u.role === "staff");
+      const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
+      const callbacksPending = leadAssignments.filter(l => l.callbackRequired && !(l.closed === true || l.usable === false)).length;
+      const introPending = leadAssignments.filter(l => l.introEmailNeeded && !l.introEmailSent && !(l.closed === true || l.usable === false)).length;
 
       let onTimeCount = 0;
       let lateCount = 0;
       let absentCount = 0;
-      let loggedInToday = 0;
 
-      processingUsers.forEach(user => {
-        const attendanceMap = todayAttendanceMap();
-        const hasRecord = !!attendanceMap[user.id];
-        if (hasRecord) loggedInToday += 1;
-
+      staffUsers.forEach(user => {
         const status = getTodayStatusForUser(user.id);
         if (status === "on_time") onTimeCount += 1;
         else if (status === "late") lateCount += 1;
         else absentCount += 1;
       });
 
-      document.getElementById("totalStaffStat").textContent = String(processingUsers.length);
+      document.getElementById("totalStaffStat").textContent = String(staffUsers.length);
       document.getElementById("onlineStaffStat").textContent = String(onlineNow);
-      document.getElementById("loggedInTodayStat").textContent = String(loggedInToday);
+      document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
       document.getElementById("onTimeStat").textContent = String(onTimeCount);
       document.getElementById("lateStat").textContent = String(lateCount);
       document.getElementById("absentStat").textContent = String(absentCount);
+      document.getElementById("callbacksPendingStat").textContent = String(callbacksPending);
+      document.getElementById("introPendingStat").textContent = String(introPending);
 
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
-      document.getElementById("snapshotAttendance").textContent = String(loggedInToday);
-      document.getElementById("snapshotOnTime").textContent = String(onTimeCount);
+      document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
       document.getElementById("snapshotLate").textContent = String(lateCount);
       document.getElementById("snapshotAbsent").textContent = String(absentCount);
+      document.getElementById("snapshotCallbacks").textContent = String(callbacksPending);
+      document.getElementById("snapshotIntro").textContent = String(introPending);
     }
 
     function renderAttendance() {
       attendanceBody.innerHTML = "";
 
-      const processingUsers = userDocs
-        .filter(u => u.role === "processing")
+      const staffUsers = userDocs
+        .filter(u => u.role === "staff")
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
       const attendanceMap = todayAttendanceMap();
 
-      if (!processingUsers.length) {
+      if (!staffUsers.length) {
         attendanceBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No processing users found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No staff users found.</td>
           </tr>
         `;
-        attendanceSummary.textContent = "No processing users found.";
+        attendanceSummary.textContent = "No staff users found.";
         return;
       }
 
-      processingUsers.forEach(user => {
+      staffUsers.forEach(user => {
         const item = attendanceMap[user.id] || null;
         const todayStatus = getTodayStatusForUser(user.id);
         const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
@@ -460,7 +498,54 @@
         attendanceBody.appendChild(row);
       });
 
-      attendanceSummary.textContent = `${processingUsers.length} processing staff member(s) shown for today. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+      attendanceSummary.textContent = `${staffUsers.length} staff member(s) shown for today. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+    }
+
+    function renderLeadSummary() {
+      leadSummaryBody.innerHTML = "";
+      const grouped = {};
+
+      leadAssignments.forEach(lead => {
+        const uid = lead.assignedToUid || "unassigned";
+        if (!grouped[uid]) {
+          grouped[uid] = {
+            uid,
+            assigned: 0,
+            callbacks: 0,
+            intro: 0,
+            converted: 0
+          };
+        }
+
+        grouped[uid].assigned += 1;
+        if (lead.callbackRequired && !(lead.closed === true || lead.usable === false)) grouped[uid].callbacks += 1;
+        if (lead.introEmailNeeded && !lead.introEmailSent && !(lead.closed === true || lead.usable === false)) grouped[uid].intro += 1;
+        if (lead.leadStatus === "converted" || lead.convertedToSubmissionId) grouped[uid].converted += 1;
+      });
+
+      const rows = Object.values(grouped);
+
+      if (!rows.length) {
+        leadSummaryBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No lead data found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${item.uid}</td>
+          <td class="p-3">${item.assigned}</td>
+          <td class="p-3">${item.callbacks}</td>
+          <td class="p-3">${item.intro}</td>
+          <td class="p-3">${item.converted}</td>
+        `;
+        leadSummaryBody.appendChild(row);
+      });
     }
 
     function escapeCsv(value) {
@@ -472,8 +557,8 @@
     }
 
     function downloadDailyCsv() {
-      const processingUsers = userDocs
-        .filter(u => u.role === "processing")
+      const staffUsers = userDocs
+        .filter(u => u.role === "staff")
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
       const attendanceMap = todayAttendanceMap();
@@ -491,7 +576,7 @@
         "Live Status"
       ];
 
-      const rows = processingUsers.map(user => {
+      const rows = staffUsers.map(user => {
         const item = attendanceMap[user.id] || null;
         const todayStatus = getTodayStatusForUser(user.id);
         const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
