@@ -40,6 +40,7 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -185,6 +186,16 @@
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
             <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
             <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
+            <div><span class="font-semibold text-blue-900">Submission ID:</span> <span id="lead_submissionId">-</span></div>
+            <div><span class="font-semibold text-blue-900">Assessment ID:</span> <span id="lead_assessmentId">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Assessment & Intake</h4>
+          <div class="flex flex-wrap gap-3">
+            <a id="openIntakeBtn" href="#" class="btn btn-secondary hidden">Open Intake Detail</a>
+            <a id="openAssessmentBtn" href="#" class="btn btn-secondary hidden">Open Assessment</a>
           </div>
         </section>
 
@@ -214,7 +225,6 @@
               <input id="appointmentTime" type="time" class="input" />
             </div>
           </div>
-
           <div class="flex flex-wrap gap-3">
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Closer Appointment</button>
@@ -254,6 +264,7 @@
       getDoc,
       getDocs,
       updateDoc,
+      addDoc,
       collection,
       query,
       where,
@@ -275,7 +286,6 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const statusFilter = document.getElementById("statusFilter");
     const timingFilter = document.getElementById("timingFilter");
     const closerFilter = document.getElementById("closerFilter");
@@ -283,13 +293,11 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const bookedTodayStat = document.getElementById("bookedTodayStat");
     const sentToCloserStat = document.getElementById("sentToCloserStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
     const overdueStat = document.getElementById("overdueStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const closerSelect = document.getElementById("closerSelect");
@@ -298,13 +306,14 @@
     const appointmentTime = document.getElementById("appointmentTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
     const sendToCloserBtn = document.getElementById("sendToCloserBtn");
     const markConvertedBtn = document.getElementById("markConvertedBtn");
     const markClosedBtn = document.getElementById("markClosedBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
+    const openIntakeBtn = document.getElementById("openIntakeBtn");
+    const openAssessmentBtn = document.getElementById("openAssessmentBtn");
 
     let currentUser = null;
     let currentUserData = null;
@@ -312,6 +321,9 @@
     let allUsers = [];
     let closerUsers = [];
     let selectedLead = null;
+    let selectedAssessmentId = null;
+    let selectedSubmissionId = null;
+    let selectedSubmissionData = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
@@ -352,7 +364,8 @@
         no_answer: "No Answer",
         voicemail: "Voicemail",
         wrong_number: "Wrong Number",
-        not_interested: "Not Interested"
+        not_interested: "Not Interested",
+        assessment_report_created: "Assessment Report Created"
       };
       return map[action] || action || "-";
     }
@@ -375,7 +388,7 @@
       const status = lead.leadStatus || "new";
       if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
       if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (status === "sent_to_closer") return `<span class="badge badge-indigo badge-blue">Sent to Closer</span>`;
+      if (status === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
       if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
       if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
       return `<span class="badge badge-slate">${status}</span>`;
@@ -395,6 +408,9 @@
     }
 
     function populateCloserFilters() {
+      const currentCloserFilter = closerFilter.value || "all";
+      const currentModalCloser = closerSelect.value || "";
+
       closerFilter.innerHTML = `<option value="all">All closers</option>`;
       closerSelect.innerHTML = `<option value="">Select closer</option>`;
 
@@ -409,6 +425,13 @@
         option2.textContent = user.name || user.email || user.id;
         closerSelect.appendChild(option2);
       });
+
+      if ([...closerFilter.options].some(o => o.value === currentCloserFilter)) {
+        closerFilter.value = currentCloserFilter;
+      }
+      if ([...closerSelect.options].some(o => o.value === currentModalCloser)) {
+        closerSelect.value = currentModalCloser;
+      }
     }
 
     async function checkManagerAccess(user) {
@@ -423,6 +446,7 @@
         }
 
         const userData = userSnap.data();
+
         if (userData.role !== "manager") {
           alert("You do not have permission to access the manager panel.");
           window.location.href = "/login.html";
@@ -487,8 +511,8 @@
       return allLeads.filter(lead => {
         const leadStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
         const appointmentDateValue = lead.closerAppointmentDate || "";
-        const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
 
+        const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
         const matchesTiming =
           selectedTiming === "all" ||
           (selectedTiming === "today" && appointmentDateValue === today) ||
@@ -496,9 +520,7 @@
           (selectedTiming === "overdue" && appointmentDateValue && appointmentDateValue < today) ||
           (selectedTiming === "none" && !appointmentDateValue);
 
-        const matchesCloser =
-          selectedCloser === "all" ||
-          (lead.closerUid || "") === selectedCloser;
+        const matchesCloser = selectedCloser === "all" || (lead.closerUid || "") === selectedCloser;
 
         const haystack = `
           ${lead.forename || ""}
@@ -510,18 +532,16 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesTiming && matchesCloser && matchesSearch;
       });
     }
 
     function renderLeads() {
-      const filtered = getFilteredLeads()
-        .sort((a, b) => {
-          const aTime = a.sentToManagerAt?.toDate ? a.sentToManagerAt.toDate().getTime() : 0;
-          const bTime = b.sentToManagerAt?.toDate ? b.sentToManagerAt.toDate().getTime() : 0;
-          return bTime - aTime;
-        });
+      const filtered = getFilteredLeads().sort((a, b) => {
+        const aTime = a.sentToManagerAt?.toDate ? a.sentToManagerAt.toDate().getTime() : 0;
+        const bTime = b.sentToManagerAt?.toDate ? b.sentToManagerAt.toDate().getTime() : 0;
+        return bTime - aTime;
+      });
 
       leadsBody.innerHTML = "";
 
@@ -583,14 +603,49 @@
       });
     }
 
-    function openLead(leadId) {
+    async function findAssessmentForLead(leadId) {
+      const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      docs.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+        return bTime - aTime;
+      });
+      return docs[0];
+    }
+
+    async function loadLinkedSubmissionForLead(lead) {
+      selectedSubmissionData = null;
+      selectedSubmissionId = lead.convertedToSubmissionId || lead.submissionId || lead.claimSubmissionId || lead.intakeSubmissionId || "";
+
+      if (!selectedSubmissionId) return null;
+
+      try {
+        const snap = await getDoc(doc(db, "claimSubmissions", selectedSubmissionId));
+        if (snap.exists()) {
+          selectedSubmissionData = { id: snap.id, ...snap.data() };
+          return selectedSubmissionData;
+        }
+      } catch (error) {
+        console.error("Failed loading linked submission:", error);
+      }
+
+      return null;
+    }
+
+    async function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
+      selectedAssessmentId = null;
+      selectedSubmissionId = "";
+      selectedSubmissionData = null;
       if (!selectedLead) return;
 
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Manager Lead Review";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
       document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
@@ -610,6 +665,34 @@
       appointmentTime.value = selectedLead.closerAppointmentTime || "";
       notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
 
+      await loadLinkedSubmissionForLead(selectedLead);
+      const assessment = await findAssessmentForLead(selectedLead.id);
+      selectedAssessmentId = assessment?.id || selectedLead.assessmentId || "";
+
+      document.getElementById("lead_submissionId").textContent = selectedSubmissionId || "-";
+      document.getElementById("lead_assessmentId").textContent = selectedAssessmentId || "-";
+
+      if (selectedSubmissionId) {
+        openIntakeBtn.href = `/intake-detail.html?id=${selectedSubmissionId}`;
+        openIntakeBtn.classList.remove("hidden");
+      } else {
+        openIntakeBtn.href = "#";
+        openIntakeBtn.classList.add("hidden");
+      }
+
+      if (selectedAssessmentId) {
+        openAssessmentBtn.href = `/manager-assessment-detail.html?id=${selectedAssessmentId}`;
+        openAssessmentBtn.textContent = "Open Assessment";
+        openAssessmentBtn.classList.remove("hidden");
+      } else if (selectedSubmissionId) {
+        openAssessmentBtn.href = `/intake-detail.html?id=${selectedSubmissionId}`;
+        openAssessmentBtn.textContent = "Create Assessment";
+        openAssessmentBtn.classList.remove("hidden");
+      } else {
+        openAssessmentBtn.href = "#";
+        openAssessmentBtn.classList.add("hidden");
+      }
+
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
@@ -620,7 +703,7 @@
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
           selectedLead = updated;
-          openLead(updated.id);
+          await openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
         }
@@ -642,12 +725,80 @@
             notes
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
         console.error("Lead update failed:", error);
         showModalMessage("Could not update lead.", true);
+      }
+    }
+
+    async function createOrUpdateCloserAssignment(lead, mode = "send") {
+      const closerUid = closerSelect.value || lead.closerUid || "";
+      const closerUser = findUserById(closerUid);
+
+      if (!closerUid || !closerUser) {
+        throw new Error("Please choose a closer first.");
+      }
+
+      const client = selectedSubmissionData?.client || {};
+      const payload = {
+        sourceLeadId: lead.id,
+        leadAssignmentId: lead.id,
+        assessmentId: selectedAssessmentId || lead.assessmentId || "",
+        submissionId: selectedSubmissionId || "",
+        claimType: lead.claimType || lead.type || "",
+        closer: {
+          uid: closerUid,
+          name: closerUser.name || "",
+          email: closerUser.email || ""
+        },
+        client: {
+          firstName: client.firstName || lead.forename || "",
+          secondName: client.secondName || lead.surname || "",
+          firstName2: client.firstName2 || "",
+          secondName2: client.secondName2 || "",
+          landline: client.landline || "",
+          mobile: client.mobile || lead.telephone || "",
+          email: client.email || lead.email || "",
+          address: client.address || formatAddress(lead)
+        },
+        appointment: {
+          date: appointmentDate.value || "",
+          time: appointmentTime.value || ""
+        },
+        status: mode === "book" ? "Appointment Booked" : "Assigned",
+        outcome: "",
+        assessmentSummary: lead.assessmentSummary || lead.generatedAssessmentText || "",
+        generatedAssessmentText: lead.generatedAssessmentText || lead.assessmentSummary || "",
+        managerNotes: notesBox.value || lead.managerNotes || "",
+        handoffNotes: notesBox.value || lead.managerNotes || "",
+        product1: selectedSubmissionData?.product1 || {},
+        product2: selectedSubmissionData?.product2 || {},
+        assignedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        },
+        updatedAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+        lastUpdatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      };
+
+      const existingQuery = query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id));
+      const existingSnap = await getDocs(existingQuery);
+
+      if (!existingSnap.empty) {
+        await updateDoc(doc(db, "closerAssignments", existingSnap.docs[0].id), payload);
+      } else {
+        await addDoc(collection(db, "closerAssignments"), {
+          ...payload,
+          createdAt: serverTimestamp()
+        });
       }
     }
 
@@ -671,16 +822,22 @@
         return;
       }
 
-      await updateLead({
-        leadStatus: "sent_to_closer",
-        closerUid: closerSelect.value,
-        closerAppointmentDate: appointmentDate.value,
-        closerAppointmentTime: appointmentTime.value,
-        sentToCloserAt: serverTimestamp(),
-        callbackRequired: false,
-        introEmailNeeded: false,
-        lastAction: "closer_appointment_booked"
-      }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
+      try {
+        await createOrUpdateCloserAssignment(selectedLead, "book");
+        await updateLead({
+          leadStatus: "sent_to_closer",
+          closerUid: closerSelect.value,
+          closerAppointmentDate: appointmentDate.value,
+          closerAppointmentTime: appointmentTime.value,
+          sentToCloserAt: serverTimestamp(),
+          callbackRequired: false,
+          introEmailNeeded: false,
+          lastAction: "closer_appointment_booked"
+        }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
+      } catch (error) {
+        console.error("Booking closer appointment failed:", error);
+        showModalMessage(error.message || "Could not book appointment.", true);
+      }
     });
 
     sendToCloserBtn.addEventListener("click", async () => {
@@ -691,14 +848,20 @@
         return;
       }
 
-      await updateLead({
-        leadStatus: "sent_to_closer",
-        closerUid: closerSelect.value,
-        sentToCloserAt: serverTimestamp(),
-        callbackRequired: false,
-        introEmailNeeded: false,
-        lastAction: "sent_to_closer"
-      }, "sent_to_closer", "Lead sent to closer by manager.");
+      try {
+        await createOrUpdateCloserAssignment(selectedLead, "send");
+        await updateLead({
+          leadStatus: "sent_to_closer",
+          closerUid: closerSelect.value,
+          sentToCloserAt: serverTimestamp(),
+          callbackRequired: false,
+          introEmailNeeded: false,
+          lastAction: "sent_to_closer"
+        }, "sent_to_closer", "Lead sent to closer by manager.");
+      } catch (error) {
+        console.error("Send to closer failed:", error);
+        showModalMessage(error.message || "Could not send to closer.", true);
+      }
     });
 
     markConvertedBtn.addEventListener("click", async () => {
@@ -724,6 +887,7 @@
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           managerNotes: notesBox.value || "",
@@ -740,6 +904,7 @@
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -763,8 +928,10 @@
         window.location.href = "/login.html";
         return;
       }
+
       const allowed = await checkManagerAccess(user);
       if (!allowed) return;
+
       hideLoader();
       await loadLeads();
     });
