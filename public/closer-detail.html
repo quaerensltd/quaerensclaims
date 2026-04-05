@@ -338,7 +338,6 @@
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
-
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
@@ -385,23 +384,13 @@
       const paid = Number(paidNow || 0);
       const follow = Number(followUp || 0);
 
-      if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) {
-        return "part_paid";
-      }
-
-      if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) {
-        return "fully_paid";
-      }
-
+      if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) return "part_paid";
+      if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) return "fully_paid";
       return "awaiting_payment";
     }
 
     function updatePaymentPreview() {
-      const derived = derivePaymentStatus(
-        amountDueNow.value,
-        amountPaidNow.value,
-        followUpDue.value
-      );
+      const derived = derivePaymentStatus(amountDueNow.value, amountPaidNow.value, followUpDue.value);
       paymentStatusPreview.innerHTML = paymentStatusBadge(derived);
     }
 
@@ -441,86 +430,88 @@
     }
 
     async function loadAssignment() {
-      if (!assignmentId) {
-        alert("Missing assignment ID.");
+      try {
+        if (!assignmentId) {
+          throw new Error("Missing assignment ID");
+        }
+
+        const assignmentRef = doc(db, "closerAssignments", assignmentId);
+        const assignmentSnap = await getDoc(assignmentRef);
+
+        if (!assignmentSnap.exists()) {
+          throw new Error("Assigned file not found");
+        }
+
+        assignmentData = { id: assignmentSnap.id, ...assignmentSnap.data() };
+        console.log("Loaded closer assignment:", assignmentData);
+
+        const assignedCloserUid = firstNonEmpty(
+          assignmentData.closer?.uid,
+          assignmentData.closerUid,
+          assignmentData.assignedCloserUid,
+          assignmentData.assignedToUid,
+          assignmentData.userUid
+        );
+
+        if (assignedCloserUid && assignedCloserUid !== currentUser.uid) {
+          throw new Error("This file belongs to another closer");
+        }
+
+        const processingQuery = query(collection(db, "processingFiles"), where("assignmentId", "==", assignmentId));
+        const processingSnap = await getDocs(processingQuery);
+        existingProcessingDocId = !processingSnap.empty ? processingSnap.docs[0].id : null;
+
+        const caseQuery = query(collection(db, "processingCases"), where("sourceAssignmentId", "==", assignmentId));
+        const caseSnap = await getDocs(caseQuery);
+        existingCaseDocId = !caseSnap.empty ? caseSnap.docs[0].id : null;
+
+        document.getElementById("detailTitle").textContent = formatClaimType(assignmentData.claimType);
+        document.getElementById("detailSubtitle").textContent = `Assignment ID: ${assignmentId}`;
+        document.getElementById("appointmentText").textContent = `Appointment: ${assignmentData.appointment?.date || "-"} ${assignmentData.appointment?.time || "-"}`;
+        document.getElementById("assignedByText").textContent = `Assigned by: ${assignmentData.assignedBy?.name || assignmentData.assignedBy?.email || "-"}`;
+        document.getElementById("statusSummaryText").innerHTML = `Status: ${statusBadge(assignmentData.status || "Assigned")} &nbsp; ${outcomeBadge(assignmentData.outcome || "")}`;
+        document.getElementById("processingSummaryText").innerHTML = existingProcessingDocId
+          ? `Processing File: <span class="badge badge-violet">Created</span>`
+          : `Processing File: <span class="badge badge-slate">Not Yet Created</span>`;
+        document.getElementById("caseSummaryText").innerHTML = existingCaseDocId
+          ? `Case File: <span class="badge badge-green">Created</span>`
+          : `Case File: <span class="badge badge-slate">Not Yet Created</span>`;
+
+        setValue("client_firstName", assignmentData.client?.firstName);
+        setValue("client_secondName", assignmentData.client?.secondName);
+        setValue("client_firstName2", assignmentData.client?.firstName2);
+        setValue("client_secondName2", assignmentData.client?.secondName2);
+        setValue("client_landline", assignmentData.client?.landline);
+        setValue("client_mobile", assignmentData.client?.mobile);
+        setValue("client_email", assignmentData.client?.email);
+        setValue("client_address", assignmentData.client?.address);
+        setValue("claimTypeText", formatClaimType(assignmentData.claimType));
+        setValue("assessmentSummaryText", assignmentData.assessmentSummary);
+        setValue("managerNotesText", assignmentData.managerNotes);
+        setValue("handoffNotesText", assignmentData.handoffNotes);
+
+        generatedAssessmentText.textContent = assignmentData.generatedAssessmentText || "No assessment report available.";
+
+        statusSelect.value = assignmentData.status || "Assigned";
+        outcomeSelect.value = assignmentData.outcome || "";
+        closerNotes.value = assignmentData.closerNotes || "";
+        amountDueNow.value = assignmentData.amountDueNow || "";
+        amountPaidNow.value = assignmentData.amountPaidNow || "";
+        followUpDue.value = assignmentData.followUpDue || "";
+        paymentLink.value = assignmentData.paymentLink || "";
+        processingNotes.value = assignmentData.processingNotes || "";
+
+        renderFieldGrid("product1Fields", assignmentData.product1 || {});
+        renderFieldGrid("product2Fields", assignmentData.product2 || {});
+        updatePaymentPreview();
+        hideLoader();
+      } catch (error) {
+        console.error("Closer detail load error:", error);
+        console.error("Assignment ID:", assignmentId);
+        console.error("Current user:", currentUser?.uid);
+        alert("Could not load assigned file.");
         window.location.href = "/closer-panel.html";
-        return;
       }
-
-      const assignmentRef = doc(db, "closerAssignments", assignmentId);
-      const assignmentSnap = await getDoc(assignmentRef);
-
-      if (!assignmentSnap.exists()) {
-        alert("Assigned file not found.");
-        window.location.href = "/closer-panel.html";
-        return;
-      }
-
-      assignmentData = { id: assignmentSnap.id, ...assignmentSnap.data() };
-      console.log("Loaded closer assignment:", assignmentData);
-
-      const assignedCloserUid = firstNonEmpty(
-        assignmentData.closer?.uid,
-        assignmentData.closerUid,
-        assignmentData.assignedCloserUid,
-        assignmentData.assignedToUid,
-        assignmentData.userUid
-      );
-
-      if (assignedCloserUid && assignedCloserUid !== currentUser.uid) {
-        alert("This file is not assigned to you.");
-        window.location.href = "/closer-panel.html";
-        return;
-      }
-
-      const processingQuery = query(collection(db, "processingFiles"), where("assignmentId", "==", assignmentId));
-      const processingSnap = await getDocs(processingQuery);
-      existingProcessingDocId = !processingSnap.empty ? processingSnap.docs[0].id : null;
-
-      const caseQuery = query(collection(db, "processingCases"), where("sourceAssignmentId", "==", assignmentId));
-      const caseSnap = await getDocs(caseQuery);
-      existingCaseDocId = !caseSnap.empty ? caseSnap.docs[0].id : null;
-
-      document.getElementById("detailTitle").textContent = formatClaimType(assignmentData.claimType);
-      document.getElementById("detailSubtitle").textContent = `Assignment ID: ${assignmentId}`;
-      document.getElementById("appointmentText").textContent = `Appointment: ${assignmentData.appointment?.date || "-"} ${assignmentData.appointment?.time || "-"}`;
-      document.getElementById("assignedByText").textContent = `Assigned by: ${assignmentData.assignedBy?.name || assignmentData.assignedBy?.email || "-"}`;
-      document.getElementById("statusSummaryText").innerHTML = `Status: ${statusBadge(assignmentData.status || "Assigned")} &nbsp; ${outcomeBadge(assignmentData.outcome || "")}`;
-      document.getElementById("processingSummaryText").innerHTML = existingProcessingDocId
-        ? `Processing File: <span class="badge badge-violet">Created</span>`
-        : `Processing File: <span class="badge badge-slate">Not Yet Created</span>`;
-      document.getElementById("caseSummaryText").innerHTML = existingCaseDocId
-        ? `Case File: <span class="badge badge-green">Created</span>`
-        : `Case File: <span class="badge badge-slate">Not Yet Created</span>`;
-
-      setValue("client_firstName", assignmentData.client?.firstName);
-      setValue("client_secondName", assignmentData.client?.secondName);
-      setValue("client_firstName2", assignmentData.client?.firstName2);
-      setValue("client_secondName2", assignmentData.client?.secondName2);
-      setValue("client_landline", assignmentData.client?.landline);
-      setValue("client_mobile", assignmentData.client?.mobile);
-      setValue("client_email", assignmentData.client?.email);
-      setValue("client_address", assignmentData.client?.address);
-      setValue("claimTypeText", formatClaimType(assignmentData.claimType));
-      setValue("assessmentSummaryText", assignmentData.assessmentSummary);
-      setValue("managerNotesText", assignmentData.managerNotes);
-      setValue("handoffNotesText", assignmentData.handoffNotes);
-
-      generatedAssessmentText.textContent = assignmentData.generatedAssessmentText || "No assessment report available.";
-
-      statusSelect.value = assignmentData.status || "Assigned";
-      outcomeSelect.value = assignmentData.outcome || "";
-      closerNotes.value = assignmentData.closerNotes || "";
-      amountDueNow.value = assignmentData.amountDueNow || "";
-      amountPaidNow.value = assignmentData.amountPaidNow || "";
-      followUpDue.value = assignmentData.followUpDue || "";
-      paymentLink.value = assignmentData.paymentLink || "";
-      processingNotes.value = assignmentData.processingNotes || "";
-
-      renderFieldGrid("product1Fields", assignmentData.product1 || {});
-      renderFieldGrid("product2Fields", assignmentData.product2 || {});
-      updatePaymentPreview();
-      hideLoader();
     }
 
     async function createOrUpdateProcessingFile() {
@@ -662,11 +653,7 @@
         };
 
         await updateDoc(doc(db, "closerAssignments", assignmentId), closerPayload);
-
-        assignmentData = {
-          ...assignmentData,
-          ...closerPayload
-        };
+        assignmentData = { ...assignmentData, ...closerPayload };
 
         if (outcomeSelect.value === "Closed Deal") {
           await createOrUpdateProcessingFile();
