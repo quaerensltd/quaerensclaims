@@ -823,14 +823,45 @@
         return;
       }
 
-      await updateLead({
-        assessmentOutcome: assessmentOutcomeSelect.value || "",
-        recommendedCloser: recommendedCloserText.value.trim(),
-        assessmentSummary: summary,
-        generatedAssessmentText: summary,
-        leadStatus: "qualified",
-        lastAction: "assessment_report_created"
-      }, "assessment_report_created", summary);
+      try {
+        await addDoc(collection(db, "managerAssessments"), {
+          leadId: selectedLead.id,
+          client: {
+            title: selectedLead.title || "",
+            forename: selectedLead.forename || "",
+            surname: selectedLead.surname || "",
+            telephone: selectedLead.telephone || "",
+            email: selectedLead.email || "",
+            postcode: selectedLead.postcode || "",
+            address: formatAddress(selectedLead)
+          },
+          claimType: selectedLead.claimType || selectedLead.type || "",
+          assessmentOutcome: assessmentOutcomeSelect.value || "",
+          recommendedCloser: recommendedCloserText.value.trim(),
+          assessmentSummary: summary,
+          generatedAssessmentText: summary,
+          leadStatusAtCreation: selectedLead.leadStatus || "awaiting_manager",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        await updateLead({
+          assessmentOutcome: assessmentOutcomeSelect.value || "",
+          recommendedCloser: recommendedCloserText.value.trim(),
+          assessmentSummary: summary,
+          generatedAssessmentText: summary,
+          leadStatus: "qualified",
+          lastAction: "assessment_report_created"
+        }, "assessment_report_created", summary);
+      } catch (error) {
+        console.error("Assessment creation failed:", error);
+        showModalMessage("Could not create assessment report.", true);
+      }
     });
 
     markQualifiedBtn.addEventListener("click", async () => {
@@ -873,7 +904,6 @@
           managerNotes: notesBox.value || "",
           lastAction: "closer_appointment_booked"
         }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
-
       } catch (error) {
         console.error("Booking closer appointment failed:", error);
         showModalMessage("Could not create closer appointment.", true);
@@ -904,7 +934,6 @@
           managerNotes: notesBox.value || "",
           lastAction: "sent_to_closer"
         }, "sent_to_closer", "Lead sent to closer by manager.");
-
       } catch (error) {
         console.error("Send to closer failed:", error);
         showModalMessage("Could not send lead to closer.", true);
