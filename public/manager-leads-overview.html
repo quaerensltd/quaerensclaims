@@ -217,6 +217,7 @@
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
             <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
             <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
+            <div><span class="font-semibold text-blue-900">Submission ID:</span> <span id="lead_submissionId">-</span></div>
           </div>
         </section>
 
@@ -240,7 +241,7 @@
           </div>
           <div class="mt-4">
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
-            <textarea id="assessmentSummaryBox" class="input" rows="6" placeholder="Why this is a case, main facts, viability, objections, strategy, what closer should know..."></textarea>
+            <textarea id="assessmentSummaryBox" class="input" rows="8" placeholder="This will auto-fill from the intake submission if available."></textarea>
           </div>
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
@@ -381,6 +382,7 @@
     let closerUsers = [];
     let selectedLead = null;
     let selectedAssessmentId = null;
+    let selectedSubmissionData = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
@@ -688,6 +690,66 @@
       return docs[0];
     }
 
+    function buildSubmissionAssessmentSummary(submission) {
+      if (!submission) return "";
+
+      if ((submission.assessmentSummary || "").trim()) {
+        return submission.assessmentSummary.trim();
+      }
+
+      const client = submission.client || {};
+      const product1 = submission.product1 || {};
+      const product2 = submission.product2 || {};
+      const blocks = [];
+
+      const headerName = `${client.firstName || ""} ${client.secondName || ""}`.trim();
+      if (headerName) blocks.push(`Client: ${headerName}`);
+      if (submission.claimType) blocks.push(`Claim Type: ${submission.claimType}`);
+      if (client.address) blocks.push(`Address: ${client.address}`);
+      if (client.mobile || client.landline) blocks.push(`Contact: ${client.mobile || client.landline}`);
+
+      const productLines = [];
+      if (Object.keys(product1).length) {
+        productLines.push(`Product One: ${Object.entries(product1).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+      }
+      if (Object.keys(product2).length) {
+        productLines.push(`Product Two: ${Object.entries(product2).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+      }
+      if (productLines.length) {
+        blocks.push(productLines.join("\n"));
+      }
+
+      if ((submission.managerNotes || "").trim()) {
+        blocks.push(`Existing Manager Notes: ${submission.managerNotes.trim()}`);
+      }
+
+      return blocks.join("\n\n").trim();
+    }
+
+    async function loadLinkedSubmissionForLead(lead) {
+      selectedSubmissionData = null;
+      const possibleIds = [
+        lead.convertedToSubmissionId,
+        lead.submissionId,
+        lead.claimSubmissionId,
+        lead.intakeSubmissionId
+      ].filter(Boolean);
+
+      for (const id of possibleIds) {
+        try {
+          const snap = await getDoc(doc(db, "claimSubmissions", id));
+          if (snap.exists()) {
+            selectedSubmissionData = { id: snap.id, ...snap.data() };
+            return selectedSubmissionData;
+          }
+        } catch (error) {
+          console.error("Failed loading linked submission:", error);
+        }
+      }
+
+      return null;
+    }
+
     async function updateAssessmentButton() {
       if (!selectedLead) {
         selectedAssessmentId = null;
@@ -710,12 +772,12 @@
 
     async function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
+      selectedSubmissionData = null;
       if (!selectedLead) return;
 
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
       document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
@@ -728,16 +790,24 @@
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
       document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
+      document.getElementById("lead_submissionId").textContent =
+        selectedLead.convertedToSubmissionId || selectedLead.submissionId || selectedLead.claimSubmissionId || selectedLead.intakeSubmissionId || "-";
 
       closerSelect.value = selectedLead.closerUid || "";
       managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
       appointmentDate.value = selectedLead.closerAppointmentDate || "";
       appointmentTime.value = selectedLead.closerAppointmentTime || "";
       notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
-
       assessmentOutcomeSelect.value = selectedLead.assessmentOutcome || "";
       recommendedCloserText.value = selectedLead.recommendedCloser || "";
-      assessmentSummaryBox.value = selectedLead.assessmentSummary || selectedLead.generatedAssessmentText || "";
+
+      const linkedSubmission = await loadLinkedSubmissionForLead(selectedLead);
+      const intakeSummary = buildSubmissionAssessmentSummary(linkedSubmission);
+      assessmentSummaryBox.value =
+        selectedLead.assessmentSummary ||
+        selectedLead.generatedAssessmentText ||
+        intakeSummary ||
+        "";
 
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
@@ -791,6 +861,7 @@
 
       const leadClaimType = lead.claimType || lead.type || "";
       const statusValue = mode === "book" ? "Appointment Booked" : "Assigned";
+      const client = selectedSubmissionData?.client || {};
 
       const payload = {
         sourceLeadId: lead.id,
@@ -801,14 +872,14 @@
           email: closerUser.email || ""
         },
         client: {
-          firstName: lead.forename || "",
-          secondName: lead.surname || "",
-          firstName2: lead.firstName2 || "",
-          secondName2: lead.secondName2 || "",
-          landline: lead.landline || "",
-          mobile: lead.telephone || lead.mobile || "",
-          email: lead.email || "",
-          address: formatAddress(lead)
+          firstName: client.firstName || lead.forename || "",
+          secondName: client.secondName || lead.surname || "",
+          firstName2: client.firstName2 || "",
+          secondName2: client.secondName2 || "",
+          landline: client.landline || "",
+          mobile: client.mobile || lead.telephone || "",
+          email: client.email || lead.email || "",
+          address: client.address || formatAddress(lead)
         },
         claimType: leadClaimType,
         status: statusValue,
@@ -821,6 +892,10 @@
         generatedAssessmentText: assessmentSummaryBox.value.trim(),
         managerNotes: notesBox.value.trim(),
         handoffNotes: notesBox.value.trim(),
+        assessmentId: selectedAssessmentId || "",
+        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
+        product1: selectedSubmissionData?.product1 || {},
+        product2: selectedSubmissionData?.product2 || {},
         assignedBy: {
           uid: currentUser.uid,
           name: currentUserData.name || "",
@@ -842,8 +917,7 @@
       const existingSnap = await getDocs(existingQuery);
 
       if (!existingSnap.empty) {
-        const existingDoc = existingSnap.docs[0];
-        await updateDoc(doc(db, "closerAssignments", existingDoc.id), payload);
+        await updateDoc(doc(db, "closerAssignments", existingSnap.docs[0].id), payload);
       } else {
         await addDoc(collection(db, "closerAssignments"), {
           ...payload,
@@ -855,23 +929,35 @@
     async function createOrUpdateAssessment() {
       if (!selectedLead) return null;
 
-      const summary = assessmentSummaryBox.value.trim();
+      let summary = assessmentSummaryBox.value.trim();
       if (!summary) {
-        throw new Error("Please write the assessment summary first.");
+        const fallbackSummary =
+          buildSubmissionAssessmentSummary(selectedSubmissionData) ||
+          selectedLead.assessmentSummary ||
+          selectedLead.generatedAssessmentText ||
+          "";
+
+        if (!fallbackSummary) {
+          throw new Error("No intake assessment summary was found for this client.");
+        }
+
+        summary = fallbackSummary;
+        assessmentSummaryBox.value = summary;
       }
 
       const existing = await findAssessmentForLead(selectedLead.id);
 
       const payload = {
         leadId: selectedLead.id,
+        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
         client: {
           title: selectedLead.title || "",
           forename: selectedLead.forename || "",
           surname: selectedLead.surname || "",
           telephone: selectedLead.telephone || "",
-          email: selectedLead.email || "",
+          email: selectedLead.email || selectedSubmissionData?.client?.email || "",
           postcode: selectedLead.postcode || "",
-          address: formatAddress(selectedLead)
+          address: selectedSubmissionData?.client?.address || formatAddress(selectedLead)
         },
         claimType: selectedLead.claimType || selectedLead.type || "",
         assessmentOutcome: assessmentOutcomeSelect.value || "",
@@ -879,6 +965,9 @@
         assessmentSummary: summary,
         generatedAssessmentText: summary,
         leadStatusAtCreation: selectedLead.leadStatus || "awaiting_manager",
+        managerNotes: notesBox.value.trim(),
+        product1: selectedSubmissionData?.product1 || {},
+        product2: selectedSubmissionData?.product2 || {},
         updatedAt: serverTimestamp(),
         updatedBy: {
           uid: currentUser.uid,
@@ -954,6 +1043,10 @@
       }
 
       try {
+        if (!selectedAssessmentId) {
+          selectedAssessmentId = await createOrUpdateAssessment();
+        }
+
         await createOrUpdateCloserAssignment(selectedLead, "book");
 
         await updateLead({
@@ -973,7 +1066,7 @@
         }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
       } catch (error) {
         console.error("Booking closer appointment failed:", error);
-        showModalMessage("Could not create closer appointment.", true);
+        showModalMessage(error.message || "Could not create closer appointment.", true);
       }
     });
 
@@ -986,6 +1079,10 @@
       }
 
       try {
+        if (!selectedAssessmentId) {
+          selectedAssessmentId = await createOrUpdateAssessment();
+        }
+
         await createOrUpdateCloserAssignment(selectedLead, "send");
 
         await updateLead({
@@ -1003,7 +1100,7 @@
         }, "sent_to_closer", "Lead sent to closer by manager.");
       } catch (error) {
         console.error("Send to closer failed:", error);
-        showModalMessage("Could not send lead to closer.", true);
+        showModalMessage(error.message || "Could not send lead to closer.", true);
       }
     });
 
