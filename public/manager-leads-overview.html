@@ -242,8 +242,9 @@
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
             <textarea id="assessmentSummaryBox" class="input" rows="6" placeholder="Why this is a case, main facts, viability, objections, strategy, what closer should know..."></textarea>
           </div>
-          <div class="mt-4">
+          <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
+            <a id="viewAssessmentBtn" href="#" class="btn btn-secondary hidden">View Assessment Report</a>
           </div>
         </section>
 
@@ -363,6 +364,7 @@
     const recommendedCloserText = document.getElementById("recommendedCloserText");
     const assessmentSummaryBox = document.getElementById("assessmentSummaryBox");
     const createAssessmentBtn = document.getElementById("createAssessmentBtn");
+    const viewAssessmentBtn = document.getElementById("viewAssessmentBtn");
 
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
@@ -378,6 +380,7 @@
     let listerUsers = [];
     let closerUsers = [];
     let selectedLead = null;
+    let selectedAssessmentId = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
@@ -671,7 +674,41 @@
       });
     }
 
-    function openLead(leadId) {
+    async function findAssessmentForLead(leadId) {
+      const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      const docs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+          return bTime - aTime;
+        });
+      return docs[0];
+    }
+
+    async function updateAssessmentButton() {
+      if (!selectedLead) {
+        selectedAssessmentId = null;
+        viewAssessmentBtn.classList.add("hidden");
+        viewAssessmentBtn.href = "#";
+        return;
+      }
+
+      const assessment = await findAssessmentForLead(selectedLead.id);
+      if (assessment) {
+        selectedAssessmentId = assessment.id;
+        viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessment.id}`;
+        viewAssessmentBtn.classList.remove("hidden");
+      } else {
+        selectedAssessmentId = null;
+        viewAssessmentBtn.href = "#";
+        viewAssessmentBtn.classList.add("hidden");
+      }
+    }
+
+    async function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
@@ -704,6 +741,7 @@
 
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
+      await updateAssessmentButton();
     }
 
     async function refreshSelectedLead() {
@@ -712,7 +750,7 @@
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
           selectedLead = updated;
-          openLead(updated.id);
+          await openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
         }
@@ -814,53 +852,82 @@
       }
     }
 
-    createAssessmentBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
+    async function createOrUpdateAssessment() {
+      if (!selectedLead) return null;
 
       const summary = assessmentSummaryBox.value.trim();
       if (!summary) {
-        showModalMessage("Please write the assessment summary first.", true);
-        return;
+        throw new Error("Please write the assessment summary first.");
       }
 
+      const existing = await findAssessmentForLead(selectedLead.id);
+
+      const payload = {
+        leadId: selectedLead.id,
+        client: {
+          title: selectedLead.title || "",
+          forename: selectedLead.forename || "",
+          surname: selectedLead.surname || "",
+          telephone: selectedLead.telephone || "",
+          email: selectedLead.email || "",
+          postcode: selectedLead.postcode || "",
+          address: formatAddress(selectedLead)
+        },
+        claimType: selectedLead.claimType || selectedLead.type || "",
+        assessmentOutcome: assessmentOutcomeSelect.value || "",
+        recommendedCloser: recommendedCloserText.value.trim(),
+        assessmentSummary: summary,
+        generatedAssessmentText: summary,
+        leadStatusAtCreation: selectedLead.leadStatus || "awaiting_manager",
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      };
+
+      if (existing) {
+        await updateDoc(doc(db, "managerAssessments", existing.id), payload);
+        return existing.id;
+      }
+
+      const newDoc = await addDoc(collection(db, "managerAssessments"), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        createdBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
+      return newDoc.id;
+    }
+
+    createAssessmentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
       try {
-        await addDoc(collection(db, "managerAssessments"), {
-          leadId: selectedLead.id,
-          client: {
-            title: selectedLead.title || "",
-            forename: selectedLead.forename || "",
-            surname: selectedLead.surname || "",
-            telephone: selectedLead.telephone || "",
-            email: selectedLead.email || "",
-            postcode: selectedLead.postcode || "",
-            address: formatAddress(selectedLead)
-          },
-          claimType: selectedLead.claimType || selectedLead.type || "",
-          assessmentOutcome: assessmentOutcomeSelect.value || "",
-          recommendedCloser: recommendedCloserText.value.trim(),
-          assessmentSummary: summary,
-          generatedAssessmentText: summary,
-          leadStatusAtCreation: selectedLead.leadStatus || "awaiting_manager",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          createdBy: {
-            uid: currentUser.uid,
-            name: currentUserData.name || "",
-            email: currentUser.email || ""
-          }
-        });
+        const assessmentId = await createOrUpdateAssessment();
+        selectedAssessmentId = assessmentId;
 
         await updateLead({
           assessmentOutcome: assessmentOutcomeSelect.value || "",
           recommendedCloser: recommendedCloserText.value.trim(),
-          assessmentSummary: summary,
-          generatedAssessmentText: summary,
+          assessmentSummary: assessmentSummaryBox.value.trim(),
+          generatedAssessmentText: assessmentSummaryBox.value.trim(),
           leadStatus: "qualified",
           lastAction: "assessment_report_created"
-        }, "assessment_report_created", summary);
+        }, "assessment_report_created", assessmentSummaryBox.value.trim());
+
+        if (assessmentId) {
+          viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessmentId}`;
+          viewAssessmentBtn.classList.remove("hidden");
+        }
       } catch (error) {
         console.error("Assessment creation failed:", error);
-        showModalMessage("Could not create assessment report.", true);
+        showModalMessage(error.message || "Could not create assessment report.", true);
       }
     });
 
