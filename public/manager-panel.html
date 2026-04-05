@@ -106,6 +106,7 @@
               <option value="all">All statuses</option>
               <option value="awaiting_manager">Awaiting Manager</option>
               <option value="intake_in_progress">Intake In Progress</option>
+              <option value="draft">Draft</option>
               <option value="submitted">Submitted</option>
               <option value="in_review">In Review</option>
               <option value="assessment_complete">Assessment Complete</option>
@@ -401,12 +402,13 @@
     function statusBadgeFromStatus(status) {
       if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
       if (status === "intake_in_progress") return `<span class="badge badge-amber">Intake In Progress</span>`;
+      if (status === "draft") return `<span class="badge badge-slate">Draft</span>`;
       if (status === "submitted") return `<span class="badge badge-blue">Submitted</span>`;
       if (status === "in_review") return `<span class="badge badge-indigo">In Review</span>`;
       if (status === "assessment_complete") return `<span class="badge badge-green">Assessment Complete</span>`;
       if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
       if (status === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
-      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (status === "converted") return `<span class="badge badge-violet">Converted</span>`;
       if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
       return `<span class="badge badge-slate">${status || "-"}</span>`;
     }
@@ -560,8 +562,8 @@
             closerUid: "",
             appointmentDate: "",
             appointmentTime: "",
-            updatedAtValue: submission.reviewedAt?.toDate
-              ? submission.reviewedAt.toDate().getTime()
+            updatedAtValue: submission.updatedAt?.toDate
+              ? submission.updatedAt.toDate().getTime()
               : (submission.createdAt?.toDate ? submission.createdAt.toDate().getTime() : 0)
           });
         }
@@ -588,14 +590,12 @@
 
       return queueItems.filter(item => {
         const matchesStatus = selectedStatus === "all" || item.status === selectedStatus;
-
         const matchesTiming =
           selectedTiming === "all" ||
           (selectedTiming === "today" && item.appointmentDate === today) ||
           (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
           (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
           (selectedTiming === "none" && !item.appointmentDate);
-
         const matchesCloser =
           selectedCloser === "all" ||
           item.closerUid === selectedCloser;
@@ -609,6 +609,7 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
+
         return matchesStatus && matchesTiming && matchesCloser && matchesSearch;
       }).sort((a, b) => b.updatedAtValue - a.updatedAtValue);
     }
@@ -681,6 +682,7 @@
     async function findAssessmentForLead(leadId) {
       const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
       const snap = await getDocs(q);
+
       if (snap.empty) return null;
 
       const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -746,6 +748,7 @@
       notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
 
       await loadLinkedSubmissionForLead(selectedLead);
+
       const assessment = await findAssessmentForLead(selectedLead.id);
       selectedAssessmentId = assessment?.id || selectedLead.assessmentId || "";
 
@@ -779,6 +782,7 @@
 
     async function refreshSelectedLead() {
       await loadAllData();
+
       if (selectedLead) {
         const updated = allLeadAssignments.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -823,12 +827,13 @@
       }
 
       const client = selectedSubmissionData?.client || {};
+
       const payload = {
         sourceLeadId: lead.id,
         leadAssignmentId: lead.id,
         assessmentId: selectedAssessmentId || lead.assessmentId || "",
         submissionId: selectedSubmissionId || "",
-        claimType: lead.claimType || lead.type || "",
+        claimType: lead.claimType || lead.type || selectedSubmissionData?.claimType || "",
         closer: {
           uid: closerUid,
           name: closerUser.name || "",
@@ -850,8 +855,8 @@
         },
         status: mode === "book" ? "Appointment Booked" : "Assigned",
         outcome: "",
-        assessmentSummary: lead.assessmentSummary || lead.generatedAssessmentText || "",
-        generatedAssessmentText: lead.generatedAssessmentText || lead.assessmentSummary || "",
+        assessmentSummary: lead.assessmentSummary || lead.generatedAssessmentText || selectedSubmissionData?.assessmentSummary || "",
+        generatedAssessmentText: lead.generatedAssessmentText || lead.assessmentSummary || selectedSubmissionData?.assessmentSummary || "",
         managerNotes: notesBox.value || lead.managerNotes || "",
         handoffNotes: notesBox.value || lead.managerNotes || "",
         product1: selectedSubmissionData?.product1 || {},
@@ -885,6 +890,7 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "qualified",
         lastAction: "qualified"
@@ -948,6 +954,7 @@
 
     markConvertedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "converted",
         convertedAt: serverTimestamp(),
@@ -957,6 +964,7 @@
 
     markClosedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         closed: true,
