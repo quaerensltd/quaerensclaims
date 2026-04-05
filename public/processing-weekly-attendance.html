@@ -523,7 +523,6 @@
       let lateDays = 0;
       let absentDays = 0;
       let missingDays = 0;
-      let onTimeDays = 0;
 
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
@@ -533,7 +532,6 @@
             presentDays += 1;
             const status = getDayStatus(rec, dateStr);
             if (status === "late") lateDays += 1;
-            if (status === "on_time") onTimeDays += 1;
           } else {
             absentDays += 1;
             missingDays += 1;
@@ -558,14 +556,6 @@
       document.getElementById("snapshotAbsent").textContent = String(absentDays);
       document.getElementById("snapshotMyFiles").textContent = String(myFiles);
       document.getElementById("snapshotUnassigned").textContent = String(unassignedFiles);
-
-      const onlineNow = filteredStaff.filter(user => {
-        const todayRecord = getAttendanceFor(user.id, toIsoDate(new Date()));
-        return todayRecord && todayRecord.isOnline && !isStaleOnline(todayRecord);
-      }).length;
-
-      document.getElementById("onlineNowStat").textContent = String(onlineNow);
-      document.getElementById("onTimeDaysStat").textContent = String(onTimeDays);
     }
 
     function renderWeeklySummary() {
@@ -728,15 +718,12 @@
       ];
 
       const rows = [];
-
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
           const workedMs = getWorkedMs(rec);
           const dayStatus = getDayStatus(rec, dateStr);
-          const liveStatus = rec && rec.isOnline && !isStaleOnline(rec)
-            ? "Online"
-            : (rec ? "Offline" : "No Record");
+          const liveStatus = rec && rec.isOnline && !isStaleOnline(rec) ? "Online" : (rec ? "Offline" : "No Record");
 
           rows.push([
             weekStartInput.value,
@@ -795,7 +782,7 @@
         startAutoRefresh();
         hideLoader();
       } catch (error) {
-        console.error("Weekly attendance load error:", error, error?.message, error?.code);
+        console.error("Weekly attendance load error:", error);
         alert("Could not load weekly attendance.");
       }
     });
