@@ -112,6 +112,7 @@
             <div id="assignedByText"></div>
             <div id="statusSummaryText"></div>
             <div id="processingSummaryText"></div>
+            <div id="caseSummaryText"></div>
           </div>
         </div>
       </section>
@@ -293,6 +294,7 @@
     let currentUserData = null;
     let assignmentData = null;
     let existingProcessingDocId = null;
+    let existingCaseDocId = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -323,6 +325,7 @@
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
+
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
@@ -372,9 +375,11 @@
       if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) {
         return "part_paid";
       }
+
       if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
@@ -385,6 +390,17 @@
         followUpDue.value
       );
       paymentStatusPreview.innerHTML = paymentStatusBadge(derived);
+    }
+
+    function createCaseReference(data) {
+      const type = (data.claimType || "case").toUpperCase().slice(0, 4);
+      const surname = (data.client?.secondName || data.client?.firstName || "CLIENT")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 6);
+      const today = new Date();
+      const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      return `${type}-${surname}-${stamp}`;
     }
 
     async function checkCloserAccess(user) {
@@ -398,6 +414,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "closer") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -436,11 +453,11 @@
 
       const processingQuery = query(collection(db, "processingFiles"), where("assignmentId", "==", assignmentId));
       const processingSnap = await getDocs(processingQuery);
-      if (!processingSnap.empty) {
-        existingProcessingDocId = processingSnap.docs[0].id;
-      } else {
-        existingProcessingDocId = null;
-      }
+      existingProcessingDocId = !processingSnap.empty ? processingSnap.docs[0].id : null;
+
+      const caseQuery = query(collection(db, "processingCases"), where("sourceAssignmentId", "==", assignmentId));
+      const caseSnap = await getDocs(caseQuery);
+      existingCaseDocId = !caseSnap.empty ? caseSnap.docs[0].id : null;
 
       document.getElementById("detailTitle").textContent = formatClaimType(assignmentData.claimType);
       document.getElementById("detailSubtitle").textContent = `Assignment ID: ${assignmentId}`;
@@ -448,8 +465,11 @@
       document.getElementById("assignedByText").textContent = `Assigned by: ${assignmentData.assignedBy?.name || assignmentData.assignedBy?.email || "-"}`;
       document.getElementById("statusSummaryText").innerHTML = `Status: ${statusBadge(assignmentData.status || "Assigned")} &nbsp; ${outcomeBadge(assignmentData.outcome || "")}`;
       document.getElementById("processingSummaryText").innerHTML = existingProcessingDocId
-        ? `Processing: <span class="badge badge-violet">Already Sent</span>`
-        : `Processing: <span class="badge badge-slate">Not Yet Sent</span>`;
+        ? `Processing File: <span class="badge badge-violet">Created</span>`
+        : `Processing File: <span class="badge badge-slate">Not Yet Created</span>`;
+      document.getElementById("caseSummaryText").innerHTML = existingCaseDocId
+        ? `Case File: <span class="badge badge-green">Created</span>`
+        : `Case File: <span class="badge badge-slate">Not Yet Created</span>`;
 
       setValue("client_firstName", assignmentData.client?.firstName);
       setValue("client_secondName", assignmentData.client?.secondName);
@@ -534,6 +554,65 @@
       }
     }
 
+    async function createOrUpdateProcessingCase() {
+      const caseReference = assignmentData.caseReference || createCaseReference(assignmentData);
+
+      const payload = {
+        sourceAssignmentId: assignmentId,
+        assessmentId: assignmentData.assessmentId || "",
+        caseReference,
+        claimType: assignmentData.claimType || "",
+        client: assignmentData.client || {},
+        closer: assignmentData.closer || {},
+        assignedBy: assignmentData.assignedBy || {},
+        assignedToUid: "",
+        assignedToName: "",
+        assignedToEmail: "",
+        caseStage: "new_case",
+        priority: "normal",
+        waitingOn: "internal",
+        contractUrl: assignmentData.contractUrl || "",
+        assessmentReportUrl: assignmentData.assessmentReportUrl || "",
+        strategyReportUrl: assignmentData.strategyReportUrl || "",
+        assessmentSummary: assignmentData.assessmentSummary || "",
+        strategySummary: assignmentData.strategySummary || assignmentData.generatedAssessmentText || "",
+        generatedAssessmentText: assignmentData.generatedAssessmentText || "",
+        managerNotes: assignmentData.managerNotes || "",
+        handoffNotes: assignmentData.handoffNotes || "",
+        processingNotes: processingNotes.value.trim() || "",
+        paymentLink: paymentLink.value.trim(),
+        amountDueNow: Number(amountDueNow.value || 0),
+        amountPaidNow: Number(amountPaidNow.value || 0),
+        followUpDue: Number(followUpDue.value || 0),
+        paymentStatus: derivePaymentStatus(amountDueNow.value, amountPaidNow.value, followUpDue.value),
+        product1: assignmentData.product1 || {},
+        product2: assignmentData.product2 || {},
+        lastActivityAt: serverTimestamp(),
+        nextActionDate: null,
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      };
+
+      if (existingCaseDocId) {
+        await updateDoc(doc(db, "processingCases", existingCaseDocId), payload);
+      } else {
+        const newDoc = await addDoc(collection(db, "processingCases"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+        existingCaseDocId = newDoc.id;
+      }
+    }
+
     amountDueNow.addEventListener("input", updatePaymentPreview);
     amountPaidNow.addEventListener("input", updatePaymentPreview);
     followUpDue.addEventListener("input", updatePaymentPreview);
@@ -551,6 +630,7 @@
           followUpDue: Number(followUpDue.value || 0),
           paymentLink: paymentLink.value.trim(),
           processingNotes: processingNotes.value.trim(),
+          caseReference: assignmentData.caseReference || createCaseReference(assignmentData),
           lastUpdatedAt: serverTimestamp(),
           lastUpdatedBy: {
             uid: currentUser.uid,
@@ -568,9 +648,9 @@
 
         if (outcomeSelect.value === "Closed Deal") {
           await createOrUpdateProcessingFile();
-          saveMessage.textContent = existingProcessingDocId
-            ? "Closer progress saved and processing file updated."
-            : "Closer progress saved and sent to processing.";
+          await createOrUpdateProcessingCase();
+
+          saveMessage.textContent = "Closer progress saved, processing file updated, and case file created.";
         } else {
           saveMessage.textContent = "Closer progress saved successfully.";
         }
@@ -578,6 +658,7 @@
         saveMessage.classList.remove("hidden");
         showToast(saveMessage.textContent);
         setTimeout(() => saveMessage.classList.add("hidden"), 3000);
+
         await loadAssignment();
       } catch (error) {
         console.error("Failed to save closer progress:", error);

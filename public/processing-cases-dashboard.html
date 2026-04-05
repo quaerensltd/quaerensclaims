@@ -303,53 +303,90 @@
       authLoader.style.display = "none";
     }
 
+    function safeString(value) {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safeString(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
+    function normalizeStage(item) {
+      return firstNonEmpty(item.caseStage, item.stage, item.processingStage, "new_case");
+    }
+
+    function normalizePriority(item) {
+      return firstNonEmpty(item.priority, "normal");
+    }
+
+    function normalizeWaitingOn(item) {
+      return firstNonEmpty(item.waitingOn, "none");
+    }
+
+    function clientName(item) {
+      const first = firstNonEmpty(item.client?.firstName, item.firstName, item.clientFirstName);
+      const second = firstNonEmpty(item.client?.secondName, item.secondName, item.clientSecondName);
+      const full = `${first} ${second}`.trim();
+      return full || firstNonEmpty(item.client?.name, item.clientName, item.caseReference, "Unnamed Client");
+    }
+
+    function clientEmail(item) {
+      return firstNonEmpty(item.client?.email, item.email, item.clientEmail, "-");
+    }
+
+    function clientMobile(item) {
+      return firstNonEmpty(item.client?.mobile, item.mobile, item.clientMobile, item.client?.landline, "");
+    }
+
     function formatClaimType(type) {
       switch (type) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
         case "newbuild": return "New Build Issues";
-        default: return type || "-";
+        default: return safeString(type) || "-";
       }
     }
 
-    function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
-      return `${first} ${second}`.trim() || "-";
+    function assignedToText(item) {
+      return firstNonEmpty(item.assignedToName, item.assignedToEmail, item.processingAssignedToName, item.processingAssignedToEmail, "-");
+    }
+
+    function getTimestampAsDate(value) {
+      if (!value) return null;
+      try {
+        if (typeof value?.toDate === "function") return value.toDate();
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return null;
+        return d;
+      } catch {
+        return null;
+      }
     }
 
     function formatDate(value) {
-      if (!value) return "-";
-      try {
-        const d = value.toDate ? value.toDate() : new Date(value);
-        return d.toLocaleDateString("en-GB");
-      } catch {
-        return "-";
-      }
+      const d = getTimestampAsDate(value);
+      return d ? d.toLocaleDateString("en-GB") : "-";
     }
 
     function formatDateTime(value) {
-      if (!value) return "-";
-      try {
-        const d = value.toDate ? value.toDate() : new Date(value);
-        return d.toLocaleString("en-GB");
-      } catch {
-        return "-";
-      }
+      const d = getTimestampAsDate(value);
+      return d ? d.toLocaleString("en-GB") : "-";
     }
 
     function isOverdue(dateValue) {
-      if (!dateValue) return false;
-      try {
-        const d = dateValue.toDate ? dateValue.toDate() : new Date(dateValue);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        d.setHours(0, 0, 0, 0);
-        return d.getTime() < today.getTime();
-      } catch {
-        return false;
-      }
+      const d = getTimestampAsDate(dateValue);
+      if (!d) return false;
+      const compare = new Date(d);
+      compare.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return compare.getTime() < today.getTime();
     }
 
     function stageLabel(stage) {
@@ -360,7 +397,7 @@
         case "documents_complete": return `<span class="badge badge-green">Documents Complete</span>`;
         case "complaint_preparing": return `<span class="badge badge-violet">Complaint Preparing</span>`;
         case "complaint_sent": return `<span class="badge badge-blue">Complaint Sent</span>`;
-        case "awaiting_response": return `<span class="badge badge-sky">Awaiting Response</span>`;
+        case "awaiting_response": return `<span class="badge badge-blue">Awaiting Response</span>`;
         case "follow_up_sent": return `<span class="badge badge-indigo">Follow-Up Sent</span>`;
         case "ombudsman_stage": return `<span class="badge badge-violet">Ombudsman Stage</span>`;
         case "settled": return `<span class="badge badge-green">Settled</span>`;
@@ -392,8 +429,12 @@
       }
     }
 
-    function assignedToText(item) {
-      return item.assignedToName || item.assignedToEmail || "-";
+    function getNextActionValue(item) {
+      return item.nextActionDate || item.nextActionAt || null;
+    }
+
+    function getLastActivityValue(item) {
+      return item.lastActivityAt || item.updatedAt || item.createdAt || null;
     }
 
     async function checkProcessingAccess(user) {
@@ -440,41 +481,56 @@
       const term = searchInput.value.trim().toLowerCase();
 
       return allCases.filter(item => {
-        const matchesStage = selectedStage === "all" || (item.caseStage || "") === selectedStage;
-        const matchesPriority = selectedPriority === "all" || (item.priority || "normal") === selectedPriority;
-        const waitingValue = item.waitingOn || "none";
-        const matchesWaiting = selectedWaitingOn === "all" || waitingValue === selectedWaitingOn;
+        const normalizedStage = normalizeStage(item);
+        const normalizedPriority = normalizePriority(item);
+        const normalizedWaitingOn = normalizeWaitingOn(item);
+
+        const itemAssignedUid = firstNonEmpty(
+          item.assignedToUid,
+          item.processingAssignedToUid,
+          ""
+        );
+
+        const matchesStage = selectedStage === "all" || normalizedStage === selectedStage;
+        const matchesPriority = selectedPriority === "all" || normalizedPriority === selectedPriority;
+        const matchesWaiting = selectedWaitingOn === "all" || normalizedWaitingOn === selectedWaitingOn;
+
         const matchesAssignment =
           selectedAssignment === "all" ||
-          (selectedAssignment === "mine" && item.assignedToUid === currentUser.uid) ||
-          (selectedAssignment === "unassigned" && !item.assignedToUid) ||
-          (selectedAssignment === "others" && item.assignedToUid && item.assignedToUid !== currentUser.uid);
-        const matchesClaimType = selectedClaimType === "all" || (item.claimType || "") === selectedClaimType;
+          (selectedAssignment === "mine" && itemAssignedUid === currentUser.uid) ||
+          (selectedAssignment === "unassigned" && !itemAssignedUid) ||
+          (selectedAssignment === "others" && itemAssignedUid && itemAssignedUid !== currentUser.uid);
+
+        const matchesClaimType = selectedClaimType === "all" || safeString(item.claimType) === selectedClaimType;
 
         const haystack = `
           ${clientName(item)}
-          ${item.client?.email || ""}
-          ${item.client?.mobile || ""}
-          ${item.claimType || ""}
-          ${item.caseReference || ""}
+          ${clientEmail(item)}
+          ${clientMobile(item)}
+          ${safeString(item.claimType)}
+          ${firstNonEmpty(item.caseReference, item.reference, item.sourceAssignmentId)}
           ${assignedToText(item)}
-          ${item.processingNotes || ""}
+          ${firstNonEmpty(item.processingNotes, item.assessmentSummary, item.strategySummary)}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
         return matchesStage && matchesPriority && matchesWaiting && matchesAssignment && matchesClaimType && matchesSearch;
       }).sort((a, b) => {
-        const aUrgent = a.priority === "urgent" ? 0 : a.priority === "high" ? 1 : 2;
-        const bUrgent = b.priority === "urgent" ? 0 : b.priority === "high" ? 1 : 2;
-        if (aUrgent !== bUrgent) return aUrgent - bUrgent;
+        const aPriority = normalizePriority(a);
+        const bPriority = normalizePriority(b);
 
-        const aOverdue = isOverdue(a.nextActionDate) ? 0 : 1;
-        const bOverdue = isOverdue(b.nextActionDate) ? 0 : 1;
+        const aUrgentOrder = aPriority === "urgent" ? 0 : aPriority === "high" ? 1 : aPriority === "normal" ? 2 : 3;
+        const bUrgentOrder = bPriority === "urgent" ? 0 : bPriority === "high" ? 1 : bPriority === "normal" ? 2 : 3;
+
+        if (aUrgentOrder !== bUrgentOrder) return aUrgentOrder - bUrgentOrder;
+
+        const aOverdue = isOverdue(getNextActionValue(a)) ? 0 : 1;
+        const bOverdue = isOverdue(getNextActionValue(b)) ? 0 : 1;
         if (aOverdue !== bOverdue) return aOverdue - bOverdue;
 
-        const aTime = a.lastActivityAt?.toDate ? a.lastActivityAt.toDate().getTime() : 0;
-        const bTime = b.lastActivityAt?.toDate ? b.lastActivityAt.toDate().getTime() : 0;
+        const aTime = getTimestampAsDate(getLastActivityValue(a))?.getTime() || 0;
+        const bTime = getTimestampAsDate(getLastActivityValue(b))?.getTime() || 0;
         return bTime - aTime;
       });
     }
@@ -484,15 +540,16 @@
       const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
       document.getElementById("totalCasesStat").textContent = String(allCases.length);
-      document.getElementById("awaitingReviewStat").textContent = String(allCases.filter(x => (x.caseStage || "") === "under_review").length);
-      document.getElementById("awaitingDocsStat").textContent = String(allCases.filter(x => (x.caseStage || "") === "awaiting_documents").length);
-      document.getElementById("awaitingResponseStat").textContent = String(allCases.filter(x => (x.caseStage || "") === "awaiting_response").length);
-      document.getElementById("urgentStat").textContent = String(allCases.filter(x => (x.priority || "") === "urgent").length);
-      document.getElementById("overdueStat").textContent = String(allCases.filter(x => isOverdue(x.nextActionDate)).length);
+      document.getElementById("awaitingReviewStat").textContent = String(allCases.filter(x => normalizeStage(x) === "under_review").length);
+      document.getElementById("awaitingDocsStat").textContent = String(allCases.filter(x => normalizeStage(x) === "awaiting_documents").length);
+      document.getElementById("awaitingResponseStat").textContent = String(allCases.filter(x => normalizeStage(x) === "awaiting_response").length);
+      document.getElementById("urgentStat").textContent = String(allCases.filter(x => normalizePriority(x) === "urgent").length);
+      document.getElementById("overdueStat").textContent = String(allCases.filter(x => isOverdue(getNextActionValue(x))).length);
+
       document.getElementById("closedThisMonthStat").textContent = String(
         allCases.filter(x => {
-          if ((x.caseStage || "") !== "closed") return false;
-          const value = x.updatedAt?.toDate ? x.updatedAt.toDate() : (x.updatedAt ? new Date(x.updatedAt) : null);
+          if (normalizeStage(x) !== "closed") return false;
+          const value = getTimestampAsDate(getLastActivityValue(x));
           if (!value) return false;
           const ym = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
           return ym === thisMonth;
@@ -514,8 +571,9 @@
       }
 
       filteredCases.forEach(item => {
-        const nextActionText = formatDate(item.nextActionDate);
-        const nextActionDisplay = isOverdue(item.nextActionDate)
+        const nextActionValue = getNextActionValue(item);
+        const nextActionText = formatDate(nextActionValue);
+        const nextActionDisplay = isOverdue(nextActionValue)
           ? `<span class="text-red-600 font-bold">${nextActionText}</span>`
           : nextActionText;
 
@@ -524,15 +582,15 @@
         row.innerHTML = `
           <td class="p-3">
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${clientEmail(item)}</div>
           </td>
           <td class="p-3">${formatClaimType(item.claimType)}</td>
-          <td class="p-3">${stageLabel(item.caseStage || "")}</td>
-          <td class="p-3">${priorityLabel(item.priority || "normal")}</td>
+          <td class="p-3">${stageLabel(normalizeStage(item))}</td>
+          <td class="p-3">${priorityLabel(normalizePriority(item))}</td>
           <td class="p-3">${assignedToText(item)}</td>
-          <td class="p-3">${waitingOnLabel(item.waitingOn || "none")}</td>
+          <td class="p-3">${waitingOnLabel(normalizeWaitingOn(item))}</td>
           <td class="p-3">${nextActionDisplay}</td>
-          <td class="p-3">${formatDateTime(item.lastActivityAt)}</td>
+          <td class="p-3">${formatDateTime(getLastActivityValue(item))}</td>
           <td class="p-3">
             <a href="/processing-case-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open Case</a>
           </td>
@@ -545,10 +603,10 @@
 
     function renderSnapshot() {
       document.getElementById("snapshotCases").textContent = String(filteredCases.length);
-      document.getElementById("snapshotDocs").textContent = String(filteredCases.filter(x => (x.caseStage || "") === "awaiting_documents").length);
-      document.getElementById("snapshotResponse").textContent = String(filteredCases.filter(x => (x.caseStage || "") === "awaiting_response").length);
-      document.getElementById("snapshotUrgent").textContent = String(filteredCases.filter(x => (x.priority || "") === "urgent").length);
-      document.getElementById("snapshotOverdue").textContent = String(filteredCases.filter(x => isOverdue(x.nextActionDate)).length);
+      document.getElementById("snapshotDocs").textContent = String(filteredCases.filter(x => normalizeStage(x) === "awaiting_documents").length);
+      document.getElementById("snapshotResponse").textContent = String(filteredCases.filter(x => normalizeStage(x) === "awaiting_response").length);
+      document.getElementById("snapshotUrgent").textContent = String(filteredCases.filter(x => normalizePriority(x) === "urgent").length);
+      document.getElementById("snapshotOverdue").textContent = String(filteredCases.filter(x => isOverdue(getNextActionValue(x))).length);
     }
 
     function renderAll() {
@@ -582,6 +640,7 @@
     assignmentFilter.addEventListener("change", renderAll);
     claimTypeFilter.addEventListener("change", renderAll);
     searchInput.addEventListener("input", renderAll);
+
     refreshBtn.addEventListener("click", loadCases);
     refreshBtnTop.addEventListener("click", loadCases);
 
