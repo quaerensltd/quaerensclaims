@@ -198,6 +198,7 @@
             <a href="/processing-weekly-attendance.html" class="btn btn-primary text-center">Open Weekly Attendance</a>
           </div>
         </section>
+
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Month Snapshot</h2>
           <div class="space-y-4 text-sm">
@@ -354,10 +355,12 @@
     function getWorkedMs(docData) {
       if (!docData) return 0;
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
+
       if (docData.isOnline && docData.currentSessionStartAt?.toDate && !isStaleOnline(docData)) {
         const sessionStart = docData.currentSessionStartAt.toDate().getTime();
         return baseMs + Math.max(0, Date.now() - sessionStart);
       }
+
       return baseMs;
     }
 
@@ -386,17 +389,21 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
         return false;
       }
+
       const userData = userSnap.data();
+
       if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
+
       currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
@@ -414,10 +421,12 @@
       const end = new Date(year, month, 0);
       const dates = [];
       const cursor = new Date(start);
+
       while (cursor <= end) {
         dates.push(toIsoDate(cursor));
         cursor.setDate(cursor.getDate() + 1);
       }
+
       return dates;
     }
 
@@ -470,6 +479,7 @@
         monthDates.forEach(dateStr => {
           const rec = attendanceDocs.find(docItem => docItem.uid === user.id && docItem.date === dateStr) || null;
           const dayStatus = getDayStatus(rec, dateStr);
+
           if (selectedStatus !== "all" && dayStatus !== selectedStatus) return;
 
           filteredRows.push({
@@ -510,8 +520,6 @@
       document.getElementById("totalHoursStat").textContent = formatDuration(totalMs);
       document.getElementById("myFilesStat").textContent = String(myFiles);
       document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
-      document.getElementById("recordsCountStat").textContent = String(presentDays);
-
       document.getElementById("snapshotMonth").textContent = monthInput.value || "-";
       document.getElementById("snapshotStaff").textContent = String(selectedStaffCount);
       document.getElementById("snapshotPresent").textContent = String(presentDays);
@@ -632,9 +640,8 @@
         await loadBaseData();
         hideLoader();
       } catch (error) {
-        console.error("Monthly attendance load error:", error);
+        console.error("Monthly attendance load error:", error, error?.message, error?.code);
         alert("Could not load monthly attendance.");
-        window.location.href = "/login.html";
       }
     });
 
@@ -665,10 +672,10 @@
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
-      const href = link.getAttribute('href');
+      const href = link.getAttribute("href");
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add('active-nav');
+        link.classList.add("active-nav");
       }
     });
   </script>
