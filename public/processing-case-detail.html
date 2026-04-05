@@ -217,7 +217,7 @@
 
       <section class="card p-6">
         <h3 class="text-lg font-extrabold text-blue-900 mb-4">Case Controls</h3>
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label class="label" for="caseStage">Case Stage</label>
             <select id="caseStage" class="input">
@@ -258,6 +258,9 @@
           <div>
             <label class="label" for="nextActionDate">Next Action Date</label>
             <input id="nextActionDate" class="input" type="date" />
+          </div>
+          <div class="flex items-end">
+            <button id="assignToMeBtn" class="btn btn-secondary w-full" type="button">Assign To Me</button>
           </div>
         </div>
 
@@ -356,7 +359,9 @@
 
         <section class="card p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-extrabold text-blue-900">Add Task / Follow-Up</h3>
+            <div>
+              <h3 class="text-lg font-extrabold text-blue-900">Add Task / Follow-Up</h3>
+            </div>
           </div>
 
           <div>
@@ -427,7 +432,6 @@
       collection,
       query,
       where,
-      orderBy,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -448,6 +452,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const saveCaseBtn = document.getElementById("saveCaseBtn");
     const saveMessage = document.getElementById("saveMessage");
+    const assignToMeBtn = document.getElementById("assignToMeBtn");
 
     const caseStage = document.getElementById("caseStage");
     const priority = document.getElementById("priority");
@@ -543,6 +548,14 @@
       }
     }
 
+    function sortByCreatedDesc(items) {
+      return [...items].sort((a, b) => {
+        const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return bTime - aTime;
+      });
+    }
+
     function stageBadge(stage) {
       switch (stage) {
         case "new_case": return `<span class="badge badge-blue">New Case</span>`;
@@ -622,24 +635,35 @@
       return true;
     }
 
-    async function loadCase() {
-      if (!caseId) {
-        alert("Missing case ID.");
-        window.location.href = "/processing-cases-dashboard.html";
-        return;
+    function setDocumentLink(baseId, url) {
+      const link = document.getElementById(`${baseId}Link`);
+      const empty = document.getElementById(`${baseId}Empty`);
+      if (url && url.trim()) {
+        link.href = url.trim();
+        link.classList.remove("hidden");
+        empty.classList.add("hidden");
+      } else {
+        link.href = "#";
+        link.classList.add("hidden");
+        empty.classList.remove("hidden");
       }
+    }
 
-      const caseRef = doc(db, "processingCases", caseId);
-      const caseSnap = await getDoc(caseRef);
-
-      if (!caseSnap.exists()) {
-        alert("Case file not found.");
-        window.location.href = "/processing-cases-dashboard.html";
-        return;
+    function setPaymentLink(url) {
+      const link = document.getElementById("paymentLinkDoc");
+      const empty = document.getElementById("paymentLinkEmpty");
+      if (url && url.trim()) {
+        link.href = url.trim();
+        link.classList.remove("hidden");
+        empty.classList.add("hidden");
+      } else {
+        link.href = "#";
+        link.classList.add("hidden");
+        empty.classList.remove("hidden");
       }
+    }
 
-      caseData = { id: caseSnap.id, ...caseSnap.data() };
-
+    function renderCaseHeaderAndFields() {
       document.getElementById("detailTitle").textContent = clientName(caseData);
       document.getElementById("detailSubtitle").textContent = `Case ID: ${caseId}`;
       document.getElementById("assignedToText").textContent = `Assigned To: ${caseData.assignedToName || caseData.assignedToEmail || "-"}`;
@@ -683,52 +707,39 @@
       setDocumentLink("assessmentReportUrl", caseData.assessmentReportUrl);
       setDocumentLink("strategyReportUrl", caseData.strategyReportUrl);
       setPaymentLink(caseData.paymentLink || "");
+    }
 
+    async function loadCase() {
+      if (!caseId) {
+        alert("Missing case ID.");
+        window.location.href = "/processing-cases-dashboard.html";
+        return;
+      }
+
+      const caseRef = doc(db, "processingCases", caseId);
+      const caseSnap = await getDoc(caseRef);
+
+      if (!caseSnap.exists()) {
+        alert("Case file not found.");
+        window.location.href = "/processing-cases-dashboard.html";
+        return;
+      }
+
+      caseData = { id: caseSnap.id, ...caseSnap.data() };
+      renderCaseHeaderAndFields();
       await loadEvents();
       await loadTasks();
-
       hideLoader();
-    }
-
-    function setDocumentLink(baseId, url) {
-      const link = document.getElementById(`${baseId}Link`);
-      const empty = document.getElementById(`${baseId}Empty`);
-
-      if (url && url.trim()) {
-        link.href = url.trim();
-        link.classList.remove("hidden");
-        empty.classList.add("hidden");
-      } else {
-        link.href = "#";
-        link.classList.add("hidden");
-        empty.classList.remove("hidden");
-      }
-    }
-
-    function setPaymentLink(url) {
-      const link = document.getElementById("paymentLinkDoc");
-      const empty = document.getElementById("paymentLinkEmpty");
-
-      if (url && url.trim()) {
-        link.href = url.trim();
-        link.classList.remove("hidden");
-        empty.classList.add("hidden");
-      } else {
-        link.href = "#";
-        link.classList.add("hidden");
-        empty.classList.remove("hidden");
-      }
     }
 
     async function loadEvents() {
       try {
         const q = query(
           collection(db, "processingCaseEvents"),
-          where("caseId", "==", caseId),
-          orderBy("createdAt", "desc")
+          where("caseId", "==", caseId)
         );
         const snap = await getDocs(q);
-        caseEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        caseEvents = sortByCreatedDesc(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (error) {
         console.error("Could not load events:", error);
         caseEvents = [];
@@ -740,11 +751,10 @@
       try {
         const q = query(
           collection(db, "processingCaseTasks"),
-          where("caseId", "==", caseId),
-          orderBy("createdAt", "desc")
+          where("caseId", "==", caseId)
         );
         const snap = await getDocs(q);
-        caseTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        caseTasks = sortByCreatedDesc(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (error) {
         console.error("Could not load tasks:", error);
         caseTasks = [];
@@ -797,6 +807,7 @@
       caseTasks.forEach(item => {
         const due = formatDate(item.dueDate);
         const completed = item.completed === true;
+
         const wrapper = document.createElement("div");
         wrapper.className = "border border-slate-200 rounded-xl p-4";
         wrapper.innerHTML = `
@@ -845,6 +856,24 @@
       await updateDoc(doc(db, "processingCases", caseId), payload);
     }
 
+    async function assignCaseToMe() {
+      await updateDoc(doc(db, "processingCases", caseId), {
+        assignedToUid: currentUser.uid,
+        assignedToName: currentUserData.name || "",
+        assignedToEmail: currentUser.email || "",
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
+      showToast("Case assigned to you.");
+      await loadCase();
+    }
+
     async function addEvent() {
       const subject = eventSubject.value.trim();
       const summary = eventSummary.value.trim();
@@ -888,8 +917,7 @@
       eventAttachmentUrl.value = "";
 
       showToast("Log entry added.");
-      await loadEvents();
-      await loadCaseHeaderOnly();
+      await loadCase();
     }
 
     async function addTask() {
@@ -917,12 +945,22 @@
         }
       });
 
+      await updateDoc(doc(db, "processingCases", caseId), {
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
       taskTitle.value = "";
       taskDueDate.value = "";
       taskPriority.value = "normal";
 
       showToast("Task added.");
-      await loadTasks();
+      await loadCase();
     }
 
     async function completeTask(taskId) {
@@ -931,21 +969,18 @@
         completedAt: serverTimestamp()
       });
 
+      await updateDoc(doc(db, "processingCases", caseId), {
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
       showToast("Task completed.");
-      await loadTasks();
-    }
-
-    async function loadCaseHeaderOnly() {
-      const caseRef = doc(db, "processingCases", caseId);
-      const caseSnap = await getDoc(caseRef);
-      if (!caseSnap.exists()) return;
-
-      caseData = { id: caseSnap.id, ...caseSnap.data() };
-      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(caseData.lastActivityAt)}`;
-      document.getElementById("nextActionText").textContent = `Next Action: ${formatDate(caseData.nextActionDate)}`;
-      document.getElementById("caseStageBadge").innerHTML = stageBadge(caseData.caseStage || "");
-      document.getElementById("priorityBadge").innerHTML = priorityBadge(caseData.priority || "normal");
-      document.getElementById("waitingOnBadge").innerHTML = waitingOnBadge(caseData.waitingOn || "none");
+      await loadCase();
     }
 
     saveCaseBtn.addEventListener("click", async () => {
@@ -959,6 +994,15 @@
       } catch (error) {
         console.error("Failed to save case:", error);
         alert("Could not save case update.");
+      }
+    });
+
+    assignToMeBtn.addEventListener("click", async () => {
+      try {
+        await assignCaseToMe();
+      } catch (error) {
+        console.error("Failed to assign case:", error);
+        alert("Could not assign case.");
       }
     });
 

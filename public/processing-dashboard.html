@@ -298,6 +298,9 @@
     let currentUser = null;
     let currentUserData = null;
     let allFiles = [];
+    let allCases = [];
+    let caseBySourceAssignmentId = new Map();
+    let caseByProcessingFileId = new Map();
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -369,6 +372,18 @@
       return `<span class="badge badge-amber">Awaiting Payment</span>`;
     }
 
+    function getOpenLink(file) {
+      if (file.assignmentId && caseBySourceAssignmentId.has(file.assignmentId)) {
+        return `/processing-case-detail.html?id=${caseBySourceAssignmentId.get(file.assignmentId).id}`;
+      }
+
+      if (caseByProcessingFileId.has(file.id)) {
+        return `/processing-case-detail.html?id=${caseByProcessingFileId.get(file.id).id}`;
+      }
+
+      return `/processing-detail.html?id=${file.id}`;
+    }
+
     async function checkProcessingAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -394,8 +409,26 @@
     }
 
     async function loadFiles() {
-      const snapshot = await getDocs(collection(db, "processingFiles"));
-      allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const [filesSnap, casesSnap] = await Promise.all([
+        getDocs(collection(db, "processingFiles")),
+        getDocs(collection(db, "processingCases"))
+      ]);
+
+      allFiles = filesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allCases = casesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      caseBySourceAssignmentId = new Map();
+      caseByProcessingFileId = new Map();
+
+      allCases.forEach(caseItem => {
+        if (caseItem.sourceAssignmentId) {
+          caseBySourceAssignmentId.set(caseItem.sourceAssignmentId, caseItem);
+        }
+        if (caseItem.processingFileId) {
+          caseByProcessingFileId.set(caseItem.processingFileId, caseItem);
+        }
+      });
+
       renderStats();
       renderMyFiles();
       renderUnassignedFiles();
@@ -417,6 +450,7 @@
             email: currentUser.email || ""
           }
         });
+
         showToast("File claimed.");
         await loadFiles();
       } catch (error) {
@@ -479,7 +513,7 @@
           <td class="p-3">${formatClaimType(file.claimType)}</td>
           <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
           <td class="p-3">
-            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -561,7 +595,7 @@
           <td class="p-3">${ownerBadge(file)}</td>
           <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
           <td class="p-3">
-            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -603,7 +637,7 @@
           <td class="p-3">${money(file.amountPaidNow)}</td>
           <td class="p-3">${money(file.followUpDue)}</td>
           <td class="p-3">
-            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
