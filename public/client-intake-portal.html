@@ -18,7 +18,20 @@
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
     .hidden { display: none; }
+    .readonly-box {
+      width: 100%;
+      min-height: 140px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      color: #1f2937;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -36,7 +49,6 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Client Intake Portal</h1>
           <p class="text-sm text-slate-500">Secure staff intake, manager review, and claim assessment workflow</p>
         </div>
-
         <div class="flex items-center gap-3">
           <div class="text-sm text-slate-500 text-right">
             <div id="staffStatus">Checking access...</div>
@@ -56,7 +68,7 @@
           <li>Staff member logs in</li>
           <li>Selects claim type or opens a lead</li>
           <li>Completes claim-specific form</li>
-          <li>Submission is saved to a secure panel</li>
+          <li>Submission is saved to secure review</li>
           <li>Manager reviews and creates assessment report</li>
         </ol>
 
@@ -68,6 +80,11 @@
         <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
           <h3 class="font-bold text-blue-900 mb-2">Current live form</h3>
           <p class="text-sm text-slate-700">Solar Panel Claims intake is active. Other claim forms can be added next using the same portal structure.</p>
+        </div>
+
+        <div class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <h3 class="font-bold text-slate-800 mb-2">Current submission</h3>
+          <div id="submissionInfoBox" class="text-sm text-slate-600">No submission created yet.</div>
         </div>
       </aside>
 
@@ -216,7 +233,10 @@
       collection,
       serverTimestamp,
       updateDoc,
-      arrayUnion
+      arrayUnion,
+      query,
+      where,
+      getDocs
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -240,6 +260,7 @@
     const formMessage = document.getElementById("formMessage");
     const leadNotice = document.getElementById("leadNotice");
     const leadNoticeText = document.getElementById("leadNoticeText");
+    const submissionInfoBox = document.getElementById("submissionInfoBox");
 
     const params = new URLSearchParams(window.location.search);
     const leadId = params.get("leadId");
@@ -247,6 +268,8 @@
     let currentUser = null;
     let currentUserData = null;
     let currentLeadData = null;
+    let existingSubmissionId = null;
+    let existingSubmissionData = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -276,9 +299,19 @@
       if (el) el.value = value || "";
     }
 
+    function setSubmissionInfo() {
+      if (existingSubmissionId) {
+        submissionInfoBox.innerHTML = `
+          <div><span class="font-semibold text-slate-800">Submission ID:</span> ${existingSubmissionId}</div>
+          <div><span class="font-semibold text-slate-800">Status:</span> ${existingSubmissionData?.status || "-"}</div>
+        `;
+      } else {
+        submissionInfoBox.textContent = "No submission created yet.";
+      }
+    }
+
     function getFormData() {
       const fd = new FormData(solarForm);
-
       return {
         claimType: claimType.value || "solar",
         client: {
@@ -344,6 +377,26 @@
       };
     }
 
+    function fillFormFromSubmission(submission) {
+      const client = submission.client || {};
+      const product1 = submission.product1 || {};
+      const product2 = submission.product2 || {};
+
+      claimType.value = submission.claimType || "solar";
+
+      setInputValue("firstName", client.firstName);
+      setInputValue("secondName", client.secondName);
+      setInputValue("firstName2", client.firstName2);
+      setInputValue("secondName2", client.secondName2);
+      setInputValue("landline", client.landline);
+      setInputValue("mobile", client.mobile);
+      setInputValue("email", client.email);
+      setInputValue("address", client.address);
+
+      Object.entries(product1).forEach(([key, value]) => setInputValue(`product1_${key}`, value));
+      Object.entries(product2).forEach(([key, value]) => setInputValue(`product2_${key}`, value));
+    }
+
     async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -364,38 +417,61 @@
 
       currentUser = user;
       currentUserData = userData;
-
-      staffStatus.textContent = `Logged in as ${userData.role} | UID: ${user.uid}`;
+      staffStatus.textContent = `Logged in as ${userData.role}`;
       staffEmail.textContent = user.email || "";
       logoutBtn.classList.remove("hidden");
-
       return true;
     }
 
-    async function loadLeadForPrefill() {
+    async function loadExistingSubmissionForLead() {
       if (!leadId) return;
+
+      const q = query(collection(db, "claimSubmissions"), where("sourceLeadId", "==", leadId));
+      const snap = await getDocs(q);
+
+      if (snap.empty) return;
+
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      docs.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+        return bTime - aTime;
+      });
+
+      existingSubmissionData = docs[0];
+      existingSubmissionId = docs[0].id;
+      fillFormFromSubmission(existingSubmissionData);
+      setSubmissionInfo();
+    }
+
+    async function loadLeadForPrefill() {
+      if (!leadId) {
+        setSubmissionInfo();
+        return;
+      }
 
       const leadRef = doc(db, "leadAssignments", leadId);
       const leadSnap = await getDoc(leadRef);
 
       if (!leadSnap.exists()) {
         alert("Linked lead not found.");
+        setSubmissionInfo();
         return;
       }
 
-      currentLeadData = leadSnap.data();
+      currentLeadData = { id: leadSnap.id, ...leadSnap.data() };
 
-      setInputValue("firstName", currentLeadData.forename || "");
-      setInputValue("secondName", currentLeadData.surname || "");
-      setInputValue("mobile", currentLeadData.telephone || "");
-      setInputValue("address", buildAddressFromLead(currentLeadData));
-      setInputValue("product1_product", currentLeadData.hasSolar === "Y" ? "Solar Panel System" : "");
+      await loadExistingSubmissionForLead();
 
-      if (currentLeadData.campaign) {
-        claimType.value = currentLeadData.campaign;
-      } else {
-        claimType.value = "solar";
+      if (!existingSubmissionId) {
+        setInputValue("firstName", currentLeadData.forename || "");
+        setInputValue("secondName", currentLeadData.surname || "");
+        setInputValue("mobile", currentLeadData.telephone || "");
+        setInputValue("address", buildAddressFromLead(currentLeadData));
+        setInputValue("product1_product", currentLeadData.hasSolar === "Y" ? "Solar Panel System" : "");
       }
+
+      claimType.value = currentLeadData.campaign || "solar";
 
       leadNotice.classList.remove("hidden");
       leadNoticeText.textContent = `Lead ${leadId} loaded and prefilled for ${currentLeadData.forename || ""} ${currentLeadData.surname || ""}.`;
@@ -411,6 +487,8 @@
           at: new Date().toISOString()
         })
       });
+
+      setSubmissionInfo();
     }
 
     async function saveIntake(status = "draft") {
@@ -427,7 +505,6 @@
         product1: formData.product1,
         product2: formData.product2,
         status,
-        createdAt: serverTimestamp(),
         submittedBy: {
           uid: currentUser.uid,
           email: currentUser.email || "",
@@ -435,17 +512,33 @@
           role: currentUserData.role || ""
         },
         sourceLeadId: leadId || "",
-        sourceCampaign: currentLeadData?.campaign || ""
+        sourceCampaign: currentLeadData?.campaign || "",
+        updatedAt: serverTimestamp()
       };
 
       try {
-        const ref = await addDoc(collection(db, "claimSubmissions"), payload);
+        if (existingSubmissionId) {
+          await updateDoc(doc(db, "claimSubmissions", existingSubmissionId), payload);
+        } else {
+          const ref = await addDoc(collection(db, "claimSubmissions"), {
+            ...payload,
+            createdAt: serverTimestamp()
+          });
+          existingSubmissionId = ref.id;
+        }
+
+        existingSubmissionData = { ...(existingSubmissionData || {}), ...payload, id: existingSubmissionId };
+        setSubmissionInfo();
 
         if (leadId) {
           await updateDoc(doc(db, "leadAssignments", leadId), {
-            convertedToSubmissionId: ref.id,
+            convertedToSubmissionId: existingSubmissionId,
+            submissionId: existingSubmissionId,
+            claimSubmissionId: existingSubmissionId,
+            intakeSubmissionId: existingSubmissionId,
             convertedToIntake: true,
-            leadStatus: status === "submitted" ? "converted" : "intake_draft_saved",
+            leadStatus: status === "submitted" ? "awaiting_manager" : "intake_in_progress",
+            sentToManagerAt: status === "submitted" ? serverTimestamp() : (currentLeadData?.sentToManagerAt || null),
             lastAction: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
             lastUpdatedAt: serverTimestamp(),
             actionHistory: arrayUnion({
@@ -453,7 +546,7 @@
               byUid: currentUser.uid,
               byName: currentUserData.name || "",
               at: new Date().toISOString(),
-              submissionId: ref.id
+              submissionId: existingSubmissionId
             })
           });
         }
@@ -461,8 +554,8 @@
         showMessage(status === "draft" ? "Draft saved successfully." : "Intake submitted successfully.");
 
         if (status === "submitted") {
-          solarForm.reset();
-          claimType.value = "solar";
+          existingSubmissionData.status = "submitted";
+          setSubmissionInfo();
         }
       } catch (error) {
         console.error("Submit failed:", error);

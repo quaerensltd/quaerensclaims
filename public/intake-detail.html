@@ -13,13 +13,65 @@
     .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
     .label { display: block; font-size: 0.95rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.4rem; }
     .value { font-size: 0.95rem; color: #1f2937; line-height: 1.6; word-break: break-word; }
-    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; background: white; }
     .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
     .hidden { display: none; }
+    .readonly-box {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      color: #1f2937;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -30,15 +82,18 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Intake Detail</h1>
           <p class="text-sm text-slate-500">Secure submission review and assessment workflow</p>
         </div>
-        <div class="flex items-center gap-3">
-          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Back to Panel</a>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -51,10 +106,11 @@
             <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Submission Detail</h2>
             <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
           </div>
-          <div class="text-sm text-slate-500">
+          <div class="text-sm text-slate-500 space-y-1">
             <div id="submittedByText"></div>
             <div id="submittedAtText"></div>
-            <div id="linkedLeadText"></div>
+            <div id="submissionStatusText"></div>
+            <div id="assessmentStatusText"></div>
           </div>
         </div>
       </section>
@@ -88,40 +144,30 @@
             </div>
 
             <div>
-              <label class="label" for="assessmentOutcome">Assessment Outcome</label>
-              <select id="assessmentOutcome" class="input">
-                <option value="">Select outcome</option>
-                <option value="strong_case">Strong Case</option>
-                <option value="possible_case">Possible Case</option>
-                <option value="needs_documents">Needs More Documents</option>
-                <option value="not_viable">Not Viable</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="label" for="recommendedCloser">Recommended Closer</label>
-              <input id="recommendedCloser" class="input" type="text" placeholder="Optional recommendation" />
-            </div>
-
-            <div>
               <label class="label" for="managerNotes">Manager Notes</label>
               <textarea id="managerNotes" class="input" rows="6" placeholder="Internal review notes, observations, missing documents, next actions..."></textarea>
             </div>
 
             <div>
-              <label class="label" for="assessmentSummary">Manager Assessment Report</label>
-              <textarea id="assessmentSummary" class="input" rows="18" placeholder="Structured manager assessment report will auto-generate from intake data."></textarea>
+              <label class="label" for="assessmentSummary">Assessment Summary</label>
+              <textarea id="assessmentSummary" class="input" rows="10" placeholder="This auto-builds from the intake data, but you can edit it before saving."></textarea>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-3">
-              <button id="generateAssessmentBtn" class="btn btn-secondary" type="button">Generate Assessment Report</button>
+            <div class="flex flex-col md:flex-row gap-3 flex-wrap">
+              <button id="autoBuildBtn" class="btn btn-secondary" type="button">Auto Build Summary</button>
               <button id="saveReviewBtn" class="btn btn-primary" type="button">Save Review</button>
-              <button id="createAssessmentBtn" class="btn btn-secondary" type="button">Create / Open Assessment</button>
+              <button id="createAssessmentBtn" class="btn btn-secondary" type="button">Create / Update Assessment Record</button>
+              <a id="viewAssessmentBtn" href="#" class="btn btn-secondary hidden">View Assessment</a>
             </div>
 
             <p id="saveMessage" class="text-sm text-green-700 hidden"></p>
           </div>
         </div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Auto Summary Preview</h3>
+        <div id="autoSummaryPreview" class="readonly-box">No summary built yet.</div>
       </section>
 
       <section class="card p-6">
@@ -132,6 +178,11 @@
       <section class="card p-6">
         <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
         <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Generated Assessment Text</h3>
+        <div id="generatedAssessmentText" class="readonly-box">No generated assessment saved yet.</div>
       </section>
     </main>
   </div>
@@ -147,12 +198,13 @@
       getFirestore,
       doc,
       getDoc,
-      getDocs,
       updateDoc,
       addDoc,
+      setDoc,
       collection,
       query,
       where,
+      getDocs,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -169,14 +221,15 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const statusSelect = document.getElementById("statusSelect");
-    const assessmentOutcome = document.getElementById("assessmentOutcome");
-    const recommendedCloser = document.getElementById("recommendedCloser");
     const managerNotes = document.getElementById("managerNotes");
     const assessmentSummary = document.getElementById("assessmentSummary");
     const saveReviewBtn = document.getElementById("saveReviewBtn");
-    const generateAssessmentBtn = document.getElementById("generateAssessmentBtn");
     const createAssessmentBtn = document.getElementById("createAssessmentBtn");
+    const autoBuildBtn = document.getElementById("autoBuildBtn");
     const saveMessage = document.getElementById("saveMessage");
+    const autoSummaryPreview = document.getElementById("autoSummaryPreview");
+    const generatedAssessmentText = document.getElementById("generatedAssessmentText");
+    const viewAssessmentBtn = document.getElementById("viewAssessmentBtn");
 
     const params = new URLSearchParams(window.location.search);
     const submissionId = params.get("id");
@@ -184,15 +237,22 @@
     let currentUser = null;
     let currentUserData = null;
     let submissionData = null;
-    let linkedLead = null;
+    let existingAssessmentId = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
     }
 
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
     function formatDate(timestamp) {
-      if (!timestamp) return "-";
       try {
+        if (!timestamp) return "-";
         const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         return d.toLocaleString("en-GB");
       } catch {
@@ -232,185 +292,81 @@
       entries.forEach(([key, value]) => {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = `
-          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
-          <div class="value">${value || "-"}</div>
+          <span class="label">${key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase())}</span>
+          <div class="value">${String(value)}</div>
         `;
         container.appendChild(wrapper);
       });
     }
 
-    function clientFullName(client) {
-      return `${client?.firstName || ""} ${client?.secondName || ""}`.trim() || "Client";
-    }
-
-    function formatBooleanish(value) {
-      if (value === true) return "Yes";
-      if (value === false) return "No";
-      if (value === null || value === undefined || String(value).trim() === "") return "Not confirmed";
-      return String(value);
-    }
-
-    function formatProductData(product, label) {
-      const entries = Object.entries(product || {}).filter(([_, value]) => {
+    function summariseObject(title, data) {
+      const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
 
-      if (!entries.length) return `${label}: No product details supplied.`;
+      if (!entries.length) return "";
 
       const lines = entries.map(([key, value]) => {
-        const prettyKey = key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
-        return `- ${prettyKey}: ${value}`;
+        const label = key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
+        return `- ${label}: ${value}`;
       });
 
-      return `${label}\n${lines.join("\n")}`;
+      return `${title}:\n${lines.join("\n")}`;
     }
 
-    function buildStructuredAssessmentReport(data) {
+    function buildAssessmentSummaryFromSubmission(data) {
+      if (!data) return "";
+
       const client = data.client || {};
       const product1 = data.product1 || {};
       const product2 = data.product2 || {};
-      const claimType = formatClaimType(data.claimType);
-      const fullName = clientFullName(client);
-      const address = client.address || "-";
 
-      const product1Text = formatProductData(product1, "Product One");
-      const product2Text = formatProductData(product2, "Product Two");
+      const headerName = [
+        client.firstName || "",
+        client.secondName || ""
+      ].join(" ").trim();
 
-      const keyIssues = [];
-      const strategyPoints = [];
-      const missingItems = [];
+      const extraName = [
+        client.firstName2 || "",
+        client.secondName2 || ""
+      ].join(" ").trim();
 
-      const combinedProducts = [product1, product2].filter(p => Object.keys(p || {}).length);
+      const contactLines = [];
+      if (client.landline) contactLines.push(client.landline);
+      if (client.mobile) contactLines.push(client.mobile);
+      if (client.email) contactLines.push(client.email);
 
-      combinedProducts.forEach((product, index) => {
-        const label = index === 0 ? "Product one" : "Product two";
+      const sections = [];
 
-        if (formatBooleanish(product.soldAsInvestment).toLowerCase() === "yes") {
-          keyIssues.push(`${label} appears to have been sold as an investment-style proposition.`);
-        }
-
-        if (formatBooleanish(product.soldAsWayToDecreaseBills).toLowerCase() === "yes") {
-          keyIssues.push(`${label} was represented as a route to reducing household bills.`);
-        }
-
-        if (formatBooleanish(product.receivingReturns).toLowerCase() === "yes") {
-          keyIssues.push(`${label} includes an expectation of returns which should be checked against actual performance.`);
-        }
-
-        if (formatBooleanish(product.additionalCosts).toLowerCase() === "yes") {
-          keyIssues.push(`${label} appears to have involved additional costs beyond the initial presentation.`);
-        }
-
-        if (formatBooleanish(product.mcsCertificate).toLowerCase() !== "yes") {
-          missingItems.push(`${label} MCS documentation should be confirmed.`);
-        }
-
-        if (formatBooleanish(product.docs).toLowerCase() !== "yes") {
-          missingItems.push(`${label} supporting documents should be obtained.`);
-        }
-
-        if (formatBooleanish(product.finance).toLowerCase() === "yes") {
-          strategyPoints.push(`${label} may provide an additional finance-related complaint route if lending paperwork exists.`);
-        }
-
-        if ((product.companyStatus || "").toLowerCase().includes("dissolved") || (product.companyStatus || "").toLowerCase().includes("strikeoff")) {
-          strategyPoints.push(`${label} supplier appears inactive or insolvent, so alternative recovery routes should be considered.`);
-        }
-      });
-
-      if (!keyIssues.length) {
-        keyIssues.push("Initial review indicates a potentially arguable claim, but a fuller document check is still needed.");
+      sections.push(`Assessment report for:\n${headerName || "-"}`);
+      if (extraName) {
+        sections[0] += `\nAdditional name on file: ${extraName}`;
       }
 
-      if (!strategyPoints.length) {
-        strategyPoints.push("Review supplier representations, performance evidence, supporting paperwork, and any finance or third-party involvement.");
+      if (contactLines.length) {
+        sections.push(contactLines.join("\n"));
       }
 
-      if (!missingItems.length) {
-        missingItems.push("Obtain full contract pack, payment proof, and any supporting correspondence where not already held.");
+      if (client.address) {
+        sections.push(client.address);
       }
 
-      const report = `QUAERENS MANAGER ASSESSMENT REPORT
-
-Client Name:
-${fullName}
-
-Claim Type:
-${claimType}
-
-Contact Details:
-Telephone: ${client.mobile || client.landline || "-"}
-Email: ${client.email || "-"}
-Address: ${address}
-
-1. CASE SUMMARY
-This intake concerns ${fullName} in relation to a potential ${claimType} matter. The information currently supplied suggests that representations were made at point of sale which may now require closer examination against the client’s actual experience, documentation held, and any financial loss or detriment suffered.
-
-2. CLIENT AND PRODUCT OVERVIEW
-${product1Text}
-
-${product2Text}
-
-3. KEY COMPLAINT INDICATORS
-${keyIssues.map(item => `- ${item}`).join("\n")}
-
-4. INITIAL CASE VIEW
-On the information currently available, this matter appears suitable for manager review and structured qualification. The case may be strengthened by contract documents, invoices, proof of payment, projections, technical certificates, correspondence, and any evidence of underperformance or additional loss.
-
-5. STRATEGIC REVIEW POINTS
-${strategyPoints.map(item => `- ${item}`).join("\n")}
-
-6. DOCUMENTS / EVIDENCE TO CONFIRM
-${missingItems.map(item => `- ${item}`).join("\n")}
-
-7. RECOMMENDED NEXT STEP
-Recommended next step is to complete manager review, confirm the commercial position, and determine whether the file should proceed to closer for client discussion and onboarding.
-
-8. MANAGER NOTES
-${(data.managerNotes || "").trim() || "No manager notes entered yet."}
-`;
-
-      return report.trim();
-    }
-
-    async function findLinkedLead() {
-      linkedLead = null;
-
-      const possibleQueries = [
-        query(collection(db, "leadAssignments"), where("convertedToSubmissionId", "==", submissionId)),
-        query(collection(db, "leadAssignments"), where("submissionId", "==", submissionId)),
-        query(collection(db, "leadAssignments"), where("claimSubmissionId", "==", submissionId)),
-        query(collection(db, "leadAssignments"), where("intakeSubmissionId", "==", submissionId))
-      ];
-
-      for (const q of possibleQueries) {
-        try {
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            linkedLead = { id: snap.docs[0].id, ...snap.docs[0].data() };
-            return linkedLead;
-          }
-        } catch (error) {
-          console.error("Linked lead lookup failed:", error);
-        }
+      if (data.claimType) {
+        sections.push(`Claim Type:\n${formatClaimType(data.claimType)}`);
       }
 
-      return null;
-    }
+      const p1 = summariseObject("Product One", product1);
+      if (p1) sections.push(p1);
 
-    async function findExistingAssessment() {
-      const q = query(collection(db, "managerAssessments"), where("submissionId", "==", submissionId));
-      const snap = await getDocs(q);
-      if (snap.empty) return null;
+      const p2 = summariseObject("Product Two", product2);
+      if (p2) sections.push(p2);
 
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      docs.sort((a, b) => {
-        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-        return bTime - aTime;
-      });
+      const managerBlock = (data.managerNotes || "").trim();
+      if (managerBlock) {
+        sections.push(`Existing Manager Notes:\n${managerBlock}`);
+      }
 
-      return docs[0];
+      return sections.filter(Boolean).join("\n\n").trim();
     }
 
     async function checkAccess(user) {
@@ -438,6 +394,51 @@ ${(data.managerNotes || "").trim() || "No manager notes entered yet."}
       return true;
     }
 
+    async function findExistingAssessment() {
+      const q = query(collection(db, "managerAssessments"), where("submissionId", "==", submissionId));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        existingAssessmentId = submissionData?.assessmentId || null;
+        return;
+      }
+
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      docs.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+        return bTime - aTime;
+      });
+
+      existingAssessmentId = docs[0]?.id || submissionData?.assessmentId || null;
+    }
+
+    function refreshAssessmentLink() {
+      if (existingAssessmentId) {
+        viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${existingAssessmentId}`;
+        viewAssessmentBtn.classList.remove("hidden");
+      } else {
+        viewAssessmentBtn.href = "#";
+        viewAssessmentBtn.classList.add("hidden");
+      }
+    }
+
+    function updateStatusSummary() {
+      document.getElementById("submissionStatusText").innerHTML = `Submission Status: <span class="badge badge-blue">${statusSelect.value || submissionData?.status || "-"}</span>`;
+      document.getElementById("assessmentStatusText").innerHTML = existingAssessmentId
+        ? `Assessment Record: <span class="badge badge-green">Created</span>`
+        : `Assessment Record: <span class="badge badge-amber">Not Created</span>`;
+    }
+
+    function updateAutoPreview() {
+      const built = buildAssessmentSummaryFromSubmission({
+        ...submissionData,
+        managerNotes: managerNotes.value
+      });
+      autoSummaryPreview.textContent = built || "No summary built yet.";
+      return built;
+    }
+
     async function loadSubmission() {
       if (!submissionId) {
         alert("Missing submission ID.");
@@ -456,14 +457,12 @@ ${(data.managerNotes || "").trim() || "No manager notes entered yet."}
 
       submissionData = { id: submissionSnap.id, ...submissionSnap.data() };
 
-      await findLinkedLead();
-      const existingAssessment = await findExistingAssessment();
+      await findExistingAssessment();
 
       document.getElementById("detailTitle").textContent = formatClaimType(submissionData.claimType);
       document.getElementById("detailSubtitle").textContent = `Submission ID: ${submissionId}`;
       document.getElementById("submittedByText").textContent = `Submitted by: ${submissionData.submittedBy?.name || submissionData.submittedBy?.email || "-"}`;
       document.getElementById("submittedAtText").textContent = `Received: ${formatDate(submissionData.createdAt)}`;
-      document.getElementById("linkedLeadText").textContent = `Linked lead: ${linkedLead?.id || "-"}`;
 
       setValue("client_firstName", submissionData.client?.firstName);
       setValue("client_secondName", submissionData.client?.secondName);
@@ -475,64 +474,150 @@ ${(data.managerNotes || "").trim() || "No manager notes entered yet."}
       setValue("client_address", submissionData.client?.address);
 
       statusSelect.value = submissionData.status || "submitted";
-      managerNotes.value = submissionData.managerNotes || existingAssessment?.managerNotes || "";
-      assessmentOutcome.value = submissionData.assessmentOutcome || existingAssessment?.assessmentOutcome || "";
-      recommendedCloser.value = submissionData.recommendedCloser || existingAssessment?.recommendedCloser || "";
+      managerNotes.value = submissionData.managerNotes || "";
 
-      const autoReport = buildStructuredAssessmentReport({
-        ...submissionData,
-        managerNotes: managerNotes.value
-      });
-
+      const builtSummary = buildAssessmentSummaryFromSubmission(submissionData);
       assessmentSummary.value =
+        submissionData.assessmentSummary ||
+        submissionData.generatedAssessmentText ||
+        builtSummary ||
+        "";
+
+      autoSummaryPreview.textContent = builtSummary || "No summary built yet.";
+      generatedAssessmentText.textContent =
         submissionData.generatedAssessmentText ||
         submissionData.assessmentSummary ||
-        existingAssessment?.generatedAssessmentText ||
-        existingAssessment?.assessmentSummary ||
-        autoReport;
+        "No generated assessment saved yet.";
 
       renderFieldGrid("product1Fields", submissionData.product1);
       renderFieldGrid("product2Fields", submissionData.product2);
 
+      refreshAssessmentLink();
+      updateStatusSummary();
       hideLoader();
     }
 
-    generateAssessmentBtn.addEventListener("click", () => {
-      try {
-        const report = buildStructuredAssessmentReport({
-          ...submissionData,
-          managerNotes: managerNotes.value
-        });
-        assessmentSummary.value = report;
-        saveMessage.textContent = "Assessment report generated.";
-        saveMessage.classList.remove("hidden");
-        setTimeout(() => saveMessage.classList.add("hidden"), 2500);
-      } catch (error) {
-        console.error("Failed generating assessment:", error);
-        alert("Could not generate assessment report.");
-      }
-    });
+    async function saveReview() {
+      const builtSummary = updateAutoPreview();
+      const finalSummary = (assessmentSummary.value || "").trim() || builtSummary || "";
 
-    saveReviewBtn.addEventListener("click", async () => {
-      try {
-        await updateDoc(doc(db, "claimSubmissions", submissionId), {
-          status: statusSelect.value,
-          managerNotes: managerNotes.value,
-          assessmentSummary: assessmentSummary.value,
-          generatedAssessmentText: assessmentSummary.value,
-          assessmentOutcome: assessmentOutcome.value,
-          recommendedCloser: recommendedCloser.value.trim(),
-          reviewedAt: serverTimestamp(),
-          reviewedBy: {
+      await updateDoc(doc(db, "claimSubmissions", submissionId), {
+        status: statusSelect.value,
+        managerNotes: managerNotes.value.trim(),
+        assessmentSummary: finalSummary,
+        generatedAssessmentText: finalSummary,
+        reviewedAt: serverTimestamp(),
+        reviewedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      });
+
+      if (submissionData) {
+        submissionData.status = statusSelect.value;
+        submissionData.managerNotes = managerNotes.value.trim();
+        submissionData.assessmentSummary = finalSummary;
+        submissionData.generatedAssessmentText = finalSummary;
+      }
+
+      generatedAssessmentText.textContent = finalSummary || "No generated assessment saved yet.";
+    }
+
+    async function createOrUpdateAssessmentRecord() {
+      const builtSummary = updateAutoPreview();
+      const finalSummary = (assessmentSummary.value || "").trim() || builtSummary || "";
+
+      if (!finalSummary) {
+        throw new Error("No intake assessment summary was found for this client.");
+      }
+
+      const payload = {
+        submissionId,
+        claimType: submissionData.claimType || "",
+        client: submissionData.client || {},
+        submittedBy: submissionData.submittedBy || {},
+        managerNotes: managerNotes.value.trim(),
+        assessmentSummary: finalSummary,
+        generatedAssessmentText: finalSummary,
+        status: "assessment_complete",
+        product1: submissionData.product1 || {},
+        product2: submissionData.product2 || {},
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      };
+
+      if (existingAssessmentId) {
+        await setDoc(doc(db, "managerAssessments", existingAssessmentId), payload, { merge: true });
+      } else {
+        const assessmentRef = await addDoc(collection(db, "managerAssessments"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: {
             uid: currentUser.uid,
             email: currentUser.email || "",
             name: currentUserData.name || ""
           }
         });
+        existingAssessmentId = assessmentRef.id;
+      }
 
+      await updateDoc(doc(db, "claimSubmissions", submissionId), {
+        status: "assessment_complete",
+        managerNotes: managerNotes.value.trim(),
+        assessmentSummary: finalSummary,
+        generatedAssessmentText: finalSummary,
+        assessmentId: existingAssessmentId,
+        assessmentCreatedAt: serverTimestamp(),
+        assessmentCreatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        },
+        reviewedAt: serverTimestamp(),
+        reviewedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      });
+
+      if (submissionData) {
+        submissionData.status = "assessment_complete";
+        submissionData.assessmentSummary = finalSummary;
+        submissionData.generatedAssessmentText = finalSummary;
+        submissionData.assessmentId = existingAssessmentId;
+        submissionData.managerNotes = managerNotes.value.trim();
+      }
+
+      statusSelect.value = "assessment_complete";
+      generatedAssessmentText.textContent = finalSummary;
+      refreshAssessmentLink();
+      updateStatusSummary();
+    }
+
+    autoBuildBtn.addEventListener("click", () => {
+      const built = updateAutoPreview();
+      if (built) {
+        assessmentSummary.value = built;
+        showToast("Assessment summary built from intake data.");
+      } else {
+        showToast("No intake data found to build summary.");
+      }
+    });
+
+    saveReviewBtn.addEventListener("click", async () => {
+      try {
+        await saveReview();
         saveMessage.textContent = "Review saved successfully.";
         saveMessage.classList.remove("hidden");
         setTimeout(() => saveMessage.classList.add("hidden"), 3000);
+        updateStatusSummary();
+        showToast("Review saved successfully.");
       } catch (error) {
         console.error("Failed to save review:", error);
         alert("Could not save review.");
@@ -541,107 +626,19 @@ ${(data.managerNotes || "").trim() || "No manager notes entered yet."}
 
     createAssessmentBtn.addEventListener("click", async () => {
       try {
-        let reportText = assessmentSummary.value.trim();
-
-        if (!reportText) {
-          reportText = buildStructuredAssessmentReport({
-            ...submissionData,
-            managerNotes: managerNotes.value
-          });
-          assessmentSummary.value = reportText;
-        }
-
-        const basePayload = {
-          submissionId,
-          leadId: linkedLead?.id || "",
-          claimType: submissionData.claimType || "",
-          client: {
-            title: "",
-            forename: submissionData.client?.firstName || "",
-            surname: submissionData.client?.secondName || "",
-            telephone: submissionData.client?.mobile || submissionData.client?.landline || "",
-            email: submissionData.client?.email || "",
-            postcode: linkedLead?.postcode || "",
-            address: submissionData.client?.address || ""
-          },
-          submittedBy: submissionData.submittedBy || {},
-          managerNotes: managerNotes.value,
-          assessmentSummary: reportText,
-          generatedAssessmentText: reportText,
-          assessmentOutcome: assessmentOutcome.value || "",
-          recommendedCloser: recommendedCloser.value.trim(),
-          status: statusSelect.value,
-          product1: submissionData.product1 || {},
-          product2: submissionData.product2 || {},
-          updatedAt: serverTimestamp(),
-          updatedBy: {
-            uid: currentUser.uid,
-            email: currentUser.email || "",
-            name: currentUserData.name || ""
-          }
-        };
-
-        const existingAssessment = await findExistingAssessment();
-        let assessmentId = "";
-
-        if (existingAssessment) {
-          assessmentId = existingAssessment.id;
-          await updateDoc(doc(db, "managerAssessments", assessmentId), basePayload);
-        } else {
-          const assessmentRef = await addDoc(collection(db, "managerAssessments"), {
-            ...basePayload,
-            createdAt: serverTimestamp(),
-            createdBy: {
-              uid: currentUser.uid,
-              email: currentUser.email || "",
-              name: currentUserData.name || ""
-            }
-          });
-          assessmentId = assessmentRef.id;
-        }
-
-        await updateDoc(doc(db, "claimSubmissions", submissionId), {
-          status: "assessment_complete",
-          managerNotes: managerNotes.value,
-          assessmentSummary: reportText,
-          generatedAssessmentText: reportText,
-          assessmentOutcome: assessmentOutcome.value || "",
-          recommendedCloser: recommendedCloser.value.trim(),
-          assessmentId,
-          assessmentCreatedAt: serverTimestamp(),
-          assessmentCreatedBy: {
-            uid: currentUser.uid,
-            email: currentUser.email || "",
-            name: currentUserData.name || ""
-          }
-        });
-
-        if (linkedLead?.id) {
-          await updateDoc(doc(db, "leadAssignments", linkedLead.id), {
-            leadStatus: "qualified",
-            assessmentId,
-            assessmentOutcome: assessmentOutcome.value || "",
-            recommendedCloser: recommendedCloser.value.trim(),
-            assessmentSummary: reportText,
-            generatedAssessmentText: reportText,
-            managerNotes: managerNotes.value,
-            lastAction: "assessment_report_created",
-            lastUpdatedAt: serverTimestamp(),
-            actionHistory: [{
-              action: "assessment_report_created",
-              byUid: currentUser.uid,
-              byName: currentUserData.name || "",
-              at: new Date().toISOString(),
-              notes: "Assessment report created from intake detail."
-            }]
-          });
-        }
-
-        window.location.href = `/manager-assessment-detail.html?id=${assessmentId}`;
+        await createOrUpdateAssessmentRecord();
+        saveMessage.textContent = "Assessment record created successfully.";
+        saveMessage.classList.remove("hidden");
+        setTimeout(() => saveMessage.classList.add("hidden"), 3000);
+        showToast("Assessment record created successfully.");
       } catch (error) {
         console.error("Failed to create assessment:", error);
-        alert("Could not create assessment record.");
+        alert(error.message || "Could not create assessment record.");
       }
+    });
+
+    managerNotes.addEventListener("input", () => {
+      updateAutoPreview();
     });
 
     onAuthStateChanged(auth, async (user) => {
