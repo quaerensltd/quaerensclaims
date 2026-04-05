@@ -107,7 +107,6 @@
       <p class="text-slate-600 font-medium">Loading weekly attendance...</p>
     </div>
   </div>
-
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
@@ -126,7 +125,6 @@
         </div>
       </div>
     </header>
-
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
@@ -196,7 +194,6 @@
             <a href="/processing-daily-attendance.html" class="btn btn-primary text-center">Open Daily Attendance</a>
           </div>
         </section>
-
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Week Snapshot</h2>
           <div class="space-y-4 text-sm">
@@ -375,7 +372,9 @@
     }
 
     function getWeekDates(startDateStr) {
+      if (!startDateStr) return [];
       const start = new Date(`${startDateStr}T00:00:00`);
+      if (Number.isNaN(start.getTime())) return [];
       const dates = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(start);
@@ -437,14 +436,12 @@
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
       if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
@@ -453,7 +450,6 @@
     async function loadBaseData(showRefreshStamp = true) {
       if (refreshInProgress) return;
       refreshInProgress = true;
-
       try {
         const [usersSnap, attendanceSnap, processingSnap] = await Promise.all([
           getDocs(collection(db, "users")),
@@ -482,7 +478,6 @@
     function populateStaffFilter() {
       const currentValue = staffFilter.value || "all";
       staffFilter.innerHTML = `<option value="all">All staff</option>`;
-
       [...staffUsers]
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
         .forEach(user => {
@@ -515,6 +510,7 @@
 
     function renderStats() {
       const filteredStaff = getFilteredStaff();
+
       let recordCount = 0;
       let presentDays = 0;
       let lateDays = 0;
@@ -549,14 +545,12 @@
       document.getElementById("missingDaysStat").textContent = String(missingDays);
       document.getElementById("myFilesStat").textContent = String(myFiles);
       document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
-
       document.getElementById("snapshotStaff").textContent = String(filteredStaff.length);
       document.getElementById("snapshotPresent").textContent = String(presentDays);
       document.getElementById("snapshotLate").textContent = String(lateDays);
       document.getElementById("snapshotAbsent").textContent = String(absentDays);
       document.getElementById("snapshotMyFiles").textContent = String(myFiles);
       document.getElementById("snapshotUnassigned").textContent = String(unassignedFiles);
-
       document.getElementById("onlineNowStat").textContent = String(
         filteredStaff.filter(user => {
           const todayRecord = getAttendanceFor(user.id, toIsoDate(new Date()));
@@ -568,6 +562,7 @@
 
     function renderWeeklySummary() {
       const filteredStaff = getFilteredStaff();
+
       weeklySummaryHead.innerHTML = "";
       weeklySummaryBody.innerHTML = "";
 
@@ -637,8 +632,8 @@
     function renderDailyView() {
       const filteredStaff = getFilteredStaff();
       dailyAttendanceBody.innerHTML = "";
-      const rows = [];
 
+      const rows = [];
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
@@ -730,7 +725,9 @@
           const rec = getAttendanceFor(user.id, dateStr);
           const workedMs = getWorkedMs(rec);
           const dayStatus = getDayStatus(rec, dateStr);
-          const liveStatus = rec && rec.isOnline && !isStaleOnline(rec) ? "Online" : (rec ? "Offline" : "No Record");
+          const liveStatus = rec && rec.isOnline && !isStaleOnline(rec)
+            ? "Online"
+            : (rec ? "Offline" : "No Record");
 
           rows.push([
             weekStartInput.value,
@@ -789,7 +786,7 @@
         startAutoRefresh();
         hideLoader();
       } catch (error) {
-        console.error(error);
+        console.error("Weekly attendance load error:", error);
         alert("Could not load weekly attendance.");
         window.location.href = "/login.html";
       }
