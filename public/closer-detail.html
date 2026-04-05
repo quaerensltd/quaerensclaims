@@ -307,6 +307,19 @@
       setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
+    function safeString(value) {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safeString(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
     function formatClaimType(type) {
       switch (type) {
         case "solar": return "Solar Panel Claims";
@@ -444,8 +457,17 @@
       }
 
       assignmentData = { id: assignmentSnap.id, ...assignmentSnap.data() };
+      console.log("Loaded closer assignment:", assignmentData);
 
-      if (assignmentData.closer?.uid !== currentUser.uid) {
+      const assignedCloserUid = firstNonEmpty(
+        assignmentData.closer?.uid,
+        assignmentData.closerUid,
+        assignmentData.assignedCloserUid,
+        assignmentData.assignedToUid,
+        assignmentData.userUid
+      );
+
+      if (assignedCloserUid && assignedCloserUid !== currentUser.uid) {
         alert("This file is not assigned to you.");
         window.location.href = "/closer-panel.html";
         return;
@@ -649,7 +671,6 @@
         if (outcomeSelect.value === "Closed Deal") {
           await createOrUpdateProcessingFile();
           await createOrUpdateProcessingCase();
-
           saveMessage.textContent = "Closer progress saved, processing file updated, and case file created.";
         } else {
           saveMessage.textContent = "Closer progress saved successfully.";
