@@ -95,7 +95,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Daily Attendance</h1>
-          <p class="text-sm text-slate-500">Daily staff attendance, hours, and live status</p>
+          <p class="text-sm text-slate-500">Daily staff attendance, hours, live status, and processing queue snapshot</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -136,12 +136,12 @@
           <div id="absentStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Callbacks Pending</div>
-          <div id="callbacksPendingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">My Files</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Intro Emails Pending</div>
-          <div id="introPendingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Unassigned Files</div>
+          <div id="unassignedFilesStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
       </section>
 
@@ -150,7 +150,9 @@
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
             <a href="/processing-dashboard.html" class="btn btn-primary text-center">Back to Dashboard</a>
-            <a href="/processing-weekly-attendance.html" class="btn btn-primary text-center">Open Weekly Attendance</a>
+            <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Panel</a>
+            <a href="/processing-payments.html" class="btn btn-secondary text-center">Open Payments</a>
+            <a href="/processing-weekly-attendance.html" class="btn btn-secondary text-center">Open Weekly Attendance</a>
           </div>
         </section>
 
@@ -174,12 +176,12 @@
               <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Callbacks pending</span>
-              <span id="snapshotCallbacks" class="font-extrabold text-amber-600">0</span>
+              <span class="text-slate-600">My assigned processing files</span>
+              <span id="snapshotMyFiles" class="font-extrabold text-indigo-600">0</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-600">Intro emails pending</span>
-              <span id="snapshotIntro" class="font-extrabold text-violet-600">0</span>
+              <span class="text-slate-600">Unassigned processing files</span>
+              <span id="snapshotUnassigned" class="font-extrabold text-violet-600">0</span>
             </div>
           </div>
         </section>
@@ -224,6 +226,7 @@
             <p class="text-sm text-slate-500 mt-1">Current workload from assigned staff leads</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -279,9 +282,11 @@
     const LATE_CUTOFF_HOUR = 10;
     const LATE_CUTOFF_MINUTE = 0;
 
+    let currentUser = null;
     let attendanceDocs = [];
     let leadAssignments = [];
     let userDocs = [];
+    let processingFiles = [];
     let autoRefreshInterval = null;
     let refreshInProgress = false;
 
@@ -385,6 +390,7 @@
         return false;
       }
 
+      currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -394,10 +400,11 @@
       refreshInProgress = true;
 
       try {
-        const [attendanceSnap, leadSnap, usersSnap] = await Promise.all([
+        const [attendanceSnap, leadSnap, usersSnap, processingSnap] = await Promise.all([
           getDocs(collection(db, "staffAttendance")),
           getDocs(collection(db, "leadAssignments")),
-          getDocs(collection(db, "users"))
+          getDocs(collection(db, "users")),
+          getDocs(collection(db, "processingFiles"))
         ]);
 
         const today = todayIso();
@@ -408,6 +415,7 @@
 
         leadAssignments = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        processingFiles = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderStats();
         renderAttendance();
@@ -424,8 +432,6 @@
     function renderStats() {
       const staffUsers = userDocs.filter(u => u.role === "staff");
       const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
-      const callbacksPending = leadAssignments.filter(l => l.callbackRequired && !(l.closed === true || l.usable === false)).length;
-      const introPending = leadAssignments.filter(l => l.introEmailNeeded && !l.introEmailSent && !(l.closed === true || l.usable === false)).length;
 
       let onTimeCount = 0;
       let lateCount = 0;
@@ -438,21 +444,24 @@
         else absentCount += 1;
       });
 
+      const myFiles = processingFiles.filter(file => file.processingAssignedToUid === currentUser.uid).length;
+      const unassignedFiles = processingFiles.filter(file => !file.processingAssignedToUid).length;
+
       document.getElementById("totalStaffStat").textContent = String(staffUsers.length);
       document.getElementById("onlineStaffStat").textContent = String(onlineNow);
       document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
       document.getElementById("onTimeStat").textContent = String(onTimeCount);
       document.getElementById("lateStat").textContent = String(lateCount);
       document.getElementById("absentStat").textContent = String(absentCount);
-      document.getElementById("callbacksPendingStat").textContent = String(callbacksPending);
-      document.getElementById("introPendingStat").textContent = String(introPending);
+      document.getElementById("myFilesStat").textContent = String(myFiles);
+      document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
 
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
       document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
       document.getElementById("snapshotLate").textContent = String(lateCount);
       document.getElementById("snapshotAbsent").textContent = String(absentCount);
-      document.getElementById("snapshotCallbacks").textContent = String(callbacksPending);
-      document.getElementById("snapshotIntro").textContent = String(introPending);
+      document.getElementById("snapshotMyFiles").textContent = String(myFiles);
+      document.getElementById("snapshotUnassigned").textContent = String(unassignedFiles);
     }
 
     function renderAttendance() {
@@ -503,8 +512,8 @@
 
     function renderLeadSummary() {
       leadSummaryBody.innerHTML = "";
-      const grouped = {};
 
+      const grouped = {};
       leadAssignments.forEach(lead => {
         const uid = lead.assignedToUid || "unassigned";
         if (!grouped[uid]) {
@@ -516,7 +525,6 @@
             converted: 0
           };
         }
-
         grouped[uid].assigned += 1;
         if (lead.callbackRequired && !(lead.closed === true || lead.usable === false)) grouped[uid].callbacks += 1;
         if (lead.introEmailNeeded && !lead.introEmailSent && !(lead.closed === true || lead.usable === false)) grouped[uid].intro += 1;

@@ -69,17 +69,17 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid lg:grid-cols-7 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Assignments</div>
           <div id="totalAssignmentsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Sent to Closer</div>
+          <div class="text-sm text-slate-500">Assigned</div>
           <div id="assignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Call Backs</div>
+          <div class="text-sm text-slate-500">Contacted</div>
           <div id="contactedStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -90,37 +90,51 @@
           <div class="text-sm text-slate-500">Closed Deals</div>
           <div id="closedDealsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Call Backs</div>
+          <div id="callbacksStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">No Answer</div>
+          <div id="noAnswerStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-5 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Status</label>
             <select id="statusFilter" class="input">
               <option value="all">All statuses</option>
-              <option value="sent_to_closer">Sent to Closer</option>
-              <option value="callback_required">Call Back</option>
-              <option value="converted">Closed Deal</option>
-              <option value="closed">Closed / Not Interested</option>
+              <option value="Assigned">Assigned</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Appointment Booked">Appointment Booked</option>
+              <option value="Closed">Closed</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Outcome</label>
             <select id="outcomeFilter" class="input">
               <option value="all">All outcomes</option>
-              <option value="call_back">Call Back</option>
-              <option value="closed_deal">Closed Deal</option>
-              <option value="not_interested">Not Interested / Closed</option>
-              <option value="sent_to_processing">Sent to Processing</option>
+              <option value="Interested">Interested</option>
+              <option value="Call Back">Call Back</option>
+              <option value="No Answer">No Answer</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Closed Deal">Closed Deal</option>
             </select>
           </div>
-
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Processing</label>
+            <select id="processingFilter" class="input">
+              <option value="all">All files</option>
+              <option value="sent">Sent to Processing</option>
+              <option value="not_sent">Not Sent</option>
+            </select>
+          </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Search client, email, phone..." />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh</button>
           </div>
@@ -128,7 +142,7 @@
       </section>
 
       <section class="card p-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
             <h2 class="text-xl font-extrabold text-blue-900">My Assigned Files</h2>
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading assignments...</p>
@@ -188,6 +202,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const statusFilter = document.getElementById("statusFilter");
     const outcomeFilter = document.getElementById("outcomeFilter");
+    const processingFilter = document.getElementById("processingFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const assignmentsBody = document.getElementById("assignmentsBody");
@@ -197,11 +212,13 @@
     const contactedStat = document.getElementById("contactedStat");
     const bookedStat = document.getElementById("bookedStat");
     const closedDealsStat = document.getElementById("closedDealsStat");
+    const callbacksStat = document.getElementById("callbacksStat");
+    const noAnswerStat = document.getElementById("noAnswerStat");
 
     let currentUser = null;
     let currentUserData = null;
     let allAssignments = [];
-    let processingLeadIds = new Set();
+    let processingAssignmentIds = new Set();
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -218,58 +235,42 @@
     }
 
     function appointmentText(item) {
-      const date = item.closerAppointmentDate || "-";
-      const time = item.closerAppointmentTime || "-";
+      const date = item.appointment?.date || "-";
+      const time = item.appointment?.time || "-";
       return `${date} ${time}`.trim();
     }
 
     function clientName(item) {
-      const first = item.forename || "";
-      const second = item.surname || "";
+      const first = item.client?.firstName || "";
+      const second = item.client?.secondName || "";
       return `${first} ${second}`.trim() || "-";
     }
 
     function processingLabel(item) {
-      return processingLeadIds.has(item.id)
-        ? `<span class="badge badge-violet">Sent to Processing</span>`
-        : "-";
+      if (processingAssignmentIds.has(item.id)) {
+        return `<span class="badge badge-violet">Sent to Processing</span>`;
+      }
+      return `<span class="badge badge-slate">Not Sent</span>`;
     }
 
-    function outcomeLabel(item) {
-      if (item.leadStatus === "converted" || item.outcome === "Closed Deal") {
-        return `<span class="badge badge-green">Closed Deal</span>`;
-      }
-      if (item.outcome === "Call Back" || item.leadStatus === "callback_required") {
-        return `<span class="badge badge-amber">Call Back</span>`;
-      }
-      if (item.outcome === "Not Interested" || item.leadStatus === "closed" || item.closed === true || item.usable === false) {
-        return `<span class="badge badge-slate">Not Interested / Closed</span>`;
-      }
-      return "-";
+    function effectiveStatus(item) {
+      return item.status || "Assigned";
     }
 
-    function statusLabel(item) {
-      if (item.leadStatus === "converted") {
-        return `<span class="badge badge-green">Converted</span>`;
-      }
-      if (item.leadStatus === "callback_required") {
-        return `<span class="badge badge-amber">Callback Required</span>`;
-      }
-      if (item.leadStatus === "sent_to_closer") {
-        return `<span class="badge badge-blue">Sent to Closer</span>`;
-      }
-      if (item.leadStatus === "closed") {
-        return `<span class="badge badge-red">Closed</span>`;
-      }
-      return `<span class="badge badge-slate">${item.leadStatus || "Assigned"}</span>`;
+    function statusBadge(status) {
+      if (status === "Closed") return `<span class="badge badge-green">Closed</span>`;
+      if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
+      if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
+      return `<span class="badge badge-amber">Assigned</span>`;
     }
 
-    function isClosedDeal(item) {
-      return item.leadStatus === "converted" || item.outcome === "Closed Deal";
-    }
-
-    function isCallback(item) {
-      return item.outcome === "Call Back" || item.leadStatus === "callback_required";
+    function outcomeBadge(outcome) {
+      if (outcome === "Closed Deal") return `<span class="badge badge-green">Closed Deal</span>`;
+      if (outcome === "Call Back") return `<span class="badge badge-amber">Call Back</span>`;
+      if (outcome === "Interested") return `<span class="badge badge-blue">Interested</span>`;
+      if (outcome === "No Answer") return `<span class="badge badge-red">No Answer</span>`;
+      if (outcome === "Not Interested") return `<span class="badge badge-slate">Not Interested</span>`;
+      return `<span class="badge badge-slate">-</span>`;
     }
 
     async function checkCloserAccess(user) {
@@ -300,8 +301,8 @@
     async function loadAssignments() {
       try {
         const assignmentsQuery = query(
-          collection(db, "leadAssignments"),
-          where("closerUid", "==", currentUser.uid)
+          collection(db, "closerAssignments"),
+          where("closer.uid", "==", currentUser.uid)
         );
 
         const snapshot = await getDocs(assignmentsQuery);
@@ -311,15 +312,15 @@
         }));
 
         allAssignments.sort((a, b) => {
-          const aKey = `${a.closerAppointmentDate || "9999-12-31"} ${a.closerAppointmentTime || "23:59"}`;
-          const bKey = `${b.closerAppointmentDate || "9999-12-31"} ${b.closerAppointmentTime || "23:59"}`;
+          const aKey = `${a.appointment?.date || "9999-12-31"} ${a.appointment?.time || "23:59"}`;
+          const bKey = `${b.appointment?.date || "9999-12-31"} ${b.appointment?.time || "23:59"}`;
           return aKey.localeCompare(bKey);
         });
 
         const processingSnap = await getDocs(collection(db, "processingFiles"));
-        processingLeadIds = new Set(
+        processingAssignmentIds = new Set(
           processingSnap.docs
-            .map(d => d.data()?.leadAssignmentId || d.data()?.assignmentId)
+            .map(d => d.data()?.assignmentId)
             .filter(Boolean)
         );
 
@@ -333,40 +334,42 @@
 
     function renderStats() {
       totalAssignmentsStat.textContent = String(allAssignments.length);
-      assignedStat.textContent = String(allAssignments.filter(x => x.leadStatus === "sent_to_closer").length);
-      contactedStat.textContent = String(allAssignments.filter(isCallback).length);
-      bookedStat.textContent = String(allAssignments.filter(x => x.closerAppointmentDate).length);
-      closedDealsStat.textContent = String(allAssignments.filter(isClosedDeal).length);
+      assignedStat.textContent = String(allAssignments.filter(x => effectiveStatus(x) === "Assigned").length);
+      contactedStat.textContent = String(allAssignments.filter(x => effectiveStatus(x) === "Contacted").length);
+      bookedStat.textContent = String(allAssignments.filter(x => effectiveStatus(x) === "Appointment Booked").length);
+      closedDealsStat.textContent = String(allAssignments.filter(x => x.outcome === "Closed Deal" || effectiveStatus(x) === "Closed").length);
+      callbacksStat.textContent = String(allAssignments.filter(x => x.outcome === "Call Back").length);
+      noAnswerStat.textContent = String(allAssignments.filter(x => x.outcome === "No Answer").length);
     }
 
     function renderAssignments() {
       const selectedStatus = statusFilter.value;
       const selectedOutcome = outcomeFilter.value;
+      const selectedProcessing = processingFilter.value;
       const searchTerm = searchInput.value.trim().toLowerCase();
 
       const filtered = allAssignments.filter(item => {
-        const matchesStatus =
-          selectedStatus === "all" ||
-          item.leadStatus === selectedStatus;
+        const matchesStatus = selectedStatus === "all" || effectiveStatus(item) === selectedStatus;
+        const matchesOutcome = selectedOutcome === "all" || (item.outcome || "") === selectedOutcome;
 
-        const matchesOutcome =
-          selectedOutcome === "all" ||
-          (selectedOutcome === "call_back" && isCallback(item)) ||
-          (selectedOutcome === "closed_deal" && isClosedDeal(item)) ||
-          (selectedOutcome === "not_interested" && (item.outcome === "Not Interested" || item.leadStatus === "closed" || item.closed === true || item.usable === false)) ||
-          (selectedOutcome === "sent_to_processing" && processingLeadIds.has(item.id));
+        const isSent = processingAssignmentIds.has(item.id);
+        const matchesProcessing =
+          selectedProcessing === "all" ||
+          (selectedProcessing === "sent" && isSent) ||
+          (selectedProcessing === "not_sent" && !isSent);
 
         const haystack = `
           ${clientName(item)}
-          ${item.email || ""}
-          ${item.telephone || ""}
+          ${item.client?.email || ""}
+          ${item.client?.mobile || ""}
+          ${item.client?.landline || ""}
           ${item.claimType || ""}
-          ${item.type || ""}
+          ${item.outcome || ""}
+          ${effectiveStatus(item)}
         `.toLowerCase();
 
         const matchesSearch = !searchTerm || haystack.includes(searchTerm);
-
-        return matchesStatus && matchesOutcome && matchesSearch;
+        return matchesStatus && matchesOutcome && matchesProcessing && matchesSearch;
       });
 
       assignmentsBody.innerHTML = "";
@@ -385,11 +388,11 @@
             <td class="p-3">${appointmentText(item)}</td>
             <td class="p-3">
               <div class="font-semibold text-slate-800">${clientName(item)}</div>
-              <div class="text-xs text-slate-500">${item.email || "-"}</div>
+              <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
             </td>
-            <td class="p-3">${formatClaimType(item.claimType || item.type)}</td>
-            <td class="p-3">${statusLabel(item)}</td>
-            <td class="p-3">${outcomeLabel(item)}</td>
+            <td class="p-3">${formatClaimType(item.claimType)}</td>
+            <td class="p-3">${statusBadge(effectiveStatus(item))}</td>
+            <td class="p-3">${outcomeBadge(item.outcome)}</td>
             <td class="p-3">${processingLabel(item)}</td>
             <td class="p-3">
               <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">
@@ -434,6 +437,7 @@
 
     statusFilter.addEventListener("change", renderAssignments);
     outcomeFilter.addEventListener("change", renderAssignments);
+    processingFilter.addEventListener("change", renderAssignments);
     searchInput.addEventListener("input", renderAssignments);
     refreshBtn.addEventListener("click", loadAssignments);
 

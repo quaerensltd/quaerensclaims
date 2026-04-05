@@ -113,7 +113,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Monthly Attendance</h1>
-          <p class="text-sm text-slate-500">Monthly staff attendance, hours, and status overview</p>
+          <p class="text-sm text-slate-500">Monthly staff attendance, hours, status overview, and processing queue snapshot</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -128,7 +128,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-7 gap-4">
+      <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Staff Count</div>
           <div id="staffCountStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -154,8 +154,12 @@
           <div id="totalHoursStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0h 0m</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Records In Month</div>
-          <div id="recordsCountStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">My Files</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned Files</div>
+          <div id="unassignedFilesStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
       </section>
 
@@ -214,9 +218,17 @@
               <span class="text-slate-600">Late days</span>
               <span id="snapshotLate" class="font-extrabold text-amber-600">0</span>
             </div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <span class="text-slate-600">Absent days</span>
               <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">My files</span>
+              <span id="snapshotMyFiles" class="font-extrabold text-indigo-600">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">Unassigned files</span>
+              <span id="snapshotUnassigned" class="font-extrabold text-violet-600">0</span>
             </div>
           </div>
         </section>
@@ -285,8 +297,10 @@
     const LATE_CUTOFF_HOUR = 10;
     const LATE_CUTOFF_MINUTE = 0;
 
+    let currentUser = null;
     let staffUsers = [];
     let attendanceDocs = [];
+    let processingFiles = [];
     let filteredRows = [];
 
     function hideLoader() {
@@ -373,7 +387,6 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -387,6 +400,7 @@
         return false;
       }
 
+      currentUser = user;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -403,19 +417,18 @@
       const end = new Date(year, month, 0);
       const dates = [];
       const cursor = new Date(start);
-
       while (cursor <= end) {
         dates.push(toIsoDate(cursor));
         cursor.setDate(cursor.getDate() + 1);
       }
-
       return dates;
     }
 
     async function loadBaseData() {
-      const [usersSnap, attendanceSnap] = await Promise.all([
+      const [usersSnap, attendanceSnap, processingSnap] = await Promise.all([
         getDocs(collection(db, "users")),
-        getDocs(collection(db, "staffAttendance"))
+        getDocs(collection(db, "staffAttendance")),
+        getDocs(collection(db, "processingFiles"))
       ]);
 
       staffUsers = usersSnap.docs
@@ -423,6 +436,7 @@
         .filter(u => u.role === "staff");
 
       attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      processingFiles = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       populateStaffFilter();
       renderAll();
@@ -450,7 +464,6 @@
       const monthDates = getMonthDates(monthValue);
       const selectedStaff = staffFilter.value;
       const selectedStatus = statusFilter.value;
-
       filteredRows = [];
 
       staffUsers.forEach(user => {
@@ -459,7 +472,6 @@
         monthDates.forEach(dateStr => {
           const rec = attendanceDocs.find(docItem => docItem.uid === user.id && docItem.date === dateStr) || null;
           const dayStatus = getDayStatus(rec, dateStr);
-
           if (selectedStatus !== "all" && dayStatus !== selectedStatus) return;
 
           filteredRows.push({
@@ -489,7 +501,9 @@
       const lateDays = filteredRows.filter(r => r.dayStatus === "late").length;
       const absentDays = filteredRows.filter(r => r.dayStatus === "absent").length;
       const totalMs = filteredRows.reduce((sum, r) => sum + r.workedMs, 0);
-      const recordsCount = filteredRows.filter(r => !!r.rec).length;
+
+      const myFiles = processingFiles.filter(file => file.processingAssignedToUid === currentUser.uid).length;
+      const unassignedFiles = processingFiles.filter(file => !file.processingAssignedToUid).length;
 
       document.getElementById("staffCountStat").textContent = String(selectedStaffCount);
       document.getElementById("presentDaysStat").textContent = String(presentDays);
@@ -497,13 +511,17 @@
       document.getElementById("lateDaysStat").textContent = String(lateDays);
       document.getElementById("absentDaysStat").textContent = String(absentDays);
       document.getElementById("totalHoursStat").textContent = formatDuration(totalMs);
-      document.getElementById("recordsCountStat").textContent = String(recordsCount);
+      document.getElementById("recordsCountStat").textContent = String(presentDays);
+      document.getElementById("myFilesStat").textContent = String(myFiles);
+      document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
 
       document.getElementById("snapshotMonth").textContent = monthInput.value || "-";
       document.getElementById("snapshotStaff").textContent = String(selectedStaffCount);
       document.getElementById("snapshotPresent").textContent = String(presentDays);
       document.getElementById("snapshotLate").textContent = String(lateDays);
       document.getElementById("snapshotAbsent").textContent = String(absentDays);
+      document.getElementById("snapshotMyFiles").textContent = String(myFiles);
+      document.getElementById("snapshotUnassigned").textContent = String(unassignedFiles);
     }
 
     function renderTable() {

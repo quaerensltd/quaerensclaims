@@ -53,6 +53,26 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -62,6 +82,8 @@
       <p class="text-slate-600 font-medium">Loading assigned file...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -85,9 +107,11 @@
             <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Assigned Client</h2>
             <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
           </div>
-          <div class="text-sm text-slate-500">
+          <div class="text-sm text-slate-500 space-y-1">
             <div id="appointmentText"></div>
             <div id="assignedByText"></div>
+            <div id="statusSummaryText"></div>
+            <div id="processingSummaryText"></div>
           </div>
         </div>
       </section>
@@ -96,46 +120,43 @@
         <div class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Details</h3>
           <div class="grid md:grid-cols-2 gap-4">
-            <div><span class="label">Title</span><div class="value" id="client_title">-</div></div>
-            <div><span class="label">Full Name</span><div class="value" id="client_fullName">-</div></div>
-            <div><span class="label">Telephone</span><div class="value" id="client_telephone">-</div></div>
+            <div><span class="label">First Name</span><div class="value" id="client_firstName">-</div></div>
+            <div><span class="label">Second Name</span><div class="value" id="client_secondName">-</div></div>
+            <div><span class="label">First Name 2</span><div class="value" id="client_firstName2">-</div></div>
+            <div><span class="label">Second Name 2</span><div class="value" id="client_secondName2">-</div></div>
+            <div><span class="label">Landline</span><div class="value" id="client_landline">-</div></div>
+            <div><span class="label">Mobile</span><div class="value" id="client_mobile">-</div></div>
             <div><span class="label">Email</span><div class="value" id="client_email">-</div></div>
-            <div><span class="label">Postcode</span><div class="value" id="client_postcode">-</div></div>
-            <div><span class="label">Campaign</span><div class="value" id="client_campaign">-</div></div>
             <div class="md:col-span-2"><span class="label">Address</span><div class="value" id="client_address">-</div></div>
           </div>
         </div>
 
         <div class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Manager & Lead Handoff</h3>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment & Handoff</h3>
           <div class="space-y-4">
             <div>
               <span class="label">Claim Type</span>
               <div class="value" id="claimTypeText">-</div>
             </div>
             <div>
-              <span class="label">Lead Status</span>
-              <div class="value" id="leadStatusText">-</div>
-            </div>
-            <div>
-              <span class="label">Last Action</span>
-              <div class="value" id="lastActionText">-</div>
+              <span class="label">Assessment Summary</span>
+              <div class="value whitespace-pre-wrap" id="assessmentSummaryText">-</div>
             </div>
             <div>
               <span class="label">Manager Notes</span>
               <div class="value whitespace-pre-wrap" id="managerNotesText">-</div>
             </div>
             <div>
-              <span class="label">General Notes</span>
-              <div class="value whitespace-pre-wrap" id="leadNotesText">-</div>
+              <span class="label">Handoff Notes</span>
+              <div class="value whitespace-pre-wrap" id="handoffNotesText">-</div>
             </div>
           </div>
         </div>
       </section>
 
       <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Call / Handoff Summary</h3>
-        <div id="generatedAssessmentText" class="readonly-box">No handoff summary available.</div>
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Report</h3>
+        <div id="generatedAssessmentText" class="readonly-box">No assessment report available.</div>
       </section>
 
       <section class="card p-6">
@@ -144,13 +165,12 @@
           <div>
             <label class="label" for="statusSelect">Closer Status</label>
             <select id="statusSelect" class="input">
-              <option value="sent_to_closer">Sent to Closer</option>
-              <option value="callback_required">Call Back</option>
-              <option value="converted">Closed Deal</option>
-              <option value="closed">Not Interested / Closed</option>
+              <option value="Assigned">Assigned</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Appointment Booked">Appointment Booked</option>
+              <option value="Closed">Closed</option>
             </select>
           </div>
-
           <div>
             <label class="label" for="outcomeSelect">Outcome</label>
             <select id="outcomeSelect" class="input">
@@ -164,17 +184,6 @@
           </div>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label class="label" for="callbackDate">Callback Date</label>
-            <input id="callbackDate" class="input" type="date" />
-          </div>
-          <div>
-            <label class="label" for="callbackTime">Callback Time</label>
-            <input id="callbackTime" class="input" type="time" />
-          </div>
-        </div>
-
         <div class="mt-4">
           <label class="label" for="closerNotes">Closer Notes</label>
           <textarea id="closerNotes" class="input" rows="6" placeholder="Call notes, objections, follow-up points, outcome, next step..."></textarea>
@@ -182,7 +191,7 @@
       </section>
 
       <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal & Processing Handoff</h3>
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal & Payment Handoff</h3>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="label" for="amountDueNow">Amount Due Now (£)</label>
@@ -203,6 +212,13 @@
         </div>
 
         <div class="mt-4">
+          <label class="label">Derived Payment Status</label>
+          <div id="paymentStatusPreview" class="value">
+            <span class="badge badge-amber">Awaiting Payment</span>
+          </div>
+        </div>
+
+        <div class="mt-4">
           <label class="label" for="processingNotes">Processing Notes</label>
           <textarea id="processingNotes" class="input" rows="5" placeholder="Payment references, instalment notes, documents to prepare, urgent remarks..."></textarea>
         </div>
@@ -214,8 +230,13 @@
       </section>
 
       <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h3>
-        <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product One</h3>
+        <div class="grid md:grid-cols-2 gap-4" id="product1Fields"></div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Product Two</h3>
+        <div class="grid md:grid-cols-2 gap-4" id="product2Fields"></div>
       </section>
     </main>
   </div>
@@ -237,8 +258,7 @@
       collection,
       query,
       where,
-      serverTimestamp,
-      arrayUnion
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -252,14 +272,12 @@
     const db = getFirestore(app);
 
     const params = new URLSearchParams(window.location.search);
-    const leadId = params.get("id");
+    const assignmentId = params.get("id");
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const statusSelect = document.getElementById("statusSelect");
     const outcomeSelect = document.getElementById("outcomeSelect");
-    const callbackDate = document.getElementById("callbackDate");
-    const callbackTime = document.getElementById("callbackTime");
     const closerNotes = document.getElementById("closerNotes");
     const saveCloserBtn = document.getElementById("saveCloserBtn");
     const saveMessage = document.getElementById("saveMessage");
@@ -269,13 +287,22 @@
     const followUpDue = document.getElementById("followUpDue");
     const paymentLink = document.getElementById("paymentLink");
     const processingNotes = document.getElementById("processingNotes");
+    const paymentStatusPreview = document.getElementById("paymentStatusPreview");
 
     let currentUser = null;
     let currentUserData = null;
-    let leadData = null;
+    let assignmentData = null;
+    let existingProcessingDocId = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
     function formatClaimType(type) {
@@ -288,64 +315,76 @@
       }
     }
 
-    function formatAddress(lead) {
-      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
-        .filter(Boolean)
-        .join(", ") || "-";
-    }
-
-    function formatAction(action) {
-      const map = {
-        qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager",
-        sent_to_closer: "Sent to Closer",
-        closer_appointment_booked: "Closer Appointment Booked",
-        converted: "Converted",
-        closed: "Closed",
-        callback_required: "Callback Required",
-        no_answer: "No Answer",
-        voicemail: "Voicemail",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        notes_saved: "Notes Saved",
-        closer_saved: "Closer Saved",
-        sent_to_processing: "Sent to Processing"
-      };
-      return map[action] || action || "-";
-    }
-
-    function leadStatusBadge(status) {
-      if (status === "sent_to_closer") return `<span class="badge badge-blue">Sent to Closer</span>`;
-      if (status === "callback_required") return `<span class="badge badge-amber">Callback Required</span>`;
-      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
-      if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
-      return `<span class="badge badge-slate">${status || "New"}</span>`;
-    }
-
     function setValue(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "-";
     }
 
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
+    function renderFieldGrid(containerId, data) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      const entries = Object.entries(data || {}).filter(([_, value]) => {
+        return value !== undefined && value !== null && String(value).trim() !== "";
+      });
 
-      if (!history || !history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+      if (!entries.length) {
+        container.innerHTML = `<div class="value">No data available.</div>`;
         return;
       }
 
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+      entries.forEach(([key, value]) => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
+          <div class="value">${value || "-"}</div>
         `;
-        wrap.appendChild(div);
+        container.appendChild(wrapper);
       });
+    }
+
+    function statusBadge(status) {
+      if (status === "Closed") return `<span class="badge badge-green">Closed</span>`;
+      if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
+      if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
+      return `<span class="badge badge-amber">Assigned</span>`;
+    }
+
+    function outcomeBadge(outcome) {
+      if (outcome === "Closed Deal") return `<span class="badge badge-green">Closed Deal</span>`;
+      if (outcome === "Call Back") return `<span class="badge badge-amber">Call Back</span>`;
+      if (outcome === "Interested") return `<span class="badge badge-blue">Interested</span>`;
+      if (outcome === "No Answer") return `<span class="badge badge-red">No Answer</span>`;
+      if (outcome === "Not Interested") return `<span class="badge badge-slate">Not Interested</span>`;
+      return `<span class="badge badge-slate">No Outcome</span>`;
+    }
+
+    function paymentStatusBadge(status) {
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
+    }
+
+    function derivePaymentStatus(dueNow, paidNow, followUp) {
+      const due = Number(dueNow || 0);
+      const paid = Number(paidNow || 0);
+      const follow = Number(followUp || 0);
+
+      if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) {
+        return "part_paid";
+      }
+      if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) {
+        return "fully_paid";
+      }
+      return "awaiting_payment";
+    }
+
+    function updatePaymentPreview() {
+      const derived = derivePaymentStatus(
+        amountDueNow.value,
+        amountPaidNow.value,
+        followUpDue.value
+      );
+      paymentStatusPreview.innerHTML = paymentStatusBadge(derived);
     }
 
     async function checkCloserAccess(user) {
@@ -371,68 +410,74 @@
       return true;
     }
 
-    async function loadLead() {
-      if (!leadId) {
-        alert("Missing lead ID.");
+    async function loadAssignment() {
+      if (!assignmentId) {
+        alert("Missing assignment ID.");
         window.location.href = "/closer-panel.html";
         return;
       }
 
-      const leadRef = doc(db, "leadAssignments", leadId);
-      const leadSnap = await getDoc(leadRef);
+      const assignmentRef = doc(db, "closerAssignments", assignmentId);
+      const assignmentSnap = await getDoc(assignmentRef);
 
-      if (!leadSnap.exists()) {
-        alert("Assigned lead not found.");
+      if (!assignmentSnap.exists()) {
+        alert("Assigned file not found.");
         window.location.href = "/closer-panel.html";
         return;
       }
 
-      leadData = { id: leadSnap.id, ...leadSnap.data() };
+      assignmentData = { id: assignmentSnap.id, ...assignmentSnap.data() };
 
-      if (leadData.closerUid !== currentUser.uid) {
+      if (assignmentData.closer?.uid !== currentUser.uid) {
         alert("This file is not assigned to you.");
         window.location.href = "/closer-panel.html";
         return;
       }
 
-      const fullName = `${leadData.title || ""} ${leadData.forename || ""} ${leadData.surname || ""}`.trim();
+      const processingQuery = query(collection(db, "processingFiles"), where("assignmentId", "==", assignmentId));
+      const processingSnap = await getDocs(processingQuery);
+      if (!processingSnap.empty) {
+        existingProcessingDocId = processingSnap.docs[0].id;
+      } else {
+        existingProcessingDocId = null;
+      }
 
-      document.getElementById("detailTitle").textContent = fullName || "Assigned Client";
-      document.getElementById("detailSubtitle").textContent = `Lead ID: ${leadId}`;
-      document.getElementById("appointmentText").textContent = `Appointment: ${leadData.closerAppointmentDate || "-"} ${leadData.closerAppointmentTime || "-"}`;
-      document.getElementById("assignedByText").textContent = `Assigned by manager`;
+      document.getElementById("detailTitle").textContent = formatClaimType(assignmentData.claimType);
+      document.getElementById("detailSubtitle").textContent = `Assignment ID: ${assignmentId}`;
+      document.getElementById("appointmentText").textContent = `Appointment: ${assignmentData.appointment?.date || "-"} ${assignmentData.appointment?.time || "-"}`;
+      document.getElementById("assignedByText").textContent = `Assigned by: ${assignmentData.assignedBy?.name || assignmentData.assignedBy?.email || "-"}`;
+      document.getElementById("statusSummaryText").innerHTML = `Status: ${statusBadge(assignmentData.status || "Assigned")} &nbsp; ${outcomeBadge(assignmentData.outcome || "")}`;
+      document.getElementById("processingSummaryText").innerHTML = existingProcessingDocId
+        ? `Processing: <span class="badge badge-violet">Already Sent</span>`
+        : `Processing: <span class="badge badge-slate">Not Yet Sent</span>`;
 
-      setValue("client_title", leadData.title);
-      setValue("client_fullName", `${leadData.forename || ""} ${leadData.surname || ""}`.trim());
-      setValue("client_telephone", leadData.telephone);
-      setValue("client_email", leadData.email);
-      setValue("client_postcode", leadData.postcode);
-      setValue("client_campaign", leadData.campaign);
-      setValue("client_address", formatAddress(leadData));
+      setValue("client_firstName", assignmentData.client?.firstName);
+      setValue("client_secondName", assignmentData.client?.secondName);
+      setValue("client_firstName2", assignmentData.client?.firstName2);
+      setValue("client_secondName2", assignmentData.client?.secondName2);
+      setValue("client_landline", assignmentData.client?.landline);
+      setValue("client_mobile", assignmentData.client?.mobile);
+      setValue("client_email", assignmentData.client?.email);
+      setValue("client_address", assignmentData.client?.address);
+      setValue("claimTypeText", formatClaimType(assignmentData.claimType));
+      setValue("assessmentSummaryText", assignmentData.assessmentSummary);
+      setValue("managerNotesText", assignmentData.managerNotes);
+      setValue("handoffNotesText", assignmentData.handoffNotes);
 
-      setValue("claimTypeText", formatClaimType(leadData.claimType || leadData.type));
-      document.getElementById("leadStatusText").innerHTML = leadStatusBadge(leadData.leadStatus);
-      setValue("lastActionText", formatAction(leadData.lastAction));
-      setValue("managerNotesText", leadData.managerNotes);
-      setValue("leadNotesText", leadData.notes);
+      generatedAssessmentText.textContent = assignmentData.generatedAssessmentText || "No assessment report available.";
 
-      generatedAssessmentText.textContent =
-        leadData.managerNotes ||
-        leadData.notes ||
-        "No handoff summary available.";
+      statusSelect.value = assignmentData.status || "Assigned";
+      outcomeSelect.value = assignmentData.outcome || "";
+      closerNotes.value = assignmentData.closerNotes || "";
+      amountDueNow.value = assignmentData.amountDueNow || "";
+      amountPaidNow.value = assignmentData.amountPaidNow || "";
+      followUpDue.value = assignmentData.followUpDue || "";
+      paymentLink.value = assignmentData.paymentLink || "";
+      processingNotes.value = assignmentData.processingNotes || "";
 
-      statusSelect.value = leadData.leadStatus || "sent_to_closer";
-      outcomeSelect.value = leadData.outcome || "";
-      callbackDate.value = leadData.callbackDate || "";
-      callbackTime.value = leadData.callbackTime || "";
-      closerNotes.value = leadData.closerNotes || "";
-      amountDueNow.value = leadData.amountDueNow || "";
-      amountPaidNow.value = leadData.amountPaidNow || "";
-      followUpDue.value = leadData.followUpDue || "";
-      paymentLink.value = leadData.paymentLink || "";
-      processingNotes.value = leadData.processingNotes || "";
-
-      renderHistory(leadData.actionHistory || []);
+      renderFieldGrid("product1Fields", assignmentData.product1 || {});
+      renderFieldGrid("product2Fields", assignmentData.product2 || {});
+      updatePaymentPreview();
       hideLoader();
     }
 
@@ -440,33 +485,24 @@
       const dueNow = Number(amountDueNow.value || 0);
       const paidNow = Number(amountPaidNow.value || 0);
       const followUp = Number(followUpDue.value || 0);
-
-      let paymentStatus = "awaiting_payment";
-      if (paidNow > 0 && (followUp > 0 || paidNow < dueNow)) paymentStatus = "part_paid";
-      if (dueNow > 0 && paidNow >= dueNow && followUp <= 0) paymentStatus = "fully_paid";
-      if (dueNow <= 0 && followUp <= 0 && paidNow > 0) paymentStatus = "fully_paid";
-
-      const existingQuery = query(
-        collection(db, "processingFiles"),
-        where("leadAssignmentId", "==", leadId)
-      );
-      const existingSnap = await getDocs(existingQuery);
+      const paymentStatus = derivePaymentStatus(dueNow, paidNow, followUp);
 
       const payload = {
-        leadAssignmentId: leadId,
-        claimType: leadData.claimType || leadData.type || "",
-        client: {
-          title: leadData.title || "",
-          forename: leadData.forename || "",
-          surname: leadData.surname || "",
-          telephone: leadData.telephone || "",
-          email: leadData.email || "",
-          postcode: leadData.postcode || "",
-          address: formatAddress(leadData)
-        },
-        closerUid: currentUser.uid,
-        closerName: currentUserData.name || "",
+        assignmentId,
+        assessmentId: assignmentData.assessmentId || "",
+        claimType: assignmentData.claimType || "",
+        client: assignmentData.client || {},
+        closer: assignmentData.closer || {},
+        assignedBy: assignmentData.assignedBy || {},
         outcome: outcomeSelect.value || "",
+        status: outcomeSelect.value === "Closed Deal" ? "Closed" : (statusSelect.value || ""),
+        sourceStatus: outcomeSelect.value === "Closed Deal" ? "Closed" : (statusSelect.value || ""),
+        assessmentSummary: assignmentData.assessmentSummary || "",
+        managerNotes: assignmentData.managerNotes || "",
+        handoffNotes: assignmentData.handoffNotes || "",
+        generatedAssessmentText: assignmentData.generatedAssessmentText || "",
+        product1: assignmentData.product1 || {},
+        product2: assignmentData.product2 || {},
         closerNotes: closerNotes.value || "",
         amountDueNow: dueNow,
         amountPaidNow: paidNow,
@@ -474,7 +510,6 @@
         paymentStatus,
         paymentLink: paymentLink.value.trim(),
         processingNotes: processingNotes.value.trim(),
-        sourceStatus: "converted",
         updatedAt: serverTimestamp(),
         updatedBy: {
           uid: currentUser.uid,
@@ -483,11 +518,10 @@
         }
       };
 
-      if (!existingSnap.empty) {
-        const existingDoc = existingSnap.docs[0];
-        await updateDoc(doc(db, "processingFiles", existingDoc.id), payload);
+      if (existingProcessingDocId) {
+        await updateDoc(doc(db, "processingFiles", existingProcessingDocId), payload);
       } else {
-        await addDoc(collection(db, "processingFiles"), {
+        const newDoc = await addDoc(collection(db, "processingFiles"), {
           ...payload,
           createdAt: serverTimestamp(),
           createdBy: {
@@ -496,87 +530,55 @@
             name: currentUserData.name || ""
           }
         });
+        existingProcessingDocId = newDoc.id;
       }
     }
 
+    amountDueNow.addEventListener("input", updatePaymentPreview);
+    amountPaidNow.addEventListener("input", updatePaymentPreview);
+    followUpDue.addEventListener("input", updatePaymentPreview);
+
     saveCloserBtn.addEventListener("click", async () => {
       try {
-        let leadStatus = statusSelect.value;
-        let lastAction = "closer_saved";
-
-        if (outcomeSelect.value === "Closed Deal") {
-          leadStatus = "converted";
-          lastAction = "converted";
-        } else if (outcomeSelect.value === "Call Back") {
-          leadStatus = "callback_required";
-          lastAction = "callback_required";
-        } else if (outcomeSelect.value === "Not Interested") {
-          leadStatus = "closed";
-          lastAction = "not_interested";
-        } else if (outcomeSelect.value === "No Answer") {
-          leadStatus = "callback_required";
-          lastAction = "no_answer";
-        }
+        const effectiveStatus = outcomeSelect.value === "Closed Deal" ? "Closed" : statusSelect.value;
 
         const closerPayload = {
-          leadStatus,
-          outcome: outcomeSelect.value || "",
-          closerNotes: closerNotes.value || "",
-          callbackDate: callbackDate.value || "",
-          callbackTime: callbackTime.value || "",
-          callbackRequired: leadStatus === "callback_required",
+          status: effectiveStatus,
+          outcome: outcomeSelect.value,
+          closerNotes: closerNotes.value,
           amountDueNow: Number(amountDueNow.value || 0),
           amountPaidNow: Number(amountPaidNow.value || 0),
           followUpDue: Number(followUpDue.value || 0),
           paymentLink: paymentLink.value.trim(),
           processingNotes: processingNotes.value.trim(),
-          convertedAt: leadStatus === "converted" ? serverTimestamp() : null,
-          lastAction,
           lastUpdatedAt: serverTimestamp(),
           lastUpdatedBy: {
             uid: currentUser.uid,
             email: currentUser.email || "",
             name: currentUserData.name || ""
-          },
-          actionHistory: arrayUnion({
-            action: lastAction,
-            byUid: currentUser.uid,
-            byName: currentUserData.name || "",
-            at: new Date().toISOString(),
-            notes: closerNotes.value || ""
-          })
+          }
         };
 
-        if (leadStatus === "closed") {
-          closerPayload.closed = true;
-          closerPayload.usable = false;
-          closerPayload.callbackRequired = false;
-        }
+        await updateDoc(doc(db, "closerAssignments", assignmentId), closerPayload);
 
-        await updateDoc(doc(db, "leadAssignments", leadId), closerPayload);
+        assignmentData = {
+          ...assignmentData,
+          ...closerPayload
+        };
 
         if (outcomeSelect.value === "Closed Deal") {
           await createOrUpdateProcessingFile();
-
-          await updateDoc(doc(db, "leadAssignments", leadId), {
-            sentToProcessingAt: serverTimestamp(),
-            actionHistory: arrayUnion({
-              action: "sent_to_processing",
-              byUid: currentUser.uid,
-              byName: currentUserData.name || "",
-              at: new Date().toISOString(),
-              notes: "Lead sent to processing."
-            })
-          });
+          saveMessage.textContent = existingProcessingDocId
+            ? "Closer progress saved and processing file updated."
+            : "Closer progress saved and sent to processing.";
+        } else {
+          saveMessage.textContent = "Closer progress saved successfully.";
         }
 
-        saveMessage.textContent = outcomeSelect.value === "Closed Deal"
-          ? "Closer progress saved and sent to processing."
-          : "Closer progress saved successfully.";
         saveMessage.classList.remove("hidden");
+        showToast(saveMessage.textContent);
         setTimeout(() => saveMessage.classList.add("hidden"), 3000);
-
-        await loadLead();
+        await loadAssignment();
       } catch (error) {
         console.error("Failed to save closer progress:", error);
         alert("Could not save closer progress.");
@@ -592,7 +594,7 @@
       try {
         const allowed = await checkCloserAccess(user);
         if (!allowed) return;
-        await loadLead();
+        await loadAssignment();
       } catch (error) {
         console.error(error);
         alert("Could not load assigned file.");

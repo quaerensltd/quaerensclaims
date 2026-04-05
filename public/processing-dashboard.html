@@ -329,12 +329,6 @@
       return `${first} ${second}`.trim() || "-";
     }
 
-    function paymentStatusLabel(status) {
-      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
-      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
-      return `<span class="badge badge-amber">Awaiting Payment</span>`;
-    }
-
     function ownerName(file) {
       return file.processingAssignedToName || file.processingAssignedToEmail || "-";
     }
@@ -347,6 +341,28 @@
         return `<span class="badge badge-green">Mine</span>`;
       }
       return `<span class="badge badge-slate">${ownerName(file)}</span>`;
+    }
+
+    function getEffectivePaymentStatus(file) {
+      if (file.paymentStatus) return file.paymentStatus;
+
+      const dueNow = Number(file.amountDueNow || 0);
+      const paidNow = Number(file.amountPaidNow || 0);
+      const followUpDue = Number(file.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
+      }
+      return "awaiting_payment";
+    }
+
+    function paymentStatusLabel(status) {
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
     }
 
     async function checkProcessingAccess(user) {
@@ -375,6 +391,7 @@
     async function loadFiles() {
       const snapshot = await getDocs(collection(db, "processingFiles"));
       allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
       renderStats();
       renderMyFiles();
       renderUnassignedFiles();
@@ -396,7 +413,6 @@
             email: currentUser.email || ""
           }
         });
-
         showToast("File claimed.");
         await loadFiles();
       } catch (error) {
@@ -406,9 +422,9 @@
     }
 
     function renderStats() {
-      const awaiting = allFiles.filter(f => (f.paymentStatus || "awaiting_payment") === "awaiting_payment").length;
-      const partPaid = allFiles.filter(f => f.paymentStatus === "part_paid").length;
-      const fullyPaid = allFiles.filter(f => f.paymentStatus === "fully_paid").length;
+      const awaiting = allFiles.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length;
+      const partPaid = allFiles.filter(f => getEffectivePaymentStatus(f) === "part_paid").length;
+      const fullyPaid = allFiles.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length;
       const followUps = allFiles.filter(f => Number(f.followUpDue || 0) > 0).length;
       const withLinks = allFiles.filter(f => (f.paymentLink || "").trim()).length;
       const dueNow = allFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
@@ -457,7 +473,7 @@
             <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
-          <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
+          <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
           <td class="p-3">
             <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
@@ -493,7 +509,7 @@
             <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
-          <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
+          <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
           <td class="p-3">
             <button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>
           </td>
@@ -539,7 +555,7 @@
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
           <td class="p-3">${ownerBadge(file)}</td>
-          <td class="p-3">${paymentStatusLabel(file.paymentStatus)}</td>
+          <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
           <td class="p-3">
             <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
@@ -553,8 +569,12 @@
       body.innerHTML = "";
 
       const priority = [...allFiles]
-        .filter(f => (f.paymentStatus || "awaiting_payment") !== "fully_paid" || Number(f.followUpDue || 0) > 0)
-        .sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0))
+        .filter(f => getEffectivePaymentStatus(f) !== "fully_paid" || Number(f.followUpDue || 0) > 0)
+        .sort((a, b) => {
+          const aPriority = Number(a.amountDueNow || 0) + Number(a.followUpDue || 0);
+          const bPriority = Number(b.amountDueNow || 0) + Number(b.followUpDue || 0);
+          return bPriority - aPriority;
+        })
         .slice(0, 8);
 
       if (!priority.length) {
@@ -572,7 +592,7 @@
         row.innerHTML = `
           <td class="p-3">
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
-            <div class="text-xs text-slate-500">${paymentStatusLabel(file.paymentStatus)}</div>
+            <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
           </td>
           <td class="p-3">${ownerBadge(file)}</td>
           <td class="p-3">${money(file.amountDueNow)}</td>
