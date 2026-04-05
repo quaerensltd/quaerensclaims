@@ -239,10 +239,12 @@
               <input id="recommendedCloserText" type="text" class="input" placeholder="Optional recommendation" />
             </div>
           </div>
+
           <div class="mt-4">
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
             <textarea id="assessmentSummaryBox" class="input" rows="8" placeholder="This will auto-fill from the intake submission if available."></textarea>
           </div>
+
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
             <a id="viewAssessmentBtn" href="#" class="btn btn-secondary hidden">View Assessment Report</a>
@@ -275,6 +277,7 @@
               <input id="appointmentTime" type="time" class="input" />
             </div>
           </div>
+
           <div class="flex flex-wrap gap-3">
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Appointment</button>
@@ -336,6 +339,7 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+
     const statusFilter = document.getElementById("statusFilter");
     const timingFilter = document.getElementById("timingFilter");
     const listerFilter = document.getElementById("listerFilter");
@@ -344,6 +348,7 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
@@ -585,13 +590,8 @@
           (selectedTiming === "overdue" && appointmentDateValue && appointmentDateValue < today) ||
           (selectedTiming === "none" && !appointmentDateValue);
 
-        const matchesLister =
-          selectedLister === "all" ||
-          (lead.assignedToUid || "") === selectedLister;
-
-        const matchesCloser =
-          selectedCloser === "all" ||
-          (lead.closerUid || "") === selectedCloser;
+        const matchesLister = selectedLister === "all" || (lead.assignedToUid || "") === selectedLister;
+        const matchesCloser = selectedCloser === "all" || (lead.closerUid || "") === selectedCloser;
 
         const haystack = `
           ${lead.forename || ""}
@@ -680,6 +680,7 @@
       const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
       const snap = await getDocs(q);
       if (snap.empty) return null;
+
       const docs = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => {
@@ -687,6 +688,7 @@
           const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
           return bTime - aTime;
         });
+
       return docs[0];
     }
 
@@ -728,6 +730,7 @@
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
+
       const possibleIds = [
         lead.convertedToSubmissionId,
         lead.submissionId,
@@ -759,6 +762,7 @@
       }
 
       const assessment = await findAssessmentForLead(selectedLead.id);
+
       if (assessment) {
         selectedAssessmentId = assessment.id;
         viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessment.id}`;
@@ -803,6 +807,7 @@
 
       const linkedSubmission = await loadLinkedSubmissionForLead(selectedLead);
       const intakeSummary = buildSubmissionAssessmentSummary(linkedSubmission);
+
       assessmentSummaryBox.value =
         selectedLead.assessmentSummary ||
         selectedLead.generatedAssessmentText ||
@@ -816,6 +821,7 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
+
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -930,6 +936,7 @@
       if (!selectedLead) return null;
 
       let summary = assessmentSummaryBox.value.trim();
+
       if (!summary) {
         const fallbackSummary =
           buildSubmissionAssessmentSummary(selectedSubmissionData) ||
@@ -1022,7 +1029,6 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "qualified",
         lastAction: "qualified"
@@ -1106,7 +1112,6 @@
 
     markConvertedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "converted",
         convertedAt: serverTimestamp(),
@@ -1116,7 +1121,6 @@
 
     markClosedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "closed",
         closed: true,

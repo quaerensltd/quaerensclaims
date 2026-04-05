@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Manager Assessment Detail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .label { display: block; font-size: 0.95rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.4rem; }
+    .value { font-size: 0.95rem; color: #1f2937; line-height: 1.6; word-break: break-word; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #3730a3; }
+    .readonly-box {
+      width: 100%;
+      min-height: 240px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      color: #1f2937;
+      white-space: pre-wrap;
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media print {
+      header, .no-print, #toast { display: none !important; }
+      body { background: white !important; }
+      .card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      main { max-width: 100% !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading assessment report...</p>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200 no-print">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Assessment Detail</h1>
+          <p class="text-sm text-slate-500">Assessment report, client handoff, and closer dispatch</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Assessment Report</h2>
+            <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
+          </div>
+          <div class="text-sm text-slate-500 space-y-1">
+            <div id="assessmentDateText"></div>
+            <div id="createdByText"></div>
+            <div id="linkedLeadText"></div>
+            <div id="submissionText"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Details</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div><span class="label">Client Name</span><div class="value" id="clientNameText">-</div></div>
+            <div><span class="label">Claim Type</span><div class="value" id="claimTypeText">-</div></div>
+            <div><span class="label">Telephone</span><div class="value" id="telephoneText">-</div></div>
+            <div><span class="label">Email</span><div class="value" id="emailText">-</div></div>
+            <div><span class="label">Postcode</span><div class="value" id="postcodeText">-</div></div>
+            <div><span class="label">Recommended Closer</span><div class="value" id="recommendedCloserLabel">-</div></div>
+            <div class="md:col-span-2"><span class="label">Address</span><div class="value" id="addressText">-</div></div>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Outcome</h3>
+          <div class="space-y-4">
+            <div>
+              <span class="label">Outcome</span>
+              <div class="value" id="assessmentOutcomeBadge">-</div>
+            </div>
+            <div>
+              <span class="label">Manager Notes</span>
+              <div id="managerNotesBox" class="readonly-box">No manager notes recorded.</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Report</h3>
+        <div id="assessmentReportBox" class="readonly-box">No assessment report available.</div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Manager Actions</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="label" for="closerSelect">Assign Closer</label>
+            <select id="closerSelect" class="input">
+              <option value="">Select closer</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="appointmentDate">Appointment Date</label>
+            <input id="appointmentDate" type="date" class="input" />
+          </div>
+          <div>
+            <label class="label" for="appointmentTime">Appointment Time</label>
+            <input id="appointmentTime" type="time" class="input" />
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap gap-3 no-print">
+          <button id="printBtn" class="btn btn-secondary" type="button">Print / Save PDF</button>
+          <button id="emailClientBtn" class="btn btn-secondary" type="button">Email Assessment to Client</button>
+          <button id="sendToCloserBtn" class="btn btn-primary" type="button">Send to Closer</button>
+          <a id="openLeadBtn" href="#" class="btn btn-secondary hidden">Open Lead</a>
+        </div>
+
+        <p id="actionMessage" class="text-sm text-green-700 hidden mt-4"></p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      addDoc,
+      collection,
+      query,
+      where,
+      serverTimestamp,
+      arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const assessmentId = params.get("id");
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const closerSelect = document.getElementById("closerSelect");
+    const appointmentDate = document.getElementById("appointmentDate");
+    const appointmentTime = document.getElementById("appointmentTime");
+    const printBtn = document.getElementById("printBtn");
+    const emailClientBtn = document.getElementById("emailClientBtn");
+    const sendToCloserBtn = document.getElementById("sendToCloserBtn");
+    const openLeadBtn = document.getElementById("openLeadBtn");
+    const actionMessage = document.getElementById("actionMessage");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let assessmentData = null;
+    let allUsers = [];
+    let closerUsers = [];
+    let linkedLead = null;
+    let linkedSubmission = null;
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function setActionMessage(text, isError = false) {
+      actionMessage.textContent = text;
+      actionMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      actionMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => actionMessage.classList.add("hidden"), 3500);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      try {
+        const d = value.toDate ? value.toDate() : new Date(value);
+        return d.toLocaleString("en-GB");
+      } catch {
+        return "-";
+      }
+    }
+
+    function formatClaimType(type) {
+      switch (type) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
+    }
+
+    function assessmentOutcomeBadge(value) {
+      if (value === "strong_case") return `<span class="badge badge-green">Strong Case</span>`;
+      if (value === "possible_case") return `<span class="badge badge-blue">Possible Case</span>`;
+      if (value === "needs_documents") return `<span class="badge badge-amber">Needs More Documents</span>`;
+      if (value === "not_viable") return `<span class="badge badge-red">Not Viable</span>`;
+      return `<span class="badge badge-slate">Not Set</span>`;
+    }
+
+    function clientNameFromAssessment(data) {
+      const client = data.client || {};
+      return `${client.forename || client.firstName || ""} ${client.surname || client.secondName || ""}`.trim() || "-";
+    }
+
+    function clientEmailFromAssessment(data) {
+      return data.client?.email || "";
+    }
+
+    function clientPhoneFromAssessment(data) {
+      return data.client?.telephone || data.client?.mobile || data.client?.landline || "-";
+    }
+
+    function addressFromAssessment(data) {
+      return data.client?.address || "-";
+    }
+
+    function postcodeFromAssessment(data) {
+      return data.client?.postcode || "-";
+    }
+
+    async function checkManagerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No staff profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadUsers() {
+      const snap = await getDocs(collection(db, "users"));
+      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      closerUsers = allUsers.filter(user => user.role === "closer");
+
+      closerSelect.innerHTML = `<option value="">Select closer</option>`;
+      closerUsers.forEach(user => {
+        const option = document.createElement("option");
+        option.value = user.id;
+        option.textContent = user.name || user.email || user.id;
+        closerSelect.appendChild(option);
+      });
+    }
+
+    async function loadAssessment() {
+      if (!assessmentId) {
+        alert("Missing assessment ID.");
+        window.location.href = "/manager-leads-overview.html";
+        return;
+      }
+
+      const assessmentRef = doc(db, "managerAssessments", assessmentId);
+      const assessmentSnap = await getDoc(assessmentRef);
+
+      if (!assessmentSnap.exists()) {
+        alert("Assessment report not found.");
+        window.location.href = "/manager-leads-overview.html";
+        return;
+      }
+
+      assessmentData = { id: assessmentSnap.id, ...assessmentSnap.data() };
+
+      document.getElementById("detailTitle").textContent = clientNameFromAssessment(assessmentData);
+      document.getElementById("detailSubtitle").textContent = `Assessment ID: ${assessmentData.id}`;
+      document.getElementById("assessmentDateText").textContent = `Created: ${formatDateTime(assessmentData.createdAt)}`;
+      document.getElementById("createdByText").textContent = `Prepared by: ${assessmentData.createdBy?.name || assessmentData.createdBy?.email || "-"}`;
+      document.getElementById("linkedLeadText").textContent = `Lead ID: ${assessmentData.leadId || "-"}`;
+      document.getElementById("submissionText").textContent = `Submission ID: ${assessmentData.submissionId || "-"}`;
+
+      document.getElementById("clientNameText").textContent = clientNameFromAssessment(assessmentData);
+      document.getElementById("claimTypeText").textContent = formatClaimType(assessmentData.claimType);
+      document.getElementById("telephoneText").textContent = clientPhoneFromAssessment(assessmentData);
+      document.getElementById("emailText").textContent = clientEmailFromAssessment(assessmentData) || "-";
+      document.getElementById("postcodeText").textContent = postcodeFromAssessment(assessmentData);
+      document.getElementById("addressText").textContent = addressFromAssessment(assessmentData);
+      document.getElementById("recommendedCloserLabel").textContent = assessmentData.recommendedCloser || "-";
+
+      document.getElementById("assessmentOutcomeBadge").innerHTML = assessmentOutcomeBadge(assessmentData.assessmentOutcome);
+      document.getElementById("managerNotesBox").textContent = assessmentData.managerNotes || "No manager notes recorded.";
+      document.getElementById("assessmentReportBox").textContent =
+        assessmentData.generatedAssessmentText ||
+        assessmentData.assessmentSummary ||
+        "No assessment report available.";
+
+      if (assessmentData.recommendedCloser) {
+        const recommended = closerUsers.find(user => {
+          const label = `${user.name || ""} ${user.email || ""}`.toLowerCase();
+          return label.includes(assessmentData.recommendedCloser.toLowerCase());
+        });
+        if (recommended) {
+          closerSelect.value = recommended.id;
+        }
+      }
+
+      if (assessmentData.leadId) {
+        openLeadBtn.href = `/manager-leads-overview.html`;
+        openLeadBtn.classList.remove("hidden");
+      }
+
+      await loadLinkedLeadAndSubmission();
+      hideLoader();
+    }
+
+    async function loadLinkedLeadAndSubmission() {
+      linkedLead = null;
+      linkedSubmission = null;
+
+      if (assessmentData.leadId) {
+        try {
+          const leadSnap = await getDoc(doc(db, "leadAssignments", assessmentData.leadId));
+          if (leadSnap.exists()) {
+            linkedLead = { id: leadSnap.id, ...leadSnap.data() };
+            if (linkedLead.closerAppointmentDate) appointmentDate.value = linkedLead.closerAppointmentDate;
+            if (linkedLead.closerAppointmentTime) appointmentTime.value = linkedLead.closerAppointmentTime;
+            if (linkedLead.closerUid) closerSelect.value = linkedLead.closerUid;
+          }
+        } catch (error) {
+          console.error("Could not load linked lead:", error);
+        }
+      }
+
+      const possibleSubmissionId = assessmentData.submissionId || linkedLead?.convertedToSubmissionId || linkedLead?.submissionId || "";
+      if (possibleSubmissionId) {
+        try {
+          const submissionSnap = await getDoc(doc(db, "claimSubmissions", possibleSubmissionId));
+          if (submissionSnap.exists()) {
+            linkedSubmission = { id: submissionSnap.id, ...submissionSnap.data() };
+          }
+        } catch (error) {
+          console.error("Could not load linked submission:", error);
+        }
+      }
+    }
+
+    async function createOrUpdateCloserAssignment() {
+      if (!linkedLead && !assessmentData.leadId) {
+        throw new Error("This assessment is not linked to a lead.");
+      }
+
+      if (!closerSelect.value) {
+        throw new Error("Please select a closer.");
+      }
+
+      const closerUser = closerUsers.find(user => user.id === closerSelect.value);
+      if (!closerUser) {
+        throw new Error("Selected closer could not be found.");
+      }
+
+      const appointment = {
+        date: appointmentDate.value || "",
+        time: appointmentTime.value || ""
+      };
+
+      const statusValue = appointment.date && appointment.time ? "Appointment Booked" : "Assigned";
+
+      const client = linkedSubmission?.client || {};
+      const payload = {
+        sourceLeadId: assessmentData.leadId || linkedLead?.id || "",
+        leadAssignmentId: assessmentData.leadId || linkedLead?.id || "",
+        assessmentId: assessmentData.id,
+        submissionId: assessmentData.submissionId || linkedSubmission?.id || "",
+        claimType: assessmentData.claimType || linkedLead?.claimType || linkedLead?.type || "",
+        closer: {
+          uid: closerUser.id,
+          name: closerUser.name || "",
+          email: closerUser.email || ""
+        },
+        client: {
+          firstName: client.firstName || linkedLead?.forename || "",
+          secondName: client.secondName || linkedLead?.surname || "",
+          firstName2: client.firstName2 || "",
+          secondName2: client.secondName2 || "",
+          landline: client.landline || "",
+          mobile: client.mobile || linkedLead?.telephone || "",
+          email: client.email || linkedLead?.email || "",
+          address: client.address || assessmentData.client?.address || ""
+        },
+        appointment,
+        status: statusValue,
+        outcome: "",
+        assessmentSummary: assessmentData.assessmentSummary || "",
+        generatedAssessmentText: assessmentData.generatedAssessmentText || assessmentData.assessmentSummary || "",
+        managerNotes: assessmentData.managerNotes || "",
+        handoffNotes: assessmentData.managerNotes || "",
+        product1: assessmentData.product1 || linkedSubmission?.product1 || {},
+        product2: assessmentData.product2 || linkedSubmission?.product2 || {},
+        assignedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        },
+        updatedAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+        lastUpdatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      };
+
+      const existingQuery = query(
+        collection(db, "closerAssignments"),
+        where("assessmentId", "==", assessmentData.id)
+      );
+      const existingSnap = await getDocs(existingQuery);
+
+      if (!existingSnap.empty) {
+        await updateDoc(doc(db, "closerAssignments", existingSnap.docs[0].id), payload);
+      } else {
+        await addDoc(collection(db, "closerAssignments"), {
+          ...payload,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      if (assessmentData.leadId) {
+        await updateDoc(doc(db, "leadAssignments", assessmentData.leadId), {
+          leadStatus: "sent_to_closer",
+          closerUid: closerUser.id,
+          closerAppointmentDate: appointment.date,
+          closerAppointmentTime: appointment.time,
+          sentToCloserAt: serverTimestamp(),
+          assessmentId: assessmentData.id,
+          assessmentSummary: assessmentData.assessmentSummary || "",
+          generatedAssessmentText: assessmentData.generatedAssessmentText || assessmentData.assessmentSummary || "",
+          managerNotes: assessmentData.managerNotes || "",
+          lastAction: appointment.date && appointment.time ? "closer_appointment_booked" : "sent_to_closer",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: appointment.date && appointment.time ? "closer_appointment_booked" : "sent_to_closer",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: appointment.date && appointment.time
+              ? `Assessment sent to closer and booked for ${appointment.date} ${appointment.time}.`
+              : "Assessment sent to closer."
+          })
+        });
+      }
+    }
+
+    function emailAssessmentToClient() {
+      const email = clientEmailFromAssessment(assessmentData).trim();
+      if (!email) {
+        setActionMessage("No client email address found.", true);
+        return;
+      }
+
+      const subject = encodeURIComponent(`Quaerens Assessment Report - ${clientNameFromAssessment(assessmentData)}`);
+      const body = encodeURIComponent(
+`Dear ${clientNameFromAssessment(assessmentData)},
+
+Please find below the summary of your assessment report.
+
+Claim Type:
+${formatClaimType(assessmentData.claimType)}
+
+Assessment Outcome:
+${assessmentData.assessmentOutcome || "-"}
+
+Assessment Report:
+${assessmentData.generatedAssessmentText || assessmentData.assessmentSummary || "-"}
+
+Kind regards,
+${currentUserData.name || "Quaerens"}`
+      );
+
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    }
+
+    printBtn.addEventListener("click", () => {
+      window.print();
+    });
+
+    emailClientBtn.addEventListener("click", () => {
+      emailAssessmentToClient();
+    });
+
+    sendToCloserBtn.addEventListener("click", async () => {
+      try {
+        await createOrUpdateCloserAssignment();
+        setActionMessage("Assessment sent to closer successfully.");
+        showToast("Assessment sent to closer.");
+      } catch (error) {
+        console.error("Failed sending to closer:", error);
+        setActionMessage(error.message || "Could not send to closer.", true);
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+        await loadUsers();
+        await loadAssessment();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load assessment report.");
+        window.location.href = "/manager-leads-overview.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>
