@@ -91,6 +91,7 @@
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
           <a href="/processing-daily-attendance.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
           <a href="/processing-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <a href="/processing-monthly-attendance.html" class="btn btn-secondary py-2 px-4">Monthly Attendance</a>
@@ -141,9 +142,10 @@
           <div class="grid md:grid-cols-2 gap-4">
             <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Panel</a>
             <a href="/processing-payments.html" class="btn btn-primary text-center">Open Payments</a>
+            <a href="/processing-cases-dashboard.html" class="btn btn-primary text-center">Open Case Management</a>
             <a href="/processing-daily-attendance.html" class="btn btn-secondary text-center">Daily Staff Attendance</a>
             <a href="/processing-weekly-attendance.html" class="btn btn-secondary text-center">Weekly Staff Attendance</a>
-            <a href="/processing-monthly-attendance.html" class="btn btn-secondary text-center md:col-span-2">Monthly Staff Attendance</a>
+            <a href="/processing-monthly-attendance.html" class="btn btn-secondary text-center">Monthly Staff Attendance</a>
           </div>
         </section>
 
@@ -353,9 +355,11 @@
       if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
         return "part_paid";
       }
+
       if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
@@ -376,6 +380,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -391,7 +396,6 @@
     async function loadFiles() {
       const snapshot = await getDocs(collection(db, "processingFiles"));
       allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
       renderStats();
       renderMyFiles();
       renderUnassignedFiles();
