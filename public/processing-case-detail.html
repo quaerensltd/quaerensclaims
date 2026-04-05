@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Processing Case Detail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .label { display: block; font-size: 0.95rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.4rem; }
+    .value { font-size: 0.95rem; color: #1f2937; line-height: 1.6; word-break: break-word; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .hidden { display: none; }
+    .readonly-box {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      color: #1f2937;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-indigo { background: #e0e7ff; color: #3730a3; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+    .timeline-item { border-left: 3px solid #dbeafe; padding-left: 1rem; position: relative; }
+    .timeline-item::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      background: #2563eb;
+      border-radius: 999px;
+      position: absolute;
+      left: -6px;
+      top: 6px;
+    }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading case file...</p>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Case Detail</h1>
+          <p class="text-sm text-slate-500">Full client file, documents, timeline, tasks, and communications</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Processing Case</h2>
+            <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
+          </div>
+          <div class="text-sm text-slate-500 space-y-1">
+            <div id="assignedToText"></div>
+            <div id="sourceRefText"></div>
+            <div id="lastActivityText"></div>
+            <div id="nextActionText"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <div class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Details</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div><span class="label">First Name</span><div class="value" id="client_firstName">-</div></div>
+            <div><span class="label">Second Name</span><div class="value" id="client_secondName">-</div></div>
+            <div><span class="label">First Name 2</span><div class="value" id="client_firstName2">-</div></div>
+            <div><span class="label">Second Name 2</span><div class="value" id="client_secondName2">-</div></div>
+            <div><span class="label">Landline</span><div class="value" id="client_landline">-</div></div>
+            <div><span class="label">Mobile</span><div class="value" id="client_mobile">-</div></div>
+            <div><span class="label">Email</span><div class="value" id="client_email">-</div></div>
+            <div class="md:col-span-2"><span class="label">Address</span><div class="value" id="client_address">-</div></div>
+          </div>
+        </div>
+
+        <div class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Case Overview</h3>
+          <div class="space-y-4">
+            <div>
+              <span class="label">Claim Type</span>
+              <div class="value" id="claimTypeText">-</div>
+            </div>
+            <div>
+              <span class="label">Case Stage</span>
+              <div class="value" id="caseStageBadge">-</div>
+            </div>
+            <div>
+              <span class="label">Priority</span>
+              <div class="value" id="priorityBadge">-</div>
+            </div>
+            <div>
+              <span class="label">Waiting On</span>
+              <div class="value" id="waitingOnBadge">-</div>
+            </div>
+            <div>
+              <span class="label">Closer</span>
+              <div class="value" id="closerText">-</div>
+            </div>
+            <div>
+              <span class="label">Case Reference</span>
+              <div class="value" id="caseReferenceText">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Documents & Reports</h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="border border-slate-200 rounded-xl p-4">
+            <div class="font-bold text-slate-800 mb-2">Client Contract</div>
+            <a id="contractUrlLink" href="#" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline hidden">Open Document</a>
+            <div id="contractUrlEmpty" class="text-slate-500 text-sm">No document linked.</div>
+          </div>
+          <div class="border border-slate-200 rounded-xl p-4">
+            <div class="font-bold text-slate-800 mb-2">Assessment Report</div>
+            <a id="assessmentReportUrlLink" href="#" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline hidden">Open Document</a>
+            <div id="assessmentReportUrlEmpty" class="text-slate-500 text-sm">No document linked.</div>
+          </div>
+          <div class="border border-slate-200 rounded-xl p-4">
+            <div class="font-bold text-slate-800 mb-2">Strategy Report</div>
+            <a id="strategyReportUrlLink" href="#" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline hidden">Open Document</a>
+            <div id="strategyReportUrlEmpty" class="text-slate-500 text-sm">No document linked.</div>
+          </div>
+          <div class="border border-slate-200 rounded-xl p-4">
+            <div class="font-bold text-slate-800 mb-2">Payment Link</div>
+            <a id="paymentLinkDoc" href="#" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline hidden">Open Link</a>
+            <div id="paymentLinkEmpty" class="text-slate-500 text-sm">No payment link saved.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
+          <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
+        </section>
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Strategy / Processing Notes</h3>
+          <div id="strategySummaryBox" class="readonly-box">No strategy report available.</div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Case Controls</h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label class="label" for="caseStage">Case Stage</label>
+            <select id="caseStage" class="input">
+              <option value="new_case">New Case</option>
+              <option value="under_review">Under Review</option>
+              <option value="awaiting_documents">Awaiting Documents</option>
+              <option value="documents_complete">Documents Complete</option>
+              <option value="complaint_preparing">Complaint Preparing</option>
+              <option value="complaint_sent">Complaint Sent</option>
+              <option value="awaiting_response">Awaiting Response</option>
+              <option value="follow_up_sent">Follow-Up Sent</option>
+              <option value="ombudsman_stage">Ombudsman Stage</option>
+              <option value="settled">Settled</option>
+              <option value="rejected">Rejected</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="priority">Priority</label>
+            <select id="priority" class="input">
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="waitingOn">Waiting On</label>
+            <select id="waitingOn" class="input">
+              <option value="none">Nothing</option>
+              <option value="client">Client</option>
+              <option value="bank">Bank</option>
+              <option value="finance_company">Finance Company</option>
+              <option value="ombudsman">Ombudsman</option>
+              <option value="internal">Internal</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="nextActionDate">Next Action Date</label>
+            <input id="nextActionDate" class="input" type="date" />
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="label" for="processingNotes">Internal Processing Notes</label>
+          <textarea id="processingNotes" class="input" rows="6" placeholder="Internal case notes, strategy, updates, pending points..."></textarea>
+        </div>
+
+        <div class="mt-4 grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="label" for="contractUrl">Client Contract URL</label>
+            <input id="contractUrl" class="input" type="text" placeholder="https://..." />
+          </div>
+          <div>
+            <label class="label" for="assessmentReportUrl">Assessment Report URL</label>
+            <input id="assessmentReportUrl" class="input" type="text" placeholder="https://..." />
+          </div>
+          <div>
+            <label class="label" for="strategyReportUrl">Strategy Report URL</label>
+            <input id="strategyReportUrl" class="input" type="text" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-col md:flex-row gap-3">
+          <button id="saveCaseBtn" class="btn btn-primary" type="button">Save Case Update</button>
+          <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-extrabold text-blue-900">Add Activity Log Entry</h3>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="label" for="eventType">Type</label>
+              <select id="eventType" class="input">
+                <option value="phone_call">Phone Call</option>
+                <option value="email_sent">Email Sent</option>
+                <option value="email_received">Email Received</option>
+                <option value="document_received">Document Received</option>
+                <option value="letter_sent">Letter Sent</option>
+                <option value="complaint_submitted">Complaint Submitted</option>
+                <option value="response_received">Response Received</option>
+                <option value="reminder_sent">Reminder Sent</option>
+                <option value="internal_note">Internal Note</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="eventDirection">Direction</label>
+              <select id="eventDirection" class="input">
+                <option value="outbound">Outbound</option>
+                <option value="inbound">Inbound</option>
+                <option value="internal">Internal</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="eventTargetParty">Target Party</label>
+              <select id="eventTargetParty" class="input">
+                <option value="client">Client</option>
+                <option value="bank">Bank</option>
+                <option value="finance_company">Finance Company</option>
+                <option value="ombudsman">Ombudsman</option>
+                <option value="solicitor">Solicitor</option>
+                <option value="internal">Internal</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="eventSubject">Subject</label>
+              <input id="eventSubject" class="input" type="text" placeholder="Short subject" />
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="label" for="eventSummary">Summary</label>
+            <input id="eventSummary" class="input" type="text" placeholder="Short summary of what happened" />
+          </div>
+
+          <div class="mt-4">
+            <label class="label" for="eventNotes">Notes</label>
+            <textarea id="eventNotes" class="input" rows="6" placeholder="Full notes of the call, email, document, submission, or update..."></textarea>
+          </div>
+
+          <div class="mt-4">
+            <label class="label" for="eventAttachmentUrl">Attachment URL (optional)</label>
+            <input id="eventAttachmentUrl" class="input" type="text" placeholder="https://..." />
+          </div>
+
+          <div class="mt-6">
+            <button id="addEventBtn" class="btn btn-primary" type="button">Add Log Entry</button>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-extrabold text-blue-900">Add Task / Follow-Up</h3>
+          </div>
+
+          <div>
+            <label class="label" for="taskTitle">Task Title</label>
+            <input id="taskTitle" class="input" type="text" placeholder="Example: Chase client for ID document" />
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="label" for="taskDueDate">Due Date</label>
+              <input id="taskDueDate" class="input" type="date" />
+            </div>
+            <div>
+              <label class="label" for="taskPriority">Priority</label>
+              <select id="taskPriority" class="input">
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button id="addTaskBtn" class="btn btn-primary" type="button">Add Task</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-extrabold text-blue-900">Activity Timeline</h3>
+              <p class="text-sm text-slate-500 mt-1">Calls, emails, documents, and actions</p>
+            </div>
+          </div>
+          <div id="eventsList" class="space-y-5"></div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-extrabold text-blue-900">Tasks & Follow-Ups</h3>
+              <p class="text-sm text-slate-500 mt-1">Open and completed actions</p>
+            </div>
+          </div>
+          <div id="tasksList" class="space-y-4"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      addDoc,
+      collection,
+      query,
+      where,
+      orderBy,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const caseId = params.get("id");
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const saveCaseBtn = document.getElementById("saveCaseBtn");
+    const saveMessage = document.getElementById("saveMessage");
+
+    const caseStage = document.getElementById("caseStage");
+    const priority = document.getElementById("priority");
+    const waitingOn = document.getElementById("waitingOn");
+    const nextActionDate = document.getElementById("nextActionDate");
+    const processingNotes = document.getElementById("processingNotes");
+    const contractUrl = document.getElementById("contractUrl");
+    const assessmentReportUrl = document.getElementById("assessmentReportUrl");
+    const strategyReportUrl = document.getElementById("strategyReportUrl");
+
+    const eventType = document.getElementById("eventType");
+    const eventDirection = document.getElementById("eventDirection");
+    const eventTargetParty = document.getElementById("eventTargetParty");
+    const eventSubject = document.getElementById("eventSubject");
+    const eventSummary = document.getElementById("eventSummary");
+    const eventNotes = document.getElementById("eventNotes");
+    const eventAttachmentUrl = document.getElementById("eventAttachmentUrl");
+    const addEventBtn = document.getElementById("addEventBtn");
+
+    const taskTitle = document.getElementById("taskTitle");
+    const taskDueDate = document.getElementById("taskDueDate");
+    const taskPriority = document.getElementById("taskPriority");
+    const addTaskBtn = document.getElementById("addTaskBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let caseData = null;
+    let caseEvents = [];
+    let caseTasks = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function setValue(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value || "-";
+    }
+
+    function formatClaimType(type) {
+      switch (type) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
+    }
+
+    function clientName(item) {
+      const first = item.client?.firstName || "";
+      const second = item.client?.secondName || "";
+      return `${first} ${second}`.trim() || "-";
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      try {
+        const d = value.toDate ? value.toDate() : new Date(value);
+        return d.toLocaleDateString("en-GB");
+      } catch {
+        return "-";
+      }
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      try {
+        const d = value.toDate ? value.toDate() : new Date(value);
+        return d.toLocaleString("en-GB");
+      } catch {
+        return "-";
+      }
+    }
+
+    function toDateInputValue(value) {
+      if (!value) return "";
+      try {
+        const d = value.toDate ? value.toDate() : new Date(value);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      } catch {
+        return "";
+      }
+    }
+
+    function stageBadge(stage) {
+      switch (stage) {
+        case "new_case": return `<span class="badge badge-blue">New Case</span>`;
+        case "under_review": return `<span class="badge badge-amber">Under Review</span>`;
+        case "awaiting_documents": return `<span class="badge badge-indigo">Awaiting Documents</span>`;
+        case "documents_complete": return `<span class="badge badge-green">Documents Complete</span>`;
+        case "complaint_preparing": return `<span class="badge badge-violet">Complaint Preparing</span>`;
+        case "complaint_sent": return `<span class="badge badge-blue">Complaint Sent</span>`;
+        case "awaiting_response": return `<span class="badge badge-amber">Awaiting Response</span>`;
+        case "follow_up_sent": return `<span class="badge badge-indigo">Follow-Up Sent</span>`;
+        case "ombudsman_stage": return `<span class="badge badge-violet">Ombudsman Stage</span>`;
+        case "settled": return `<span class="badge badge-green">Settled</span>`;
+        case "rejected": return `<span class="badge badge-red">Rejected</span>`;
+        case "closed": return `<span class="badge badge-slate">Closed</span>`;
+        default: return `<span class="badge badge-slate">-</span>`;
+      }
+    }
+
+    function priorityBadge(value) {
+      switch (value) {
+        case "urgent": return `<span class="badge badge-red">Urgent</span>`;
+        case "high": return `<span class="badge badge-rose">High</span>`;
+        case "normal": return `<span class="badge badge-blue">Normal</span>`;
+        case "low": return `<span class="badge badge-slate">Low</span>`;
+        default: return `<span class="badge badge-slate">Normal</span>`;
+      }
+    }
+
+    function waitingOnBadge(value) {
+      switch (value) {
+        case "client": return `<span class="badge badge-indigo">Client</span>`;
+        case "bank": return `<span class="badge badge-blue">Bank</span>`;
+        case "finance_company": return `<span class="badge badge-violet">Finance Company</span>`;
+        case "ombudsman": return `<span class="badge badge-amber">Ombudsman</span>`;
+        case "internal": return `<span class="badge badge-slate">Internal</span>`;
+        case "none": return `<span class="badge badge-green">Nothing</span>`;
+        default: return `<span class="badge badge-slate">-</span>`;
+      }
+    }
+
+    function eventTypeLabel(type) {
+      switch (type) {
+        case "phone_call": return "Phone Call";
+        case "email_sent": return "Email Sent";
+        case "email_received": return "Email Received";
+        case "document_received": return "Document Received";
+        case "letter_sent": return "Letter Sent";
+        case "complaint_submitted": return "Complaint Submitted";
+        case "response_received": return "Response Received";
+        case "reminder_sent": return "Reminder Sent";
+        case "internal_note": return "Internal Note";
+        default: return type || "-";
+      }
+    }
+
+    async function checkProcessingAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+
+      if (userData.role !== "processing") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadCase() {
+      if (!caseId) {
+        alert("Missing case ID.");
+        window.location.href = "/processing-cases-dashboard.html";
+        return;
+      }
+
+      const caseRef = doc(db, "processingCases", caseId);
+      const caseSnap = await getDoc(caseRef);
+
+      if (!caseSnap.exists()) {
+        alert("Case file not found.");
+        window.location.href = "/processing-cases-dashboard.html";
+        return;
+      }
+
+      caseData = { id: caseSnap.id, ...caseSnap.data() };
+
+      document.getElementById("detailTitle").textContent = clientName(caseData);
+      document.getElementById("detailSubtitle").textContent = `Case ID: ${caseId}`;
+      document.getElementById("assignedToText").textContent = `Assigned To: ${caseData.assignedToName || caseData.assignedToEmail || "-"}`;
+      document.getElementById("sourceRefText").textContent = `Source Assignment: ${caseData.sourceAssignmentId || "-"}`;
+      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(caseData.lastActivityAt)}`;
+      document.getElementById("nextActionText").textContent = `Next Action: ${formatDate(caseData.nextActionDate)}`;
+
+      setValue("client_firstName", caseData.client?.firstName);
+      setValue("client_secondName", caseData.client?.secondName);
+      setValue("client_firstName2", caseData.client?.firstName2);
+      setValue("client_secondName2", caseData.client?.secondName2);
+      setValue("client_landline", caseData.client?.landline);
+      setValue("client_mobile", caseData.client?.mobile);
+      setValue("client_email", caseData.client?.email);
+      setValue("client_address", caseData.client?.address);
+
+      setValue("claimTypeText", formatClaimType(caseData.claimType));
+      setValue("closerText", caseData.closer?.name || caseData.closer?.email);
+      setValue("caseReferenceText", caseData.caseReference || caseId);
+
+      document.getElementById("caseStageBadge").innerHTML = stageBadge(caseData.caseStage || "");
+      document.getElementById("priorityBadge").innerHTML = priorityBadge(caseData.priority || "normal");
+      document.getElementById("waitingOnBadge").innerHTML = waitingOnBadge(caseData.waitingOn || "none");
+
+      document.getElementById("assessmentSummaryBox").textContent = caseData.assessmentSummary || "No assessment summary available.";
+      document.getElementById("strategySummaryBox").textContent =
+        caseData.strategySummary ||
+        caseData.processingNotes ||
+        "No strategy report available.";
+
+      caseStage.value = caseData.caseStage || "new_case";
+      priority.value = caseData.priority || "normal";
+      waitingOn.value = caseData.waitingOn || "none";
+      nextActionDate.value = toDateInputValue(caseData.nextActionDate);
+      processingNotes.value = caseData.processingNotes || "";
+      contractUrl.value = caseData.contractUrl || "";
+      assessmentReportUrl.value = caseData.assessmentReportUrl || "";
+      strategyReportUrl.value = caseData.strategyReportUrl || "";
+
+      setDocumentLink("contractUrl", caseData.contractUrl);
+      setDocumentLink("assessmentReportUrl", caseData.assessmentReportUrl);
+      setDocumentLink("strategyReportUrl", caseData.strategyReportUrl);
+      setPaymentLink(caseData.paymentLink || "");
+
+      await loadEvents();
+      await loadTasks();
+
+      hideLoader();
+    }
+
+    function setDocumentLink(baseId, url) {
+      const link = document.getElementById(`${baseId}Link`);
+      const empty = document.getElementById(`${baseId}Empty`);
+
+      if (url && url.trim()) {
+        link.href = url.trim();
+        link.classList.remove("hidden");
+        empty.classList.add("hidden");
+      } else {
+        link.href = "#";
+        link.classList.add("hidden");
+        empty.classList.remove("hidden");
+      }
+    }
+
+    function setPaymentLink(url) {
+      const link = document.getElementById("paymentLinkDoc");
+      const empty = document.getElementById("paymentLinkEmpty");
+
+      if (url && url.trim()) {
+        link.href = url.trim();
+        link.classList.remove("hidden");
+        empty.classList.add("hidden");
+      } else {
+        link.href = "#";
+        link.classList.add("hidden");
+        empty.classList.remove("hidden");
+      }
+    }
+
+    async function loadEvents() {
+      try {
+        const q = query(
+          collection(db, "processingCaseEvents"),
+          where("caseId", "==", caseId),
+          orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        caseEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (error) {
+        console.error("Could not load events:", error);
+        caseEvents = [];
+      }
+      renderEvents();
+    }
+
+    async function loadTasks() {
+      try {
+        const q = query(
+          collection(db, "processingCaseTasks"),
+          where("caseId", "==", caseId),
+          orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        caseTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (error) {
+        console.error("Could not load tasks:", error);
+        caseTasks = [];
+      }
+      renderTasks();
+    }
+
+    function renderEvents() {
+      const container = document.getElementById("eventsList");
+      container.innerHTML = "";
+
+      if (!caseEvents.length) {
+        container.innerHTML = `<div class="text-slate-500">No activity logged yet.</div>`;
+        return;
+      }
+
+      caseEvents.forEach(item => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "timeline-item";
+        wrapper.innerHTML = `
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="font-bold text-slate-800">${eventTypeLabel(item.type)}</div>
+            <div class="text-xs text-slate-500">${formatDateTime(item.createdAt)}</div>
+          </div>
+          <div class="mt-2 text-sm text-slate-500">
+            ${item.direction || "-"} · ${item.targetParty || "-"} · ${item.createdBy?.name || item.createdBy?.email || "-"}
+          </div>
+          <div class="mt-2 font-semibold text-slate-800">${item.subject || "-"}</div>
+          <div class="mt-2 text-slate-700">${item.summary || "-"}</div>
+          <div class="mt-2 text-slate-600 whitespace-pre-wrap">${item.notes || ""}</div>
+          ${
+            item.attachmentUrl
+              ? `<div class="mt-3"><a href="${item.attachmentUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline">Open Attachment</a></div>`
+              : ""
+          }
+        `;
+        container.appendChild(wrapper);
+      });
+    }
+
+    function renderTasks() {
+      const container = document.getElementById("tasksList");
+      container.innerHTML = "";
+
+      if (!caseTasks.length) {
+        container.innerHTML = `<div class="text-slate-500">No tasks created yet.</div>`;
+        return;
+      }
+
+      caseTasks.forEach(item => {
+        const due = formatDate(item.dueDate);
+        const completed = item.completed === true;
+        const wrapper = document.createElement("div");
+        wrapper.className = "border border-slate-200 rounded-xl p-4";
+        wrapper.innerHTML = `
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="font-bold text-slate-800">${item.title || "-"}</div>
+            <div>${completed ? `<span class="badge badge-green">Completed</span>` : `<span class="badge badge-amber">Open</span>`}</div>
+          </div>
+          <div class="mt-2 text-sm text-slate-500">
+            Due: ${due} · Priority: ${item.priority || "normal"} · Assigned To: ${item.assignedToName || item.assignedToEmail || "-"}
+          </div>
+          ${
+            completed
+              ? `<div class="mt-2 text-sm text-emerald-700">Completed: ${formatDateTime(item.completedAt)}</div>`
+              : `<div class="mt-3"><button class="btn btn-secondary py-2 px-4" data-complete-task="${item.id}">Mark Completed</button></div>`
+          }
+        `;
+        container.appendChild(wrapper);
+      });
+
+      document.querySelectorAll("[data-complete-task]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await completeTask(btn.getAttribute("data-complete-task"));
+        });
+      });
+    }
+
+    async function saveCaseUpdate() {
+      const payload = {
+        caseStage: caseStage.value,
+        priority: priority.value,
+        waitingOn: waitingOn.value,
+        nextActionDate: nextActionDate.value ? new Date(`${nextActionDate.value}T00:00:00`) : null,
+        processingNotes: processingNotes.value.trim(),
+        contractUrl: contractUrl.value.trim(),
+        assessmentReportUrl: assessmentReportUrl.value.trim(),
+        strategyReportUrl: strategyReportUrl.value.trim(),
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      };
+
+      await updateDoc(doc(db, "processingCases", caseId), payload);
+    }
+
+    async function addEvent() {
+      const subject = eventSubject.value.trim();
+      const summary = eventSummary.value.trim();
+      const notes = eventNotes.value.trim();
+
+      if (!summary) {
+        alert("Please enter at least a summary for the log entry.");
+        return;
+      }
+
+      await addDoc(collection(db, "processingCaseEvents"), {
+        caseId,
+        type: eventType.value,
+        direction: eventDirection.value,
+        targetParty: eventTargetParty.value,
+        subject,
+        summary,
+        notes,
+        attachmentUrl: eventAttachmentUrl.value.trim(),
+        createdAt: serverTimestamp(),
+        createdBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
+      await updateDoc(doc(db, "processingCases", caseId), {
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
+      eventSubject.value = "";
+      eventSummary.value = "";
+      eventNotes.value = "";
+      eventAttachmentUrl.value = "";
+
+      showToast("Log entry added.");
+      await loadEvents();
+      await loadCaseHeaderOnly();
+    }
+
+    async function addTask() {
+      const title = taskTitle.value.trim();
+
+      if (!title) {
+        alert("Please enter a task title.");
+        return;
+      }
+
+      await addDoc(collection(db, "processingCaseTasks"), {
+        caseId,
+        title,
+        dueDate: taskDueDate.value ? new Date(`${taskDueDate.value}T00:00:00`) : null,
+        priority: taskPriority.value,
+        completed: false,
+        assignedToUid: currentUser.uid,
+        assignedToName: currentUserData.name || "",
+        assignedToEmail: currentUser.email || "",
+        createdAt: serverTimestamp(),
+        createdBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
+      taskTitle.value = "";
+      taskDueDate.value = "";
+      taskPriority.value = "normal";
+
+      showToast("Task added.");
+      await loadTasks();
+    }
+
+    async function completeTask(taskId) {
+      await updateDoc(doc(db, "processingCaseTasks", taskId), {
+        completed: true,
+        completedAt: serverTimestamp()
+      });
+
+      showToast("Task completed.");
+      await loadTasks();
+    }
+
+    async function loadCaseHeaderOnly() {
+      const caseRef = doc(db, "processingCases", caseId);
+      const caseSnap = await getDoc(caseRef);
+      if (!caseSnap.exists()) return;
+
+      caseData = { id: caseSnap.id, ...caseSnap.data() };
+      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(caseData.lastActivityAt)}`;
+      document.getElementById("nextActionText").textContent = `Next Action: ${formatDate(caseData.nextActionDate)}`;
+      document.getElementById("caseStageBadge").innerHTML = stageBadge(caseData.caseStage || "");
+      document.getElementById("priorityBadge").innerHTML = priorityBadge(caseData.priority || "normal");
+      document.getElementById("waitingOnBadge").innerHTML = waitingOnBadge(caseData.waitingOn || "none");
+    }
+
+    saveCaseBtn.addEventListener("click", async () => {
+      try {
+        await saveCaseUpdate();
+        saveMessage.textContent = "Case updated successfully.";
+        saveMessage.classList.remove("hidden");
+        showToast("Case updated successfully.");
+        setTimeout(() => saveMessage.classList.add("hidden"), 3000);
+        await loadCase();
+      } catch (error) {
+        console.error("Failed to save case:", error);
+        alert("Could not save case update.");
+      }
+    });
+
+    addEventBtn.addEventListener("click", async () => {
+      try {
+        await addEvent();
+      } catch (error) {
+        console.error("Failed to add event:", error);
+        alert("Could not add activity log entry.");
+      }
+    });
+
+    addTaskBtn.addEventListener("click", async () => {
+      try {
+        await addTask();
+      } catch (error) {
+        console.error("Failed to add task:", error);
+        alert("Could not add task.");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkProcessingAccess(user);
+        if (!allowed) return;
+        await loadCase();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load case file.");
+        window.location.href = "/processing-cases-dashboard.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>
