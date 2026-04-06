@@ -68,6 +68,38 @@
       left: -6px;
       top: 6px;
     }
+    .report-box {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 2rem;
+      line-height: 1.8;
+      color: #1f2937;
+    }
+    .report-box h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 0.75rem;
+    }
+    .report-box h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-top: 1.35rem;
+      margin-bottom: 0.45rem;
+    }
+    .report-box p {
+      margin-bottom: 0.8rem;
+      white-space: pre-wrap;
+    }
+    .report-box ul {
+      margin: 0.5rem 0 1rem 1.25rem;
+      list-style: disc;
+    }
+    .report-box li {
+      margin-bottom: 0.35rem;
+    }
     #toast {
       position: fixed;
       top: 20px;
@@ -105,7 +137,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Case Detail</h1>
-          <p class="text-sm text-slate-500">Full client file, documents, timeline, tasks, and communications</p>
+          <p class="text-sm text-slate-500">Full client file, strategy, follow-up planning, tasks, and communications</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -210,9 +242,67 @@
           <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
         </section>
         <section class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Strategy / Processing Notes</h3>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Saved Strategy / Processing Notes</h3>
           <div id="strategySummaryBox" class="readonly-box">No strategy report available.</div>
         </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Processing Strategy Builder</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="label" for="strategyOverviewInput">Case Strategy Overview</label>
+              <textarea id="strategyOverviewInput" class="input" rows="5" placeholder="Overall strategy for how this claim should be progressed..."></textarea>
+            </div>
+            <div>
+              <label class="label" for="claimRouteInput">Complaint Route / Target Parties</label>
+              <textarea id="claimRouteInput" class="input" rows="5" placeholder="One line per route or party to pursue"></textarea>
+            </div>
+            <div>
+              <label class="label" for="evidenceNeededInput">Evidence / Documents Needed</label>
+              <textarea id="evidenceNeededInput" class="input" rows="5" placeholder="One line per required document or proof item"></textarea>
+            </div>
+            <div>
+              <label class="label" for="followUpPlanInput">Follow-Up Plan</label>
+              <textarea id="followUpPlanInput" class="input" rows="5" placeholder="One line per follow-up action"></textarea>
+            </div>
+            <div>
+              <label class="label" for="riskNotesInput">Risks / Gaps / Watchouts</label>
+              <textarea id="riskNotesInput" class="input" rows="5" placeholder="One line per risk or concern"></textarea>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button id="generateStrategyBtn" class="btn btn-secondary" type="button">Generate Strategy Pack</button>
+              <button id="saveStrategyBtn" class="btn btn-primary" type="button">Save Strategy Pack</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Internal Evidence Snapshot</h3>
+          <div class="space-y-4">
+            <div>
+              <span class="label">Product One</span>
+              <div id="product1SummaryBox" class="readonly-box">No product one information available.</div>
+            </div>
+            <div>
+              <span class="label">Product Two</span>
+              <div id="product2SummaryBox" class="readonly-box">No product two information available.</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h3 class="text-lg font-extrabold text-blue-900">Internal Processing Pack</h3>
+            <p class="text-sm text-slate-500">Processing strategy, follow-up route, evidence checklist, and operational next steps</p>
+          </div>
+        </div>
+        <div id="processingPackPreview" class="report-box">
+          <p>No processing strategy pack available.</p>
+        </div>
       </section>
 
       <section class="card p-6">
@@ -463,6 +553,14 @@
     const assessmentReportUrl = document.getElementById("assessmentReportUrl");
     const strategyReportUrl = document.getElementById("strategyReportUrl");
 
+    const strategyOverviewInput = document.getElementById("strategyOverviewInput");
+    const claimRouteInput = document.getElementById("claimRouteInput");
+    const evidenceNeededInput = document.getElementById("evidenceNeededInput");
+    const followUpPlanInput = document.getElementById("followUpPlanInput");
+    const riskNotesInput = document.getElementById("riskNotesInput");
+    const generateStrategyBtn = document.getElementById("generateStrategyBtn");
+    const saveStrategyBtn = document.getElementById("saveStrategyBtn");
+
     const eventType = document.getElementById("eventType");
     const eventDirection = document.getElementById("eventDirection");
     const eventTargetParty = document.getElementById("eventTargetParty");
@@ -492,6 +590,22 @@
       toast.textContent = message;
       toast.classList.add("show");
       setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function splitLines(text) {
+      return String(text || "")
+        .split("\n")
+        .map(x => x.trim())
+        .filter(Boolean);
     }
 
     function setValue(id, value) {
@@ -556,6 +670,14 @@
       });
     }
 
+    function objectToReadableLines(obj) {
+      const entries = Object.entries(obj || {}).filter(([_, value]) => String(value || "").trim() !== "");
+      if (!entries.length) return "No information recorded.";
+      return entries
+        .map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}: ${value}`)
+        .join("\n");
+    }
+
     function stageBadge(stage) {
       switch (stage) {
         case "new_case": return `<span class="badge badge-blue">New Case</span>`;
@@ -611,24 +733,147 @@
       }
     }
 
+    function autoStrategyOverview() {
+      return `${clientName(caseData)} should now be progressed through a structured complaint and evidence-gathering workflow. The matter should be reviewed against the assessment findings, supporting documentation, representations made at point of sale, and the most suitable complaint route based on supplier, finance, or third-party involvement.`;
+    }
+
+    function autoClaimRoute() {
+      return [
+        "Review whether the primary complaint should be directed to the supplier, finance company, bank, or another linked party.",
+        "Check whether there is any dissolved supplier issue that changes the recovery route.",
+        "Assess whether an ombudsman or escalation path may be required if the initial complaint is rejected or delayed."
+      ].join("\n");
+    }
+
+    function autoEvidenceNeeded() {
+      const lines = [
+        "Signed agreement / order form / quotation",
+        "Invoice, receipt, or proof of payment",
+        "Finance agreement or lender details if applicable",
+        "Promotional material or sales representations",
+        "Guarantees, warranties, and certificates",
+        "Performance history / returns / bills / account evidence",
+        "Complaint correspondence already sent or received"
+      ];
+      return lines.join("\n");
+    }
+
+    function autoFollowUpPlan() {
+      return [
+        "Confirm full client document pack is available.",
+        "Build chronology of sale, promises, and post-sale outcome.",
+        "Draft first complaint letter to the correct target party.",
+        "Set diary date for follow-up if no response is received.",
+        "Escalate to next route if complaint is rejected or ignored."
+      ].join("\n");
+    }
+
+    function autoRiskNotes() {
+      return [
+        "Check for missing documents before finalising complaint wording.",
+        "Check for dissolved companies or unclear corporate identity.",
+        "Check if the limitation / age of transaction affects strategy.",
+        "Check for prior complaints or DSAR activity that may affect chronology.",
+        "Check whether losses can be clearly evidenced."
+      ].join("\n");
+    }
+
+    function prefillStrategyBuilder() {
+      if (!strategyOverviewInput.value.trim()) strategyOverviewInput.value = caseData.strategyOverview || autoStrategyOverview();
+      if (!claimRouteInput.value.trim()) claimRouteInput.value = caseData.claimRouteText || autoClaimRoute();
+      if (!evidenceNeededInput.value.trim()) evidenceNeededInput.value = caseData.evidenceNeededText || autoEvidenceNeeded();
+      if (!followUpPlanInput.value.trim()) followUpPlanInput.value = caseData.followUpPlanText || autoFollowUpPlan();
+      if (!riskNotesInput.value.trim()) riskNotesInput.value = caseData.riskNotesText || autoRiskNotes();
+    }
+
+    function buildProcessingPackHtml() {
+      const claimRoutes = splitLines(claimRouteInput.value);
+      const evidenceNeeded = splitLines(evidenceNeededInput.value);
+      const followUpPlan = splitLines(followUpPlanInput.value);
+      const risks = splitLines(riskNotesInput.value);
+
+      const listHtml = (items, emptyText) => {
+        if (!items.length) return `<p>${escapeHtml(emptyText)}</p>`;
+        return `<ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+      };
+
+      return `
+        <h2>Internal Processing Pack</h2>
+        <p><strong>Client:</strong> ${escapeHtml(clientName(caseData))}</p>
+        <p><strong>Claim Type:</strong> ${escapeHtml(formatClaimType(caseData.claimType))}</p>
+        <p><strong>Case Reference:</strong> ${escapeHtml(caseData.caseReference || caseId)}</p>
+
+        <h3>Assessment Position</h3>
+        <p>${escapeHtml(caseData.assessmentSummary || "No assessment summary available.")}</p>
+
+        <h3>Processing Strategy Overview</h3>
+        <p>${escapeHtml(strategyOverviewInput.value.trim() || "No strategy overview recorded.")}</p>
+
+        <h3>Complaint Route / Target Parties</h3>
+        ${listHtml(claimRoutes, "No complaint route recorded.")}
+
+        <h3>Evidence / Documents Needed</h3>
+        ${listHtml(evidenceNeeded, "No evidence checklist recorded.")}
+
+        <h3>Follow-Up Plan</h3>
+        ${listHtml(followUpPlan, "No follow-up plan recorded.")}
+
+        <h3>Risks / Gaps / Watchouts</h3>
+        ${listHtml(risks, "No risks recorded.")}
+      `;
+    }
+
+    function buildProcessingPackText() {
+      const claimRoutes = splitLines(claimRouteInput.value);
+      const evidenceNeeded = splitLines(evidenceNeededInput.value);
+      const followUpPlan = splitLines(followUpPlanInput.value);
+      const risks = splitLines(riskNotesInput.value);
+
+      return [
+        "INTERNAL PROCESSING PACK",
+        "",
+        `Client: ${clientName(caseData)}`,
+        `Claim Type: ${formatClaimType(caseData.claimType)}`,
+        `Case Reference: ${caseData.caseReference || caseId}`,
+        "",
+        "ASSESSMENT POSITION",
+        caseData.assessmentSummary || "-",
+        "",
+        "PROCESSING STRATEGY OVERVIEW",
+        strategyOverviewInput.value.trim() || "-",
+        "",
+        "COMPLAINT ROUTE / TARGET PARTIES",
+        claimRoutes.length ? claimRoutes.map(x => `- ${x}`).join("\n") : "-",
+        "",
+        "EVIDENCE / DOCUMENTS NEEDED",
+        evidenceNeeded.length ? evidenceNeeded.map(x => `- ${x}`).join("\n") : "-",
+        "",
+        "FOLLOW-UP PLAN",
+        followUpPlan.length ? followUpPlan.map(x => `- ${x}`).join("\n") : "-",
+        "",
+        "RISKS / GAPS / WATCHOUTS",
+        risks.length ? risks.map(x => `- ${x}`).join("\n") : "-"
+      ].join("\n");
+    }
+
+    function renderProcessingPackPreview() {
+      document.getElementById("processingPackPreview").innerHTML = buildProcessingPackHtml();
+    }
+
     async function checkProcessingAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
-
       if (userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -679,7 +924,6 @@
       setValue("client_mobile", caseData.client?.mobile);
       setValue("client_email", caseData.client?.email);
       setValue("client_address", caseData.client?.address);
-
       setValue("claimTypeText", formatClaimType(caseData.claimType));
       setValue("closerText", caseData.closer?.name || caseData.closer?.email);
       setValue("caseReferenceText", caseData.caseReference || caseId);
@@ -691,6 +935,7 @@
       document.getElementById("assessmentSummaryBox").textContent = caseData.assessmentSummary || "No assessment summary available.";
       document.getElementById("strategySummaryBox").textContent =
         caseData.strategySummary ||
+        caseData.processingPackText ||
         caseData.processingNotes ||
         "No strategy report available.";
 
@@ -698,6 +943,7 @@
       priority.value = caseData.priority || "normal";
       waitingOn.value = caseData.waitingOn || "none";
       nextActionDate.value = toDateInputValue(caseData.nextActionDate);
+
       processingNotes.value = caseData.processingNotes || "";
       contractUrl.value = caseData.contractUrl || "";
       assessmentReportUrl.value = caseData.assessmentReportUrl || "";
@@ -707,6 +953,18 @@
       setDocumentLink("assessmentReportUrl", caseData.assessmentReportUrl);
       setDocumentLink("strategyReportUrl", caseData.strategyReportUrl);
       setPaymentLink(caseData.paymentLink || "");
+
+      document.getElementById("product1SummaryBox").textContent = objectToReadableLines(caseData.product1 || {});
+      document.getElementById("product2SummaryBox").textContent = objectToReadableLines(caseData.product2 || {});
+
+      strategyOverviewInput.value = caseData.strategyOverview || "";
+      claimRouteInput.value = caseData.claimRouteText || "";
+      evidenceNeededInput.value = caseData.evidenceNeededText || "";
+      followUpPlanInput.value = caseData.followUpPlanText || "";
+      riskNotesInput.value = caseData.riskNotesText || "";
+
+      prefillStrategyBuilder();
+      renderProcessingPackPreview();
     }
 
     async function loadCase() {
@@ -715,16 +973,13 @@
         window.location.href = "/processing-cases-dashboard.html";
         return;
       }
-
       const caseRef = doc(db, "processingCases", caseId);
       const caseSnap = await getDoc(caseRef);
-
       if (!caseSnap.exists()) {
         alert("Case file not found.");
         window.location.href = "/processing-cases-dashboard.html";
         return;
       }
-
       caseData = { id: caseSnap.id, ...caseSnap.data() };
       renderCaseHeaderAndFields();
       await loadEvents();
@@ -765,12 +1020,10 @@
     function renderEvents() {
       const container = document.getElementById("eventsList");
       container.innerHTML = "";
-
       if (!caseEvents.length) {
         container.innerHTML = `<div class="text-slate-500">No activity logged yet.</div>`;
         return;
       }
-
       caseEvents.forEach(item => {
         const wrapper = document.createElement("div");
         wrapper.className = "timeline-item";
@@ -798,16 +1051,13 @@
     function renderTasks() {
       const container = document.getElementById("tasksList");
       container.innerHTML = "";
-
       if (!caseTasks.length) {
         container.innerHTML = `<div class="text-slate-500">No tasks created yet.</div>`;
         return;
       }
-
       caseTasks.forEach(item => {
         const due = formatDate(item.dueDate);
         const completed = item.completed === true;
-
         const wrapper = document.createElement("div");
         wrapper.className = "border border-slate-200 rounded-xl p-4";
         wrapper.innerHTML = `
@@ -834,6 +1084,39 @@
       });
     }
 
+    async function saveStrategyPack() {
+      const packText = buildProcessingPackText();
+      await updateDoc(doc(db, "processingCases", caseId), {
+        strategyOverview: strategyOverviewInput.value.trim(),
+        claimRouteText: claimRouteInput.value.trim(),
+        evidenceNeededText: evidenceNeededInput.value.trim(),
+        followUpPlanText: followUpPlanInput.value.trim(),
+        riskNotesText: riskNotesInput.value.trim(),
+        processingPackText: packText,
+        strategySummary: packText,
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+
+      caseData = {
+        ...caseData,
+        strategyOverview: strategyOverviewInput.value.trim(),
+        claimRouteText: claimRouteInput.value.trim(),
+        evidenceNeededText: evidenceNeededInput.value.trim(),
+        followUpPlanText: followUpPlanInput.value.trim(),
+        riskNotesText: riskNotesInput.value.trim(),
+        processingPackText: packText,
+        strategySummary: packText
+      };
+
+      document.getElementById("strategySummaryBox").textContent = packText || "No strategy report available.";
+      renderProcessingPackPreview();
+    }
+
     async function saveCaseUpdate() {
       const payload = {
         caseStage: caseStage.value,
@@ -852,7 +1135,6 @@
           email: currentUser.email || ""
         }
       };
-
       await updateDoc(doc(db, "processingCases", caseId), payload);
     }
 
@@ -869,7 +1151,6 @@
           email: currentUser.email || ""
         }
       });
-
       showToast("Case assigned to you.");
       await loadCase();
     }
@@ -922,7 +1203,6 @@
 
     async function addTask() {
       const title = taskTitle.value.trim();
-
       if (!title) {
         alert("Please enter a task title.");
         return;
@@ -983,6 +1263,25 @@
       await loadCase();
     }
 
+    generateStrategyBtn.addEventListener("click", () => {
+      renderProcessingPackPreview();
+      showToast("Strategy pack generated.");
+    });
+
+    saveStrategyBtn.addEventListener("click", async () => {
+      try {
+        await saveStrategyPack();
+        showToast("Strategy pack saved.");
+      } catch (error) {
+        console.error("Failed to save strategy pack:", error);
+        alert("Could not save strategy pack.");
+      }
+    });
+
+    [strategyOverviewInput, claimRouteInput, evidenceNeededInput, followUpPlanInput, riskNotesInput].forEach(el => {
+      el.addEventListener("input", renderProcessingPackPreview);
+    });
+
     saveCaseBtn.addEventListener("click", async () => {
       try {
         await saveCaseUpdate();
@@ -1029,7 +1328,6 @@
         window.location.href = "/login.html";
         return;
       }
-
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;
