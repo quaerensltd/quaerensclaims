@@ -448,8 +448,7 @@
       }
 
       const userData = userSnap.data();
-
-      if (userData.role !== "processing") {
+      if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -469,6 +468,11 @@
       } catch (error) {
         console.error("Failed to load processing cases:", error);
         resultsSummary.textContent = "Could not load case files.";
+        casesBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="p-6 text-center text-red-600">Error loading case files.</td>
+          </tr>
+        `;
       }
     }
 
@@ -484,7 +488,6 @@
         const normalizedStage = normalizeStage(item);
         const normalizedPriority = normalizePriority(item);
         const normalizedWaitingOn = normalizeWaitingOn(item);
-
         const itemAssignedUid = firstNonEmpty(
           item.assignedToUid,
           item.processingAssignedToUid,
@@ -494,13 +497,11 @@
         const matchesStage = selectedStage === "all" || normalizedStage === selectedStage;
         const matchesPriority = selectedPriority === "all" || normalizedPriority === selectedPriority;
         const matchesWaiting = selectedWaitingOn === "all" || normalizedWaitingOn === selectedWaitingOn;
-
         const matchesAssignment =
           selectedAssignment === "all" ||
           (selectedAssignment === "mine" && itemAssignedUid === currentUser.uid) ||
           (selectedAssignment === "unassigned" && !itemAssignedUid) ||
           (selectedAssignment === "others" && itemAssignedUid && itemAssignedUid !== currentUser.uid);
-
         const matchesClaimType = selectedClaimType === "all" || safeString(item.claimType) === selectedClaimType;
 
         const haystack = `
@@ -545,7 +546,6 @@
       document.getElementById("awaitingResponseStat").textContent = String(allCases.filter(x => normalizeStage(x) === "awaiting_response").length);
       document.getElementById("urgentStat").textContent = String(allCases.filter(x => normalizePriority(x) === "urgent").length);
       document.getElementById("overdueStat").textContent = String(allCases.filter(x => isOverdue(getNextActionValue(x))).length);
-
       document.getElementById("closedThisMonthStat").textContent = String(
         allCases.filter(x => {
           if (normalizeStage(x) !== "closed") return false;
