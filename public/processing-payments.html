@@ -32,6 +32,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -39,6 +40,26 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -48,6 +69,8 @@
       <p class="text-slate-600 font-medium">Loading payment tracking...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -60,6 +83,7 @@
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -68,11 +92,11 @@
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Payment Files</div>
+          <div class="text-sm text-slate-500">Total Payment Cases</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">My Payment Files</div>
+          <div class="text-sm text-slate-500">My Payment Cases</div>
           <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -125,8 +149,8 @@
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership</label>
               <select id="ownershipFilter" class="input">
-                <option value="all">All files</option>
-                <option value="mine">My files</option>
+                <option value="all">All cases</option>
+                <option value="mine">My cases</option>
                 <option value="unassigned">Unassigned</option>
                 <option value="others">Assigned to others</option>
               </select>
@@ -158,7 +182,7 @@
             </div>
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-              <input id="searchInput" type="text" class="input" placeholder="Client, email, closer, owner..." />
+              <input id="searchInput" type="text" class="input" placeholder="Client, email, owner, claim type..." />
             </div>
             <div class="flex items-end">
               <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Payments</button>
@@ -171,16 +195,15 @@
         <div class="flex items-center justify-between mb-4">
           <div>
             <h2 class="text-xl font-extrabold text-blue-900">Payment Tracking</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading payment files...</p>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading payment cases...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Closer</th>
+                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Owner</th>
                 <th class="text-left p-3">Due Now</th>
                 <th class="text-left p-3">Paid Now</th>
@@ -235,10 +258,17 @@
 
     let currentUser = null;
     let currentUserData = null;
-    let allFiles = [];
+    let allCases = [];
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
     function money(n) {
@@ -246,25 +276,42 @@
       return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
+    function normalizeClaimType(value) {
+      const raw = String(value || "").trim().toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("newbuild") || raw.includes("new build")) return "newbuild";
+      return raw;
+    }
+
+    function formatClaimType(type) {
+      const normalized = normalizeClaimType(type);
+      switch (normalized) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return type || "-";
+      }
+    }
+
     function clientName(file) {
       const first = file.client?.firstName || "";
       const second = file.client?.secondName || "";
-      return `${first} ${second}`.trim() || "-";
-    }
-
-    function closerName(file) {
-      return file.closer?.name || file.closer?.email || "-";
+      return `${first} ${second}`.trim() || file.caseReference || "-";
     }
 
     function ownerName(file) {
-      return file.processingAssignedToName || file.processingAssignedToEmail || "-";
+      return file.assignedToName || file.assignedToEmail || "-";
     }
 
     function ownerBadge(file) {
-      if (!file.processingAssignedToUid) {
+      if (!file.assignedToUid) {
         return `<span class="badge badge-amber">Unassigned</span>`;
       }
-      if (file.processingAssignedToUid === currentUser.uid) {
+      if (file.assignedToUid === currentUser.uid) {
         return `<span class="badge badge-green">Mine</span>`;
       }
       return `<span class="badge badge-slate">${ownerName(file)}</span>`;
@@ -277,7 +324,7 @@
     }
 
     function hasPaymentLink(file) {
-      return !!(file.paymentLink || "").trim();
+      return !!String(file.paymentLink || "").trim();
     }
 
     function hasFollowUpDue(file) {
@@ -294,9 +341,11 @@
       if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
         return "part_paid";
       }
+
       if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
@@ -311,7 +360,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing") {
+      if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -325,47 +374,47 @@
 
     async function loadFiles() {
       try {
-        const snapshot = await getDocs(collection(db, "processingFiles"));
-        allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const snapshot = await getDocs(collection(db, "processingCases"));
+        allCases = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         renderStats();
         renderPayments();
       } catch (error) {
         console.error("Failed to load payments:", error);
-        resultsSummary.textContent = "Could not load payment files.";
+        resultsSummary.textContent = "Could not load payment cases.";
       }
     }
 
     function renderStats() {
-      document.getElementById("totalFilesStat").textContent = String(allFiles.length);
+      document.getElementById("totalFilesStat").textContent = String(allCases.length);
       document.getElementById("myFilesStat").textContent = String(
-        allFiles.filter(f => f.processingAssignedToUid === currentUser.uid).length
+        allCases.filter(f => f.assignedToUid === currentUser.uid).length
       );
       document.getElementById("unassignedStat").textContent = String(
-        allFiles.filter(f => !f.processingAssignedToUid).length
+        allCases.filter(f => !f.assignedToUid).length
       );
       document.getElementById("awaitingStat").textContent = String(
-        allFiles.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
+        allCases.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
       );
       document.getElementById("partPaidStat").textContent = String(
-        allFiles.filter(f => getEffectivePaymentStatus(f) === "part_paid").length
+        allCases.filter(f => getEffectivePaymentStatus(f) === "part_paid").length
       );
       document.getElementById("fullyPaidStat").textContent = String(
-        allFiles.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length
+        allCases.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length
       );
       document.getElementById("followUpCountStat").textContent = String(
-        allFiles.filter(f => hasFollowUpDue(f)).length
+        allCases.filter(f => hasFollowUpDue(f)).length
       );
       document.getElementById("paymentLinkStat").textContent = String(
-        allFiles.filter(f => hasPaymentLink(f)).length
+        allCases.filter(f => hasPaymentLink(f)).length
       );
       document.getElementById("dueNowTotal").textContent = money(
-        allFiles.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0)
+        allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0)
       );
       document.getElementById("paidNowTotal").textContent = money(
-        allFiles.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0)
+        allCases.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0)
       );
       document.getElementById("followUpTotal").textContent = money(
-        allFiles.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0)
+        allCases.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0)
       );
     }
 
@@ -376,14 +425,14 @@
       const currentFollowUpFilter = followUpFilter.value;
       const term = searchInput.value.trim().toLowerCase();
 
-      return allFiles.filter(file => {
+      return allCases.filter(file => {
         const effectiveStatus = getEffectivePaymentStatus(file);
 
         const matchesOwnership =
           ownership === "all" ||
-          (ownership === "mine" && file.processingAssignedToUid === currentUser.uid) ||
-          (ownership === "unassigned" && !file.processingAssignedToUid) ||
-          (ownership === "others" && file.processingAssignedToUid && file.processingAssignedToUid !== currentUser.uid);
+          (ownership === "mine" && file.assignedToUid === currentUser.uid) ||
+          (ownership === "unassigned" && !file.assignedToUid) ||
+          (ownership === "others" && file.assignedToUid && file.assignedToUid !== currentUser.uid);
 
         const matchesPayment =
           paymentFilter === "all" || effectiveStatus === paymentFilter;
@@ -401,23 +450,23 @@
         const haystack = `
           ${clientName(file)}
           ${file.client?.email || ""}
-          ${closerName(file)}
           ${ownerName(file)}
           ${file.paymentLink || ""}
           ${file.processingNotes || ""}
           ${file.claimType || ""}
+          ${file.caseReference || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
         return matchesOwnership && matchesPayment && matchesLink && matchesFollowUp && matchesSearch;
       }).sort((a, b) => {
-        const aMine = a.processingAssignedToUid === currentUser.uid ? 0 : 1;
-        const bMine = b.processingAssignedToUid === currentUser.uid ? 0 : 1;
+        const aMine = a.assignedToUid === currentUser.uid ? 0 : 1;
+        const bMine = b.assignedToUid === currentUser.uid ? 0 : 1;
         if (aMine !== bMine) return aMine - bMine;
 
-        const aUnassigned = a.processingAssignedToUid ? 1 : 0;
-        const bUnassigned = b.processingAssignedToUid ? 1 : 0;
+        const aUnassigned = a.assignedToUid ? 1 : 0;
+        const bUnassigned = b.assignedToUid ? 1 : 0;
         if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
 
         const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
@@ -433,7 +482,7 @@
       if (!filtered.length) {
         paymentsBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No payment files found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No payment cases found.</td>
           </tr>
         `;
       } else {
@@ -443,7 +492,6 @@
             : "-";
 
           const effectiveStatus = getEffectivePaymentStatus(file);
-
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
           row.innerHTML = `
@@ -451,7 +499,7 @@
               <div class="font-semibold text-slate-800">${clientName(file)}</div>
               <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
             </td>
-            <td class="p-3">${closerName(file)}</td>
+            <td class="p-3">${formatClaimType(file.claimType)}</td>
             <td class="p-3">${ownerBadge(file)}</td>
             <td class="p-3">${money(file.amountDueNow)}</td>
             <td class="p-3">${money(file.amountPaidNow)}</td>
@@ -459,14 +507,14 @@
             <td class="p-3">${paymentStatusLabel(effectiveStatus)}</td>
             <td class="p-3">${linkText}</td>
             <td class="p-3">
-              <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open File</a>
+              <a href="/processing-case-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline">Open Case</a>
             </td>
           `;
           paymentsBody.appendChild(row);
         });
       }
 
-      resultsSummary.textContent = `${filtered.length} payment file(s) shown`;
+      resultsSummary.textContent = `${filtered.length} payment case(s) shown`;
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -474,6 +522,7 @@
         window.location.href = "/login.html";
         return;
       }
+
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;
@@ -501,7 +550,10 @@
     linkFilter.addEventListener("change", renderPayments);
     followUpFilter.addEventListener("change", renderPayments);
     searchInput.addEventListener("input", renderPayments);
-    refreshBtn.addEventListener("click", loadFiles);
+    refreshBtn.addEventListener("click", async () => {
+      await loadFiles();
+      showToast("Payments refreshed.");
+    });
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
