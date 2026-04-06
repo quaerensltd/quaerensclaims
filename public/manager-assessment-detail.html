@@ -22,8 +22,14 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav { background: #2563eb; color: white; }
-    .active-nav:hover { background: #1d4ed8; color: white; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -37,6 +43,7 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #3730a3; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
     .readonly-box {
       width: 100%;
       min-height: 180px;
@@ -50,36 +57,16 @@
       font-size: 0.95rem;
     }
     .report-box {
-      background: white;
+      width: 100%;
+      min-height: 260px;
       border: 1px solid #cbd5e1;
-      border-radius: 18px;
-      padding: 2rem;
-      line-height: 1.8;
+      border-radius: 14px;
+      padding: 1.25rem;
+      background: white;
       color: #1f2937;
-    }
-    .report-box h2 {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: #1e3a8a;
-      margin-bottom: 0.75rem;
-    }
-    .report-box h3 {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: #1e3a8a;
-      margin-top: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .report-box p {
-      margin-bottom: 0.8rem;
+      line-height: 1.8;
+      font-size: 0.97rem;
       white-space: pre-wrap;
-    }
-    .report-box ul {
-      margin: 0.5rem 0 1rem 1.25rem;
-      list-style: disc;
-    }
-    .report-box li {
-      margin-bottom: 0.35rem;
     }
     #toast {
       position: fixed;
@@ -97,15 +84,25 @@
       font-size: 0.9rem;
       font-weight: 600;
     }
-    #toast.show { opacity: 1; pointer-events: auto; }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
     @media print {
-      header, .no-print, #toast { display: none !important; }
-      body { background: white !important; }
-      .card, .report-box {
+      header, .no-print, #toast {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+      }
+      .card {
         box-shadow: none !important;
         border: 1px solid #cbd5e1 !important;
       }
-      main { max-width: 100% !important; padding: 0 !important; }
+      main {
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
     }
   </style>
 </head>
@@ -124,10 +121,11 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Assessment Detail</h1>
-          <p class="text-sm text-slate-500">Assessment report, client handoff, and closer dispatch</p>
+          <p class="text-sm text-slate-500">Assessment report, client handoff, closer dispatch, and processing creation</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
@@ -181,68 +179,44 @@
 
       <section class="grid lg:grid-cols-2 gap-6">
         <section class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Builder</h3>
-          <div class="space-y-4">
-            <div>
-              <label class="label" for="executiveSummaryInput">Executive Summary</label>
-              <textarea id="executiveSummaryInput" class="input" rows="5" placeholder="Short professional summary of the client position and likely claim angle..."></textarea>
-            </div>
-            <div>
-              <label class="label" for="strengthsInput">Key Strengths</label>
-              <textarea id="strengthsInput" class="input" rows="5" placeholder="One point per line"></textarea>
-            </div>
-            <div>
-              <label class="label" for="risksInput">Risks / Weaknesses / Missing Points</label>
-              <textarea id="risksInput" class="input" rows="5" placeholder="One point per line"></textarea>
-            </div>
-            <div>
-              <label class="label" for="nextStepsInput">Recommended Next Steps</label>
-              <textarea id="nextStepsInput" class="input" rows="5" placeholder="One point per line"></textarea>
-            </div>
-            <div>
-              <label class="label" for="clientFriendlySummaryInput">Client-Friendly Summary</label>
-              <textarea id="clientFriendlySummaryInput" class="input" rows="6" placeholder="This is the wording that can be shared with the client."></textarea>
-            </div>
-            <div class="flex flex-wrap gap-3 no-print">
-              <button id="generateReportBtn" class="btn btn-secondary" type="button">Generate Professional Report</button>
-              <button id="saveReportBtn" class="btn btn-primary" type="button">Save Assessment Report</button>
-            </div>
-          </div>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
+          <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
         </section>
 
         <section class="card p-6">
-          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Evidence Snapshot</h3>
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Email Preview</h3>
+          <div id="clientEmailPreviewBox" class="readonly-box">No client email preview available.</div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Report</h3>
+        <div id="assessmentReportBox" class="report-box">No assessment report available.</div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Processing Pack Summary</h3>
+          <div id="processingPackBox" class="readonly-box">No processing pack prepared yet.</div>
+        </section>
+
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Source Product Snapshot</h3>
           <div class="space-y-4">
             <div>
               <span class="label">Product One</span>
-              <div id="product1SummaryBox" class="readonly-box">No product one information available.</div>
+              <div id="product1Box" class="readonly-box">No product one information available.</div>
             </div>
             <div>
               <span class="label">Product Two</span>
-              <div id="product2SummaryBox" class="readonly-box">No product two information available.</div>
+              <div id="product2Box" class="readonly-box">No product two information available.</div>
             </div>
           </div>
         </section>
       </section>
 
       <section class="card p-6">
-        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
-          <div>
-            <h3 class="text-lg font-extrabold text-blue-900">Client Assessment Report</h3>
-            <p class="text-sm text-slate-500">Professional assessment document for manager review and client issue summary</p>
-          </div>
-          <div class="no-print flex gap-3 flex-wrap">
-            <button id="printBtn" class="btn btn-secondary" type="button">Print / Save PDF</button>
-            <button id="emailClientBtn" class="btn btn-secondary" type="button">Email Assessment to Client</button>
-          </div>
-        </div>
-        <div id="assessmentReportPreview" class="report-box">
-          <p>No assessment report available.</p>
-        </div>
-      </section>
-
-      <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Closer Dispatch</h3>
+        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Manager Actions</h3>
         <div class="grid md:grid-cols-3 gap-4">
           <div>
             <label class="label" for="closerSelect">Assign Closer</label>
@@ -259,10 +233,16 @@
             <input id="appointmentTime" type="time" class="input" />
           </div>
         </div>
+
         <div class="mt-6 flex flex-wrap gap-3 no-print">
+          <button id="printBtn" class="btn btn-secondary" type="button">Print / Save PDF</button>
+          <button id="emailClientBtn" class="btn btn-secondary" type="button">Email Assessment to Client</button>
           <button id="sendToCloserBtn" class="btn btn-primary" type="button">Send to Closer</button>
+          <button id="createProcessingBtn" class="btn btn-secondary" type="button">Create / Update Processing Case</button>
           <a id="openLeadBtn" href="#" class="btn btn-secondary hidden">Open Lead</a>
+          <a id="openProcessingBtn" href="#" class="btn btn-secondary hidden">Open Processing Case</a>
         </div>
+
         <p id="actionMessage" class="text-sm text-green-700 hidden mt-4"></p>
       </section>
     </main>
@@ -310,16 +290,10 @@
     const printBtn = document.getElementById("printBtn");
     const emailClientBtn = document.getElementById("emailClientBtn");
     const sendToCloserBtn = document.getElementById("sendToCloserBtn");
+    const createProcessingBtn = document.getElementById("createProcessingBtn");
     const openLeadBtn = document.getElementById("openLeadBtn");
+    const openProcessingBtn = document.getElementById("openProcessingBtn");
     const actionMessage = document.getElementById("actionMessage");
-    const generateReportBtn = document.getElementById("generateReportBtn");
-    const saveReportBtn = document.getElementById("saveReportBtn");
-
-    const executiveSummaryInput = document.getElementById("executiveSummaryInput");
-    const strengthsInput = document.getElementById("strengthsInput");
-    const risksInput = document.getElementById("risksInput");
-    const nextStepsInput = document.getElementById("nextStepsInput");
-    const clientFriendlySummaryInput = document.getElementById("clientFriendlySummaryInput");
 
     let currentUser = null;
     let currentUserData = null;
@@ -328,6 +302,7 @@
     let closerUsers = [];
     let linkedLead = null;
     let linkedSubmission = null;
+    let existingProcessingCase = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -345,15 +320,6 @@
       actionMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       actionMessage.classList.add(isError ? "text-red-600" : "text-green-700");
       setTimeout(() => actionMessage.classList.add("hidden"), 3500);
-    }
-
-    function escapeHtml(value) {
-      return String(value || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
     }
 
     function formatDateTime(value) {
@@ -420,182 +386,80 @@
         .join("\n");
     }
 
-    function autoExecutiveSummary() {
-      const clientName = clientNameFromAssessment(assessmentData);
+    function buildProcessingPackText() {
+      const assessmentSummary = assessmentData.assessmentSummary || assessmentData.generatedAssessmentText || "-";
       const claimType = formatClaimType(assessmentData.claimType);
-      const outcomeMap = {
-        strong_case: "appears to have a strong potential claim position",
-        possible_case: "appears to have a potentially viable claim position subject to deeper review",
-        needs_documents: "may have a claim, but further documents and evidence are needed before a final view can be confirmed",
-        not_viable: "does not presently show a strong enough claim position on the information currently available"
-      };
-      const outcomeText = outcomeMap[assessmentData.assessmentOutcome] || "requires further manager assessment";
-      return `${clientName} has been assessed in relation to a ${claimType.toLowerCase()} matter and ${outcomeText}. The information currently available suggests that the matter should be reviewed against the sales process, supporting paperwork, representations made at point of sale, post-sale performance, and any linked finance or third-party involvement.`;
-    }
-
-    function autoStrengths() {
-      const items = [];
-      const p1 = assessmentData.product1 || {};
-      const p2 = assessmentData.product2 || {};
-
-      if (String(p1.docs || "").toLowerCase() === "yes" || String(p2.docs || "").toLowerCase() === "yes") {
-        items.push("Client appears to hold supporting documentation for at least part of the transaction history.");
-      }
-      if (String(p1.investment || "").toLowerCase() === "yes" || String(p2.investment || "").toLowerCase() === "yes") {
-        items.push("The product appears to have been presented as an investment or return-generating arrangement.");
-      }
-      if (String(p1.energySavings || "").toLowerCase() === "yes" || String(p2.energySavings || "").toLowerCase() === "yes") {
-        items.push("There is an indication that expected savings or financial benefits formed part of the sales pitch.");
-      }
-      if (String(p1.returns || "").toLowerCase() === "no" || String(p2.returns || "").toLowerCase() === "no" || String(p1.returns || "").toLowerCase() === "partly" || String(p2.returns || "").toLowerCase() === "partly") {
-        items.push("Reported performance appears capable of comparison against original promises or expectations.");
-      }
-      if (String(p1.contactVendor || "").toLowerCase() === "yes" || String(p2.contactVendor || "").toLowerCase() === "yes") {
-        items.push("The client has already attempted to raise issues directly, which may assist the complaint chronology.");
-      }
-      if (String(p1.thirdPartyContact || "").toLowerCase() === "yes" || String(p2.thirdPartyContact || "").toLowerCase() === "yes") {
-        items.push("There may be third-party sales, referral, or introducer involvement relevant to liability and complaint strategy.");
-      }
-      if (!items.length) {
-        items.push("Further case review is required, but the current intake suggests there are grounds for structured investigation.");
-      }
-      return items.join("\n");
-    }
-
-    function autoRisks() {
-      const items = [];
-      const p1 = assessmentData.product1 || {};
-      const p2 = assessmentData.product2 || {};
-
-      if (String(p1.docs || "").toLowerCase() === "no" || String(p2.docs || "").toLowerCase() === "no") {
-        items.push("Missing paperwork may reduce the speed and precision of the initial complaint build.");
-      }
-      if (String(p1.vendorTrading || "").toLowerCase() === "no" || String(p2.vendorTrading || "").toLowerCase() === "no") {
-        items.push("At least one vendor may no longer be trading, which may affect recovery route and evidence gathering.");
-      }
-      if (String(p1.finances || "").toLowerCase() === "no" && String(p2.finances || "").toLowerCase() === "no") {
-        items.push("If no linked finance is available, recovery options may depend more heavily on supplier conduct and documentary evidence.");
-      }
-      if (String(p1.thirdPartyClaim || "").toLowerCase() === "yes" || String(p2.thirdPartyClaim || "").toLowerCase() === "yes") {
-        items.push("Previous third-party complaint steps should be checked carefully to avoid duplicated or inconsistent positions.");
-      }
-      items.push("Exact sales wording, documentary wording, and financial loss calculation still require detailed verification.");
-      return items.join("\n");
-    }
-
-    function autoNextSteps() {
-      const items = [
-        "Obtain and review full documentation pack, including contracts, quotations, invoices, finance records, guarantees, and promotional materials.",
-        "Identify the strongest complaint route based on supplier conduct, product performance, finance involvement, and any third-party sales chain.",
-        "Build a chronology of what was promised, what was delivered, and what financial or practical loss followed.",
-        "Prepare an initial complaint package and supporting evidence schedule.",
-        "Where appropriate, issue complaint correspondence to the relevant business, finance company, or other responsible party."
-      ];
-      return items.join("\n");
-    }
-
-    function autoClientFriendlySummary() {
       const clientName = clientNameFromAssessment(assessmentData);
-      const outcomeText = {
-        strong_case: "Based on the information currently available, your case appears to have strong grounds for further action.",
-        possible_case: "Based on the information currently available, your case appears to have reasonable grounds for further investigation.",
-        needs_documents: "Your matter may still have merit, but more documents are needed before a full view can be confirmed.",
-        not_viable: "At present, the matter does not appear strong enough to recommend immediate progression, although this could change if further evidence is produced."
-      }[assessmentData.assessmentOutcome] || "Your matter is still under review.";
-      return `Dear ${clientName},
 
-${outcomeText}
+      const evidence = [
+        "Signed agreement / order form / quotation",
+        "Invoice, receipt, or proof of payment",
+        "Finance agreement or lender details where applicable",
+        "Sales representations / brochures / promises made",
+        "Certificates, warranties, guarantees, and installation records",
+        "Any prior complaint correspondence",
+        "Performance evidence, losses, bills, or returns history"
+      ];
 
-Our review indicates that the case should now be considered against the documents available, the circumstances of sale, the representations made to you at the time, and the actual outcome you experienced afterwards. The next stage would usually involve collecting the full supporting documentation, confirming the exact loss position, and deciding the most appropriate complaint route.
-
-This summary is provisional and based on the information currently held.`;
-    }
-
-    function ensureBuilderPrefilled() {
-      if (!executiveSummaryInput.value.trim()) executiveSummaryInput.value = autoExecutiveSummary();
-      if (!strengthsInput.value.trim()) strengthsInput.value = autoStrengths();
-      if (!risksInput.value.trim()) risksInput.value = autoRisks();
-      if (!nextStepsInput.value.trim()) nextStepsInput.value = autoNextSteps();
-      if (!clientFriendlySummaryInput.value.trim()) clientFriendlySummaryInput.value = autoClientFriendlySummary();
-    }
-
-    function buildReportHtml() {
-      const clientName = escapeHtml(clientNameFromAssessment(assessmentData));
-      const claimType = escapeHtml(formatClaimType(assessmentData.claimType));
-      const outcome = escapeHtml((assessmentData.assessmentOutcome || "").replaceAll("_", " ") || "Not set");
-      const executiveSummary = escapeHtml(executiveSummaryInput.value.trim());
-      const clientFriendlySummary = escapeHtml(clientFriendlySummaryInput.value.trim());
-
-      const strengths = splitLines(strengthsInput.value);
-      const risks = splitLines(risksInput.value);
-      const nextSteps = splitLines(nextStepsInput.value);
-
-      const strengthsHtml = strengths.length
-        ? `<ul>${strengths.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
-        : `<p>No strengths recorded.</p>`;
-
-      const risksHtml = risks.length
-        ? `<ul>${risks.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
-        : `<p>No risks recorded.</p>`;
-
-      const nextStepsHtml = nextSteps.length
-        ? `<ul>${nextSteps.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
-        : `<p>No next steps recorded.</p>`;
-
-      return `
-        <h2>Assessment Report</h2>
-        <p><strong>Client:</strong> ${clientName}</p>
-        <p><strong>Claim Type:</strong> ${claimType}</p>
-        <p><strong>Assessment Outcome:</strong> ${outcome}</p>
-
-        <h3>Executive Summary</h3>
-        <p>${executiveSummary || "No executive summary recorded."}</p>
-
-        <h3>Key Strengths Identified</h3>
-        ${strengthsHtml}
-
-        <h3>Risks, Gaps, or Weaknesses</h3>
-        ${risksHtml}
-
-        <h3>Recommended Next Steps</h3>
-        ${nextStepsHtml}
-
-        <h3>Client-Facing Summary</h3>
-        <p>${clientFriendlySummary || "No client-facing summary recorded."}</p>
-      `;
-    }
-
-    function buildFullReportText() {
-      const strengths = splitLines(strengthsInput.value);
-      const risks = splitLines(risksInput.value);
-      const nextSteps = splitLines(nextStepsInput.value);
+      const routes = [
+        "Review whether supplier complaint should be made first.",
+        "Review whether finance company / bank route applies.",
+        "Check dissolved company position and alternative recovery route.",
+        "Escalate to ombudsman / further complaint stage if needed."
+      ];
 
       return [
-        `ASSESSMENT REPORT`,
-        ``,
-        `Client: ${clientNameFromAssessment(assessmentData)}`,
-        `Claim Type: ${formatClaimType(assessmentData.claimType)}`,
-        `Assessment Outcome: ${(assessmentData.assessmentOutcome || "Not set").replaceAll("_", " ")}`,
-        ``,
-        `EXECUTIVE SUMMARY`,
-        executiveSummaryInput.value.trim() || "-",
-        ``,
-        `KEY STRENGTHS IDENTIFIED`,
-        strengths.length ? strengths.map(x => `- ${x}`).join("\n") : "-",
-        ``,
-        `RISKS, GAPS, OR WEAKNESSES`,
-        risks.length ? risks.map(x => `- ${x}`).join("\n") : "-",
-        ``,
-        `RECOMMENDED NEXT STEPS`,
-        nextSteps.length ? nextSteps.map(x => `- ${x}`).join("\n") : "-",
-        ``,
-        `CLIENT-FACING SUMMARY`,
-        clientFriendlySummaryInput.value.trim() || "-"
+        "INTERNAL PROCESSING PACK",
+        "",
+        `Client: ${clientName}`,
+        `Claim Type: ${claimType}`,
+        `Assessment Outcome: ${assessmentData.assessmentOutcome || "-"}`,
+        "",
+        "ASSESSMENT POSITION",
+        assessmentSummary,
+        "",
+        "INITIAL PROCESSING STRATEGY",
+        "Review the assessment findings, supporting documents, representations at point of sale, and most suitable complaint route. Confirm the strongest responsible party before complaint drafting begins.",
+        "",
+        "TARGET ROUTES",
+        ...routes.map(x => `- ${x}`),
+        "",
+        "EVIDENCE CHECKLIST",
+        ...evidence.map(x => `- ${x}`),
+        "",
+        "FOLLOW-UP PLAN",
+        "- Confirm full client document pack.",
+        "- Build chronology of sale and post-sale issues.",
+        "- Draft first complaint letter to correct respondent.",
+        "- Diary follow-up date if no response is received.",
+        "- Escalate if complaint is rejected or ignored.",
+        "",
+        "RISKS / WATCHOUTS",
+        "- Missing paperwork may weaken complaint wording.",
+        "- Corporate status of supplier should be checked carefully.",
+        "- Historic transactions may need tighter chronology evidence.",
+        "- Prior complaints or DSAR responses may affect route."
       ].join("\n");
     }
 
-    function renderReportPreview() {
-      document.getElementById("assessmentReportPreview").innerHTML = buildReportHtml();
+    function buildClientEmailPreview() {
+      const clientName = clientNameFromAssessment(assessmentData);
+      const reportText = assessmentData.generatedAssessmentText || assessmentData.assessmentSummary || "-";
+
+      return [
+        `Dear ${clientName},`,
+        "",
+        "Please find your assessment summary below.",
+        "",
+        `Claim Type: ${formatClaimType(assessmentData.claimType)}`,
+        `Assessment Outcome: ${assessmentData.assessmentOutcome || "-"}`,
+        "",
+        "Assessment Report:",
+        reportText,
+        "",
+        "Kind regards,",
+        currentUserData?.name || "Quaerens"
+      ].join("\n");
     }
 
     async function checkManagerAccess(user) {
@@ -622,6 +486,7 @@ This summary is provisional and based on the information currently held.`;
       const snap = await getDocs(collection(db, "users"));
       allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       closerUsers = allUsers.filter(user => user.role === "closer");
+
       closerSelect.innerHTML = `<option value="">Select closer</option>`;
       closerUsers.forEach(user => {
         const option = document.createElement("option");
@@ -665,33 +530,36 @@ This summary is provisional and based on the information currently held.`;
       document.getElementById("recommendedCloserLabel").textContent = assessmentData.recommendedCloser || "-";
       document.getElementById("assessmentOutcomeBadge").innerHTML = assessmentOutcomeBadge(assessmentData.assessmentOutcome);
       document.getElementById("managerNotesBox").textContent = assessmentData.managerNotes || "No manager notes recorded.";
+      document.getElementById("assessmentSummaryBox").textContent = assessmentData.assessmentSummary || "No assessment summary available.";
+      document.getElementById("assessmentReportBox").textContent =
+        assessmentData.generatedAssessmentText ||
+        assessmentData.assessmentSummary ||
+        "No assessment report available.";
 
-      executiveSummaryInput.value = assessmentData.executiveSummary || "";
-      strengthsInput.value = assessmentData.strengthsText || "";
-      risksInput.value = assessmentData.risksText || "";
-      nextStepsInput.value = assessmentData.nextStepsText || "";
-      clientFriendlySummaryInput.value = assessmentData.clientFriendlySummary || "";
+      document.getElementById("processingPackBox").textContent =
+        assessmentData.processingPackText ||
+        buildProcessingPackText();
 
-      ensureBuilderPrefilled();
-
-      document.getElementById("product1SummaryBox").textContent = objectToReadableLines(assessmentData.product1 || {});
-      document.getElementById("product2SummaryBox").textContent = objectToReadableLines(assessmentData.product2 || {});
+      document.getElementById("clientEmailPreviewBox").textContent = buildClientEmailPreview();
+      document.getElementById("product1Box").textContent = objectToReadableLines(assessmentData.product1 || {});
+      document.getElementById("product2Box").textContent = objectToReadableLines(assessmentData.product2 || {});
 
       if (assessmentData.recommendedCloser) {
         const recommended = closerUsers.find(user => {
           const label = `${user.name || ""} ${user.email || ""}`.toLowerCase();
-          return label.includes(String(assessmentData.recommendedCloser).toLowerCase());
+          return label.includes(assessmentData.recommendedCloser.toLowerCase());
         });
         if (recommended) closerSelect.value = recommended.id;
       }
+
+      await loadLinkedLeadAndSubmission();
+      await loadExistingProcessingCase();
 
       if (assessmentData.leadId) {
         openLeadBtn.href = `/manager-leads-overview.html`;
         openLeadBtn.classList.remove("hidden");
       }
 
-      await loadLinkedLeadAndSubmission();
-      renderReportPreview();
       hideLoader();
     }
 
@@ -713,7 +581,12 @@ This summary is provisional and based on the information currently held.`;
         }
       }
 
-      const possibleSubmissionId = assessmentData.submissionId || linkedLead?.convertedToSubmissionId || linkedLead?.submissionId || "";
+      const possibleSubmissionId =
+        assessmentData.submissionId ||
+        linkedLead?.convertedToSubmissionId ||
+        linkedLead?.submissionId ||
+        "";
+
       if (possibleSubmissionId) {
         try {
           const submissionSnap = await getDoc(doc(db, "claimSubmissions", possibleSubmissionId));
@@ -726,67 +599,27 @@ This summary is provisional and based on the information currently held.`;
       }
     }
 
-    async function saveAssessmentReport() {
-      const fullText = buildFullReportText();
-
-      await updateDoc(doc(db, "managerAssessments", assessmentData.id), {
-        executiveSummary: executiveSummaryInput.value.trim(),
-        strengthsText: strengthsInput.value.trim(),
-        risksText: risksInput.value.trim(),
-        nextStepsText: nextStepsInput.value.trim(),
-        clientFriendlySummary: clientFriendlySummaryInput.value.trim(),
-        generatedAssessmentText: fullText,
-        assessmentSummary: fullText,
-        updatedAt: serverTimestamp(),
-        updatedBy: {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || ""
-        }
-      });
-
-      assessmentData = {
-        ...assessmentData,
-        executiveSummary: executiveSummaryInput.value.trim(),
-        strengthsText: strengthsInput.value.trim(),
-        risksText: risksInput.value.trim(),
-        nextStepsText: nextStepsInput.value.trim(),
-        clientFriendlySummary: clientFriendlySummaryInput.value.trim(),
-        generatedAssessmentText: fullText,
-        assessmentSummary: fullText
-      };
-
-      if (assessmentData.submissionId) {
-        try {
-          await updateDoc(doc(db, "claimSubmissions", assessmentData.submissionId), {
-            assessmentSummary: fullText,
-            managerNotes: assessmentData.managerNotes || "",
-            assessmentId: assessmentData.id,
-            status: "assessment_complete",
-            updatedAt: serverTimestamp()
-          });
-        } catch (error) {
-          console.error("Submission update skipped:", error);
-        }
+    async function loadExistingProcessingCase() {
+      existingProcessingCase = null;
+      if (!assessmentData.leadId) {
+        openProcessingBtn.classList.add("hidden");
+        return;
       }
 
-      if (assessmentData.leadId) {
-        try {
-          await updateDoc(doc(db, "leadAssignments", assessmentData.leadId), {
-            assessmentId: assessmentData.id,
-            assessmentSummary: fullText,
-            generatedAssessmentText: fullText,
-            leadStatus: "qualified",
-            managerNotes: assessmentData.managerNotes || "",
-            lastAction: "assessment_complete",
-            lastUpdatedAt: serverTimestamp()
-          });
-        } catch (error) {
-          console.error("Lead update skipped:", error);
+      try {
+        const q = query(collection(db, "processingCases"), where("assessmentId", "==", assessmentData.id));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          existingProcessingCase = { id: snap.docs[0].id, ...snap.docs[0].data() };
+          openProcessingBtn.href = `/processing-case-detail.html?id=${existingProcessingCase.id}`;
+          openProcessingBtn.classList.remove("hidden");
+        } else {
+          openProcessingBtn.href = "#";
+          openProcessingBtn.classList.add("hidden");
         }
+      } catch (error) {
+        console.error("Could not load existing processing case:", error);
       }
-
-      renderReportPreview();
     }
 
     async function createOrUpdateCloserAssignment() {
@@ -806,6 +639,7 @@ This summary is provisional and based on the information currently held.`;
         date: appointmentDate.value || "",
         time: appointmentTime.value || ""
       };
+
       const statusValue = appointment.date && appointment.time ? "Appointment Booked" : "Assigned";
       const client = linkedSubmission?.client || {};
 
@@ -894,6 +728,89 @@ This summary is provisional and based on the information currently held.`;
       }
     }
 
+    async function createOrUpdateProcessingCase() {
+      const client = linkedSubmission?.client || {};
+      const processingPackText = assessmentData.processingPackText || buildProcessingPackText();
+
+      const payload = {
+        sourceAssignmentId: assessmentData.leadId || linkedLead?.id || "",
+        sourceLeadId: assessmentData.leadId || linkedLead?.id || "",
+        assessmentId: assessmentData.id,
+        caseReference: existingProcessingCase?.caseReference || linkedLead?.caseReference || `CASE-${Date.now()}`,
+        claimType: assessmentData.claimType || linkedLead?.claimType || linkedLead?.type || "",
+        client: {
+          firstName: client.firstName || linkedLead?.forename || "",
+          secondName: client.secondName || linkedLead?.surname || "",
+          firstName2: client.firstName2 || "",
+          secondName2: client.secondName2 || "",
+          landline: client.landline || "",
+          mobile: client.mobile || linkedLead?.telephone || "",
+          email: client.email || linkedLead?.email || "",
+          address: client.address || assessmentData.client?.address || ""
+        },
+        closer: linkedLead?.closerUid
+          ? {
+              uid: linkedLead.closerUid,
+              name: "",
+              email: ""
+            }
+          : {},
+        assignedBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        },
+        assignedToUid: existingProcessingCase?.assignedToUid || "",
+        assignedToName: existingProcessingCase?.assignedToName || "",
+        assignedToEmail: existingProcessingCase?.assignedToEmail || "",
+        caseStage: existingProcessingCase?.caseStage || "new_case",
+        priority: existingProcessingCase?.priority || "normal",
+        waitingOn: existingProcessingCase?.waitingOn || "internal",
+        contractUrl: existingProcessingCase?.contractUrl || "",
+        assessmentReportUrl: existingProcessingCase?.assessmentReportUrl || "",
+        strategyReportUrl: existingProcessingCase?.strategyReportUrl || "",
+        assessmentSummary: assessmentData.assessmentSummary || "",
+        strategySummary: processingPackText,
+        generatedAssessmentText: assessmentData.generatedAssessmentText || "",
+        managerNotes: assessmentData.managerNotes || "",
+        handoffNotes: assessmentData.managerNotes || "",
+        processingNotes: existingProcessingCase?.processingNotes || "",
+        processingPackText,
+        paymentLink: existingProcessingCase?.paymentLink || "",
+        amountDueNow: existingProcessingCase?.amountDueNow || 0,
+        amountPaidNow: existingProcessingCase?.amountPaidNow || 0,
+        followUpDue: existingProcessingCase?.followUpDue || 0,
+        paymentStatus: existingProcessingCase?.paymentStatus || "awaiting_payment",
+        product1: assessmentData.product1 || linkedSubmission?.product1 || {},
+        product2: assessmentData.product2 || linkedSubmission?.product2 || {},
+        lastActivityAt: serverTimestamp(),
+        nextActionDate: existingProcessingCase?.nextActionDate || null,
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      };
+
+      if (existingProcessingCase?.id) {
+        await updateDoc(doc(db, "processingCases", existingProcessingCase.id), payload);
+      } else {
+        const newDoc = await addDoc(collection(db, "processingCases"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+        existingProcessingCase = { id: newDoc.id, ...payload };
+      }
+
+      await loadExistingProcessingCase();
+    }
+
     function emailAssessmentToClient() {
       const email = clientEmailFromAssessment(assessmentData).trim();
       if (!email) {
@@ -902,35 +819,9 @@ This summary is provisional and based on the information currently held.`;
       }
 
       const subject = encodeURIComponent(`Quaerens Assessment Report - ${clientNameFromAssessment(assessmentData)}`);
-      const body = encodeURIComponent(
-`Dear ${clientNameFromAssessment(assessmentData)},
-
-Please find below the summary of your assessment report.
-
-${buildFullReportText()}
-
-Kind regards,
-${currentUserData.name || "Quaerens"}`
-      );
-
+      const body = encodeURIComponent(buildClientEmailPreview());
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     }
-
-    generateReportBtn.addEventListener("click", () => {
-      renderReportPreview();
-      showToast("Professional report generated.");
-    });
-
-    saveReportBtn.addEventListener("click", async () => {
-      try {
-        await saveAssessmentReport();
-        setActionMessage("Assessment report saved successfully.");
-        showToast("Assessment report saved.");
-      } catch (error) {
-        console.error("Failed saving assessment report:", error);
-        setActionMessage("Could not save assessment report.", true);
-      }
-    });
 
     printBtn.addEventListener("click", () => {
       window.print();
@@ -942,7 +833,6 @@ ${currentUserData.name || "Quaerens"}`
 
     sendToCloserBtn.addEventListener("click", async () => {
       try {
-        await saveAssessmentReport();
         await createOrUpdateCloserAssignment();
         setActionMessage("Assessment sent to closer successfully.");
         showToast("Assessment sent to closer.");
@@ -952,8 +842,15 @@ ${currentUserData.name || "Quaerens"}`
       }
     });
 
-    [executiveSummaryInput, strengthsInput, risksInput, nextStepsInput, clientFriendlySummaryInput].forEach(el => {
-      el.addEventListener("input", renderReportPreview);
+    createProcessingBtn.addEventListener("click", async () => {
+      try {
+        await createOrUpdateProcessingCase();
+        setActionMessage("Processing case created / updated successfully.");
+        showToast("Processing case created.");
+      } catch (error) {
+        console.error("Failed creating processing case:", error);
+        setActionMessage(error.message || "Could not create processing case.", true);
+      }
     });
 
     onAuthStateChanged(auth, async (user) => {
