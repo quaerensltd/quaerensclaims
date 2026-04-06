@@ -106,7 +106,6 @@
               <option value="all">All statuses</option>
               <option value="awaiting_manager">Awaiting Manager</option>
               <option value="intake_in_progress">Intake In Progress</option>
-              <option value="draft">Draft</option>
               <option value="submitted">Submitted</option>
               <option value="in_review">In Review</option>
               <option value="assessment_complete">Assessment Complete</option>
@@ -304,6 +303,7 @@
     const sentToCloserStat = document.getElementById("sentToCloserStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
     const overdueStat = document.getElementById("overdueStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const closerSelect = document.getElementById("closerSelect");
@@ -380,10 +380,7 @@
         intake_in_progress: "Intake In Progress",
         submitted: "Submitted",
         in_review: "In Review",
-        assessment_complete: "Assessment Complete",
-        intake_submitted: "Intake Submitted",
-        intake_draft_saved: "Intake Draft Saved",
-        interested_intake_started: "Intake Started"
+        assessment_complete: "Assessment Complete"
       };
       return map[action] || action || "-";
     }
@@ -405,13 +402,12 @@
     function statusBadgeFromStatus(status) {
       if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
       if (status === "intake_in_progress") return `<span class="badge badge-amber">Intake In Progress</span>`;
-      if (status === "draft") return `<span class="badge badge-slate">Draft</span>`;
       if (status === "submitted") return `<span class="badge badge-blue">Submitted</span>`;
       if (status === "in_review") return `<span class="badge badge-indigo">In Review</span>`;
       if (status === "assessment_complete") return `<span class="badge badge-green">Assessment Complete</span>`;
       if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
       if (status === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
-      if (status === "converted") return `<span class="badge badge-violet">Converted</span>`;
+      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
       if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
       return `<span class="badge badge-slate">${status || "-"}</span>`;
     }
@@ -432,10 +428,6 @@
       const sentAt = lead.sentToManagerAt?.toDate ? lead.sentToManagerAt.toDate().getTime() : 0;
       if (!sentAt) return false;
       return Date.now() - sentAt > 24 * 60 * 60 * 1000;
-    }
-
-    function getLeadLinkedSubmissionId(lead) {
-      return lead.convertedToSubmissionId || lead.submissionId || lead.claimSubmissionId || lead.intakeSubmissionId || "";
     }
 
     function populateCloserFilters() {
@@ -530,13 +522,10 @@
       const queue = [];
 
       allLeadAssignments.forEach(lead => {
-        const linkedSubmissionId = getLeadLinkedSubmissionId(lead);
-
         queue.push({
           sourceType: "lead",
           id: lead.id,
           record: lead,
-          linkedSubmissionId,
           status: isLocked(lead) ? "closed" : (lead.leadStatus || "new"),
           searchName: clientName(lead),
           phone: lead.telephone || "",
@@ -563,7 +552,6 @@
             sourceType: "submission",
             id: submission.id,
             record: submission,
-            linkedSubmissionId: submission.id,
             status: submission.status || "submitted",
             searchName: clientNameFromSubmission(submission),
             phone: submission.client?.mobile || submission.client?.landline || "",
@@ -573,8 +561,8 @@
             closerUid: "",
             appointmentDate: "",
             appointmentTime: "",
-            updatedAtValue: submission.updatedAt?.toDate
-              ? submission.updatedAt.toDate().getTime()
+            updatedAtValue: submission.reviewedAt?.toDate
+              ? submission.reviewedAt.toDate().getTime()
               : (submission.createdAt?.toDate ? submission.createdAt.toDate().getTime() : 0)
           });
         }
@@ -607,7 +595,10 @@
           (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
           (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
           (selectedTiming === "none" && !item.appointmentDate);
-        const matchesCloser = selectedCloser === "all" || item.closerUid === selectedCloser;
+
+        const matchesCloser =
+          selectedCloser === "all" ||
+          item.closerUid === selectedCloser;
 
         const haystack = `
           ${item.searchName || ""}
@@ -618,20 +609,9 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
+
         return matchesStatus && matchesTiming && matchesCloser && matchesSearch;
       }).sort((a, b) => b.updatedAtValue - a.updatedAtValue);
-    }
-
-    function getActionHtml(item) {
-      if (item.sourceType === "submission") {
-        return `<a href="/intake-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
-      }
-
-      if (item.linkedSubmissionId) {
-        return `<a href="/intake-detail.html?id=${item.linkedSubmissionId}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
-      }
-
-      return `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
     }
 
     function renderQueue() {
@@ -648,6 +628,19 @@
         filtered.forEach(item => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
+
+          let actionHtml = "";
+
+          if (item.sourceType === "submission") {
+            actionHtml = `<a href="/intake-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
+          } else if (item.status === "intake_in_progress" && item.record.convertedToSubmissionId) {
+            actionHtml = `<a href="/intake-detail.html?id=${item.record.convertedToSubmissionId}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
+          } else if (item.status === "intake_in_progress") {
+            actionHtml = `<a href="/client-intake-portal.html?leadId=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
+          } else {
+            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
+          }
+
           tr.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${item.searchName || "-"}</div>
@@ -658,7 +651,7 @@
             <td class="p-3">${statusBadgeFromStatus(item.status)}</td>
             <td class="p-3">${item.appointmentDate ? `${item.appointmentDate} ${item.appointmentTime || ""}`.trim() : "-"}</td>
             <td class="p-3">${userDisplay(item.closerUid)}</td>
-            <td class="p-3">${getActionHtml(item)}</td>
+            <td class="p-3">${actionHtml}</td>
           `;
           leadsBody.appendChild(tr);
         });
@@ -695,7 +688,6 @@
     async function findAssessmentForLead(leadId) {
       const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
       const snap = await getDocs(q);
-
       if (snap.empty) return null;
 
       const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -710,7 +702,7 @@
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
-      selectedSubmissionId = getLeadLinkedSubmissionId(lead);
+      selectedSubmissionId = lead.convertedToSubmissionId || lead.submissionId || lead.claimSubmissionId || lead.intakeSubmissionId || "";
 
       if (!selectedSubmissionId) return null;
 
@@ -761,7 +753,6 @@
       notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
 
       await loadLinkedSubmissionForLead(selectedLead);
-
       const assessment = await findAssessmentForLead(selectedLead.id);
       selectedAssessmentId = assessment?.id || selectedLead.assessmentId || "";
 
@@ -846,9 +837,9 @@
         leadAssignmentId: lead.id,
         assessmentId: selectedAssessmentId || lead.assessmentId || "",
         submissionId: selectedSubmissionId || "",
-        claimType: lead.claimType || lead.type || selectedSubmissionData?.claimType || "",
+        claimType: lead.claimType || lead.type || "",
         closer: {
-          uid: closerUid,
+          uid: closerUser.id,
           name: closerUser.name || "",
           email: closerUser.email || ""
         },
@@ -868,8 +859,8 @@
         },
         status: mode === "book" ? "Appointment Booked" : "Assigned",
         outcome: "",
-        assessmentSummary: lead.assessmentSummary || lead.generatedAssessmentText || selectedSubmissionData?.assessmentSummary || "",
-        generatedAssessmentText: lead.generatedAssessmentText || lead.assessmentSummary || selectedSubmissionData?.assessmentSummary || "",
+        assessmentSummary: lead.assessmentSummary || lead.generatedAssessmentText || "",
+        generatedAssessmentText: lead.generatedAssessmentText || lead.assessmentSummary || "",
         managerNotes: notesBox.value || lead.managerNotes || "",
         handoffNotes: notesBox.value || lead.managerNotes || "",
         product1: selectedSubmissionData?.product1 || {},
@@ -903,7 +894,6 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "qualified",
         lastAction: "qualified"
@@ -967,7 +957,6 @@
 
     markConvertedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "converted",
         convertedAt: serverTimestamp(),
@@ -977,7 +966,6 @@
 
     markClosedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "closed",
         closed: true,
