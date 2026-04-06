@@ -84,6 +84,7 @@
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
           <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Payments</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -253,6 +254,7 @@
     const followUpFilter = document.getElementById("followUpFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
     const paymentsBody = document.getElementById("paymentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
@@ -517,6 +519,11 @@
       resultsSummary.textContent = `${filtered.length} payment case(s) shown`;
     }
 
+    async function refreshPayments() {
+      await loadFiles();
+      showToast("Payments refreshed.");
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
@@ -550,10 +557,8 @@
     linkFilter.addEventListener("change", renderPayments);
     followUpFilter.addEventListener("change", renderPayments);
     searchInput.addEventListener("input", renderPayments);
-    refreshBtn.addEventListener("click", async () => {
-      await loadFiles();
-      showToast("Payments refreshed.");
-    });
+    refreshBtn.addEventListener("click", refreshPayments);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshPayments);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
