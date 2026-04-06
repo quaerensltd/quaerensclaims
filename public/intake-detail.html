@@ -18,20 +18,7 @@
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
-    .btn-secondary:hover { background: #dbeafe; }
     .hidden { display: none; }
-    .readonly-box {
-      width: 100%;
-      min-height: 220px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 1rem;
-      background: #f8fafc;
-      color: #1f2937;
-      white-space: pre-wrap;
-      line-height: 1.6;
-      font-size: 0.95rem;
-    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -66,7 +53,6 @@
           <div class="text-sm text-slate-500">
             <div id="submittedByText"></div>
             <div id="submittedAtText"></div>
-            <div id="sourceLeadText"></div>
           </div>
         </div>
       </section>
@@ -109,20 +95,14 @@
               <textarea id="assessmentSummary" class="input" rows="10" placeholder="Summary of the assessment outcome..."></textarea>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-3 flex-wrap">
+            <div class="flex flex-col md:flex-row gap-3">
               <button id="saveReviewBtn" class="btn btn-primary" type="button">Save Review</button>
               <button id="createAssessmentBtn" class="btn btn-secondary" type="button">Create / Update Assessment Record</button>
-              <a id="openAssessmentBtn" href="#" class="btn btn-secondary hidden">Open Assessment Report</a>
             </div>
 
             <p id="saveMessage" class="text-sm text-green-700 hidden"></p>
           </div>
         </div>
-      </section>
-
-      <section class="card p-6">
-        <h3 class="text-lg font-extrabold text-blue-900 mb-4">Auto Assessment Draft</h3>
-        <div id="autoAssessmentPreview" class="readonly-box">No auto assessment draft available.</div>
       </section>
 
       <section class="card p-6">
@@ -150,10 +130,7 @@
       getDoc,
       updateDoc,
       addDoc,
-      getDocs,
       collection,
-      query,
-      where,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -174,27 +151,22 @@
     const assessmentSummary = document.getElementById("assessmentSummary");
     const saveReviewBtn = document.getElementById("saveReviewBtn");
     const createAssessmentBtn = document.getElementById("createAssessmentBtn");
-    const openAssessmentBtn = document.getElementById("openAssessmentBtn");
     const saveMessage = document.getElementById("saveMessage");
-    const autoAssessmentPreview = document.getElementById("autoAssessmentPreview");
 
     const params = new URLSearchParams(window.location.search);
-    const rawId = params.get("id");
+    const submissionId = params.get("id");
 
     let currentUser = null;
     let currentUserData = null;
-    let submissionId = null;
-    let sourceLeadId = null;
     let submissionData = null;
-    let currentAssessmentId = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
     }
 
     function formatDate(timestamp) {
+      if (!timestamp) return "-";
       try {
-        if (!timestamp) return "-";
         const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         return d.toLocaleString("en-GB");
       } catch {
@@ -217,11 +189,17 @@
       if (el) el.textContent = value || "-";
     }
 
+    function labelFromKey(key) {
+      return key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, c => c.toUpperCase());
+    }
+
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       if (!container) return;
-
       container.innerHTML = "";
+
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
@@ -234,124 +212,52 @@
       entries.forEach(([key, value]) => {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = `
-          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
+          <span class="label">${labelFromKey(key)}</span>
           <div class="value">${value || "-"}</div>
         `;
         container.appendChild(wrapper);
       });
     }
 
-    function buildAutoAssessmentText(data) {
-      if (!data) return "";
-
-      const client = data.client || {};
+    function buildAssessmentSummaryFromSubmission(data) {
+      const lines = [];
       const product1 = data.product1 || {};
       const product2 = data.product2 || {};
-      const lines = [];
 
-      const fullName = `${client.firstName || ""} ${client.secondName || ""}`.trim();
-      const secondParty = `${client.firstName2 || ""} ${client.secondName2 || ""}`.trim();
+      if (product1.vendor) lines.push(`Vendor: ${product1.vendor}`);
+      if (product1.contactVendor) lines.push(`Contact Vendor: ${product1.contactVendor}`);
+      if (product1.thirdPartyContact) lines.push(`Third Party Contact: ${product1.thirdPartyContact}`);
+      if (product1.fitInflation) lines.push(`Fit Inflation: ${product1.fitInflation}`);
+      if (product1.purchasePrice) lines.push(`Purchase Price: ${product1.purchasePrice}`);
+      if (product1.financeWho) lines.push(`Finance Who: ${product1.financeWho}`);
+      if (product1.investment) lines.push(`Investment: ${product1.investment}`);
+      if (product1.purchaseDate) lines.push(`Purchase Date: ${product1.purchaseDate}`);
+      if (product1.damage) lines.push(`Damage: ${product1.damage}`);
+      if (product1.product) lines.push(`Product: ${product1.product}`);
+      if (product1.warranty30) lines.push(`Warranty30: ${product1.warranty30}`);
+      if (product1.docs) lines.push(`Docs: ${product1.docs}`);
+      if (product1.paymentMethod) lines.push(`Payment Method: ${product1.paymentMethod}`);
+      if (product1.finance) lines.push(`Finance: ${product1.finance}`);
+      if (product1.returns) lines.push(`Returns: ${product1.returns}`);
+      if (product1.mcs) lines.push(`MCS: ${product1.mcs}`);
+      if (product1.extraCosts) lines.push(`Extra Costs: ${product1.extraCosts}`);
+      if (product1.extraCostsInfo) lines.push(`Extra Costs Info: ${product1.extraCostsInfo}`);
+      if (product1.energySavings) lines.push(`Energy Savings: ${product1.energySavings}`);
+      if (product1.thirdPartyClaim) lines.push(`Third Party Claim: ${product1.thirdPartyClaim}`);
+      if (product1.rushed) lines.push(`Rushed: ${product1.rushed}`);
+      if (product1.comments) lines.push(`Comments: ${product1.comments}`);
 
-      lines.push(`Assessment report for:`);
-      if (fullName) lines.push(fullName);
-      if (secondParty) lines.push(secondParty);
-
-      if (client.landline) lines.push(`Landline: ${client.landline}`);
-      if (client.mobile) lines.push(`Mobile: ${client.mobile}`);
-      if (client.email) lines.push(`Email: ${client.email}`);
-      if (client.address) lines.push(`Address: ${client.address}`);
-
-      lines.push("");
-      lines.push(`Claim Type: ${formatClaimType(data.claimType)}`);
-
-      if (Object.keys(product1).some(key => String(product1[key] || "").trim() !== "")) {
+      if (Object.values(product2).some(v => String(v || "").trim() !== "")) {
         lines.push("");
-        lines.push("PRODUCT ONE:");
-        Object.entries(product1).forEach(([key, value]) => {
-          if (String(value || "").trim() !== "") {
-            lines.push(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}: ${value}`);
-          }
-        });
-      }
-
-      if (Object.keys(product2).some(key => String(product2[key] || "").trim() !== "")) {
-        lines.push("");
-        lines.push("PRODUCT TWO:");
+        lines.push("Product Two:");
         Object.entries(product2).forEach(([key, value]) => {
-          if (String(value || "").trim() !== "") {
-            lines.push(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}: ${value}`);
+          if (value !== undefined && value !== null && String(value).trim() !== "") {
+            lines.push(`${labelFromKey(key)}: ${value}`);
           }
         });
       }
 
       return lines.join("\n").trim();
-    }
-
-    async function findAssessmentBySubmissionId(id) {
-      if (!id) return null;
-      try {
-        const q = query(collection(db, "managerAssessments"), where("submissionId", "==", id));
-        const snap = await getDocs(q);
-        if (snap.empty) return null;
-        const first = snap.docs[0];
-        return { id: first.id, ...first.data() };
-      } catch (error) {
-        console.error("Error finding assessment:", error);
-        return null;
-      }
-    }
-
-    async function resolveSubmissionFromAnyId(id) {
-      if (!id) return null;
-
-      try {
-        const directSubmissionSnap = await getDoc(doc(db, "claimSubmissions", id));
-        if (directSubmissionSnap.exists()) {
-          return {
-            submissionId: directSubmissionSnap.id,
-            sourceLeadId: directSubmissionSnap.data().sourceLeadId || "",
-            submissionData: directSubmissionSnap.data()
-          };
-        }
-
-        const leadSnap = await getDoc(doc(db, "leadAssignments", id));
-        if (leadSnap.exists()) {
-          const leadData = leadSnap.data();
-          const possibleSubmissionIds = [
-            leadData.convertedToSubmissionId,
-            leadData.submissionId,
-            leadData.claimSubmissionId,
-            leadData.intakeSubmissionId
-          ].filter(Boolean);
-
-          for (const subId of possibleSubmissionIds) {
-            const linkedSubmissionSnap = await getDoc(doc(db, "claimSubmissions", subId));
-            if (linkedSubmissionSnap.exists()) {
-              return {
-                submissionId: linkedSubmissionSnap.id,
-                sourceLeadId: leadSnap.id,
-                submissionData: linkedSubmissionSnap.data()
-              };
-            }
-          }
-        }
-
-        const byLeadQuery = query(collection(db, "claimSubmissions"), where("sourceLeadId", "==", id));
-        const byLeadSnap = await getDocs(byLeadQuery);
-        if (!byLeadSnap.empty) {
-          const found = byLeadSnap.docs[0];
-          return {
-            submissionId: found.id,
-            sourceLeadId: id,
-            submissionData: found.data()
-          };
-        }
-
-        return null;
-      } catch (error) {
-        console.error("resolveSubmissionFromAnyId error:", error);
-        throw error;
-      }
     }
 
     async function checkAccess(user) {
@@ -380,32 +286,27 @@
     }
 
     async function loadSubmission() {
-      if (!rawId) {
+      if (!submissionId) {
         alert("Missing submission ID.");
         window.location.href = "/manager-panel.html";
         return;
       }
 
-      const resolved = await resolveSubmissionFromAnyId(rawId);
+      const submissionRef = doc(db, "claimSubmissions", submissionId);
+      const submissionSnap = await getDoc(submissionRef);
 
-      if (!resolved) {
-        alert("Could not load submission.");
+      if (!submissionSnap.exists()) {
+        alert("Submission not found.");
         window.location.href = "/manager-panel.html";
         return;
       }
 
-      submissionId = resolved.submissionId;
-      sourceLeadId = resolved.sourceLeadId || "";
-      submissionData = resolved.submissionData || {};
-
-      const existingAssessment = await findAssessmentBySubmissionId(submissionId);
-      currentAssessmentId = existingAssessment?.id || submissionData.assessmentId || "";
+      submissionData = { id: submissionSnap.id, ...submissionSnap.data() };
 
       document.getElementById("detailTitle").textContent = formatClaimType(submissionData.claimType);
       document.getElementById("detailSubtitle").textContent = `Submission ID: ${submissionId}`;
       document.getElementById("submittedByText").textContent = `Submitted by: ${submissionData.submittedBy?.name || submissionData.submittedBy?.email || "-"}`;
       document.getElementById("submittedAtText").textContent = `Received: ${formatDate(submissionData.createdAt)}`;
-      document.getElementById("sourceLeadText").textContent = `Source Lead: ${sourceLeadId || submissionData.sourceLeadId || "-"}`;
 
       setValue("client_firstName", submissionData.client?.firstName);
       setValue("client_secondName", submissionData.client?.secondName);
@@ -418,25 +319,12 @@
 
       statusSelect.value = submissionData.status || "submitted";
       managerNotes.value = submissionData.managerNotes || "";
-      assessmentSummary.value = submissionData.assessmentSummary || "";
 
-      const autoText = buildAutoAssessmentText(submissionData);
-      autoAssessmentPreview.textContent = autoText || "No auto assessment draft available.";
-
-      if (!assessmentSummary.value.trim() && autoText.trim()) {
-        assessmentSummary.value = autoText;
-      }
+      const autoSummary = buildAssessmentSummaryFromSubmission(submissionData);
+      assessmentSummary.value = submissionData.assessmentSummary || autoSummary || "";
 
       renderFieldGrid("product1Fields", submissionData.product1);
       renderFieldGrid("product2Fields", submissionData.product2);
-
-      if (currentAssessmentId) {
-        openAssessmentBtn.href = `/manager-assessment-detail.html?id=${currentAssessmentId}`;
-        openAssessmentBtn.classList.remove("hidden");
-      } else {
-        openAssessmentBtn.href = "#";
-        openAssessmentBtn.classList.add("hidden");
-      }
 
       hideLoader();
     }
@@ -447,7 +335,6 @@
           status: statusSelect.value,
           managerNotes: managerNotes.value,
           assessmentSummary: assessmentSummary.value,
-          updatedAt: serverTimestamp(),
           reviewedAt: serverTimestamp(),
           reviewedBy: {
             uid: currentUser.uid,
@@ -455,21 +342,6 @@
             name: currentUserData.name || ""
           }
         });
-
-        if (sourceLeadId) {
-          try {
-            await updateDoc(doc(db, "leadAssignments", sourceLeadId), {
-              managerNotes: managerNotes.value,
-              assessmentSummary: assessmentSummary.value,
-              generatedAssessmentText: assessmentSummary.value,
-              leadStatus: statusSelect.value === "assessment_complete" ? "qualified" : (statusSelect.value || "awaiting_manager"),
-              lastAction: statusSelect.value || "notes_saved",
-              lastUpdatedAt: serverTimestamp()
-            });
-          } catch (leadError) {
-            console.error("Lead update skipped:", leadError);
-          }
-        }
 
         saveMessage.textContent = "Review saved successfully.";
         saveMessage.classList.remove("hidden");
@@ -482,33 +354,40 @@
 
     createAssessmentBtn.addEventListener("click", async () => {
       try {
-        const summaryText = assessmentSummary.value.trim() || buildAutoAssessmentText(submissionData);
+        const summaryText = (assessmentSummary.value || "").trim();
+        const notesText = (managerNotes.value || "").trim();
 
-        if (!summaryText.trim()) {
-          alert("No assessment content available.");
-          return;
-        }
+        const existingAssessmentId = submissionData.assessmentId || "";
 
-        const existing = await findAssessmentBySubmissionId(submissionId);
-
-        const payload = {
+        const assessmentPayload = {
           submissionId,
-          leadId: sourceLeadId || submissionData.sourceLeadId || "",
+          leadId:
+            submissionData.sourceLeadId ||
+            submissionData.leadId ||
+            "",
           claimType: submissionData.claimType || "",
           client: {
-            title: "",
-            forename: submissionData.client?.firstName || "",
-            surname: submissionData.client?.secondName || "",
-            telephone: submissionData.client?.mobile || submissionData.client?.landline || "",
+            firstName: submissionData.client?.firstName || "",
+            secondName: submissionData.client?.secondName || "",
+            firstName2: submissionData.client?.firstName2 || "",
+            secondName2: submissionData.client?.secondName2 || "",
+            landline: submissionData.client?.landline || "",
+            mobile: submissionData.client?.mobile || "",
+            telephone:
+              submissionData.client?.mobile ||
+              submissionData.client?.landline ||
+              "",
             email: submissionData.client?.email || "",
-            postcode: "",
-            address: submissionData.client?.address || ""
+            address: submissionData.client?.address || "",
+            postcode: submissionData.client?.postcode || ""
           },
           submittedBy: submissionData.submittedBy || {},
-          managerNotes: managerNotes.value,
+          managerNotes: notesText,
           assessmentSummary: summaryText,
           generatedAssessmentText: summaryText,
-          status: statusSelect.value,
+          assessmentOutcome: submissionData.assessmentOutcome || "",
+          recommendedCloser: submissionData.recommendedCloser || "",
+          status: "assessment_complete",
           product1: submissionData.product1 || {},
           product2: submissionData.product2 || {},
           updatedAt: serverTimestamp(),
@@ -519,14 +398,13 @@
           }
         };
 
-        let assessmentIdToUse = "";
+        let finalAssessmentId = existingAssessmentId;
 
-        if (existing) {
-          await updateDoc(doc(db, "managerAssessments", existing.id), payload);
-          assessmentIdToUse = existing.id;
+        if (existingAssessmentId) {
+          await updateDoc(doc(db, "managerAssessments", existingAssessmentId), assessmentPayload);
         } else {
           const assessmentRef = await addDoc(collection(db, "managerAssessments"), {
-            ...payload,
+            ...assessmentPayload,
             createdAt: serverTimestamp(),
             createdBy: {
               uid: currentUser.uid,
@@ -534,49 +412,46 @@
               name: currentUserData.name || ""
             }
           });
-          assessmentIdToUse = assessmentRef.id;
+          finalAssessmentId = assessmentRef.id;
         }
-
-        currentAssessmentId = assessmentIdToUse;
 
         await updateDoc(doc(db, "claimSubmissions", submissionId), {
           status: "assessment_complete",
-          assessmentId: assessmentIdToUse,
+          assessmentId: finalAssessmentId,
+          managerNotes: notesText,
           assessmentSummary: summaryText,
-          managerNotes: managerNotes.value,
+          reviewedAt: serverTimestamp(),
+          reviewedBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          },
           assessmentCreatedAt: serverTimestamp(),
           assessmentCreatedBy: {
             uid: currentUser.uid,
             email: currentUser.email || "",
             name: currentUserData.name || ""
-          },
-          updatedAt: serverTimestamp()
+          }
         });
 
-        if (sourceLeadId) {
-          try {
-            await updateDoc(doc(db, "leadAssignments", sourceLeadId), {
-              assessmentId: assessmentIdToUse,
-              assessmentSummary: summaryText,
-              generatedAssessmentText: summaryText,
-              managerNotes: managerNotes.value,
-              leadStatus: "qualified",
-              lastAction: "assessment_complete",
-              lastUpdatedAt: serverTimestamp()
-            });
-          } catch (leadError) {
-            console.error("Lead assessment link update skipped:", leadError);
-          }
+        if (submissionData.sourceLeadId) {
+          await updateDoc(doc(db, "leadAssignments", submissionData.sourceLeadId), {
+            assessmentId: finalAssessmentId,
+            assessmentSummary: summaryText,
+            generatedAssessmentText: summaryText,
+            managerNotes: notesText,
+            leadStatus: "assessment_complete",
+            lastAction: "assessment_complete",
+            lastUpdatedAt: serverTimestamp(),
+            convertedToSubmissionId: submissionId
+          });
         }
 
-        openAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessmentIdToUse}`;
-        openAssessmentBtn.classList.remove("hidden");
-
         alert("Assessment record created successfully.");
-        window.location.href = `/manager-assessment-detail.html?id=${assessmentIdToUse}`;
+        window.location.href = `/manager-assessment-detail.html?id=${finalAssessmentId}`;
       } catch (error) {
         console.error("Failed to create assessment:", error);
-        alert("Could not create assessment record.");
+        alert("Could not create assessment record. " + (error.message || ""));
       }
     });
 
