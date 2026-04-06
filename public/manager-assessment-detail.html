@@ -182,7 +182,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
           <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Email Preview</h3>
           <div id="clientEmailPreviewBox" class="readonly-box">No client email preview available.</div>
@@ -199,7 +198,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Processing Pack Summary</h3>
           <div id="processingPackBox" class="readonly-box">No processing pack prepared yet.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Source Product Snapshot</h3>
           <div class="space-y-4">
@@ -332,8 +330,30 @@
       }
     }
 
+    function normalizeClaimType(value) {
+      const raw = String(value || "").trim().toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("newbuild") || raw.includes("new build")) return "newbuild";
+      return raw;
+    }
+
+    function resolveClaimType() {
+      return normalizeClaimType(
+        assessmentData?.claimType ||
+        linkedSubmission?.claimType ||
+        linkedLead?.claimType ||
+        linkedLead?.type ||
+        linkedLead?.campaign ||
+        ""
+      );
+    }
+
     function formatClaimType(type) {
-      switch (type) {
+      const normalized = normalizeClaimType(type);
+      switch (normalized) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
@@ -368,27 +388,20 @@
     }
 
     function postcodeFromAssessment(data) {
-      return data.client?.postcode || "-";
-    }
-
-    function splitLines(text) {
-      return String(text || "")
-        .split("\n")
-        .map(x => x.trim())
-        .filter(Boolean);
+      return data.client?.postcode || linkedLead?.postcode || linkedSubmission?.client?.postcode || "-";
     }
 
     function objectToReadableLines(obj) {
       const entries = Object.entries(obj || {}).filter(([_, value]) => String(value || "").trim() !== "");
       if (!entries.length) return "No information recorded.";
       return entries
-        .map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}: ${value}`)
+        .map(([key, value]) => `${key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase())}: ${value}`)
         .join("\n");
     }
 
     function buildProcessingPackText() {
       const assessmentSummary = assessmentData.assessmentSummary || assessmentData.generatedAssessmentText || "-";
-      const claimType = formatClaimType(assessmentData.claimType);
+      const claimType = formatClaimType(resolveClaimType());
       const clientName = clientNameFromAssessment(assessmentData);
 
       const evidence = [
@@ -445,13 +458,12 @@
     function buildClientEmailPreview() {
       const clientName = clientNameFromAssessment(assessmentData);
       const reportText = assessmentData.generatedAssessmentText || assessmentData.assessmentSummary || "-";
-
       return [
         `Dear ${clientName},`,
         "",
         "Please find your assessment summary below.",
         "",
-        `Claim Type: ${formatClaimType(assessmentData.claimType)}`,
+        `Claim Type: ${formatClaimType(resolveClaimType())}`,
         `Assessment Outcome: ${assessmentData.assessmentOutcome || "-"}`,
         "",
         "Assessment Report:",
@@ -514,15 +526,19 @@
 
       assessmentData = { id: assessmentSnap.id, ...assessmentSnap.data() };
 
+      await loadLinkedLeadAndSubmission();
+      await loadExistingProcessingCase();
+
+      const resolvedClaimType = resolveClaimType();
+
       document.getElementById("detailTitle").textContent = clientNameFromAssessment(assessmentData);
       document.getElementById("detailSubtitle").textContent = `Assessment ID: ${assessmentData.id}`;
       document.getElementById("assessmentDateText").textContent = `Created: ${formatDateTime(assessmentData.createdAt)}`;
       document.getElementById("createdByText").textContent = `Prepared by: ${assessmentData.createdBy?.name || assessmentData.createdBy?.email || "-"}`;
       document.getElementById("linkedLeadText").textContent = `Lead ID: ${assessmentData.leadId || "-"}`;
       document.getElementById("submissionText").textContent = `Submission ID: ${assessmentData.submissionId || "-"}`;
-
       document.getElementById("clientNameText").textContent = clientNameFromAssessment(assessmentData);
-      document.getElementById("claimTypeText").textContent = formatClaimType(assessmentData.claimType);
+      document.getElementById("claimTypeText").textContent = formatClaimType(resolvedClaimType);
       document.getElementById("telephoneText").textContent = clientPhoneFromAssessment(assessmentData);
       document.getElementById("emailText").textContent = clientEmailFromAssessment(assessmentData) || "-";
       document.getElementById("postcodeText").textContent = postcodeFromAssessment(assessmentData);
@@ -535,14 +551,12 @@
         assessmentData.generatedAssessmentText ||
         assessmentData.assessmentSummary ||
         "No assessment report available.";
-
       document.getElementById("processingPackBox").textContent =
         assessmentData.processingPackText ||
         buildProcessingPackText();
-
       document.getElementById("clientEmailPreviewBox").textContent = buildClientEmailPreview();
-      document.getElementById("product1Box").textContent = objectToReadableLines(assessmentData.product1 || {});
-      document.getElementById("product2Box").textContent = objectToReadableLines(assessmentData.product2 || {});
+      document.getElementById("product1Box").textContent = objectToReadableLines(assessmentData.product1 || linkedSubmission?.product1 || {});
+      document.getElementById("product2Box").textContent = objectToReadableLines(assessmentData.product2 || linkedSubmission?.product2 || {});
 
       if (assessmentData.recommendedCloser) {
         const recommended = closerUsers.find(user => {
@@ -551,9 +565,6 @@
         });
         if (recommended) closerSelect.value = recommended.id;
       }
-
-      await loadLinkedLeadAndSubmission();
-      await loadExistingProcessingCase();
 
       if (assessmentData.leadId) {
         openLeadBtn.href = `/manager-leads-overview.html`;
@@ -601,14 +612,11 @@
 
     async function loadExistingProcessingCase() {
       existingProcessingCase = null;
-      if (!assessmentData.leadId) {
-        openProcessingBtn.classList.add("hidden");
-        return;
-      }
 
       try {
         const q = query(collection(db, "processingCases"), where("assessmentId", "==", assessmentData.id));
         const snap = await getDocs(q);
+
         if (!snap.empty) {
           existingProcessingCase = { id: snap.docs[0].id, ...snap.docs[0].data() };
           openProcessingBtn.href = `/processing-case-detail.html?id=${existingProcessingCase.id}`;
@@ -642,13 +650,14 @@
 
       const statusValue = appointment.date && appointment.time ? "Appointment Booked" : "Assigned";
       const client = linkedSubmission?.client || {};
+      const resolvedClaimType = resolveClaimType();
 
       const payload = {
         sourceLeadId: assessmentData.leadId || linkedLead?.id || "",
         leadAssignmentId: assessmentData.leadId || linkedLead?.id || "",
         assessmentId: assessmentData.id,
         submissionId: assessmentData.submissionId || linkedSubmission?.id || "",
-        claimType: assessmentData.claimType || linkedLead?.claimType || linkedLead?.type || "",
+        claimType: resolvedClaimType,
         closer: {
           uid: closerUser.id,
           name: closerUser.name || "",
@@ -710,6 +719,7 @@
           closerAppointmentTime: appointment.time,
           sentToCloserAt: serverTimestamp(),
           assessmentId: assessmentData.id,
+          claimType: resolvedClaimType,
           assessmentSummary: assessmentData.assessmentSummary || "",
           generatedAssessmentText: assessmentData.generatedAssessmentText || assessmentData.assessmentSummary || "",
           managerNotes: assessmentData.managerNotes || "",
@@ -731,13 +741,19 @@
     async function createOrUpdateProcessingCase() {
       const client = linkedSubmission?.client || {};
       const processingPackText = assessmentData.processingPackText || buildProcessingPackText();
+      const resolvedClaimType = resolveClaimType();
+
+      const closerUser = linkedLead?.closerUid
+        ? allUsers.find(user => user.id === linkedLead.closerUid)
+        : null;
 
       const payload = {
         sourceAssignmentId: assessmentData.leadId || linkedLead?.id || "",
         sourceLeadId: assessmentData.leadId || linkedLead?.id || "",
         assessmentId: assessmentData.id,
+        submissionId: assessmentData.submissionId || linkedSubmission?.id || "",
         caseReference: existingProcessingCase?.caseReference || linkedLead?.caseReference || `CASE-${Date.now()}`,
-        claimType: assessmentData.claimType || linkedLead?.claimType || linkedLead?.type || "",
+        claimType: resolvedClaimType,
         client: {
           firstName: client.firstName || linkedLead?.forename || "",
           secondName: client.secondName || linkedLead?.surname || "",
@@ -751,8 +767,8 @@
         closer: linkedLead?.closerUid
           ? {
               uid: linkedLead.closerUid,
-              name: "",
-              email: ""
+              name: closerUser?.name || "",
+              email: closerUser?.email || ""
             }
           : {},
         assignedBy: {
@@ -808,6 +824,25 @@
         existingProcessingCase = { id: newDoc.id, ...payload };
       }
 
+      await updateDoc(doc(db, "managerAssessments", assessmentData.id), {
+        claimType: resolvedClaimType,
+        processingPackText,
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      });
+
+      if (assessmentData.leadId) {
+        await updateDoc(doc(db, "leadAssignments", assessmentData.leadId), {
+          claimType: resolvedClaimType,
+          type: linkedLead?.type || resolvedClaimType,
+          lastUpdatedAt: serverTimestamp()
+        });
+      }
+
       await loadExistingProcessingCase();
     }
 
@@ -817,7 +852,6 @@
         setActionMessage("No client email address found.", true);
         return;
       }
-
       const subject = encodeURIComponent(`Quaerens Assessment Report - ${clientNameFromAssessment(assessmentData)}`);
       const body = encodeURIComponent(buildClientEmailPreview());
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
