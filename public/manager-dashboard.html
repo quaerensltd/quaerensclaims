@@ -122,7 +122,6 @@
       <p class="text-slate-600 font-medium">Loading manager dashboard...</p>
     </div>
   </div>
-
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
@@ -134,13 +133,13 @@
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
-
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-10 gap-4">
         <div class="card p-5">
@@ -191,8 +190,9 @@
           <div class="grid md:grid-cols-2 gap-4">
             <a href="/manager-panel.html" class="btn btn-primary text-center">Open Manager Panel</a>
             <a href="/manager-leads-overview.html" class="btn btn-primary text-center">Open Leads Overview</a>
+            <a href="/manager-lead-upload.html" class="btn btn-primary text-center">Open Lead Upload</a>
             <a href="/manager-intro-emails-overview.html" class="btn btn-primary text-center">Open Intro Emails</a>
-            <a href="/manager-weekly-attendance.html" class="btn btn-primary text-center">Open Weekly Attendance</a>
+            <a href="/manager-weekly-attendance.html" class="btn btn-primary text-center md:col-span-2">Open Weekly Attendance</a>
           </div>
         </section>
 
@@ -504,20 +504,17 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
       if (userData.role !== "manager" && userData.role !== "processing") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -561,13 +558,10 @@
       const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
       const callbacksPending = leadAssignments.filter(l => l.callbackRequired && !(l.closed === true || l.usable === false)).length;
       const introPending = leadAssignments.filter(l => l.introEmailNeeded && !l.introEmailSent && !(l.closed === true || l.usable === false)).length;
-
       const awaitingManager = leadAssignments.filter(l => !isLocked(l) && isAwaitingManager(l)).length;
       const closerBookings = leadAssignments.filter(l => !isLocked(l) && hasCloserBooking(l)).length;
-
       const today = new Date().toISOString().slice(0, 10);
       const todayAppointments = leadAssignments.filter(l => !isLocked(l) && hasCloserBooking(l) && getAppointmentDate(l) === today).length;
-
       const overdueManager = leadAssignments.filter(l => {
         if (isLocked(l) || !isAwaitingManager(l)) return false;
         const sentAt = l.sentToManagerAt?.toDate ? l.sentToManagerAt.toDate().getTime() : 0;
@@ -596,7 +590,6 @@
       document.getElementById("closerBookingsStat").textContent = String(closerBookings);
       document.getElementById("todayAppointmentsStat").textContent = String(todayAppointments);
       document.getElementById("overdueManagerStat").textContent = String(overdueManager);
-
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
       document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
       document.getElementById("snapshotAwaitingManager").textContent = String(awaitingManager);
