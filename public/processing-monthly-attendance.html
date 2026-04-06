@@ -16,6 +16,17 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
     .input {
       width: 100%;
       border: 1px solid #cbd5e1;
@@ -113,12 +124,13 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Monthly Attendance</h1>
-          <p class="text-sm text-slate-500">Monthly staff attendance, hours, status overview, and processing queue snapshot</p>
+          <p class="text-sm text-slate-500">Monthly staff attendance, hours, status overview, and processing case snapshot</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
           <a href="/processing-daily-attendance.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
           <a href="/processing-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <a href="/processing-monthly-attendance.html" class="btn btn-secondary py-2 px-4">Monthly Attendance</a>
@@ -154,11 +166,11 @@
           <div id="totalHoursStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0h 0m</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">My Files</div>
+          <div class="text-sm text-slate-500">My Cases</div>
           <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Unassigned Files</div>
+          <div class="text-sm text-slate-500">Unassigned Cases</div>
           <div id="unassignedFilesStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
       </section>
@@ -196,6 +208,8 @@
           <div class="grid md:grid-cols-2 gap-4">
             <a href="/processing-dashboard.html" class="btn btn-primary text-center">Back to Dashboard</a>
             <a href="/processing-weekly-attendance.html" class="btn btn-primary text-center">Open Weekly Attendance</a>
+            <a href="/processing-daily-attendance.html" class="btn btn-secondary text-center">Open Daily Attendance</a>
+            <a href="/processing-cases-dashboard.html" class="btn btn-secondary text-center">Open Case Management</a>
           </div>
         </section>
 
@@ -223,11 +237,11 @@
               <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">My files</span>
+              <span class="text-slate-600">My cases</span>
               <span id="snapshotMyFiles" class="font-extrabold text-indigo-600">0</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-600">Unassigned files</span>
+              <span class="text-slate-600">Unassigned cases</span>
               <span id="snapshotUnassigned" class="font-extrabold text-violet-600">0</span>
             </div>
           </div>
@@ -237,7 +251,7 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Monthly Attendance Records</h2>
+            <h2 class="text-xl font-extrabold text-blue-900">Monthly Staff Summary</h2>
             <p id="summaryText" class="text-sm text-slate-500 mt-1">Loading monthly attendance...</p>
           </div>
           <div class="flex gap-3 flex-wrap">
@@ -245,7 +259,31 @@
             <button id="refreshBtnTop" class="btn btn-secondary" type="button">Refresh Month</button>
           </div>
         </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">Present</th>
+                <th class="text-left p-3">On Time</th>
+                <th class="text-left p-3">Late</th>
+                <th class="text-left p-3">Absent</th>
+                <th class="text-left p-3">Hours</th>
+                <th class="text-left p-3">PDF</th>
+              </tr>
+            </thead>
+            <tbody id="monthlySummaryBody"></tbody>
+          </table>
+        </div>
+      </section>
 
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Monthly Attendance Records</h2>
+            <p class="text-sm text-slate-500 mt-1">Detailed daily rows for the selected month</p>
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -291,6 +329,7 @@
     const monthInput = document.getElementById("monthInput");
     const staffFilter = document.getElementById("staffFilter");
     const statusFilter = document.getElementById("statusFilter");
+    const monthlySummaryBody = document.getElementById("monthlySummaryBody");
     const monthlyAttendanceBody = document.getElementById("monthlyAttendanceBody");
     const summaryText = document.getElementById("summaryText");
 
@@ -298,10 +337,11 @@
     const LATE_CUTOFF_MINUTE = 0;
 
     let currentUser = null;
-    let staffUsers = [];
+    let processingUsers = [];
     let attendanceDocs = [];
-    let processingFiles = [];
+    let processingCases = [];
     let filteredRows = [];
+    let summaryRows = [];
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -355,12 +395,10 @@
     function getWorkedMs(docData) {
       if (!docData) return 0;
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
-
       if (docData.isOnline && docData.currentSessionStartAt?.toDate && !isStaleOnline(docData)) {
         const sessionStart = docData.currentSessionStartAt.toDate().getTime();
         return baseMs + Math.max(0, Date.now() - sessionStart);
       }
-
       return baseMs;
     }
 
@@ -389,7 +427,6 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -397,8 +434,7 @@
       }
 
       const userData = userSnap.data();
-
-      if (userData.role !== "processing") {
+      if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -421,12 +457,10 @@
       const end = new Date(year, month, 0);
       const dates = [];
       const cursor = new Date(start);
-
       while (cursor <= end) {
         dates.push(toIsoDate(cursor));
         cursor.setDate(cursor.getDate() + 1);
       }
-
       return dates;
     }
 
@@ -434,15 +468,15 @@
       const [usersSnap, attendanceSnap, processingSnap] = await Promise.all([
         getDocs(collection(db, "users")),
         getDocs(collection(db, "staffAttendance")),
-        getDocs(collection(db, "processingFiles"))
+        getDocs(collection(db, "processingCases"))
       ]);
 
-      staffUsers = usersSnap.docs
+      processingUsers = usersSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.role === "staff");
+        .filter(u => u.role === "processing");
 
       attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      processingFiles = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      processingCases = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       populateStaffFilter();
       renderAll();
@@ -452,7 +486,7 @@
       const currentValue = staffFilter.value || "all";
       staffFilter.innerHTML = `<option value="all">All staff</option>`;
 
-      [...staffUsers]
+      [...processingUsers]
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
         .forEach(user => {
           const option = document.createElement("option");
@@ -465,6 +499,46 @@
       staffFilter.value = exists ? currentValue : "all";
     }
 
+    function buildSummaryRows(monthDates) {
+      const selectedStaff = staffFilter.value;
+
+      return processingUsers
+        .filter(user => selectedStaff === "all" || user.id === selectedStaff)
+        .map(user => {
+          let present = 0;
+          let onTime = 0;
+          let late = 0;
+          let absent = 0;
+          let totalMs = 0;
+
+          monthDates.forEach(dateStr => {
+            const rec = attendanceDocs.find(docItem => docItem.uid === user.id && docItem.date === dateStr) || null;
+            const status = getDayStatus(rec, dateStr);
+
+            if (rec) {
+              present += 1;
+              totalMs += getWorkedMs(rec);
+              if (status === "on_time") onTime += 1;
+              if (status === "late") late += 1;
+            } else {
+              absent += 1;
+            }
+          });
+
+          return {
+            uid: user.id,
+            staffName: user.name || "-",
+            staffEmail: user.email || user.id,
+            present,
+            onTime,
+            late,
+            absent,
+            totalMs
+          };
+        })
+        .sort((a, b) => a.staffName.localeCompare(b.staffName));
+    }
+
     function renderAll() {
       const monthValue = monthInput.value;
       const monthDates = getMonthDates(monthValue);
@@ -472,17 +546,18 @@
       const selectedStatus = statusFilter.value;
 
       filteredRows = [];
+      summaryRows = buildSummaryRows(monthDates);
 
-      staffUsers.forEach(user => {
+      processingUsers.forEach(user => {
         if (selectedStaff !== "all" && user.id !== selectedStaff) return;
 
         monthDates.forEach(dateStr => {
           const rec = attendanceDocs.find(docItem => docItem.uid === user.id && docItem.date === dateStr) || null;
           const dayStatus = getDayStatus(rec, dateStr);
-
           if (selectedStatus !== "all" && dayStatus !== selectedStatus) return;
 
           filteredRows.push({
+            uid: user.id,
             date: dateStr,
             staffName: user.name || "-",
             staffEmail: user.email || user.id,
@@ -499,18 +574,20 @@
       });
 
       renderStats();
+      renderSummaryTable();
       renderTable();
     }
 
     function renderStats() {
-      const selectedStaffCount = staffFilter.value === "all" ? staffUsers.length : (staffFilter.value ? 1 : 0);
+      const selectedStaffCount = summaryRows.length;
       const presentDays = filteredRows.filter(r => !!r.rec).length;
       const onTimeDays = filteredRows.filter(r => r.dayStatus === "on_time").length;
       const lateDays = filteredRows.filter(r => r.dayStatus === "late").length;
       const absentDays = filteredRows.filter(r => r.dayStatus === "absent").length;
       const totalMs = filteredRows.reduce((sum, r) => sum + r.workedMs, 0);
-      const myFiles = processingFiles.filter(file => file.processingAssignedToUid === currentUser.uid).length;
-      const unassignedFiles = processingFiles.filter(file => !file.processingAssignedToUid).length;
+
+      const myFiles = processingCases.filter(file => file.assignedToUid === currentUser.uid).length;
+      const unassignedFiles = processingCases.filter(file => !file.assignedToUid).length;
 
       document.getElementById("staffCountStat").textContent = String(selectedStaffCount);
       document.getElementById("presentDaysStat").textContent = String(presentDays);
@@ -520,6 +597,7 @@
       document.getElementById("totalHoursStat").textContent = formatDuration(totalMs);
       document.getElementById("myFilesStat").textContent = String(myFiles);
       document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
+
       document.getElementById("snapshotMonth").textContent = monthInput.value || "-";
       document.getElementById("snapshotStaff").textContent = String(selectedStaffCount);
       document.getElementById("snapshotPresent").textContent = String(presentDays);
@@ -527,6 +605,45 @@
       document.getElementById("snapshotAbsent").textContent = String(absentDays);
       document.getElementById("snapshotMyFiles").textContent = String(myFiles);
       document.getElementById("snapshotUnassigned").textContent = String(unassignedFiles);
+    }
+
+    function renderSummaryTable() {
+      monthlySummaryBody.innerHTML = "";
+
+      if (!summaryRows.length) {
+        monthlySummaryBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-slate-500">No summary rows found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      summaryRows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${item.staffName}</div>
+            <div class="text-xs text-slate-500">${item.staffEmail}</div>
+          </td>
+          <td class="p-3">${item.present}</td>
+          <td class="p-3">${item.onTime}</td>
+          <td class="p-3">${item.late}</td>
+          <td class="p-3">${item.absent}</td>
+          <td class="p-3 font-semibold text-blue-900">${formatDuration(item.totalMs)}</td>
+          <td class="p-3">
+            <button class="btn-small btn-blue" data-pdf-staff="${item.uid}">Create PDF</button>
+          </td>
+        `;
+        monthlySummaryBody.appendChild(row);
+      });
+
+      document.querySelectorAll("[data-pdf-staff]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          createStaffMonthlyPdf(btn.getAttribute("data-pdf-staff"));
+        });
+      });
     }
 
     function renderTable() {
@@ -616,6 +733,135 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    }
+
+    function createStaffMonthlyPdf(staffId) {
+      const user = processingUsers.find(u => u.id === staffId);
+      if (!user) return;
+
+      const staffRows = filteredRows
+        .filter(r => r.uid === staffId)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      let present = 0;
+      let onTime = 0;
+      let late = 0;
+      let absent = 0;
+      let totalMs = 0;
+
+      staffRows.forEach(r => {
+        if (r.rec) present += 1;
+        if (r.dayStatus === "on_time") onTime += 1;
+        if (r.dayStatus === "late") late += 1;
+        if (r.dayStatus === "absent") absent += 1;
+        totalMs += r.workedMs;
+      });
+
+      const dayRows = staffRows.map(r => `
+        <tr>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${formatDateFriendly(r.date)}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${r.rec ? formatTimestamp(r.rec.firstLoginAt) : "-"}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${r.rec ? formatTimestamp(r.rec.lastLoginAt) : "-"}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${r.rec ? formatTimestamp(r.rec.lastSeenAt) : "-"}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${r.rec ? formatTimestamp(r.rec.lastLogoutAt) : "-"}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${formatDuration(r.workedMs)}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${r.dayStatus === "on_time" ? "On Time" : r.dayStatus === "late" ? "Late" : "Absent"}</td>
+          <td style="padding:10px;border:1px solid #cbd5e1;">${r.rec ? (r.rec.isOnline && !isStaleOnline(r.rec) ? "Online" : "Offline") : "No Record"}</td>
+        </tr>
+      `).join("");
+
+      const printWindow = window.open("", "_blank", "width=1100,height=850");
+      if (!printWindow) return;
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Monthly Attendance Report - ${user.name || user.email || user.id}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 30px;
+              color: #111827;
+            }
+            h1 {
+              font-size: 24px;
+              margin-bottom: 8px;
+            }
+            p {
+              margin: 4px 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th {
+              background: #dbeafe;
+              color: #1d4ed8;
+              text-align: left;
+              padding: 10px;
+              border: 1px solid #cbd5e1;
+            }
+            td {
+              border: 1px solid #cbd5e1;
+            }
+            .summary {
+              margin-top: 18px;
+              padding: 14px;
+              background: #f8fafc;
+              border: 1px solid #cbd5e1;
+            }
+            @media print {
+              body { margin: 16px; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Quaerens Processing Monthly Attendance Report</h1>
+          <p><strong>Staff:</strong> ${user.name || "-"}</p>
+          <p><strong>Email:</strong> ${user.email || user.id}</p>
+          <p><strong>Month:</strong> ${monthInput.value}</p>
+
+          <div class="summary">
+            <p><strong>Present Days:</strong> ${present}</p>
+            <p><strong>On Time Days:</strong> ${onTime}</p>
+            <p><strong>Late Days:</strong> ${late}</p>
+            <p><strong>Absent Days:</strong> ${absent}</p>
+            <p><strong>Total Hours:</strong> ${formatDuration(totalMs)}</p>
+            <p><strong>Start Time Cutoff:</strong> ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time</p>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>First Login</th>
+                <th>Last Login</th>
+                <th>Last Seen</th>
+                <th>Last Logout</th>
+                <th>Worked</th>
+                <th>Day Status</th>
+                <th>Live Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${dayRows}
+            </tbody>
+          </table>
+
+          <script>
+            window.onload = function () {
+              setTimeout(function () {
+                window.print();
+              }, 300);
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
     }
 
     async function refreshMonth() {

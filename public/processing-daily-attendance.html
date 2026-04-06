@@ -80,6 +80,26 @@
       background: #1d4ed8;
       color: white;
     }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -90,20 +110,24 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Daily Attendance</h1>
-          <p class="text-sm text-slate-500">Daily staff attendance, hours, live status, and processing queue snapshot</p>
+          <p class="text-sm text-slate-500">Daily staff attendance, hours, live status, and daily activity results</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
           <a href="/processing-daily-attendance.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
           <a href="/processing-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <a href="/processing-monthly-attendance.html" class="btn btn-secondary py-2 px-4">Monthly Attendance</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Attendance</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -136,12 +160,27 @@
           <div id="absentStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">My Files</div>
+          <div class="text-sm text-slate-500">My Cases</div>
           <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Unassigned Files</div>
+          <div class="text-sm text-slate-500">Unassigned Cases</div>
           <div id="unassignedFilesStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-3 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intakes Sent Today</div>
+          <div id="intakesSentStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Intro Emails Out Today</div>
+          <div id="emailsOutStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Callback Appointments Set Today</div>
+          <div id="callbacksSetStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
       </section>
 
@@ -152,7 +191,9 @@
             <a href="/processing-dashboard.html" class="btn btn-primary text-center">Back to Dashboard</a>
             <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Panel</a>
             <a href="/processing-payments.html" class="btn btn-secondary text-center">Open Payments</a>
+            <a href="/processing-cases-dashboard.html" class="btn btn-secondary text-center">Open Case Management</a>
             <a href="/processing-weekly-attendance.html" class="btn btn-secondary text-center">Open Weekly Attendance</a>
+            <a href="/processing-monthly-attendance.html" class="btn btn-secondary text-center">Open Monthly Attendance</a>
           </div>
         </section>
 
@@ -176,11 +217,23 @@
               <span id="snapshotAbsent" class="font-extrabold text-red-600">0</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">My assigned processing files</span>
+              <span class="text-slate-600">Intakes sent today</span>
+              <span id="snapshotIntakes" class="font-extrabold text-blue-900">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Intro emails out today</span>
+              <span id="snapshotEmails" class="font-extrabold text-violet-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Callback appointments set today</span>
+              <span id="snapshotCallbacks" class="font-extrabold text-amber-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">My assigned processing cases</span>
               <span id="snapshotMyFiles" class="font-extrabold text-indigo-600">0</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-600">Unassigned processing files</span>
+              <span class="text-slate-600">Unassigned processing cases</span>
               <span id="snapshotUnassigned" class="font-extrabold text-violet-600">0</span>
             </div>
           </div>
@@ -199,7 +252,6 @@
             <button id="refreshAttendanceBtn" class="btn btn-secondary" type="button">Refresh Attendance</button>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -222,23 +274,45 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Lead Work Summary</h2>
-            <p class="text-sm text-slate-500 mt-1">Current workload from assigned staff leads</p>
+            <h2 class="text-xl font-extrabold text-blue-900">Daily Activity Results</h2>
+            <p class="text-sm text-slate-500 mt-1">Intakes, intro emails, and callback appointments by staff member</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="bg-blue-50 text-blue-900">
-                <th class="text-left p-3">Staff UID</th>
-                <th class="text-left p-3">Assigned Leads</th>
-                <th class="text-left p-3">Callbacks</th>
-                <th class="text-left p-3">Intro Emails</th>
-                <th class="text-left p-3">Converted</th>
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">Intakes Sent</th>
+                <th class="text-left p-3">Intro Emails Out</th>
+                <th class="text-left p-3">Callback Appointments Set</th>
               </tr>
             </thead>
-            <tbody id="leadSummaryBody"></tbody>
+            <tbody id="activityResultsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Processing Case Summary</h2>
+            <p class="text-sm text-slate-500 mt-1">Current workload across processing staff</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">Assigned Cases</th>
+                <th class="text-left p-3">Awaiting Payment</th>
+                <th class="text-left p-3">Part Paid</th>
+                <th class="text-left p-3">Fully Paid</th>
+                <th class="text-left p-3">Urgent</th>
+              </tr>
+            </thead>
+            <tbody id="caseSummaryBody"></tbody>
           </table>
         </div>
       </section>
@@ -273,10 +347,12 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const refreshAttendanceBtn = document.getElementById("refreshAttendanceBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
     const downloadCsvBtn = document.getElementById("downloadCsvBtn");
     const attendanceBody = document.getElementById("attendanceBody");
     const attendanceSummary = document.getElementById("attendanceSummary");
-    const leadSummaryBody = document.getElementById("leadSummaryBody");
+    const activityResultsBody = document.getElementById("activityResultsBody");
+    const caseSummaryBody = document.getElementById("caseSummaryBody");
     const autoRefreshStatus = document.getElementById("autoRefreshStatus");
 
     const LATE_CUTOFF_HOUR = 10;
@@ -284,9 +360,10 @@
 
     let currentUser = null;
     let attendanceDocs = [];
-    let leadAssignments = [];
     let userDocs = [];
-    let processingFiles = [];
+    let processingCases = [];
+    let leadAssignments = [];
+    let claimSubmissions = [];
     let autoRefreshInterval = null;
     let refreshInProgress = false;
 
@@ -294,8 +371,44 @@
       authLoader.style.display = "none";
     }
 
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function localIsoDate(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
     function todayIso() {
-      return new Date().toISOString().slice(0, 10);
+      return localIsoDate(new Date());
+    }
+
+    function getDateObject(value) {
+      if (!value) return null;
+      try {
+        if (typeof value?.toDate === "function") return value.toDate();
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return null;
+        return d;
+      } catch {
+        return null;
+      }
+    }
+
+    function isSameDayValue(value, isoDate = todayIso()) {
+      if (!value) return false;
+      if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value === isoDate;
+      }
+      const d = getDateObject(value);
+      if (!d) return false;
+      return localIsoDate(d) === isoDate;
     }
 
     function formatTimestamp(ts) {
@@ -373,10 +486,140 @@
       return `<span class="badge-absent">● Absent</span>`;
     }
 
+    function staffNameByUid(uid) {
+      const user = userDocs.find(u => u.id === uid);
+      return user?.name || user?.email || uid || "Unassigned";
+    }
+
+    function getEffectivePaymentStatus(item) {
+      if (item.paymentStatus) return item.paymentStatus;
+      const dueNow = Number(item.amountDueNow || 0);
+      const paidNow = Number(item.amountPaidNow || 0);
+      const followUpDue = Number(item.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
+      }
+      return "awaiting_payment";
+    }
+
+    function getSubmissionDate(item) {
+      return item.submittedAt || item.createdAt || item.receivedAt || null;
+    }
+
+    function getSubmissionUserUid(item) {
+      return item.submittedBy?.uid || item.createdBy?.uid || item.staffUid || item.assignedToUid || "";
+    }
+
+    function isIntroEmailSent(item) {
+      const action = String(item.lastAction || "").toLowerCase();
+      return item.introEmailSent === true || action === "send_intro_email" || action === "intro_email_sent";
+    }
+
+    function getIntroEmailDate(item) {
+      if (item.introEmailSentAt) return item.introEmailSentAt;
+      if (item.introEmailLastSentAt) return item.introEmailLastSentAt;
+      if (item.emailSentAt) return item.emailSentAt;
+      const action = String(item.lastAction || "").toLowerCase();
+      if ((action === "send_intro_email" || action === "intro_email_sent") && (item.lastUpdatedAt || item.updatedAt)) {
+        return item.lastUpdatedAt || item.updatedAt;
+      }
+      return null;
+    }
+
+    function getIntroEmailUserUid(item) {
+      return item.introEmailSentBy?.uid || item.emailSentBy?.uid || item.updatedBy?.uid || item.assignedToUid || "";
+    }
+
+    function hasCallbackAppointment(item) {
+      return !!(
+        item.callbackDate ||
+        item.callbackTime ||
+        item.callbackAppointmentDate ||
+        item.callbackAppointmentTime ||
+        item.appointmentDate ||
+        item.appointmentTime
+      );
+    }
+
+    function getCallbackDateValue(item) {
+      if (item.callbackBookedAt) return item.callbackBookedAt;
+      if (item.callbackSetAt) return item.callbackSetAt;
+      if (item.callbackAppointmentBookedAt) return item.callbackAppointmentBookedAt;
+      if (item.callbackAppointmentSetAt) return item.callbackAppointmentSetAt;
+      if (item.appointmentBookedAt) return item.appointmentBookedAt;
+      if (item.appointmentSetAt) return item.appointmentSetAt;
+
+      const action = String(item.lastAction || "").toLowerCase();
+      if (hasCallbackAppointment(item) && (action.includes("callback") || action.includes("appointment"))) {
+        return item.lastUpdatedAt || item.updatedAt || null;
+      }
+      return null;
+    }
+
+    function getCallbackUserUid(item) {
+      return item.callbackBookedBy?.uid || item.callbackSetBy?.uid || item.updatedBy?.uid || item.assignedToUid || "";
+    }
+
+    function buildDailyActivityRows(isoDate = todayIso()) {
+      const staffUsers = userDocs.filter(u => u.role === "staff");
+      const grouped = {};
+
+      staffUsers.forEach(user => {
+        grouped[user.id] = {
+          uid: user.id,
+          intakes: 0,
+          emails: 0,
+          callbacks: 0
+        };
+      });
+
+      claimSubmissions.forEach(item => {
+        const uid = getSubmissionUserUid(item);
+        if (!uid) return;
+        if (!isSameDayValue(getSubmissionDate(item), isoDate)) return;
+        if (!grouped[uid]) {
+          grouped[uid] = { uid, intakes: 0, emails: 0, callbacks: 0 };
+        }
+        grouped[uid].intakes += 1;
+      });
+
+      leadAssignments.forEach(item => {
+        if (isIntroEmailSent(item) && isSameDayValue(getIntroEmailDate(item), isoDate)) {
+          const uid = getIntroEmailUserUid(item);
+          if (uid) {
+            if (!grouped[uid]) {
+              grouped[uid] = { uid, intakes: 0, emails: 0, callbacks: 0 };
+            }
+            grouped[uid].emails += 1;
+          }
+        }
+
+        if (isSameDayValue(getCallbackDateValue(item), isoDate)) {
+          const uid = getCallbackUserUid(item);
+          if (uid) {
+            if (!grouped[uid]) {
+              grouped[uid] = { uid, intakes: 0, emails: 0, callbacks: 0 };
+            }
+            grouped[uid].callbacks += 1;
+          }
+        }
+      });
+
+      return Object.values(grouped).sort((a, b) => {
+        const aTotal = a.intakes + a.emails + a.callbacks;
+        const bTotal = b.intakes + b.emails + b.callbacks;
+        if (aTotal !== bTotal) return bTotal - aTotal;
+        return staffNameByUid(a.uid).localeCompare(staffNameByUid(b.uid));
+      });
+    }
+
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -384,7 +627,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing") {
+      if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -400,11 +643,12 @@
       refreshInProgress = true;
 
       try {
-        const [attendanceSnap, leadSnap, usersSnap, processingSnap] = await Promise.all([
+        const [attendanceSnap, usersSnap, processingSnap, leadsSnap, submissionsSnap] = await Promise.all([
           getDocs(collection(db, "staffAttendance")),
-          getDocs(collection(db, "leadAssignments")),
           getDocs(collection(db, "users")),
-          getDocs(collection(db, "processingFiles"))
+          getDocs(collection(db, "processingCases")),
+          getDocs(collection(db, "leadAssignments")),
+          getDocs(collection(db, "claimSubmissions"))
         ]);
 
         const today = todayIso();
@@ -413,13 +657,15 @@
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(d => d.date === today);
 
-        leadAssignments = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        processingFiles = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        processingCases = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        leadAssignments = leadsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        claimSubmissions = submissionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderStats();
         renderAttendance();
-        renderLeadSummary();
+        renderActivityResults();
+        renderCaseSummary();
 
         if (showRefreshStamp) {
           autoRefreshStatus.textContent = `Auto-refresh every 2 minutes. Last updated: ${new Date().toLocaleTimeString("en-GB")}`;
@@ -430,24 +676,29 @@
     }
 
     function renderStats() {
-      const staffUsers = userDocs.filter(u => u.role === "staff");
+      const processingUsers = userDocs.filter(u => u.role === "processing");
       const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
 
       let onTimeCount = 0;
       let lateCount = 0;
       let absentCount = 0;
 
-      staffUsers.forEach(user => {
+      processingUsers.forEach(user => {
         const status = getTodayStatusForUser(user.id);
         if (status === "on_time") onTimeCount += 1;
         else if (status === "late") lateCount += 1;
         else absentCount += 1;
       });
 
-      const myFiles = processingFiles.filter(file => file.processingAssignedToUid === currentUser.uid).length;
-      const unassignedFiles = processingFiles.filter(file => !file.processingAssignedToUid).length;
+      const myFiles = processingCases.filter(file => file.assignedToUid === currentUser.uid).length;
+      const unassignedFiles = processingCases.filter(file => !file.assignedToUid).length;
 
-      document.getElementById("totalStaffStat").textContent = String(staffUsers.length);
+      const activityRows = buildDailyActivityRows(todayIso());
+      const totalIntakes = activityRows.reduce((sum, row) => sum + row.intakes, 0);
+      const totalEmails = activityRows.reduce((sum, row) => sum + row.emails, 0);
+      const totalCallbacks = activityRows.reduce((sum, row) => sum + row.callbacks, 0);
+
+      document.getElementById("totalStaffStat").textContent = String(processingUsers.length);
       document.getElementById("onlineStaffStat").textContent = String(onlineNow);
       document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
       document.getElementById("onTimeStat").textContent = String(onTimeCount);
@@ -456,10 +707,17 @@
       document.getElementById("myFilesStat").textContent = String(myFiles);
       document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
 
+      document.getElementById("intakesSentStat").textContent = String(totalIntakes);
+      document.getElementById("emailsOutStat").textContent = String(totalEmails);
+      document.getElementById("callbacksSetStat").textContent = String(totalCallbacks);
+
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
       document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
       document.getElementById("snapshotLate").textContent = String(lateCount);
       document.getElementById("snapshotAbsent").textContent = String(absentCount);
+      document.getElementById("snapshotIntakes").textContent = String(totalIntakes);
+      document.getElementById("snapshotEmails").textContent = String(totalEmails);
+      document.getElementById("snapshotCallbacks").textContent = String(totalCallbacks);
       document.getElementById("snapshotMyFiles").textContent = String(myFiles);
       document.getElementById("snapshotUnassigned").textContent = String(unassignedFiles);
     }
@@ -467,23 +725,23 @@
     function renderAttendance() {
       attendanceBody.innerHTML = "";
 
-      const staffUsers = userDocs
-        .filter(u => u.role === "staff")
+      const processingUsers = userDocs
+        .filter(u => u.role === "processing")
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
       const attendanceMap = todayAttendanceMap();
 
-      if (!staffUsers.length) {
+      if (!processingUsers.length) {
         attendanceBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No staff users found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No processing users found.</td>
           </tr>
         `;
-        attendanceSummary.textContent = "No staff users found.";
+        attendanceSummary.textContent = "No processing users found.";
         return;
       }
 
-      staffUsers.forEach(user => {
+      processingUsers.forEach(user => {
         const item = attendanceMap[user.id] || null;
         const todayStatus = getTodayStatusForUser(user.id);
         const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
@@ -507,36 +765,17 @@
         attendanceBody.appendChild(row);
       });
 
-      attendanceSummary.textContent = `${staffUsers.length} staff member(s) shown for today. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+      attendanceSummary.textContent = `${processingUsers.length} processing staff member(s) shown for today. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
     }
 
-    function renderLeadSummary() {
-      leadSummaryBody.innerHTML = "";
-
-      const grouped = {};
-      leadAssignments.forEach(lead => {
-        const uid = lead.assignedToUid || "unassigned";
-        if (!grouped[uid]) {
-          grouped[uid] = {
-            uid,
-            assigned: 0,
-            callbacks: 0,
-            intro: 0,
-            converted: 0
-          };
-        }
-        grouped[uid].assigned += 1;
-        if (lead.callbackRequired && !(lead.closed === true || lead.usable === false)) grouped[uid].callbacks += 1;
-        if (lead.introEmailNeeded && !lead.introEmailSent && !(lead.closed === true || lead.usable === false)) grouped[uid].intro += 1;
-        if (lead.leadStatus === "converted" || lead.convertedToSubmissionId) grouped[uid].converted += 1;
-      });
-
-      const rows = Object.values(grouped);
+    function renderActivityResults() {
+      activityResultsBody.innerHTML = "";
+      const rows = buildDailyActivityRows(todayIso());
 
       if (!rows.length) {
-        leadSummaryBody.innerHTML = `
+        activityResultsBody.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No lead data found.</td>
+            <td colspan="4" class="p-6 text-center text-slate-500">No daily activity results found.</td>
           </tr>
         `;
         return;
@@ -546,13 +785,77 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${item.uid}</td>
-          <td class="p-3">${item.assigned}</td>
+          <td class="p-3">${staffNameByUid(item.uid)}</td>
+          <td class="p-3">${item.intakes}</td>
+          <td class="p-3">${item.emails}</td>
           <td class="p-3">${item.callbacks}</td>
-          <td class="p-3">${item.intro}</td>
-          <td class="p-3">${item.converted}</td>
         `;
-        leadSummaryBody.appendChild(row);
+        activityResultsBody.appendChild(row);
+      });
+    }
+
+    function renderCaseSummary() {
+      caseSummaryBody.innerHTML = "";
+
+      const processingUsers = userDocs.filter(u => u.role === "processing");
+      const grouped = {};
+
+      processingUsers.forEach(user => {
+        grouped[user.id] = {
+          uid: user.id,
+          assigned: 0,
+          awaiting: 0,
+          partPaid: 0,
+          fullyPaid: 0,
+          urgent: 0
+        };
+      });
+
+      processingCases.forEach(item => {
+        const uid = item.assignedToUid || "unassigned";
+        if (!grouped[uid]) {
+          grouped[uid] = {
+            uid,
+            assigned: 0,
+            awaiting: 0,
+            partPaid: 0,
+            fullyPaid: 0,
+            urgent: 0
+          };
+        }
+
+        grouped[uid].assigned += 1;
+
+        const paymentStatus = getEffectivePaymentStatus(item);
+        if (paymentStatus === "awaiting_payment") grouped[uid].awaiting += 1;
+        if (paymentStatus === "part_paid") grouped[uid].partPaid += 1;
+        if (paymentStatus === "fully_paid") grouped[uid].fullyPaid += 1;
+        if (String(item.priority || "").toLowerCase() === "urgent") grouped[uid].urgent += 1;
+      });
+
+      const rows = Object.values(grouped).sort((a, b) => b.assigned - a.assigned);
+
+      if (!rows.length) {
+        caseSummaryBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-slate-500">No processing case data found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${staffNameByUid(item.uid)}</td>
+          <td class="p-3">${item.assigned}</td>
+          <td class="p-3">${item.awaiting}</td>
+          <td class="p-3">${item.partPaid}</td>
+          <td class="p-3">${item.fullyPaid}</td>
+          <td class="p-3">${item.urgent}</td>
+        `;
+        caseSummaryBody.appendChild(row);
       });
     }
 
@@ -565,8 +868,8 @@
     }
 
     function downloadDailyCsv() {
-      const staffUsers = userDocs
-        .filter(u => u.role === "staff")
+      const processingUsers = userDocs
+        .filter(u => u.role === "processing")
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
       const attendanceMap = todayAttendanceMap();
@@ -584,7 +887,7 @@
         "Live Status"
       ];
 
-      const rows = staffUsers.map(user => {
+      const rows = processingUsers.map(user => {
         const item = attendanceMap[user.id] || null;
         const todayStatus = getTodayStatusForUser(user.id);
         const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
@@ -631,6 +934,16 @@
       }, 2 * 60 * 1000);
     }
 
+    async function refreshAttendance() {
+      try {
+        await loadDashboardData(true);
+        showToast("Attendance refreshed.");
+      } catch (error) {
+        console.error("Could not refresh attendance:", error);
+        alert("Could not refresh attendance.");
+      }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
@@ -650,18 +963,13 @@
       }
     });
 
-    refreshAttendanceBtn.addEventListener("click", async () => {
-      try {
-        await loadDashboardData(true);
-      } catch (error) {
-        console.error("Could not refresh attendance:", error);
-        alert("Could not refresh attendance.");
-      }
-    });
+    refreshAttendanceBtn.addEventListener("click", refreshAttendance);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshAttendance);
 
     downloadCsvBtn.addEventListener("click", () => {
       try {
         downloadDailyCsv();
+        showToast("CSV downloaded.");
       } catch (error) {
         console.error("Could not download CSV:", error);
         alert("Could not download CSV.");
