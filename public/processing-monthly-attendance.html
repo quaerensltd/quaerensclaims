@@ -473,7 +473,7 @@
 
       processingUsers = usersSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.role === "processing");
+        .filter(u => u.role === "processing" || u.role === "staff");
 
       attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       processingCases = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -739,9 +739,16 @@
       const user = processingUsers.find(u => u.id === staffId);
       if (!user) return;
 
-      const staffRows = filteredRows
-        .filter(r => r.uid === staffId)
-        .sort((a, b) => a.date.localeCompare(b.date));
+      const monthDates = getMonthDates(monthInput.value);
+      const staffRows = monthDates.map(dateStr => {
+        const rec = attendanceDocs.find(docItem => docItem.uid === staffId && docItem.date === dateStr) || null;
+        return {
+          date: dateStr,
+          rec,
+          workedMs: getWorkedMs(rec),
+          dayStatus: getDayStatus(rec, dateStr)
+        };
+      });
 
       let present = 0;
       let onTime = 0;
