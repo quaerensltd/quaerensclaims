@@ -20,8 +20,14 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav { background: #2563eb; color: white; }
-    .active-nav:hover { background: #1d4ed8; color: white; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -47,26 +53,6 @@
       line-height: 1.6;
       font-size: 0.95rem;
     }
-    #toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #111827;
-      color: white;
-      padding: 0.9rem 1.1rem;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-      z-index: 9999;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-    #toast.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -76,8 +62,6 @@
       <p class="text-slate-600 font-medium">Loading leads overview...</p>
     </div>
   </div>
-
-  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -234,7 +218,6 @@
             <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
             <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
             <div><span class="font-semibold text-blue-900">Submission ID:</span> <span id="lead_submissionId">-</span></div>
-            <div><span class="font-semibold text-blue-900">Assessment ID:</span> <span id="lead_assessmentId">-</span></div>
           </div>
         </section>
 
@@ -258,7 +241,7 @@
           </div>
           <div class="mt-4">
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
-            <textarea id="assessmentSummaryBox" class="input" rows="10" placeholder="This will auto-fill from the intake submission if available."></textarea>
+            <textarea id="assessmentSummaryBox" class="input" rows="8" placeholder="This will auto-fill from the intake submission if available."></textarea>
           </div>
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
@@ -396,25 +379,18 @@
     let closerUsers = [];
     let selectedLead = null;
     let selectedAssessmentId = null;
-    let selectedSubmissionId = "";
     let selectedSubmissionData = null;
+    let selectedAssessmentPack = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
-    }
-
-    function showToast(message) {
-      const toast = document.getElementById("toast");
-      toast.textContent = message;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 2600);
     }
 
     function showModalMessage(text, isError = false) {
       modalMessage.textContent = text;
       modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
-      setTimeout(() => modalMessage.classList.add("hidden"), 3500);
+      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
     }
 
     function todayIso() {
@@ -446,7 +422,8 @@
         no_answer: "No Answer",
         voicemail: "Voicemail",
         wrong_number: "Wrong Number",
-        not_interested: "Not Interested"
+        not_interested: "Not Interested",
+        assessment_complete: "Assessment Complete"
       };
       return map[action] || action || "-";
     }
@@ -517,10 +494,290 @@
       if ([...closerSelect.options].some(o => o.value === currentModalCloser)) closerSelect.value = currentModalCloser;
     }
 
+    function labelFromKey(key) {
+      return key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, c => c.toUpperCase());
+    }
+
+    function buildSubmissionAssessmentSummary(submission) {
+      if (!submission) return "";
+      if ((submission.assessmentSummary || "").trim()) {
+        return submission.assessmentSummary.trim();
+      }
+
+      const client = submission.client || {};
+      const product1 = submission.product1 || {};
+      const product2 = submission.product2 || {};
+      const blocks = [];
+
+      const headerName = `${client.firstName || ""} ${client.secondName || ""}`.trim();
+      if (headerName) blocks.push(`Client: ${headerName}`);
+      if (submission.claimType) blocks.push(`Claim Type: ${submission.claimType}`);
+      if (client.address) blocks.push(`Address: ${client.address}`);
+      if (client.mobile || client.landline) blocks.push(`Contact: ${client.mobile || client.landline}`);
+
+      const productLines = [];
+      if (Object.keys(product1).length) {
+        productLines.push(`Product One: ${Object.entries(product1).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+      }
+      if (Object.keys(product2).length) {
+        productLines.push(`Product Two: ${Object.entries(product2).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+      }
+      if (productLines.length) {
+        blocks.push(productLines.join("\n"));
+      }
+
+      if ((submission.managerNotes || "").trim()) {
+        blocks.push(`Existing Manager Notes: ${submission.managerNotes.trim()}`);
+      }
+
+      return blocks.join("\n\n").trim();
+    }
+
+    function buildQuaerensAssessmentPack({ selectedLead, selectedSubmissionData, managerNotes, assessmentSummary }) {
+      const client = selectedSubmissionData?.client || {};
+      const product1 = selectedSubmissionData?.product1 || {};
+      const product2 = selectedSubmissionData?.product2 || {};
+
+      const safe = (value) => String(value || "").trim();
+      const fullName =
+        `${safe(client.firstName || selectedLead?.forename)} ${safe(client.secondName || selectedLead?.surname)}`.trim() || "Client";
+      const secondApplicant = `${safe(client.firstName2)} ${safe(client.secondName2)}`.trim();
+      const claimType = safe(selectedLead?.claimType || selectedLead?.type || selectedSubmissionData?.claimType) || "Not specified";
+      const telephone = safe(client.mobile || client.landline || selectedLead?.telephone);
+      const email = safe(client.email || selectedLead?.email);
+      const address = safe(client.address || formatAddress(selectedLead || {}));
+      const postcode = safe(client.postcode || selectedLead?.postcode);
+
+      function objectLines(obj) {
+        const entries = Object.entries(obj || {}).filter(([_, v]) => safe(v));
+        if (!entries.length) return "No information currently available.";
+        return entries.map(([k, v]) => `${labelFromKey(k)}: ${v}`).join("\n");
+      }
+
+      const productOneText = objectLines(product1);
+      const productTwoText = Object.keys(product2 || {}).length ? objectLines(product2) : "";
+
+      const supplierOverview = [
+        "Based on the information currently available, the supplier and transaction background should be reviewed carefully to identify the correct complaint route, the parties involved, and the strongest recovery position.",
+        productOneText !== "No information currently available." ? productOneText : "",
+        productTwoText ? "Additional Product Information:\n" + productTwoText : ""
+      ].filter(Boolean).join("\n\n");
+
+      const purchaseSummary = [
+        `Claim Type: ${claimType}`,
+        telephone ? `Telephone: ${telephone}` : "",
+        email ? `Email: ${email}` : "",
+        address ? `Address: ${address}` : "",
+        postcode ? `Postcode: ${postcode}` : ""
+      ].filter(Boolean).join("\n");
+
+      const issuesSummary = safe(assessmentSummary) || "No detailed issue summary has yet been recorded. Based on the information currently available, further clarification and supporting documentation may be required.";
+
+      const claimStrength = [
+        "Based on the information currently available, the claim appears to merit formal review.",
+        "The strength of the case will depend on the available agreement documents, payment evidence, sales representations, complaint history, and any proof of financial or practical loss.",
+        "Particular attention should be given to the identity of the contracting party, the funding route, the promises made at point of sale, and whether the goods or services delivered matched what was represented."
+      ].join("\n\n");
+
+      const indicativeClaimPosition = [
+        "At this stage it appears there may be a recoverable complaint route, subject to documentary verification.",
+        "Potential recovery may include refund-based loss, consequential losses where supportable, and complaint escalation against the most appropriate responsible party.",
+        "A final position should only be confirmed once the paperwork, chronology, and payment trail have been reviewed in full."
+      ].join("\n\n");
+
+      const conclusion = [
+        `In conclusion, based on the information presently available, ${fullName}'s matter appears suitable for structured complaint preparation and strategic review.`,
+        "The next step should be to confirm the documentary evidence, refine the chronology, and proceed against the most effective target party in the correct tactical order."
+      ].join("\n\n");
+
+      const strategicAnalysis = [
+        "STRATEGIC ANALYSIS",
+        "",
+        "Best Complaint Route:",
+        "Review the supplier complaint route first, while also assessing whether a linked finance provider, lender, card route, or escalation channel offers a stronger or faster recovery path.",
+        "",
+        "Strongest Pressure Points:",
+        "- Accuracy of sales representations",
+        "- Contractual performance and delivery failures",
+        "- Payment trail and financial loss",
+        "- Supplier conduct after complaint or request for remedy",
+        "",
+        "Evidence Still Needed:",
+        "- Signed agreement / order form / quotation",
+        "- Invoice or proof of payment",
+        "- Finance agreement or lender details where relevant",
+        "- Sales materials / promises / representations",
+        "- Complaint correspondence and responses",
+        "- Proof of losses and supporting documents",
+        "",
+        "Likely Risks:",
+        "- Missing paperwork",
+        "- Unclear supplier identity or dissolved company issues",
+        "- Weak evidence on representations made",
+        "- Incomplete chronology",
+        "",
+        "Recommended Tactical Order of Action:",
+        "1. Confirm key documents and chronology.",
+        "2. Identify the strongest target respondent.",
+        "3. Draft formal complaint.",
+        "4. Diary response deadlines.",
+        "5. Escalate if ignored or rejected."
+      ].join("\n");
+
+      const recommendedNextSteps = [
+        "RECOMMENDED NEXT STEPS",
+        "",
+        "1. Obtain and review all contractual and payment documents.",
+        "2. Confirm full factual chronology with the client.",
+        "3. Identify whether supplier, lender, finance company, or another route is strongest.",
+        "4. Prepare first complaint correspondence.",
+        "5. Escalate promptly if the initial route does not resolve the matter."
+      ].join("\n");
+
+      const complaintLetterText = [
+        "Dear Sir / Madam,",
+        "",
+        `We act on behalf of ${fullName} in relation to the above matter.`,
+        "Our client's position is that the goods and/or services supplied did not meet the representations made and/or did not perform as reasonably expected.",
+        "We therefore invite you to investigate the matter urgently and provide a substantive response together with proposals for resolution.",
+        "",
+        "Please treat this as a formal complaint.",
+        "",
+        "Yours faithfully,",
+        "Quaerens"
+      ].join("\n");
+
+      const statementOfTruthText = [
+        "STATEMENT OF TRUTH",
+        "",
+        `I, ${fullName}, confirm that the information provided in support of this matter is true to the best of my knowledge and belief.`,
+        "",
+        "Signed: ____________________",
+        "Date: ______________________"
+      ].join("\n");
+
+      const lossSummaryText = [
+        "LOSS SUMMARY",
+        "",
+        "A full quantified loss summary should be completed once the payment records, invoices, finance documents, and any consequential losses have been reviewed.",
+        "At present, losses should be treated as subject to documentary confirmation."
+      ].join("\n");
+
+      const evidenceChecklistText = [
+        "EVIDENCE CHECKLIST",
+        "",
+        "- Signed agreement / order form / quotation",
+        "- Invoice / receipt / proof of payment",
+        "- Finance agreement or lender paperwork",
+        "- Sales materials / brochures / messages",
+        "- Complaint correspondence",
+        "- Photos / technical evidence / performance records",
+        "- Proof of additional loss"
+      ].join("\n");
+
+      const escalationLetterText = [
+        "FOLLOW-UP / ESCALATION LETTER",
+        "",
+        "Further to our previous correspondence, we note that the matter remains unresolved.",
+        "Unless a substantive response is received within the required timescale, our client reserves the right to escalate the complaint without further notice.",
+        "",
+        "Yours faithfully,",
+        "Quaerens"
+      ].join("\n");
+
+      const internalFileNoteText = [
+        "INTERNAL FILE NOTE",
+        "",
+        `Client: ${fullName}`,
+        `Claim Type: ${claimType}`,
+        "Initial review suggests the matter should proceed to structured complaint preparation subject to document confirmation.",
+        "Check strongest target route before first complaint is issued."
+      ].join("\n");
+
+      const clientEmailPreviewText = [
+        `Dear ${fullName},`,
+        "",
+        "Please find below your assessment summary.",
+        "",
+        issuesSummary,
+        "",
+        "We will next review the best route for progressing your matter and confirm any documents still required.",
+        "",
+        "Kind regards,",
+        "Quaerens"
+      ].join("\n");
+
+      const processingPackText = [
+        "INTERNAL PROCESSING PACK",
+        "",
+        `Client: ${fullName}`,
+        `Claim Type: ${claimType}`,
+        "",
+        "Assessment Position:",
+        issuesSummary,
+        "",
+        "Strategic Direction:",
+        "Review liability route, verify documents, prepare complaint, and diarise escalation deadlines.",
+        "",
+        "Evidence Required:",
+        "- Agreement documents",
+        "- Payment records",
+        "- Complaint correspondence",
+        "- Sales representations",
+        "- Loss support"
+      ].join("\n");
+
+      const assessmentReportText = [
+        "CLIENT DETAILS",
+        `${fullName}${secondApplicant ? `\nSecond Applicant: ${secondApplicant}` : ""}`,
+        `${telephone ? `Telephone: ${telephone}\n` : ""}${email ? `Email: ${email}\n` : ""}${address ? `Address: ${address}\n` : ""}${postcode ? `Postcode: ${postcode}` : ""}`.trim(),
+        "",
+        "SUPPLIER DETAILS / SUPPLIER OVERVIEW",
+        supplierOverview,
+        "",
+        "PURCHASE DETAILS / PURCHASE SUMMARY",
+        purchaseSummary,
+        "",
+        "SUMMARY OF ISSUES",
+        issuesSummary,
+        "",
+        "CLAIM STRENGTH ASSESSMENT",
+        claimStrength,
+        "",
+        "INDICATIVE CLAIM POSITION",
+        indicativeClaimPosition,
+        "",
+        "CONCLUSION",
+        conclusion,
+        "",
+        strategicAnalysis,
+        "",
+        recommendedNextSteps
+      ].join("\n\n");
+
+      return {
+        assessmentSummaryText: issuesSummary,
+        assessmentReportText,
+        strategicAnalysisText: strategicAnalysis,
+        recommendedNextStepsText: recommendedNextSteps,
+        complaintLetterText,
+        statementOfTruthText,
+        lossSummaryText,
+        evidenceChecklistText,
+        escalationLetterText,
+        internalFileNoteText,
+        processingPackText,
+        clientEmailPreviewText
+      };
+    }
+
     async function checkManagerAccess(user) {
       try {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
+
         if (!userSnap.exists()) {
           alert("No staff profile found for this account.");
           window.location.href = "/login.html";
@@ -596,6 +853,7 @@
       return allLeads.filter(lead => {
         const leadStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
         const appointmentDateValue = lead.closerAppointmentDate || "";
+
         const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
         const matchesTiming =
           selectedTiming === "all" ||
@@ -603,6 +861,7 @@
           (selectedTiming === "future" && appointmentDateValue && appointmentDateValue > today) ||
           (selectedTiming === "overdue" && appointmentDateValue && appointmentDateValue < today) ||
           (selectedTiming === "none" && !appointmentDateValue);
+
         const matchesLister = selectedLister === "all" || (lead.assignedToUid || "") === selectedLister;
         const matchesCloser = selectedCloser === "all" || (lead.closerUid || "") === selectedCloser;
 
@@ -663,10 +922,7 @@
       resultsSummary.textContent = `${filtered.length} lead(s) shown`;
 
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const leadId = btn.getAttribute("data-open-lead");
-          await openLead(leadId);
-        });
+        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
       });
     }
 
@@ -691,91 +947,24 @@
       });
     }
 
-    async function findAssessmentForLead(leadId, submissionId = "") {
-      try {
-        if (leadId) {
-          const qLead = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
-          const snapLead = await getDocs(qLead);
-          if (!snapLead.empty) {
-            const docs = snapLead.docs.map(d => ({ id: d.id, ...d.data() }));
-            docs.sort((a, b) => {
-              const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-              const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-              return bTime - aTime;
-            });
-            return docs[0];
-          }
-        }
+    async function findAssessmentForLead(leadId) {
+      const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
 
-        if (submissionId) {
-          const qSub = query(collection(db, "managerAssessments"), where("submissionId", "==", submissionId));
-          const snapSub = await getDocs(qSub);
-          if (!snapSub.empty) {
-            const docs = snapSub.docs.map(d => ({ id: d.id, ...d.data() }));
-            docs.sort((a, b) => {
-              const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-              const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-              return bTime - aTime;
-            });
-            return docs[0];
-          }
-        }
-      } catch (error) {
-        console.error("Failed finding assessment:", error);
-      }
-
-      return null;
-    }
-
-    function labelFromKey(key) {
-      return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
-    }
-
-    function buildSubmissionAssessmentSummary(submission) {
-      if (!submission) return "";
-
-      if ((submission.assessmentSummary || "").trim()) {
-        return submission.assessmentSummary.trim();
-      }
-
-      const client = submission.client || {};
-      const product1 = submission.product1 || {};
-      const product2 = submission.product2 || {};
-      const lines = [];
-
-      const name = `${client.firstName || ""} ${client.secondName || ""}`.trim();
-      if (name) lines.push(`Client: ${name}`);
-      if (submission.claimType) lines.push(`Claim Type: ${submission.claimType}`);
-      if (client.address) lines.push(`Address: ${client.address}`);
-      if (client.mobile || client.landline) lines.push(`Contact: ${client.mobile || client.landline}`);
-      if (client.email) lines.push(`Email: ${client.email}`);
-
-      if (Object.values(product1).some(v => String(v || "").trim() !== "")) {
-        lines.push("");
-        lines.push("Product One:");
-        Object.entries(product1).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && String(value).trim() !== "") {
-            lines.push(`${labelFromKey(key)}: ${value}`);
-          }
+      const docs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+          return bTime - aTime;
         });
-      }
 
-      if (Object.values(product2).some(v => String(v || "").trim() !== "")) {
-        lines.push("");
-        lines.push("Product Two:");
-        Object.entries(product2).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && String(value).trim() !== "") {
-            lines.push(`${labelFromKey(key)}: ${value}`);
-          }
-        });
-      }
-
-      return lines.join("\n").trim();
+      return docs[0];
     }
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
-      selectedSubmissionId = "";
 
       const possibleIds = [
         lead.convertedToSubmissionId,
@@ -788,7 +977,6 @@
         try {
           const snap = await getDoc(doc(db, "claimSubmissions", id));
           if (snap.exists()) {
-            selectedSubmissionId = snap.id;
             selectedSubmissionData = { id: snap.id, ...snap.data() };
             return selectedSubmissionData;
           }
@@ -803,21 +991,21 @@
     async function updateAssessmentButton() {
       if (!selectedLead) {
         selectedAssessmentId = null;
+        selectedAssessmentPack = null;
         viewAssessmentBtn.classList.add("hidden");
         viewAssessmentBtn.href = "#";
-        document.getElementById("lead_assessmentId").textContent = "-";
         return;
       }
 
-      const assessment = await findAssessmentForLead(selectedLead.id, selectedSubmissionId);
+      const assessment = await findAssessmentForLead(selectedLead.id);
       if (assessment) {
         selectedAssessmentId = assessment.id;
-        document.getElementById("lead_assessmentId").textContent = assessment.id;
+        selectedAssessmentPack = assessment;
         viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessment.id}`;
         viewAssessmentBtn.classList.remove("hidden");
       } else {
         selectedAssessmentId = null;
-        document.getElementById("lead_assessmentId").textContent = "-";
+        selectedAssessmentPack = null;
         viewAssessmentBtn.href = "#";
         viewAssessmentBtn.classList.add("hidden");
       }
@@ -826,9 +1014,7 @@
     async function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
       selectedSubmissionData = null;
-      selectedSubmissionId = "";
-      selectedAssessmentId = null;
-
+      selectedAssessmentPack = null;
       if (!selectedLead) return;
 
       document.getElementById("modalLeadTitle").textContent =
@@ -846,6 +1032,8 @@
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
       document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
+      document.getElementById("lead_submissionId").textContent =
+        selectedLead.convertedToSubmissionId || selectedLead.submissionId || selectedLead.claimSubmissionId || selectedLead.intakeSubmissionId || "-";
 
       closerSelect.value = selectedLead.closerUid || "";
       managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
@@ -856,13 +1044,11 @@
       recommendedCloserText.value = selectedLead.recommendedCloser || "";
 
       const linkedSubmission = await loadLinkedSubmissionForLead(selectedLead);
-      document.getElementById("lead_submissionId").textContent = selectedSubmissionId || "-";
-
       const intakeSummary = buildSubmissionAssessmentSummary(linkedSubmission);
+
       assessmentSummaryBox.value =
         selectedLead.assessmentSummary ||
         selectedLead.generatedAssessmentText ||
-        linkedSubmission?.assessmentSummary ||
         intakeSummary ||
         "";
 
@@ -872,33 +1058,40 @@
     }
 
     async function refreshSelectedLead() {
-      const currentId = selectedLead?.id || "";
       await loadLeads();
-      if (!currentId) return;
-
-      const updated = allLeads.find(x => x.id === currentId);
-      if (updated) {
-        selectedLead = updated;
-        await openLead(updated.id);
-      } else {
-        leadModal.classList.add("hidden");
+      if (selectedLead) {
+        const updated = allLeads.find(x => x.id === selectedLead.id);
+        if (updated) {
+          selectedLead = updated;
+          await openLead(updated.id);
+        } else {
+          leadModal.classList.add("hidden");
+        }
       }
     }
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
 
-      await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-        ...patch,
-        lastUpdatedAt: serverTimestamp(),
-        actionHistory: arrayUnion({
-          action: historyAction,
-          byUid: currentUser.uid,
-          byName: currentUserData.name || "",
-          at: new Date().toISOString(),
-          notes
-        })
-      });
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          ...patch,
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: historyAction,
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes
+          })
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Lead updated successfully.");
+      } catch (error) {
+        console.error("Lead update failed:", error);
+        showModalMessage("Could not update lead.", true);
+      }
     }
 
     async function createOrUpdateCloserAssignment(lead, mode = "send") {
@@ -906,18 +1099,16 @@
       const closerUser = findUserById(closerUid);
 
       if (!closerUid || !closerUser) {
-        throw new Error("Please choose a closer first.");
+        throw new Error("No closer selected.");
       }
 
+      const leadClaimType = lead.claimType || lead.type || "";
       const statusValue = mode === "book" ? "Appointment Booked" : "Assigned";
       const client = selectedSubmissionData?.client || {};
 
       const payload = {
         sourceLeadId: lead.id,
         leadAssignmentId: lead.id,
-        closerUid: closerUid,
-        closerName: closerUser.name || "",
-        closerEmail: closerUser.email || "",
         closer: {
           uid: closerUid,
           name: closerUser.name || "",
@@ -933,20 +1124,30 @@
           email: client.email || lead.email || "",
           address: client.address || formatAddress(lead)
         },
-        claimType: lead.claimType || lead.type || "",
+        claimType: leadClaimType,
         status: statusValue,
-        appointmentDate: appointmentDate.value || "",
-        appointmentTime: appointmentTime.value || "",
+        outcome: lead.outcome || "",
         appointment: {
           date: appointmentDate.value || "",
           time: appointmentTime.value || ""
         },
-        assessmentSummary: assessmentSummaryBox.value.trim(),
-        generatedAssessmentText: assessmentSummaryBox.value.trim(),
+        assessmentId: selectedAssessmentId || "",
+        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
+        assessmentSummary: selectedAssessmentPack?.assessmentSummaryText || assessmentSummaryBox.value.trim(),
+        generatedAssessmentText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+        assessmentReportText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+        strategicAnalysisText: selectedAssessmentPack?.strategicAnalysisText || "",
+        recommendedNextStepsText: selectedAssessmentPack?.recommendedNextStepsText || "",
+        complaintLetterText: selectedAssessmentPack?.complaintLetterText || "",
+        statementOfTruthText: selectedAssessmentPack?.statementOfTruthText || "",
+        lossSummaryText: selectedAssessmentPack?.lossSummaryText || "",
+        evidenceChecklistText: selectedAssessmentPack?.evidenceChecklistText || "",
+        escalationLetterText: selectedAssessmentPack?.escalationLetterText || "",
+        internalFileNoteText: selectedAssessmentPack?.internalFileNoteText || "",
+        processingPackText: selectedAssessmentPack?.processingPackText || "",
+        clientEmailPreviewText: selectedAssessmentPack?.clientEmailPreviewText || "",
         managerNotes: notesBox.value.trim(),
         handoffNotes: notesBox.value.trim(),
-        assessmentId: selectedAssessmentId || "",
-        submissionId: selectedSubmissionId || "",
         product1: selectedSubmissionData?.product1 || {},
         product2: selectedSubmissionData?.product2 || {},
         assignedBy: {
@@ -963,7 +1164,10 @@
         }
       };
 
-      const existingQuery = query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id));
+      const existingQuery = query(
+        collection(db, "closerAssignments"),
+        where("sourceLeadId", "==", lead.id)
+      );
       const existingSnap = await getDocs(existingQuery);
 
       if (!existingSnap.empty) {
@@ -977,10 +1181,9 @@
     }
 
     async function createOrUpdateAssessment() {
-      if (!selectedLead) throw new Error("No lead selected.");
+      if (!selectedLead) return null;
 
       let summary = assessmentSummaryBox.value.trim();
-
       if (!summary) {
         const fallbackSummary =
           buildSubmissionAssessmentSummary(selectedSubmissionData) ||
@@ -996,20 +1199,23 @@
         assessmentSummaryBox.value = summary;
       }
 
-      const existing = await findAssessmentForLead(selectedLead.id, selectedSubmissionId);
+      const quaerensPack = buildQuaerensAssessmentPack({
+        selectedLead,
+        selectedSubmissionData,
+        managerNotes: notesBox.value.trim(),
+        assessmentSummary: summary
+      });
+
+      const existing = await findAssessmentForLead(selectedLead.id);
 
       const payload = {
         leadId: selectedLead.id,
-        submissionId: selectedSubmissionId || "",
+        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
         client: {
           title: selectedLead.title || "",
           forename: selectedLead.forename || "",
           surname: selectedLead.surname || "",
-          firstName: selectedSubmissionData?.client?.firstName || selectedLead.forename || "",
-          secondName: selectedSubmissionData?.client?.secondName || selectedLead.surname || "",
-          telephone: selectedLead.telephone || selectedSubmissionData?.client?.mobile || selectedSubmissionData?.client?.landline || "",
-          mobile: selectedSubmissionData?.client?.mobile || "",
-          landline: selectedSubmissionData?.client?.landline || "",
+          telephone: selectedLead.telephone || "",
           email: selectedLead.email || selectedSubmissionData?.client?.email || "",
           postcode: selectedLead.postcode || "",
           address: selectedSubmissionData?.client?.address || formatAddress(selectedLead)
@@ -1017,8 +1223,19 @@
         claimType: selectedLead.claimType || selectedLead.type || "",
         assessmentOutcome: assessmentOutcomeSelect.value || "",
         recommendedCloser: recommendedCloserText.value.trim(),
-        assessmentSummary: summary,
-        generatedAssessmentText: summary,
+        assessmentSummary: quaerensPack.assessmentSummaryText,
+        generatedAssessmentText: quaerensPack.assessmentReportText,
+        assessmentReportText: quaerensPack.assessmentReportText,
+        strategicAnalysisText: quaerensPack.strategicAnalysisText,
+        recommendedNextStepsText: quaerensPack.recommendedNextStepsText,
+        complaintLetterText: quaerensPack.complaintLetterText,
+        statementOfTruthText: quaerensPack.statementOfTruthText,
+        lossSummaryText: quaerensPack.lossSummaryText,
+        evidenceChecklistText: quaerensPack.evidenceChecklistText,
+        escalationLetterText: quaerensPack.escalationLetterText,
+        internalFileNoteText: quaerensPack.internalFileNoteText,
+        processingPackText: quaerensPack.processingPackText,
+        clientEmailPreviewText: quaerensPack.clientEmailPreviewText,
         leadStatusAtCreation: selectedLead.leadStatus || "awaiting_manager",
         managerNotes: notesBox.value.trim(),
         product1: selectedSubmissionData?.product1 || {},
@@ -1031,109 +1248,69 @@
         }
       };
 
-      let finalId = "";
-
       if (existing) {
         await updateDoc(doc(db, "managerAssessments", existing.id), payload);
-        finalId = existing.id;
-      } else {
-        const newDoc = await addDoc(collection(db, "managerAssessments"), {
-          ...payload,
-          createdAt: serverTimestamp(),
-          createdBy: {
-            uid: currentUser.uid,
-            name: currentUserData.name || "",
-            email: currentUser.email || ""
-          }
-        });
-        finalId = newDoc.id;
+        selectedAssessmentPack = { id: existing.id, ...payload };
+        return existing.id;
       }
 
-      if (selectedSubmissionId) {
-        await updateDoc(doc(db, "claimSubmissions", selectedSubmissionId), {
-          assessmentId: finalId,
-          assessmentSummary: summary,
-          managerNotes: notesBox.value.trim(),
-          status: "assessment_complete",
-          reviewedAt: serverTimestamp(),
-          reviewedBy: {
-            uid: currentUser.uid,
-            name: currentUserData.name || "",
-            email: currentUser.email || ""
-          },
-          assessmentCreatedAt: serverTimestamp(),
-          assessmentCreatedBy: {
-            uid: currentUser.uid,
-            name: currentUserData.name || "",
-            email: currentUser.email || ""
-          }
-        });
-      }
+      const newDoc = await addDoc(collection(db, "managerAssessments"), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        createdBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
 
-      const nextLeadStatus =
-        selectedLead.leadStatus === "sent_to_closer"
-          ? "sent_to_closer"
-          : (selectedLead.leadStatus === "converted"
-            ? "converted"
-            : "qualified");
-
-      await updateLead({
-        assessmentId: finalId,
-        assessmentOutcome: assessmentOutcomeSelect.value || "",
-        recommendedCloser: recommendedCloserText.value.trim(),
-        assessmentSummary: summary,
-        generatedAssessmentText: summary,
-        managerNotes: notesBox.value.trim(),
-        convertedToSubmissionId: selectedSubmissionId || selectedLead.convertedToSubmissionId || "",
-        leadStatus: nextLeadStatus,
-        lastAction: "assessment_report_created"
-      }, "assessment_report_created", summary);
-
-      return finalId;
+      selectedAssessmentPack = { id: newDoc.id, ...payload };
+      return newDoc.id;
     }
 
     createAssessmentBtn.addEventListener("click", async () => {
-      if (!selectedLead) {
-        showModalMessage("No lead selected.", true);
-        return;
-      }
-
-      const originalText = createAssessmentBtn.textContent;
-      createAssessmentBtn.disabled = true;
-      createAssessmentBtn.textContent = "Saving...";
+      if (!selectedLead) return;
 
       try {
         const assessmentId = await createOrUpdateAssessment();
         selectedAssessmentId = assessmentId;
-        await refreshSelectedLead();
+
+        await updateLead({
+          assessmentOutcome: assessmentOutcomeSelect.value || "",
+          recommendedCloser: recommendedCloserText.value.trim(),
+          assessmentSummary: selectedAssessmentPack?.assessmentSummaryText || assessmentSummaryBox.value.trim(),
+          generatedAssessmentText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          assessmentReportText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          strategicAnalysisText: selectedAssessmentPack?.strategicAnalysisText || "",
+          recommendedNextStepsText: selectedAssessmentPack?.recommendedNextStepsText || "",
+          complaintLetterText: selectedAssessmentPack?.complaintLetterText || "",
+          statementOfTruthText: selectedAssessmentPack?.statementOfTruthText || "",
+          lossSummaryText: selectedAssessmentPack?.lossSummaryText || "",
+          evidenceChecklistText: selectedAssessmentPack?.evidenceChecklistText || "",
+          escalationLetterText: selectedAssessmentPack?.escalationLetterText || "",
+          internalFileNoteText: selectedAssessmentPack?.internalFileNoteText || "",
+          processingPackText: selectedAssessmentPack?.processingPackText || "",
+          clientEmailPreviewText: selectedAssessmentPack?.clientEmailPreviewText || "",
+          leadStatus: "qualified",
+          lastAction: "assessment_report_created"
+        }, "assessment_report_created", selectedAssessmentPack?.assessmentSummaryText || assessmentSummaryBox.value.trim());
+
         if (assessmentId) {
           viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessmentId}`;
           viewAssessmentBtn.classList.remove("hidden");
         }
-        showModalMessage("Assessment report saved.");
-        showToast("Assessment report saved.");
       } catch (error) {
         console.error("Assessment creation failed:", error);
         showModalMessage(error.message || "Could not create assessment report.", true);
-      } finally {
-        createAssessmentBtn.disabled = false;
-        createAssessmentBtn.textContent = originalText;
       }
     });
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      try {
-        await updateLead({
-          leadStatus: "qualified",
-          lastAction: "qualified"
-        }, "qualified", "Manager marked lead as qualified.");
-        await refreshSelectedLead();
-        showModalMessage("Lead marked qualified.");
-      } catch (error) {
-        console.error(error);
-        showModalMessage("Could not update lead.", true);
-      }
+      await updateLead({
+        leadStatus: "qualified",
+        lastAction: "qualified"
+      }, "qualified", "Manager marked lead as qualified.");
     });
 
     bookAppointmentBtn.addEventListener("click", async () => {
@@ -1149,10 +1326,6 @@
         return;
       }
 
-      const originalText = bookAppointmentBtn.textContent;
-      bookAppointmentBtn.disabled = true;
-      bookAppointmentBtn.textContent = "Booking...";
-
       try {
         if (!selectedAssessmentId) {
           selectedAssessmentId = await createOrUpdateAssessment();
@@ -1161,7 +1334,6 @@
         await createOrUpdateCloserAssignment(selectedLead, "book");
 
         await updateLead({
-          assessmentId: selectedAssessmentId || "",
           leadStatus: "sent_to_closer",
           closerUid: closerSelect.value,
           closerAppointmentDate: appointmentDate.value,
@@ -1171,21 +1343,25 @@
           introEmailNeeded: false,
           assessmentOutcome: assessmentOutcomeSelect.value || "",
           recommendedCloser: recommendedCloserText.value.trim(),
-          assessmentSummary: assessmentSummaryBox.value.trim(),
-          generatedAssessmentText: assessmentSummaryBox.value.trim(),
-          managerNotes: notesBox.value.trim(),
+          assessmentSummary: selectedAssessmentPack?.assessmentSummaryText || assessmentSummaryBox.value.trim(),
+          generatedAssessmentText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          assessmentReportText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          strategicAnalysisText: selectedAssessmentPack?.strategicAnalysisText || "",
+          recommendedNextStepsText: selectedAssessmentPack?.recommendedNextStepsText || "",
+          complaintLetterText: selectedAssessmentPack?.complaintLetterText || "",
+          statementOfTruthText: selectedAssessmentPack?.statementOfTruthText || "",
+          lossSummaryText: selectedAssessmentPack?.lossSummaryText || "",
+          evidenceChecklistText: selectedAssessmentPack?.evidenceChecklistText || "",
+          escalationLetterText: selectedAssessmentPack?.escalationLetterText || "",
+          internalFileNoteText: selectedAssessmentPack?.internalFileNoteText || "",
+          processingPackText: selectedAssessmentPack?.processingPackText || "",
+          clientEmailPreviewText: selectedAssessmentPack?.clientEmailPreviewText || "",
+          managerNotes: notesBox.value || "",
           lastAction: "closer_appointment_booked"
         }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
-
-        await refreshSelectedLead();
-        showModalMessage("Appointment booked successfully.");
-        showToast("Appointment booked.");
       } catch (error) {
         console.error("Booking closer appointment failed:", error);
         showModalMessage(error.message || "Could not create closer appointment.", true);
-      } finally {
-        bookAppointmentBtn.disabled = false;
-        bookAppointmentBtn.textContent = originalText;
       }
     });
 
@@ -1197,10 +1373,6 @@
         return;
       }
 
-      const originalText = sendToCloserBtn.textContent;
-      sendToCloserBtn.disabled = true;
-      sendToCloserBtn.textContent = "Sending...";
-
       try {
         if (!selectedAssessmentId) {
           selectedAssessmentId = await createOrUpdateAssessment();
@@ -1209,7 +1381,6 @@
         await createOrUpdateCloserAssignment(selectedLead, "send");
 
         await updateLead({
-          assessmentId: selectedAssessmentId || "",
           leadStatus: "sent_to_closer",
           closerUid: closerSelect.value,
           sentToCloserAt: serverTimestamp(),
@@ -1217,65 +1388,51 @@
           introEmailNeeded: false,
           assessmentOutcome: assessmentOutcomeSelect.value || "",
           recommendedCloser: recommendedCloserText.value.trim(),
-          assessmentSummary: assessmentSummaryBox.value.trim(),
-          generatedAssessmentText: assessmentSummaryBox.value.trim(),
-          managerNotes: notesBox.value.trim(),
+          assessmentSummary: selectedAssessmentPack?.assessmentSummaryText || assessmentSummaryBox.value.trim(),
+          generatedAssessmentText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          assessmentReportText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          strategicAnalysisText: selectedAssessmentPack?.strategicAnalysisText || "",
+          recommendedNextStepsText: selectedAssessmentPack?.recommendedNextStepsText || "",
+          complaintLetterText: selectedAssessmentPack?.complaintLetterText || "",
+          statementOfTruthText: selectedAssessmentPack?.statementOfTruthText || "",
+          lossSummaryText: selectedAssessmentPack?.lossSummaryText || "",
+          evidenceChecklistText: selectedAssessmentPack?.evidenceChecklistText || "",
+          escalationLetterText: selectedAssessmentPack?.escalationLetterText || "",
+          internalFileNoteText: selectedAssessmentPack?.internalFileNoteText || "",
+          processingPackText: selectedAssessmentPack?.processingPackText || "",
+          clientEmailPreviewText: selectedAssessmentPack?.clientEmailPreviewText || "",
+          managerNotes: notesBox.value || "",
           lastAction: "sent_to_closer"
         }, "sent_to_closer", "Lead sent to closer by manager.");
-
-        await refreshSelectedLead();
-        showModalMessage("Lead sent to closer.");
-        showToast("Lead sent to closer.");
       } catch (error) {
         console.error("Send to closer failed:", error);
         showModalMessage(error.message || "Could not send lead to closer.", true);
-      } finally {
-        sendToCloserBtn.disabled = false;
-        sendToCloserBtn.textContent = originalText;
       }
     });
 
     markConvertedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      try {
-        await updateLead({
-          leadStatus: "converted",
-          convertedAt: serverTimestamp(),
-          lastAction: "converted"
-        }, "converted", "Lead marked as converted by manager.");
-        await refreshSelectedLead();
-        showModalMessage("Lead marked converted.");
-      } catch (error) {
-        console.error(error);
-        showModalMessage("Could not update lead.", true);
-      }
+      await updateLead({
+        leadStatus: "converted",
+        convertedAt: serverTimestamp(),
+        lastAction: "converted"
+      }, "converted", "Lead marked as converted by manager.");
     });
 
     markClosedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      try {
-        await updateLead({
-          leadStatus: "closed",
-          closed: true,
-          usable: false,
-          callbackRequired: false,
-          introEmailNeeded: false,
-          lastAction: "closed"
-        }, "closed", "Lead closed by manager.");
-        await refreshSelectedLead();
-        showModalMessage("Lead closed.");
-      } catch (error) {
-        console.error(error);
-        showModalMessage("Could not close lead.", true);
-      }
+      await updateLead({
+        leadStatus: "closed",
+        closed: true,
+        usable: false,
+        callbackRequired: false,
+        introEmailNeeded: false,
+        lastAction: "closed"
+      }, "closed", "Lead closed by manager.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
-      const originalText = saveNotesBtn.textContent;
-      saveNotesBtn.disabled = true;
-      saveNotesBtn.textContent = "Saving...";
 
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
@@ -1287,7 +1444,18 @@
           assessmentOutcome: assessmentOutcomeSelect.value || "",
           recommendedCloser: recommendedCloserText.value.trim(),
           assessmentSummary: assessmentSummaryBox.value.trim(),
-          generatedAssessmentText: assessmentSummaryBox.value.trim(),
+          generatedAssessmentText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          assessmentReportText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
+          strategicAnalysisText: selectedAssessmentPack?.strategicAnalysisText || "",
+          recommendedNextStepsText: selectedAssessmentPack?.recommendedNextStepsText || "",
+          complaintLetterText: selectedAssessmentPack?.complaintLetterText || "",
+          statementOfTruthText: selectedAssessmentPack?.statementOfTruthText || "",
+          lossSummaryText: selectedAssessmentPack?.lossSummaryText || "",
+          evidenceChecklistText: selectedAssessmentPack?.evidenceChecklistText || "",
+          escalationLetterText: selectedAssessmentPack?.escalationLetterText || "",
+          internalFileNoteText: selectedAssessmentPack?.internalFileNoteText || "",
+          processingPackText: selectedAssessmentPack?.processingPackText || "",
+          clientEmailPreviewText: selectedAssessmentPack?.clientEmailPreviewText || "",
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
             action: "notes_saved",
@@ -1300,13 +1468,9 @@
 
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
-        showToast("Notes saved.");
       } catch (error) {
         console.error("Failed to save notes:", error);
-        showModalMessage(error.message || "Could not save notes.", true);
-      } finally {
-        saveNotesBtn.disabled = false;
-        saveNotesBtn.textContent = originalText;
+        showModalMessage("Could not save notes.", true);
       }
     });
 

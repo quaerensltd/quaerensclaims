@@ -41,7 +41,6 @@
       <p class="text-slate-600 font-medium">Loading submission...</p>
     </div>
   </div>
-
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
@@ -55,7 +54,6 @@
         </div>
       </div>
     </header>
-
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="card p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -99,23 +97,19 @@
                 <option value="assessment_complete">Assessment Complete</option>
               </select>
             </div>
-
             <div>
               <label class="label" for="managerNotes">Manager Notes</label>
               <textarea id="managerNotes" class="input" rows="6" placeholder="Internal review notes, observations, missing documents, next actions..."></textarea>
             </div>
-
             <div>
               <label class="label" for="assessmentSummary">Assessment Summary</label>
               <textarea id="assessmentSummary" class="input" rows="12" placeholder="Summary of the assessment outcome..."></textarea>
             </div>
-
             <div class="flex flex-col md:flex-row gap-3">
               <button id="saveReviewBtn" class="btn btn-primary" type="button">Save Review</button>
               <button id="createAssessmentBtn" class="btn btn-secondary" type="button">Create / Update Assessment Record</button>
               <a id="openAssessmentBtn" href="#" class="btn btn-secondary hidden">Open Assessment</a>
             </div>
-
             <p id="saveMessage" class="text-sm text-green-700 hidden"></p>
           </div>
         </div>
@@ -234,7 +228,6 @@
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       if (!container) return;
-
       container.innerHTML = "";
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
@@ -271,6 +264,7 @@
       if (client.landline) lines.push(client.landline);
       if (client.mobile) lines.push(client.mobile);
       if (client.email) lines.push(client.email);
+
       if (client.address) {
         lines.push("");
         lines.push(client.address);
@@ -299,10 +293,251 @@
       return lines.join("\n").trim();
     }
 
+    function buildQuaerensAssessmentPack({ submissionData, linkedLeadData, managerNotes, assessmentSummary }) {
+      const client = submissionData?.client || {};
+      const product1 = submissionData?.product1 || {};
+      const product2 = submissionData?.product2 || {};
+
+      const safe = (value) => String(value || "").trim();
+      const label = (key) =>
+        key
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, c => c.toUpperCase());
+
+      const fullName = `${safe(client.firstName)} ${safe(client.secondName)}`.trim() || "Client";
+      const secondApplicant = `${safe(client.firstName2)} ${safe(client.secondName2)}`.trim();
+      const claimType = safe(submissionData?.claimType || linkedLeadData?.claimType || linkedLeadData?.type) || "Not specified";
+      const telephone = safe(client.mobile || client.landline || linkedLeadData?.telephone);
+      const email = safe(client.email || linkedLeadData?.email);
+      const address = safe(client.address);
+      const postcode = safe(client.postcode || linkedLeadData?.postcode);
+
+      function objectLines(obj) {
+        const entries = Object.entries(obj || {}).filter(([_, v]) => safe(v));
+        if (!entries.length) return "No information currently available.";
+        return entries.map(([k, v]) => `${label(k)}: ${v}`).join("\n");
+      }
+
+      const productOneText = objectLines(product1);
+      const productTwoText = Object.keys(product2 || {}).length ? objectLines(product2) : "";
+
+      const supplierOverview = [
+        "Based on the information currently available, the supplier and transaction background should be reviewed carefully to identify the correct complaint route, the parties involved, and the strongest recovery position.",
+        productOneText !== "No information currently available." ? productOneText : "",
+        productTwoText ? "Additional Product Information:\n" + productTwoText : ""
+      ].filter(Boolean).join("\n\n");
+
+      const purchaseSummary = [
+        `Claim Type: ${claimType}`,
+        telephone ? `Telephone: ${telephone}` : "",
+        email ? `Email: ${email}` : "",
+        address ? `Address: ${address}` : "",
+        postcode ? `Postcode: ${postcode}` : ""
+      ].filter(Boolean).join("\n");
+
+      const issuesSummary = safe(assessmentSummary) || "No detailed issue summary has yet been recorded. Based on the information currently available, further clarification and supporting documentation may be required.";
+
+      const claimStrength = [
+        "Based on the information currently available, the claim appears to merit formal review.",
+        "The strength of the case will depend on the available agreement documents, payment evidence, sales representations, complaint history, and any proof of financial or practical loss.",
+        "Particular attention should be given to the identity of the contracting party, the funding route, the promises made at point of sale, and whether the goods or services delivered matched what was represented."
+      ].join("\n\n");
+
+      const indicativeClaimPosition = [
+        "At this stage it appears there may be a recoverable complaint route, subject to documentary verification.",
+        "Potential recovery may include refund-based loss, consequential losses where supportable, and complaint escalation against the most appropriate responsible party.",
+        "A final position should only be confirmed once the paperwork, chronology, and payment trail have been reviewed in full."
+      ].join("\n\n");
+
+      const conclusion = [
+        `In conclusion, based on the information presently available, ${fullName}'s matter appears suitable for structured complaint preparation and strategic review.`,
+        "The next step should be to confirm the documentary evidence, refine the chronology, and proceed against the most effective target party in the correct tactical order."
+      ].join("\n\n");
+
+      const strategicAnalysis = [
+        "STRATEGIC ANALYSIS",
+        "",
+        "Best Complaint Route:",
+        "Review the supplier complaint route first, while also assessing whether a linked finance provider, lender, card route, or escalation channel offers a stronger or faster recovery path.",
+        "",
+        "Strongest Pressure Points:",
+        "- Accuracy of sales representations",
+        "- Contractual performance and delivery failures",
+        "- Payment trail and financial loss",
+        "- Supplier conduct after complaint or request for remedy",
+        "",
+        "Evidence Still Needed:",
+        "- Signed agreement / order form / quotation",
+        "- Invoice or proof of payment",
+        "- Finance agreement or lender details where relevant",
+        "- Sales materials / promises / representations",
+        "- Complaint correspondence and responses",
+        "- Proof of losses and supporting documents",
+        "",
+        "Likely Risks:",
+        "- Missing paperwork",
+        "- Unclear supplier identity or dissolved company issues",
+        "- Weak evidence on representations made",
+        "- Incomplete chronology",
+        "",
+        "Recommended Tactical Order of Action:",
+        "1. Confirm key documents and chronology.",
+        "2. Identify the strongest target respondent.",
+        "3. Draft formal complaint.",
+        "4. Diary response deadlines.",
+        "5. Escalate if ignored or rejected."
+      ].join("\n");
+
+      const recommendedNextSteps = [
+        "RECOMMENDED NEXT STEPS",
+        "",
+        "1. Obtain and review all contractual and payment documents.",
+        "2. Confirm full factual chronology with the client.",
+        "3. Identify whether supplier, lender, finance company, or another route is strongest.",
+        "4. Prepare first complaint correspondence.",
+        "5. Escalate promptly if the initial route does not resolve the matter."
+      ].join("\n");
+
+      const complaintLetter = [
+        "Dear Sir / Madam,",
+        "",
+        `We act on behalf of ${fullName} in relation to the above matter.`,
+        "Our client's position is that the goods and/or services supplied did not meet the representations made and/or did not perform as reasonably expected.",
+        "We therefore invite you to investigate the matter urgently and provide a substantive response together with proposals for resolution.",
+        "",
+        "Please treat this as a formal complaint.",
+        "",
+        "Yours faithfully,",
+        "Quaerens"
+      ].join("\n");
+
+      const statementOfTruth = [
+        "STATEMENT OF TRUTH",
+        "",
+        `I, ${fullName}, confirm that the information provided in support of this matter is true to the best of my knowledge and belief.`,
+        "",
+        "Signed: ____________________",
+        "Date: ______________________"
+      ].join("\n");
+
+      const lossSummaryText = [
+        "LOSS SUMMARY",
+        "",
+        "A full quantified loss summary should be completed once the payment records, invoices, finance documents, and any consequential losses have been reviewed.",
+        "At present, losses should be treated as subject to documentary confirmation."
+      ].join("\n");
+
+      const evidenceChecklistText = [
+        "EVIDENCE CHECKLIST",
+        "",
+        "- Signed agreement / order form / quotation",
+        "- Invoice / receipt / proof of payment",
+        "- Finance agreement or lender paperwork",
+        "- Sales materials / brochures / messages",
+        "- Complaint correspondence",
+        "- Photos / technical evidence / performance records",
+        "- Proof of additional loss"
+      ].join("\n");
+
+      const escalationLetterText = [
+        "FOLLOW-UP / ESCALATION LETTER",
+        "",
+        "Further to our previous correspondence, we note that the matter remains unresolved.",
+        "Unless a substantive response is received within the required timescale, our client reserves the right to escalate the complaint without further notice.",
+        "",
+        "Yours faithfully,",
+        "Quaerens"
+      ].join("\n");
+
+      const internalFileNoteText = [
+        "INTERNAL FILE NOTE",
+        "",
+        `Client: ${fullName}`,
+        `Claim Type: ${claimType}`,
+        "Initial review suggests the matter should proceed to structured complaint preparation subject to document confirmation.",
+        "Check strongest target route before first complaint is issued."
+      ].join("\n");
+
+      const clientEmailPreviewText = [
+        `Dear ${fullName},`,
+        "",
+        "Please find below your assessment summary.",
+        "",
+        issuesSummary,
+        "",
+        "We will next review the best route for progressing your matter and confirm any documents still required.",
+        "",
+        "Kind regards,",
+        "Quaerens"
+      ].join("\n");
+
+      const processingPackText = [
+        "INTERNAL PROCESSING PACK",
+        "",
+        `Client: ${fullName}`,
+        `Claim Type: ${claimType}`,
+        "",
+        "Assessment Position:",
+        issuesSummary,
+        "",
+        "Strategic Direction:",
+        "Review liability route, verify documents, prepare complaint, and diarise escalation deadlines.",
+        "",
+        "Evidence Required:",
+        "- Agreement documents",
+        "- Payment records",
+        "- Complaint correspondence",
+        "- Sales representations",
+        "- Loss support"
+      ].join("\n");
+
+      const assessmentReportText = [
+        "CLIENT DETAILS",
+        `${fullName}${secondApplicant ? `\nSecond Applicant: ${secondApplicant}` : ""}`,
+        `${telephone ? `Telephone: ${telephone}\n` : ""}${email ? `Email: ${email}\n` : ""}${address ? `Address: ${address}\n` : ""}${postcode ? `Postcode: ${postcode}` : ""}`.trim(),
+        "",
+        "SUPPLIER DETAILS / SUPPLIER OVERVIEW",
+        supplierOverview,
+        "",
+        "PURCHASE DETAILS / PURCHASE SUMMARY",
+        purchaseSummary,
+        "",
+        "SUMMARY OF ISSUES",
+        issuesSummary,
+        "",
+        "CLAIM STRENGTH ASSESSMENT",
+        claimStrength,
+        "",
+        "INDICATIVE CLAIM POSITION",
+        indicativeClaimPosition,
+        "",
+        "CONCLUSION",
+        conclusion,
+        "",
+        strategicAnalysis,
+        "",
+        recommendedNextSteps
+      ].join("\n\n");
+
+      return {
+        assessmentSummaryText: issuesSummary,
+        assessmentReportText,
+        strategicAnalysisText: strategicAnalysis,
+        recommendedNextStepsText: recommendedNextSteps,
+        complaintLetterText: complaintLetter,
+        statementOfTruthText: statementOfTruth,
+        lossSummaryText,
+        evidenceChecklistText,
+        escalationLetterText,
+        internalFileNoteText,
+        processingPackText,
+        clientEmailPreviewText
+      };
+    }
+
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No staff profile found for this account.");
         window.location.href = "/login.html";
@@ -311,7 +546,6 @@
 
       const userData = userSnap.data();
       const role = userData.role;
-
       if (role !== "manager" && role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -360,7 +594,6 @@
 
     async function findExistingAssessment() {
       existingAssessmentId = submissionData.assessmentId || "";
-
       if (existingAssessmentId) return;
 
       try {
@@ -380,7 +613,6 @@
     function refreshAssessmentLinks() {
       document.getElementById("linkedLeadText").textContent = `Linked Lead: ${linkedLeadId || "-"}`;
       document.getElementById("assessmentIdText").textContent = `Assessment ID: ${existingAssessmentId || "-"}`;
-
       if (existingAssessmentId) {
         openAssessmentBtn.href = `/manager-assessment-detail.html?id=${existingAssessmentId}`;
         openAssessmentBtn.classList.remove("hidden");
@@ -399,7 +631,6 @@
 
       const submissionRef = doc(db, "claimSubmissions", submissionId);
       const submissionSnap = await getDoc(submissionRef);
-
       if (!submissionSnap.exists()) {
         alert("Submission not found.");
         window.location.href = "/manager-panel.html";
@@ -407,7 +638,6 @@
       }
 
       submissionData = { id: submissionSnap.id, ...submissionSnap.data() };
-
       await findLinkedLead();
       await findExistingAssessment();
 
@@ -434,7 +664,6 @@
 
       renderFieldGrid("product1Fields", submissionData.product1);
       renderFieldGrid("product2Fields", submissionData.product2);
-
       refreshAssessmentLinks();
       hideLoader();
     }
@@ -454,8 +683,20 @@
     }
 
     async function createOrUpdateAssessmentRecord() {
-      const summaryText = (assessmentSummary.value || "").trim();
+      let summaryText = (assessmentSummary.value || "").trim();
       const notesText = (managerNotes.value || "").trim();
+
+      if (!summaryText) {
+        summaryText = buildAssessmentSummaryFromSubmission(submissionData) || "";
+        assessmentSummary.value = summaryText;
+      }
+
+      const quaerensPack = buildQuaerensAssessmentPack({
+        submissionData,
+        linkedLeadData,
+        managerNotes: notesText,
+        assessmentSummary: summaryText
+      });
 
       const assessmentPayload = {
         submissionId,
@@ -481,8 +722,19 @@
         },
         submittedBy: submissionData.submittedBy || {},
         managerNotes: notesText,
-        assessmentSummary: summaryText,
-        generatedAssessmentText: summaryText,
+        assessmentSummary: quaerensPack.assessmentSummaryText,
+        generatedAssessmentText: quaerensPack.assessmentReportText,
+        assessmentReportText: quaerensPack.assessmentReportText,
+        strategicAnalysisText: quaerensPack.strategicAnalysisText,
+        recommendedNextStepsText: quaerensPack.recommendedNextStepsText,
+        complaintLetterText: quaerensPack.complaintLetterText,
+        statementOfTruthText: quaerensPack.statementOfTruthText,
+        lossSummaryText: quaerensPack.lossSummaryText,
+        evidenceChecklistText: quaerensPack.evidenceChecklistText,
+        escalationLetterText: quaerensPack.escalationLetterText,
+        internalFileNoteText: quaerensPack.internalFileNoteText,
+        processingPackText: quaerensPack.processingPackText,
+        clientEmailPreviewText: quaerensPack.clientEmailPreviewText,
         assessmentOutcome: submissionData.assessmentOutcome || "",
         recommendedCloser: submissionData.recommendedCloser || "",
         status: "assessment_complete",
@@ -498,7 +750,7 @@
 
       if (existingAssessmentId) {
         await updateDoc(doc(db, "managerAssessments", existingAssessmentId), assessmentPayload);
-        return existingAssessmentId;
+        return { id: existingAssessmentId, quaerensPack };
       }
 
       const assessmentRef = await addDoc(collection(db, "managerAssessments"), {
@@ -511,15 +763,19 @@
         }
       });
 
-      return assessmentRef.id;
+      return { id: assessmentRef.id, quaerensPack };
     }
 
-    async function updateSubmissionAfterAssessment(finalAssessmentId) {
+    async function updateSubmissionAfterAssessment(finalAssessmentId, quaerensPack) {
       await updateDoc(doc(db, "claimSubmissions", submissionId), {
         status: "assessment_complete",
         assessmentId: finalAssessmentId,
         managerNotes: managerNotes.value.trim(),
-        assessmentSummary: assessmentSummary.value.trim(),
+        assessmentSummary: quaerensPack.assessmentSummaryText,
+        generatedAssessmentText: quaerensPack.assessmentReportText,
+        assessmentReportText: quaerensPack.assessmentReportText,
+        strategicAnalysisText: quaerensPack.strategicAnalysisText,
+        recommendedNextStepsText: quaerensPack.recommendedNextStepsText,
         reviewedAt: serverTimestamp(),
         reviewedBy: {
           uid: currentUser.uid,
@@ -535,14 +791,18 @@
       });
     }
 
-    async function updateLinkedLeadAfterAssessment(finalAssessmentId) {
+    async function updateLinkedLeadAfterAssessment(finalAssessmentId, quaerensPack) {
       if (!linkedLeadId) return;
-
       await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
         assessmentId: finalAssessmentId,
-        assessmentSummary: assessmentSummary.value.trim(),
-        generatedAssessmentText: assessmentSummary.value.trim(),
+        assessmentSummary: quaerensPack.assessmentSummaryText,
+        generatedAssessmentText: quaerensPack.assessmentReportText,
+        assessmentReportText: quaerensPack.assessmentReportText,
+        strategicAnalysisText: quaerensPack.strategicAnalysisText,
+        recommendedNextStepsText: quaerensPack.recommendedNextStepsText,
         managerNotes: managerNotes.value.trim(),
+        processingPackText: quaerensPack.processingPackText,
+        clientEmailPreviewText: quaerensPack.clientEmailPreviewText,
         leadStatus: "assessment_complete",
         lastAction: "assessment_complete",
         lastUpdatedAt: serverTimestamp(),
@@ -573,18 +833,19 @@
           assessmentSummary.value = buildAssessmentSummaryFromSubmission(submissionData) || "";
         }
 
-        const finalAssessmentId = await createOrUpdateAssessmentRecord();
+        const result = await createOrUpdateAssessmentRecord();
+        const finalAssessmentId = result.id;
+        const quaerensPack = result.quaerensPack;
+
         existingAssessmentId = finalAssessmentId;
-
-        await updateSubmissionAfterAssessment(finalAssessmentId);
-        await updateLinkedLeadAfterAssessment(finalAssessmentId);
-
+        await updateSubmissionAfterAssessment(finalAssessmentId, quaerensPack);
+        await updateLinkedLeadAfterAssessment(finalAssessmentId, quaerensPack);
         refreshAssessmentLinks();
+
         alert("Assessment record created successfully.");
         window.location.href = `/manager-assessment-detail.html?id=${finalAssessmentId}`;
       } catch (error) {
         console.error("Failed to create assessment:", error);
-
         if (error?.code === "permission-denied") {
           alert("Could not create assessment record. Missing or insufficient permissions in Firestore rules.");
         } else {
@@ -598,7 +859,6 @@
         window.location.href = "/login.html";
         return;
       }
-
       try {
         const hasAccess = await checkAccess(user);
         if (!hasAccess) return;
