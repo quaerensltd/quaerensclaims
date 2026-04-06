@@ -629,17 +629,17 @@
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
 
-          let actionHtml = "";
+let actionHtml = "";
 
-          if (item.sourceType === "submission") {
-            actionHtml = `<a href="/intake-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
-          } else if (item.status === "intake_in_progress" && item.record.convertedToSubmissionId) {
-            actionHtml = `<a href="/intake-detail.html?id=${item.record.convertedToSubmissionId}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
-          } else if (item.status === "intake_in_progress") {
-            actionHtml = `<a href="/client-intake-portal.html?leadId=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>`;
-          } else {
-            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
-          }
+if (item.sourceType === "submission") {
+  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.id}">Open</button>`;
+} else if (item.status === "intake_in_progress" && item.record.convertedToSubmissionId) {
+  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.record.convertedToSubmissionId}">Open</button>`;
+} else if (item.status === "intake_in_progress") {
+  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-intake-portal="${item.id}">Open</button>`;
+} else {
+  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
+}
 
           tr.innerHTML = `
             <td class="p-3">
@@ -660,8 +660,32 @@
       resultsSummary.textContent = `${filtered.length} lead(s) shown`;
 
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
-        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
-      });
+  btn.addEventListener("click", () => {
+    openLead(btn.getAttribute("data-open-lead"));
+  });
+});
+
+document.querySelectorAll("[data-open-submission]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const submissionId = btn.getAttribute("data-open-submission");
+    if (!submissionId) {
+      alert("No submission ID found for this row.");
+      return;
+    }
+    window.location.href = `/intake-detail.html?id=${submissionId}`;
+  });
+});
+
+document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const leadId = btn.getAttribute("data-open-intake-portal");
+    if (!leadId) {
+      alert("No lead ID found for this row.");
+      return;
+    }
+    window.location.href = `/client-intake-portal.html?leadId=${leadId}`;
+  });
+});
     }
 
     function renderHistory(history) {
