@@ -48,6 +48,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -98,6 +99,8 @@
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Cases</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -106,11 +109,11 @@
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-6 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Files</div>
+          <div class="text-sm text-slate-500">Total Cases</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">My Files</div>
+          <div class="text-sm text-slate-500">My Cases</div>
           <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -136,8 +139,8 @@
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership View</label>
             <select id="ownershipFilter" class="input">
-              <option value="all">All files</option>
-              <option value="mine">My files</option>
+              <option value="all">All cases</option>
+              <option value="mine">My cases</option>
               <option value="unassigned">Unassigned only</option>
               <option value="others">Assigned to others</option>
             </select>
@@ -163,10 +166,10 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, email, closer, owner..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, owner..." />
           </div>
           <div class="flex items-end">
-            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Files</button>
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Cases</button>
           </div>
         </div>
       </section>
@@ -174,8 +177,8 @@
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Processing Files</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading processing files...</p>
+            <h2 class="text-xl font-extrabold text-blue-900">Processing Cases</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading processing cases...</p>
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -184,7 +187,6 @@
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Claim Type</th>
-                <th class="text-left p-3">Closer</th>
                 <th class="text-left p-3">Owner</th>
                 <th class="text-left p-3">Due Now</th>
                 <th class="text-left p-3">Paid</th>
@@ -234,6 +236,7 @@
     const claimTypeFilter = document.getElementById("claimTypeFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
     const filesBody = document.getElementById("filesBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
@@ -257,8 +260,19 @@
       return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
+    function normalizeClaimType(value) {
+      const raw = String(value || "").trim().toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("newbuild") || raw.includes("new build")) return "newbuild";
+      return raw;
+    }
+
     function formatClaimType(type) {
-      switch (type) {
+      const normalized = normalizeClaimType(type);
+      switch (normalized) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
@@ -270,20 +284,15 @@
     function clientName(file) {
       const first = file.client?.firstName || "";
       const second = file.client?.secondName || "";
-      return `${first} ${second}`.trim() || "-";
-    }
-
-    function closerName(file) {
-      return file.closer?.name || file.closer?.email || "-";
+      return `${first} ${second}`.trim() || file.caseReference || "-";
     }
 
     function ownerName(file) {
-      return file.processingAssignedToName || file.processingAssignedToEmail || "-";
+      return file.assignedToName || file.assignedToEmail || "-";
     }
 
     function getEffectivePaymentStatus(file) {
       if (file.paymentStatus) return file.paymentStatus;
-
       const dueNow = Number(file.amountDueNow || 0);
       const paidNow = Number(file.amountPaidNow || 0);
       const followUpDue = Number(file.followUpDue || 0);
@@ -304,10 +313,10 @@
     }
 
     function ownerBadge(file) {
-      if (!file.processingAssignedToUid) {
+      if (!file.assignedToUid) {
         return `<span class="badge badge-amber">Unassigned</span>`;
       }
-      if (file.processingAssignedToUid === currentUser.uid) {
+      if (file.assignedToUid === currentUser.uid) {
         return `<span class="badge badge-green">Mine</span>`;
       }
       return `<span class="badge badge-slate">${ownerName(file)}</span>`;
@@ -324,7 +333,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing") {
+      if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -338,23 +347,23 @@
 
     async function loadFiles() {
       try {
-        const snapshot = await getDocs(collection(db, "processingFiles"));
+        const snapshot = await getDocs(collection(db, "processingCases"));
         allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         renderStats();
         renderFiles();
       } catch (error) {
-        console.error("Failed to load processing files:", error);
-        resultsSummary.textContent = "Could not load processing files.";
+        console.error("Failed to load processing cases:", error);
+        resultsSummary.textContent = "Could not load processing cases.";
       }
     }
 
     function renderStats() {
       document.getElementById("totalFilesStat").textContent = String(allFiles.length);
       document.getElementById("myFilesStat").textContent = String(
-        allFiles.filter(f => f.processingAssignedToUid === currentUser.uid).length
+        allFiles.filter(f => f.assignedToUid === currentUser.uid).length
       );
       document.getElementById("unassignedStat").textContent = String(
-        allFiles.filter(f => !f.processingAssignedToUid).length
+        allFiles.filter(f => !f.assignedToUid).length
       );
       document.getElementById("awaitingStat").textContent = String(
         allFiles.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
@@ -378,37 +387,34 @@
 
         const matchesOwnership =
           ownership === "all" ||
-          (ownership === "mine" && file.processingAssignedToUid === currentUser.uid) ||
-          (ownership === "unassigned" && !file.processingAssignedToUid) ||
-          (ownership === "others" && file.processingAssignedToUid && file.processingAssignedToUid !== currentUser.uid);
+          (ownership === "mine" && file.assignedToUid === currentUser.uid) ||
+          (ownership === "unassigned" && !file.assignedToUid) ||
+          (ownership === "others" && file.assignedToUid && file.assignedToUid !== currentUser.uid);
 
         const matchesPayment =
-          paymentFilter === "all" ||
-          effectiveStatus === paymentFilter;
+          paymentFilter === "all" || effectiveStatus === paymentFilter;
 
         const matchesClaim =
-          claimFilter === "all" ||
-          file.claimType === claimFilter;
+          claimFilter === "all" || normalizeClaimType(file.claimType) === claimFilter;
 
         const haystack = `
           ${clientName(file)}
           ${file.client?.email || ""}
-          ${closerName(file)}
           ${ownerName(file)}
           ${file.claimType || ""}
           ${file.processingNotes || ""}
+          ${file.caseReference || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesOwnership && matchesPayment && matchesClaim && matchesSearch;
       }).sort((a, b) => {
-        const aMine = a.processingAssignedToUid === currentUser.uid ? 0 : 1;
-        const bMine = b.processingAssignedToUid === currentUser.uid ? 0 : 1;
+        const aMine = a.assignedToUid === currentUser.uid ? 0 : 1;
+        const bMine = b.assignedToUid === currentUser.uid ? 0 : 1;
         if (aMine !== bMine) return aMine - bMine;
 
-        const aUnassigned = a.processingAssignedToUid ? 1 : 0;
-        const bUnassigned = b.processingAssignedToUid ? 1 : 0;
+        const aUnassigned = a.assignedToUid ? 1 : 0;
+        const bUnassigned = b.assignedToUid ? 1 : 0;
         if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
 
         const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
@@ -419,11 +425,11 @@
 
     async function claimFile(fileId) {
       try {
-        await updateDoc(doc(db, "processingFiles", fileId), {
-          processingAssignedToUid: currentUser.uid,
-          processingAssignedToName: currentUserData.name || "",
-          processingAssignedToEmail: currentUser.email || "",
-          processingAssignedAt: serverTimestamp(),
+        await updateDoc(doc(db, "processingCases", fileId), {
+          assignedToUid: currentUser.uid,
+          assignedToName: currentUserData.name || "",
+          assignedToEmail: currentUser.email || "",
+          lastActivityAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
@@ -431,22 +437,21 @@
             email: currentUser.email || ""
           }
         });
-
-        showToast("File claimed.");
+        showToast("Case claimed.");
         await loadFiles();
       } catch (error) {
         console.error("Claim failed:", error);
-        showToast("Could not claim file.");
+        showToast("Could not claim case.");
       }
     }
 
     async function releaseFile(fileId) {
       try {
-        await updateDoc(doc(db, "processingFiles", fileId), {
-          processingAssignedToUid: "",
-          processingAssignedToName: "",
-          processingAssignedToEmail: "",
-          processingAssignedAt: null,
+        await updateDoc(doc(db, "processingCases", fileId), {
+          assignedToUid: "",
+          assignedToName: "",
+          assignedToEmail: "",
+          lastActivityAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
@@ -454,12 +459,11 @@
             email: currentUser.email || ""
           }
         });
-
-        showToast("File released.");
+        showToast("Case released.");
         await loadFiles();
       } catch (error) {
         console.error("Release failed:", error);
-        showToast("Could not release file.");
+        showToast("Could not release case.");
       }
     }
 
@@ -470,7 +474,7 @@
       if (!filtered.length) {
         filesBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No processing files found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No processing cases found.</td>
           </tr>
         `;
       } else {
@@ -478,11 +482,11 @@
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
 
-          const isMine = file.processingAssignedToUid === currentUser.uid;
-          const isUnassigned = !file.processingAssignedToUid;
+          const isMine = file.assignedToUid === currentUser.uid;
+          const isUnassigned = !file.assignedToUid;
 
           let actionButtons = `
-            <a href="/processing-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline mr-3">Open File</a>
+            <a href="/processing-case-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline mr-3">Open Case</a>
           `;
 
           if (isUnassigned) {
@@ -499,22 +503,18 @@
               <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
             </td>
             <td class="p-3">${formatClaimType(file.claimType)}</td>
-            <td class="p-3">${closerName(file)}</td>
-            <td class="p-3">
-              <div>${ownerBadge(file)}</div>
-            </td>
+            <td class="p-3"><div>${ownerBadge(file)}</div></td>
             <td class="p-3">${money(file.amountDueNow)}</td>
             <td class="p-3">${money(file.amountPaidNow)}</td>
             <td class="p-3">${money(file.followUpDue)}</td>
             <td class="p-3">${paymentStatusLabel(effectiveStatus)}</td>
             <td class="p-3">${actionButtons}</td>
           `;
-
           filesBody.appendChild(row);
         });
       }
 
-      resultsSummary.textContent = `${filtered.length} processing file(s) shown`;
+      resultsSummary.textContent = `${filtered.length} processing case(s) shown`;
 
       document.querySelectorAll("[data-claim-id]").forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -529,12 +529,16 @@
       });
     }
 
+    async function refreshCases() {
+      await loadFiles();
+      showToast("Cases refreshed.");
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
         return;
       }
-
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;
@@ -561,7 +565,8 @@
     paymentStatusFilter.addEventListener("change", renderFiles);
     claimTypeFilter.addEventListener("change", renderFiles);
     searchInput.addEventListener("input", renderFiles);
-    refreshBtn.addEventListener("click", loadFiles);
+    refreshBtn.addEventListener("click", refreshCases);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshCases);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
