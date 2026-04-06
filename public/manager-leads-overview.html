@@ -20,14 +20,8 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav {
-      background: #2563eb;
-      color: white;
-    }
-    .active-nav:hover {
-      background: #1d4ed8;
-      color: white;
-    }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -53,6 +47,26 @@
       line-height: 1.6;
       font-size: 0.95rem;
     }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -62,6 +76,8 @@
       <p class="text-slate-600 font-medium">Loading leads overview...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -218,6 +234,7 @@
             <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
             <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
             <div><span class="font-semibold text-blue-900">Submission ID:</span> <span id="lead_submissionId">-</span></div>
+            <div><span class="font-semibold text-blue-900">Assessment ID:</span> <span id="lead_assessmentId">-</span></div>
           </div>
         </section>
 
@@ -239,12 +256,10 @@
               <input id="recommendedCloserText" type="text" class="input" placeholder="Optional recommendation" />
             </div>
           </div>
-
           <div class="mt-4">
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
-            <textarea id="assessmentSummaryBox" class="input" rows="8" placeholder="This will auto-fill from the intake submission if available."></textarea>
+            <textarea id="assessmentSummaryBox" class="input" rows="10" placeholder="This will auto-fill from the intake submission if available."></textarea>
           </div>
-
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
             <a id="viewAssessmentBtn" href="#" class="btn btn-secondary hidden">View Assessment Report</a>
@@ -277,7 +292,6 @@
               <input id="appointmentTime" type="time" class="input" />
             </div>
           </div>
-
           <div class="flex flex-wrap gap-3">
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Appointment</button>
@@ -339,7 +353,6 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const statusFilter = document.getElementById("statusFilter");
     const timingFilter = document.getElementById("timingFilter");
     const listerFilter = document.getElementById("listerFilter");
@@ -348,7 +361,6 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
@@ -356,7 +368,6 @@
     const convertedStat = document.getElementById("convertedStat");
     const closedStat = document.getElementById("closedStat");
     const bookedTodayStat = document.getElementById("bookedTodayStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const closerSelect = document.getElementById("closerSelect");
@@ -365,13 +376,11 @@
     const appointmentTime = document.getElementById("appointmentTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const assessmentOutcomeSelect = document.getElementById("assessmentOutcomeSelect");
     const recommendedCloserText = document.getElementById("recommendedCloserText");
     const assessmentSummaryBox = document.getElementById("assessmentSummaryBox");
     const createAssessmentBtn = document.getElementById("createAssessmentBtn");
     const viewAssessmentBtn = document.getElementById("viewAssessmentBtn");
-
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
     const sendToCloserBtn = document.getElementById("sendToCloserBtn");
@@ -387,17 +396,25 @@
     let closerUsers = [];
     let selectedLead = null;
     let selectedAssessmentId = null;
+    let selectedSubmissionId = "";
     let selectedSubmissionData = null;
 
     function hideLoader() {
       if (authLoader) authLoader.style.display = "none";
     }
 
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
     function showModalMessage(text, isError = false) {
       modalMessage.textContent = text;
       modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
-      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
+      setTimeout(() => modalMessage.classList.add("hidden"), 3500);
     }
 
     function todayIso() {
@@ -504,7 +521,6 @@
       try {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
-
         if (!userSnap.exists()) {
           alert("No staff profile found for this account.");
           window.location.href = "/login.html";
@@ -512,7 +528,6 @@
         }
 
         const userData = userSnap.data();
-
         if (userData.role !== "manager") {
           alert("You do not have permission to access this page.");
           window.location.href = "/login.html";
@@ -581,7 +596,6 @@
       return allLeads.filter(lead => {
         const leadStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
         const appointmentDateValue = lead.closerAppointmentDate || "";
-
         const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
         const matchesTiming =
           selectedTiming === "all" ||
@@ -589,7 +603,6 @@
           (selectedTiming === "future" && appointmentDateValue && appointmentDateValue > today) ||
           (selectedTiming === "overdue" && appointmentDateValue && appointmentDateValue < today) ||
           (selectedTiming === "none" && !appointmentDateValue);
-
         const matchesLister = selectedLister === "all" || (lead.assignedToUid || "") === selectedLister;
         const matchesCloser = selectedCloser === "all" || (lead.closerUid || "") === selectedCloser;
 
@@ -603,7 +616,6 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesTiming && matchesLister && matchesCloser && matchesSearch;
       });
     }
@@ -651,7 +663,10 @@
       resultsSummary.textContent = `${filtered.length} lead(s) shown`;
 
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
-        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+        btn.addEventListener("click", async () => {
+          const leadId = btn.getAttribute("data-open-lead");
+          await openLead(leadId);
+        });
       });
     }
 
@@ -676,20 +691,44 @@
       });
     }
 
-    async function findAssessmentForLead(leadId) {
-      const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
-      const snap = await getDocs(q);
-      if (snap.empty) return null;
+    async function findAssessmentForLead(leadId, submissionId = "") {
+      try {
+        if (leadId) {
+          const qLead = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
+          const snapLead = await getDocs(qLead);
+          if (!snapLead.empty) {
+            const docs = snapLead.docs.map(d => ({ id: d.id, ...d.data() }));
+            docs.sort((a, b) => {
+              const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+              const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+              return bTime - aTime;
+            });
+            return docs[0];
+          }
+        }
 
-      const docs = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => {
-          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-          return bTime - aTime;
-        });
+        if (submissionId) {
+          const qSub = query(collection(db, "managerAssessments"), where("submissionId", "==", submissionId));
+          const snapSub = await getDocs(qSub);
+          if (!snapSub.empty) {
+            const docs = snapSub.docs.map(d => ({ id: d.id, ...d.data() }));
+            docs.sort((a, b) => {
+              const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+              const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+              return bTime - aTime;
+            });
+            return docs[0];
+          }
+        }
+      } catch (error) {
+        console.error("Failed finding assessment:", error);
+      }
 
-      return docs[0];
+      return null;
+    }
+
+    function labelFromKey(key) {
+      return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
     }
 
     function buildSubmissionAssessmentSummary(submission) {
@@ -702,34 +741,41 @@
       const client = submission.client || {};
       const product1 = submission.product1 || {};
       const product2 = submission.product2 || {};
-      const blocks = [];
+      const lines = [];
 
-      const headerName = `${client.firstName || ""} ${client.secondName || ""}`.trim();
-      if (headerName) blocks.push(`Client: ${headerName}`);
-      if (submission.claimType) blocks.push(`Claim Type: ${submission.claimType}`);
-      if (client.address) blocks.push(`Address: ${client.address}`);
-      if (client.mobile || client.landline) blocks.push(`Contact: ${client.mobile || client.landline}`);
+      const name = `${client.firstName || ""} ${client.secondName || ""}`.trim();
+      if (name) lines.push(`Client: ${name}`);
+      if (submission.claimType) lines.push(`Claim Type: ${submission.claimType}`);
+      if (client.address) lines.push(`Address: ${client.address}`);
+      if (client.mobile || client.landline) lines.push(`Contact: ${client.mobile || client.landline}`);
+      if (client.email) lines.push(`Email: ${client.email}`);
 
-      const productLines = [];
-      if (Object.keys(product1).length) {
-        productLines.push(`Product One: ${Object.entries(product1).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
-      }
-      if (Object.keys(product2).length) {
-        productLines.push(`Product Two: ${Object.entries(product2).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
-      }
-      if (productLines.length) {
-        blocks.push(productLines.join("\n"));
-      }
-
-      if ((submission.managerNotes || "").trim()) {
-        blocks.push(`Existing Manager Notes: ${submission.managerNotes.trim()}`);
+      if (Object.values(product1).some(v => String(v || "").trim() !== "")) {
+        lines.push("");
+        lines.push("Product One:");
+        Object.entries(product1).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && String(value).trim() !== "") {
+            lines.push(`${labelFromKey(key)}: ${value}`);
+          }
+        });
       }
 
-      return blocks.join("\n\n").trim();
+      if (Object.values(product2).some(v => String(v || "").trim() !== "")) {
+        lines.push("");
+        lines.push("Product Two:");
+        Object.entries(product2).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && String(value).trim() !== "") {
+            lines.push(`${labelFromKey(key)}: ${value}`);
+          }
+        });
+      }
+
+      return lines.join("\n").trim();
     }
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
+      selectedSubmissionId = "";
 
       const possibleIds = [
         lead.convertedToSubmissionId,
@@ -742,6 +788,7 @@
         try {
           const snap = await getDoc(doc(db, "claimSubmissions", id));
           if (snap.exists()) {
+            selectedSubmissionId = snap.id;
             selectedSubmissionData = { id: snap.id, ...snap.data() };
             return selectedSubmissionData;
           }
@@ -758,17 +805,19 @@
         selectedAssessmentId = null;
         viewAssessmentBtn.classList.add("hidden");
         viewAssessmentBtn.href = "#";
+        document.getElementById("lead_assessmentId").textContent = "-";
         return;
       }
 
-      const assessment = await findAssessmentForLead(selectedLead.id);
-
+      const assessment = await findAssessmentForLead(selectedLead.id, selectedSubmissionId);
       if (assessment) {
         selectedAssessmentId = assessment.id;
+        document.getElementById("lead_assessmentId").textContent = assessment.id;
         viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessment.id}`;
         viewAssessmentBtn.classList.remove("hidden");
       } else {
         selectedAssessmentId = null;
+        document.getElementById("lead_assessmentId").textContent = "-";
         viewAssessmentBtn.href = "#";
         viewAssessmentBtn.classList.add("hidden");
       }
@@ -777,6 +826,9 @@
     async function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
       selectedSubmissionData = null;
+      selectedSubmissionId = "";
+      selectedAssessmentId = null;
+
       if (!selectedLead) return;
 
       document.getElementById("modalLeadTitle").textContent =
@@ -794,8 +846,6 @@
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
       document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
-      document.getElementById("lead_submissionId").textContent =
-        selectedLead.convertedToSubmissionId || selectedLead.submissionId || selectedLead.claimSubmissionId || selectedLead.intakeSubmissionId || "-";
 
       closerSelect.value = selectedLead.closerUid || "";
       managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
@@ -806,11 +856,13 @@
       recommendedCloserText.value = selectedLead.recommendedCloser || "";
 
       const linkedSubmission = await loadLinkedSubmissionForLead(selectedLead);
-      const intakeSummary = buildSubmissionAssessmentSummary(linkedSubmission);
+      document.getElementById("lead_submissionId").textContent = selectedSubmissionId || "-";
 
+      const intakeSummary = buildSubmissionAssessmentSummary(linkedSubmission);
       assessmentSummaryBox.value =
         selectedLead.assessmentSummary ||
         selectedLead.generatedAssessmentText ||
+        linkedSubmission?.assessmentSummary ||
         intakeSummary ||
         "";
 
@@ -820,41 +872,33 @@
     }
 
     async function refreshSelectedLead() {
+      const currentId = selectedLead?.id || "";
       await loadLeads();
+      if (!currentId) return;
 
-      if (selectedLead) {
-        const updated = allLeads.find(x => x.id === selectedLead.id);
-        if (updated) {
-          selectedLead = updated;
-          await openLead(updated.id);
-        } else {
-          leadModal.classList.add("hidden");
-        }
+      const updated = allLeads.find(x => x.id === currentId);
+      if (updated) {
+        selectedLead = updated;
+        await openLead(updated.id);
+      } else {
+        leadModal.classList.add("hidden");
       }
     }
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
 
-      try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          ...patch,
-          lastUpdatedAt: serverTimestamp(),
-          actionHistory: arrayUnion({
-            action: historyAction,
-            byUid: currentUser.uid,
-            byName: currentUserData.name || "",
-            at: new Date().toISOString(),
-            notes
-          })
-        });
-
-        await refreshSelectedLead();
-        showModalMessage("Lead updated successfully.");
-      } catch (error) {
-        console.error("Lead update failed:", error);
-        showModalMessage("Could not update lead.", true);
-      }
+      await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        ...patch,
+        lastUpdatedAt: serverTimestamp(),
+        actionHistory: arrayUnion({
+          action: historyAction,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString(),
+          notes
+        })
+      });
     }
 
     async function createOrUpdateCloserAssignment(lead, mode = "send") {
@@ -862,16 +906,18 @@
       const closerUser = findUserById(closerUid);
 
       if (!closerUid || !closerUser) {
-        throw new Error("No closer selected.");
+        throw new Error("Please choose a closer first.");
       }
 
-      const leadClaimType = lead.claimType || lead.type || "";
       const statusValue = mode === "book" ? "Appointment Booked" : "Assigned";
       const client = selectedSubmissionData?.client || {};
 
       const payload = {
         sourceLeadId: lead.id,
         leadAssignmentId: lead.id,
+        closerUid: closerUid,
+        closerName: closerUser.name || "",
+        closerEmail: closerUser.email || "",
         closer: {
           uid: closerUid,
           name: closerUser.name || "",
@@ -887,9 +933,10 @@
           email: client.email || lead.email || "",
           address: client.address || formatAddress(lead)
         },
-        claimType: leadClaimType,
+        claimType: lead.claimType || lead.type || "",
         status: statusValue,
-        outcome: lead.outcome || "",
+        appointmentDate: appointmentDate.value || "",
+        appointmentTime: appointmentTime.value || "",
         appointment: {
           date: appointmentDate.value || "",
           time: appointmentTime.value || ""
@@ -899,7 +946,7 @@
         managerNotes: notesBox.value.trim(),
         handoffNotes: notesBox.value.trim(),
         assessmentId: selectedAssessmentId || "",
-        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
+        submissionId: selectedSubmissionId || "",
         product1: selectedSubmissionData?.product1 || {},
         product2: selectedSubmissionData?.product2 || {},
         assignedBy: {
@@ -916,10 +963,7 @@
         }
       };
 
-      const existingQuery = query(
-        collection(db, "closerAssignments"),
-        where("sourceLeadId", "==", lead.id)
-      );
+      const existingQuery = query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id));
       const existingSnap = await getDocs(existingQuery);
 
       if (!existingSnap.empty) {
@@ -933,7 +977,7 @@
     }
 
     async function createOrUpdateAssessment() {
-      if (!selectedLead) return null;
+      if (!selectedLead) throw new Error("No lead selected.");
 
       let summary = assessmentSummaryBox.value.trim();
 
@@ -952,16 +996,20 @@
         assessmentSummaryBox.value = summary;
       }
 
-      const existing = await findAssessmentForLead(selectedLead.id);
+      const existing = await findAssessmentForLead(selectedLead.id, selectedSubmissionId);
 
       const payload = {
         leadId: selectedLead.id,
-        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
+        submissionId: selectedSubmissionId || "",
         client: {
           title: selectedLead.title || "",
           forename: selectedLead.forename || "",
           surname: selectedLead.surname || "",
-          telephone: selectedLead.telephone || "",
+          firstName: selectedSubmissionData?.client?.firstName || selectedLead.forename || "",
+          secondName: selectedSubmissionData?.client?.secondName || selectedLead.surname || "",
+          telephone: selectedLead.telephone || selectedSubmissionData?.client?.mobile || selectedSubmissionData?.client?.landline || "",
+          mobile: selectedSubmissionData?.client?.mobile || "",
+          landline: selectedSubmissionData?.client?.landline || "",
           email: selectedLead.email || selectedSubmissionData?.client?.email || "",
           postcode: selectedLead.postcode || "",
           address: selectedSubmissionData?.client?.address || formatAddress(selectedLead)
@@ -983,56 +1031,109 @@
         }
       };
 
+      let finalId = "";
+
       if (existing) {
         await updateDoc(doc(db, "managerAssessments", existing.id), payload);
-        return existing.id;
+        finalId = existing.id;
+      } else {
+        const newDoc = await addDoc(collection(db, "managerAssessments"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+        finalId = newDoc.id;
       }
 
-      const newDoc = await addDoc(collection(db, "managerAssessments"), {
-        ...payload,
-        createdAt: serverTimestamp(),
-        createdBy: {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || ""
-        }
-      });
+      if (selectedSubmissionId) {
+        await updateDoc(doc(db, "claimSubmissions", selectedSubmissionId), {
+          assessmentId: finalId,
+          assessmentSummary: summary,
+          managerNotes: notesBox.value.trim(),
+          status: "assessment_complete",
+          reviewedAt: serverTimestamp(),
+          reviewedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          },
+          assessmentCreatedAt: serverTimestamp(),
+          assessmentCreatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+      }
 
-      return newDoc.id;
+      const nextLeadStatus =
+        selectedLead.leadStatus === "sent_to_closer"
+          ? "sent_to_closer"
+          : (selectedLead.leadStatus === "converted"
+            ? "converted"
+            : "qualified");
+
+      await updateLead({
+        assessmentId: finalId,
+        assessmentOutcome: assessmentOutcomeSelect.value || "",
+        recommendedCloser: recommendedCloserText.value.trim(),
+        assessmentSummary: summary,
+        generatedAssessmentText: summary,
+        managerNotes: notesBox.value.trim(),
+        convertedToSubmissionId: selectedSubmissionId || selectedLead.convertedToSubmissionId || "",
+        leadStatus: nextLeadStatus,
+        lastAction: "assessment_report_created"
+      }, "assessment_report_created", summary);
+
+      return finalId;
     }
 
     createAssessmentBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
+      if (!selectedLead) {
+        showModalMessage("No lead selected.", true);
+        return;
+      }
+
+      const originalText = createAssessmentBtn.textContent;
+      createAssessmentBtn.disabled = true;
+      createAssessmentBtn.textContent = "Saving...";
 
       try {
         const assessmentId = await createOrUpdateAssessment();
         selectedAssessmentId = assessmentId;
-
-        await updateLead({
-          assessmentOutcome: assessmentOutcomeSelect.value || "",
-          recommendedCloser: recommendedCloserText.value.trim(),
-          assessmentSummary: assessmentSummaryBox.value.trim(),
-          generatedAssessmentText: assessmentSummaryBox.value.trim(),
-          leadStatus: "qualified",
-          lastAction: "assessment_report_created"
-        }, "assessment_report_created", assessmentSummaryBox.value.trim());
-
+        await refreshSelectedLead();
         if (assessmentId) {
           viewAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessmentId}`;
           viewAssessmentBtn.classList.remove("hidden");
         }
+        showModalMessage("Assessment report saved.");
+        showToast("Assessment report saved.");
       } catch (error) {
         console.error("Assessment creation failed:", error);
         showModalMessage(error.message || "Could not create assessment report.", true);
+      } finally {
+        createAssessmentBtn.disabled = false;
+        createAssessmentBtn.textContent = originalText;
       }
     });
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await updateLead({
-        leadStatus: "qualified",
-        lastAction: "qualified"
-      }, "qualified", "Manager marked lead as qualified.");
+      try {
+        await updateLead({
+          leadStatus: "qualified",
+          lastAction: "qualified"
+        }, "qualified", "Manager marked lead as qualified.");
+        await refreshSelectedLead();
+        showModalMessage("Lead marked qualified.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not update lead.", true);
+      }
     });
 
     bookAppointmentBtn.addEventListener("click", async () => {
@@ -1048,6 +1149,10 @@
         return;
       }
 
+      const originalText = bookAppointmentBtn.textContent;
+      bookAppointmentBtn.disabled = true;
+      bookAppointmentBtn.textContent = "Booking...";
+
       try {
         if (!selectedAssessmentId) {
           selectedAssessmentId = await createOrUpdateAssessment();
@@ -1056,6 +1161,7 @@
         await createOrUpdateCloserAssignment(selectedLead, "book");
 
         await updateLead({
+          assessmentId: selectedAssessmentId || "",
           leadStatus: "sent_to_closer",
           closerUid: closerSelect.value,
           closerAppointmentDate: appointmentDate.value,
@@ -1067,12 +1173,19 @@
           recommendedCloser: recommendedCloserText.value.trim(),
           assessmentSummary: assessmentSummaryBox.value.trim(),
           generatedAssessmentText: assessmentSummaryBox.value.trim(),
-          managerNotes: notesBox.value || "",
+          managerNotes: notesBox.value.trim(),
           lastAction: "closer_appointment_booked"
         }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
+
+        await refreshSelectedLead();
+        showModalMessage("Appointment booked successfully.");
+        showToast("Appointment booked.");
       } catch (error) {
         console.error("Booking closer appointment failed:", error);
         showModalMessage(error.message || "Could not create closer appointment.", true);
+      } finally {
+        bookAppointmentBtn.disabled = false;
+        bookAppointmentBtn.textContent = originalText;
       }
     });
 
@@ -1084,6 +1197,10 @@
         return;
       }
 
+      const originalText = sendToCloserBtn.textContent;
+      sendToCloserBtn.disabled = true;
+      sendToCloserBtn.textContent = "Sending...";
+
       try {
         if (!selectedAssessmentId) {
           selectedAssessmentId = await createOrUpdateAssessment();
@@ -1092,6 +1209,7 @@
         await createOrUpdateCloserAssignment(selectedLead, "send");
 
         await updateLead({
+          assessmentId: selectedAssessmentId || "",
           leadStatus: "sent_to_closer",
           closerUid: closerSelect.value,
           sentToCloserAt: serverTimestamp(),
@@ -1101,38 +1219,63 @@
           recommendedCloser: recommendedCloserText.value.trim(),
           assessmentSummary: assessmentSummaryBox.value.trim(),
           generatedAssessmentText: assessmentSummaryBox.value.trim(),
-          managerNotes: notesBox.value || "",
+          managerNotes: notesBox.value.trim(),
           lastAction: "sent_to_closer"
         }, "sent_to_closer", "Lead sent to closer by manager.");
+
+        await refreshSelectedLead();
+        showModalMessage("Lead sent to closer.");
+        showToast("Lead sent to closer.");
       } catch (error) {
         console.error("Send to closer failed:", error);
         showModalMessage(error.message || "Could not send lead to closer.", true);
+      } finally {
+        sendToCloserBtn.disabled = false;
+        sendToCloserBtn.textContent = originalText;
       }
     });
 
     markConvertedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await updateLead({
-        leadStatus: "converted",
-        convertedAt: serverTimestamp(),
-        lastAction: "converted"
-      }, "converted", "Lead marked as converted by manager.");
+      try {
+        await updateLead({
+          leadStatus: "converted",
+          convertedAt: serverTimestamp(),
+          lastAction: "converted"
+        }, "converted", "Lead marked as converted by manager.");
+        await refreshSelectedLead();
+        showModalMessage("Lead marked converted.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not update lead.", true);
+      }
     });
 
     markClosedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await updateLead({
-        leadStatus: "closed",
-        closed: true,
-        usable: false,
-        callbackRequired: false,
-        introEmailNeeded: false,
-        lastAction: "closed"
-      }, "closed", "Lead closed by manager.");
+      try {
+        await updateLead({
+          leadStatus: "closed",
+          closed: true,
+          usable: false,
+          callbackRequired: false,
+          introEmailNeeded: false,
+          lastAction: "closed"
+        }, "closed", "Lead closed by manager.");
+        await refreshSelectedLead();
+        showModalMessage("Lead closed.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not close lead.", true);
+      }
     });
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
+      const originalText = saveNotesBtn.textContent;
+      saveNotesBtn.disabled = true;
+      saveNotesBtn.textContent = "Saving...";
 
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
@@ -1157,9 +1300,13 @@
 
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
+        showToast("Notes saved.");
       } catch (error) {
         console.error("Failed to save notes:", error);
-        showModalMessage("Could not save notes.", true);
+        showModalMessage(error.message || "Could not save notes.", true);
+      } finally {
+        saveNotesBtn.disabled = false;
+        saveNotesBtn.textContent = originalText;
       }
     });
 
