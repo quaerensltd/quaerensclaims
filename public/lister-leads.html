@@ -144,7 +144,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, mobile, email, postcode..." />
           </div>
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Leads</button>
@@ -164,7 +164,9 @@
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Mobile</th>
+                <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Postcode</th>
                 <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Last Action</th>
@@ -196,6 +198,8 @@
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
             <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
@@ -303,7 +307,6 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
@@ -345,6 +348,32 @@
 
     function getTodayAttendanceId(uid) {
       return `${uid}_${todayIso()}`;
+    }
+
+    function getLeadTelephone(lead) {
+      return String(
+        lead.telephone ||
+        lead.landline ||
+        lead.phone ||
+        ""
+      ).trim();
+    }
+
+    function getLeadMobile(lead) {
+      return String(
+        lead.mobile ||
+        lead.mobileNumber ||
+        lead.cell ||
+        ""
+      ).trim();
+    }
+
+    function getLeadEmail(lead) {
+      return String(
+        lead.email ||
+        lead.emailAddress ||
+        ""
+      ).trim();
     }
 
     async function recordStaffLoginFromPage() {
@@ -394,10 +423,8 @@
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
-
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -424,7 +451,6 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -441,12 +467,10 @@
       const data = attendanceSnap.data() || {};
       const now = Date.now();
       let extraMs = 0;
-
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
       }
-
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
 
@@ -519,20 +543,17 @@
     async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No staff profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -582,7 +603,6 @@
           "new";
 
         const matchesStatus = status === "all" || currentStatus === status;
-
         const matchesSpecial =
           special === "all" ||
           (special === "callbacks_only" && lead.callbackRequired) ||
@@ -595,7 +615,9 @@
         const haystack = `
           ${lead.forename || ""}
           ${lead.surname || ""}
-          ${lead.telephone || ""}
+          ${getLeadTelephone(lead)}
+          ${getLeadMobile(lead)}
+          ${getLeadEmail(lead)}
           ${lead.postcode || ""}
           ${lead.claimType || ""}
           ${lead.type || ""}
@@ -613,19 +635,22 @@
       if (!filtered.length) {
         leadsBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No leads found.</td>
+            <td colspan="10" class="p-6 text-center text-slate-500">No leads found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
+
           tr.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
               <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3">${lead.telephone || "-"}</td>
+            <td class="p-3">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3">${getLeadEmail(lead) || "-"}</td>
             <td class="p-3">${lead.postcode || "-"}</td>
             <td class="p-3">${leadStatusBadge(lead)}</td>
             <td class="p-3">${formatAction(lead.lastAction)}</td>
@@ -651,12 +676,10 @@
     function renderHistory(history) {
       const wrap = document.getElementById("historyWrap");
       wrap.innerHTML = "";
-
       if (!history.length) {
         wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
         return;
       }
-
       [...history].reverse().forEach(item => {
         const div = document.createElement("div");
         div.className = "border border-slate-200 rounded-xl p-3";
@@ -678,7 +701,9 @@
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_phone").textContent = getLeadTelephone(selectedLead) || "-";
+      document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
+      document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
@@ -709,7 +734,6 @@
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -722,7 +746,6 @@
             notes
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -750,7 +773,6 @@
         showModalMessage("Please choose callback date and time first.", true);
         return;
       }
-
       await updateLead({
         leadStatus: "intro_email_needed",
         introEmailNeeded: true,
@@ -767,7 +789,6 @@
         showModalMessage("Please choose callback date and time first.", true);
         return;
       }
-
       await updateLead({
         leadStatus: "callback_required",
         callbackRequired: true,
@@ -779,7 +800,6 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
@@ -790,7 +810,6 @@
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "awaiting_manager",
         sentToManagerAt: serverTimestamp(),
@@ -817,7 +836,6 @@
 
     noAnswerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "no_answer",
         lastAction: "no_answer",
@@ -828,7 +846,6 @@
 
     voicemailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         lastAction: "voicemail",
         lastCallAt: serverTimestamp(),
@@ -839,7 +856,6 @@
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "closed",
         lastAction: "wrong_number",
@@ -852,7 +868,6 @@
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "closed",
         lastAction: "not_interested",
@@ -900,18 +915,15 @@
         window.location.href = "/login.html";
         return;
       }
-
       try {
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
-
         try {
           await recordStaffLoginFromPage();
           startAttendanceHeartbeat();
         } catch (attendanceError) {
           console.error("Attendance login-from-page failed:", attendanceError);
         }
-
         await loadLeads();
         hideLoader();
       } catch (error) {

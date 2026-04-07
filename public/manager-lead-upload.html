@@ -75,6 +75,13 @@
           <button id="importBtn" class="btn btn-primary" type="button">Import Leads</button>
         </div>
 
+        <div class="mt-4 text-sm text-slate-500">
+          Accepted lead fields can include variants such as:
+          <div class="mt-2">
+            Title, Forename, Surname, Telephone, Mobile, Email, Address, Postcode, HomeOwner, Has_Solar
+          </div>
+        </div>
+
         <p id="uploadMessage" class="text-sm text-green-700 hidden mt-4"></p>
       </section>
 
@@ -94,6 +101,8 @@
                 <th class="text-left p-3">Forename</th>
                 <th class="text-left p-3">Surname</th>
                 <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Mobile</th>
+                <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Postcode</th>
                 <th class="text-left p-3">HomeOwner</th>
                 <th class="text-left p-3">Has Solar</th>
@@ -101,7 +110,7 @@
             </thead>
             <tbody id="previewBody">
               <tr>
-                <td colspan="7" class="p-6 text-center text-slate-500">No rows to preview.</td>
+                <td colspan="9" class="p-6 text-center text-slate-500">No rows to preview.</td>
               </tr>
             </tbody>
           </table>
@@ -152,6 +161,7 @@
     let currentUser = null;
     let currentUserData = null;
     let parsedRows = [];
+    let normalizedRows = [];
     let listers = [];
 
     function hideLoader() {
@@ -162,6 +172,62 @@
       uploadMessage.textContent = text;
       uploadMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       uploadMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+    }
+
+    function cleanValue(value) {
+      return String(value ?? "").trim();
+    }
+
+    function normalizeKey(key) {
+      return String(key || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+    }
+
+    function getRowValue(row, possibleKeys) {
+      const normalizedMap = {};
+      Object.keys(row || {}).forEach(key => {
+        normalizedMap[normalizeKey(key)] = row[key];
+      });
+
+      for (const key of possibleKeys) {
+        const value = normalizedMap[normalizeKey(key)];
+        if (value !== undefined && cleanValue(value) !== "") {
+          return cleanValue(value);
+        }
+      }
+      return "";
+    }
+
+    function normalizeLeadRow(row) {
+      const address1 = getRowValue(row, ["Ad1", "Address1", "Address Line 1", "Address_1"]);
+      const address2 = getRowValue(row, ["Ad2", "Address2", "Address Line 2", "Address_2"]);
+      const address3 = getRowValue(row, ["Ad3", "Address3", "Address Line 3", "Address_3"]);
+      const address4 = getRowValue(row, ["Ad4", "Address4", "Address Line 4", "Address_4"]);
+      const address5 = getRowValue(row, ["Ad5", "Address5", "Address Line 5", "Address_5"]);
+      const combinedAddress = [address1, address2, address3, address4, address5]
+        .filter(Boolean)
+        .join(", ");
+
+      return {
+        title: getRowValue(row, ["Title"]),
+        forename: getRowValue(row, ["Forename", "FirstName", "First Name"]),
+        surname: getRowValue(row, ["Surname", "LastName", "Last Name"]),
+        telephone: getRowValue(row, ["Telephone", "Phone", "Landline", "TelephoneNumber"]),
+        mobile: getRowValue(row, ["Mobile", "MobileNumber", "Mobile Number", "Cell", "Cellphone"]),
+        email: getRowValue(row, ["Email", "EmailAddress", "E-mail", "Mail"]),
+        address1,
+        address2,
+        address3,
+        address4,
+        address5,
+        address: combinedAddress,
+        postcode: getRowValue(row, ["Postcode", "Post Code", "Zip", "ZipCode"]),
+        homeOwner: getRowValue(row, ["HomeOwner", "Home Owner", "Homeowner"]),
+        hasSolar: getRowValue(row, ["Has_Solar", "HasSolar", "Has Solar"]),
+        raw: row
+      };
     }
 
     async function checkManagerAccess(user) {
@@ -175,6 +241,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -197,6 +264,7 @@
       }));
 
       listerSelect.innerHTML = `<option value="">Select lister</option>`;
+
       listers.forEach(lister => {
         const option = document.createElement("option");
         option.value = lister.uid;
@@ -208,36 +276,39 @@
     function renderPreview() {
       previewBody.innerHTML = "";
 
-      if (!parsedRows.length) {
+      if (!normalizedRows.length) {
         previewBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No rows to preview.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No rows to preview.</td>
           </tr>
         `;
         previewSummary.textContent = "No file loaded.";
         return;
       }
 
-      parsedRows.slice(0, 20).forEach(row => {
+      normalizedRows.slice(0, 20).forEach(row => {
         const tr = document.createElement("tr");
         tr.className = "border-t border-slate-200";
         tr.innerHTML = `
-          <td class="p-3">${row.Title || ""}</td>
-          <td class="p-3">${row.Forename || ""}</td>
-          <td class="p-3">${row.Surname || ""}</td>
-          <td class="p-3">${row.Telephone || ""}</td>
-          <td class="p-3">${row.Postcode || ""}</td>
-          <td class="p-3">${row.HomeOwner || ""}</td>
-          <td class="p-3">${row.Has_Solar || ""}</td>
+          <td class="p-3">${row.title || ""}</td>
+          <td class="p-3">${row.forename || ""}</td>
+          <td class="p-3">${row.surname || ""}</td>
+          <td class="p-3">${row.telephone || ""}</td>
+          <td class="p-3">${row.mobile || ""}</td>
+          <td class="p-3">${row.email || ""}</td>
+          <td class="p-3">${row.postcode || ""}</td>
+          <td class="p-3">${row.homeOwner || ""}</td>
+          <td class="p-3">${row.hasSolar || ""}</td>
         `;
         previewBody.appendChild(tr);
       });
 
-      previewSummary.textContent = `${parsedRows.length} row(s) loaded. Showing first ${Math.min(parsedRows.length, 20)}.`;
+      previewSummary.textContent = `${normalizedRows.length} row(s) loaded. Showing first ${Math.min(normalizedRows.length, 20)}.`;
     }
 
     previewBtn.addEventListener("click", () => {
       const file = csvFile.files[0];
+
       if (!file) {
         showMessage("Please choose a CSV file first.", true);
         return;
@@ -248,6 +319,9 @@
         skipEmptyLines: true,
         complete: (results) => {
           parsedRows = results.data || [];
+          normalizedRows = parsedRows.map(normalizeLeadRow).filter(row =>
+            row.forename || row.surname || row.telephone || row.mobile || row.email
+          );
           renderPreview();
           showMessage("CSV loaded successfully.");
         },
@@ -262,7 +336,7 @@
       const listerUid = listerSelect.value;
       const lister = listers.find(x => x.uid === listerUid);
 
-      if (!parsedRows.length) {
+      if (!normalizedRows.length) {
         showMessage("Please preview a CSV first.", true);
         return;
       }
@@ -276,7 +350,7 @@
       importBtn.textContent = "Importing...";
 
       try {
-        for (const row of parsedRows) {
+        for (const row of normalizedRows) {
           await addDoc(collection(db, "leadAssignments"), {
             assignedToUid: lister.uid,
             assignedToName: lister.name || "",
@@ -287,20 +361,27 @@
             uploadedByEmail: currentUser.email || "",
             uploadedAt: serverTimestamp(),
 
-            title: row.Title || "",
-            forename: row.Forename || "",
-            surname: row.Surname || "",
-            address1: row.Ad1 || "",
-            address2: row.Ad2 || "",
-            address3: row.Ad3 || "",
-            address4: row.Ad4 || "",
-            address5: row.Ad5 || "",
-            postcode: row.Postcode || "",
-            telephone: row.Telephone || "",
-            homeOwner: row.HomeOwner || "",
-            hasSolar: row.Has_Solar || "",
+            title: row.title,
+            forename: row.forename,
+            surname: row.surname,
+
+            address1: row.address1,
+            address2: row.address2,
+            address3: row.address3,
+            address4: row.address4,
+            address5: row.address5,
+            address: row.address,
+
+            postcode: row.postcode,
+            telephone: row.telephone,
+            mobile: row.mobile,
+            email: row.email,
+
+            homeOwner: row.homeOwner,
+            hasSolar: row.hasSolar,
 
             campaign: "solar",
+            claimType: "solar",
             leadStatus: "new",
             usable: true,
             closed: false,
@@ -313,7 +394,7 @@
           });
         }
 
-        showMessage(`Imported ${parsedRows.length} lead(s) successfully.`);
+        showMessage(`Imported ${normalizedRows.length} lead(s) successfully.`);
       } catch (error) {
         console.error(error);
         showMessage("Could not import leads.", true);

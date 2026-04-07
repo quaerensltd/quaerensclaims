@@ -20,21 +20,9 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav {
-      background: #2563eb;
-      color: white;
-    }
-    .active-nav:hover {
-      background: #1d4ed8;
-      color: white;
-    }
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
+    .badge { display: inline-block; padding: 0.25rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-amber { background: #fef3c7; color: #92400e; }
@@ -158,7 +146,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, phone, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, phone, mobile, email, postcode..." />
           </div>
         </div>
       </section>
@@ -171,12 +159,15 @@
           </div>
           <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Mobile</th>
+                <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Lister</th>
                 <th class="text-left p-3">Status</th>
@@ -207,7 +198,9 @@
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
-            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_telephone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
@@ -239,10 +232,12 @@
               <input id="recommendedCloserText" type="text" class="input" placeholder="Optional recommendation" />
             </div>
           </div>
+
           <div class="mt-4">
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
             <textarea id="assessmentSummaryBox" class="input" rows="8" placeholder="This will auto-fill from the intake submission if available."></textarea>
           </div>
+
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
             <a id="viewAssessmentBtn" href="#" class="btn btn-secondary hidden">View Assessment Report</a>
@@ -275,6 +270,7 @@
               <input id="appointmentTime" type="time" class="input" />
             </div>
           </div>
+
           <div class="flex flex-wrap gap-3">
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Appointment</button>
@@ -351,6 +347,7 @@
     const convertedStat = document.getElementById("convertedStat");
     const closedStat = document.getElementById("closedStat");
     const bookedTodayStat = document.getElementById("bookedTodayStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const closerSelect = document.getElementById("closerSelect");
@@ -397,14 +394,35 @@
       return new Date().toISOString().slice(0, 10);
     }
 
+    function safe(value) {
+      return String(value || "").trim();
+    }
+
     function formatAddress(lead) {
-      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
-        .filter(Boolean)
-        .join(", ") || "-";
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
     }
 
     function clientName(lead) {
       return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+    }
+
+    function leadTelephone(lead) {
+      return lead.telephone || "-";
+    }
+
+    function leadMobile(lead) {
+      return lead.mobile || "-";
+    }
+
+    function leadEmail(lead) {
+      return lead.email || "-";
     }
 
     function formatAction(action) {
@@ -495,9 +513,7 @@
     }
 
     function labelFromKey(key) {
-      return key
-        .replace(/([A-Z])/g, " $1")
-        .replace(/^./, c => c.toUpperCase());
+      return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
     }
 
     function buildSubmissionAssessmentSummary(submission) {
@@ -516,6 +532,7 @@
       if (submission.claimType) blocks.push(`Claim Type: ${submission.claimType}`);
       if (client.address) blocks.push(`Address: ${client.address}`);
       if (client.mobile || client.landline) blocks.push(`Contact: ${client.mobile || client.landline}`);
+      if (client.email) blocks.push(`Email: ${client.email}`);
 
       const productLines = [];
       if (Object.keys(product1).length) {
@@ -540,12 +557,11 @@
       const product1 = selectedSubmissionData?.product1 || {};
       const product2 = selectedSubmissionData?.product2 || {};
 
-      const safe = (value) => String(value || "").trim();
-      const fullName =
-        `${safe(client.firstName || selectedLead?.forename)} ${safe(client.secondName || selectedLead?.surname)}`.trim() || "Client";
+      const fullName = `${safe(client.firstName || selectedLead?.forename)} ${safe(client.secondName || selectedLead?.surname)}`.trim() || "Client";
       const secondApplicant = `${safe(client.firstName2)} ${safe(client.secondName2)}`.trim();
       const claimType = safe(selectedLead?.claimType || selectedLead?.type || selectedSubmissionData?.claimType) || "Not specified";
-      const telephone = safe(client.mobile || client.landline || selectedLead?.telephone);
+      const telephone = safe(client.landline || selectedLead?.telephone);
+      const mobile = safe(client.mobile || selectedLead?.mobile || selectedLead?.telephone);
       const email = safe(client.email || selectedLead?.email);
       const address = safe(client.address || formatAddress(selectedLead || {}));
       const postcode = safe(client.postcode || selectedLead?.postcode);
@@ -568,6 +584,7 @@
       const purchaseSummary = [
         `Claim Type: ${claimType}`,
         telephone ? `Telephone: ${telephone}` : "",
+        mobile ? `Mobile: ${mobile}` : "",
         email ? `Email: ${email}` : "",
         address ? `Address: ${address}` : "",
         postcode ? `Postcode: ${postcode}` : ""
@@ -732,7 +749,7 @@
       const assessmentReportText = [
         "CLIENT DETAILS",
         `${fullName}${secondApplicant ? `\nSecond Applicant: ${secondApplicant}` : ""}`,
-        `${telephone ? `Telephone: ${telephone}\n` : ""}${email ? `Email: ${email}\n` : ""}${address ? `Address: ${address}\n` : ""}${postcode ? `Postcode: ${postcode}` : ""}`.trim(),
+        `${telephone ? `Telephone: ${telephone}\n` : ""}${mobile ? `Mobile: ${mobile}\n` : ""}${email ? `Email: ${email}\n` : ""}${address ? `Address: ${address}\n` : ""}${postcode ? `Postcode: ${postcode}` : ""}`.trim(),
         "",
         "SUPPLIER DETAILS / SUPPLIER OVERVIEW",
         supplierOverview,
@@ -823,11 +840,7 @@
       } catch (error) {
         console.error("Failed to load leads:", error);
         resultsSummary.textContent = "Could not load leads.";
-        leadsBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="p-6 text-center text-red-600">Error loading leads.</td>
-          </tr>
-        `;
+        leadsBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-red-600">Error loading leads.</td></tr>`;
       }
     }
 
@@ -855,6 +868,7 @@
         const appointmentDateValue = lead.closerAppointmentDate || "";
 
         const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
+
         const matchesTiming =
           selectedTiming === "all" ||
           (selectedTiming === "today" && appointmentDateValue === today) ||
@@ -869,12 +883,21 @@
           ${lead.forename || ""}
           ${lead.surname || ""}
           ${lead.telephone || ""}
+          ${lead.mobile || ""}
+          ${lead.email || ""}
           ${lead.postcode || ""}
+          ${lead.address || ""}
+          ${lead.address1 || ""}
+          ${lead.address2 || ""}
+          ${lead.address3 || ""}
+          ${lead.address4 || ""}
+          ${lead.address5 || ""}
           ${lead.claimType || ""}
           ${lead.type || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
+
         return matchesStatus && matchesTiming && matchesLister && matchesCloser && matchesSearch;
       });
     }
@@ -889,11 +912,7 @@
       leadsBody.innerHTML = "";
 
       if (!filtered.length) {
-        leadsBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No leads found.</td>
-          </tr>
-        `;
+        leadsBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-500">No leads found.</td></tr>`;
       } else {
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
@@ -903,16 +922,16 @@
               <div class="font-semibold text-slate-800">${clientName(lead)}</div>
               <div class="text-xs text-slate-500">${lead.postcode || "-"}</div>
             </td>
-            <td class="p-3">${lead.telephone || "-"}</td>
+            <td class="p-3">${leadTelephone(lead)}</td>
+            <td class="p-3">${leadMobile(lead)}</td>
+            <td class="p-3">${leadEmail(lead)}</td>
             <td class="p-3">${lead.claimType || lead.type || "-"}</td>
             <td class="p-3">${userDisplay(lead.assignedToUid)}</td>
             <td class="p-3">${statusBadge(lead)}</td>
             <td class="p-3">${getAppointmentText(lead)}</td>
             <td class="p-3">${userDisplay(lead.closerUid)}</td>
             <td class="p-3">
-              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
-                Open
-              </button>
+              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button>
             </td>
           `;
           leadsBody.appendChild(tr);
@@ -952,13 +971,11 @@
       const snap = await getDocs(q);
       if (snap.empty) return null;
 
-      const docs = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => {
-          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-          return bTime - aTime;
-        });
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
+        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+        return bTime - aTime;
+      });
 
       return docs[0];
     }
@@ -1020,9 +1037,12 @@
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_telephone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_mobile").textContent = selectedLead.mobile || "-";
+      document.getElementById("lead_email").textContent = selectedLead.email || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
@@ -1119,8 +1139,8 @@
           secondName: client.secondName || lead.surname || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || "",
-          mobile: client.mobile || lead.telephone || "",
+          landline: client.landline || lead.telephone || "",
+          mobile: client.mobile || lead.mobile || lead.telephone || "",
           email: client.email || lead.email || "",
           address: client.address || formatAddress(lead)
         },
@@ -1164,10 +1184,7 @@
         }
       };
 
-      const existingQuery = query(
-        collection(db, "closerAssignments"),
-        where("sourceLeadId", "==", lead.id)
-      );
+      const existingQuery = query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id));
       const existingSnap = await getDocs(existingQuery);
 
       if (!existingSnap.empty) {
@@ -1216,6 +1233,7 @@
           forename: selectedLead.forename || "",
           surname: selectedLead.surname || "",
           telephone: selectedLead.telephone || "",
+          mobile: selectedLead.mobile || "",
           email: selectedLead.email || selectedSubmissionData?.client?.email || "",
           postcode: selectedLead.postcode || "",
           address: selectedSubmissionData?.client?.address || formatAddress(selectedLead)

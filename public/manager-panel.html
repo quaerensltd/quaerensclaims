@@ -133,7 +133,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, phone, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, telephone, mobile, email, postcode..." />
           </div>
         </div>
       </section>
@@ -151,7 +151,9 @@
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Mobile</th>
+                <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Lister</th>
                 <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Appointment</th>
@@ -181,7 +183,9 @@
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
-            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_telephone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
@@ -348,18 +352,68 @@
       return new Date().toISOString().slice(0, 10);
     }
 
+    function safe(value) {
+      return String(value || "").trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safe(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
     function formatAddress(lead) {
-      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
-        .filter(Boolean)
-        .join(", ") || "-";
+      return [
+        lead.address,
+        lead.client?.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
     }
 
     function clientName(lead) {
-      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+      return firstNonEmpty(
+        `${safe(lead.forename)} ${safe(lead.surname)}`.trim(),
+        `${safe(lead.client?.firstName)} ${safe(lead.client?.secondName)}`.trim(),
+        lead.name,
+        "-"
+      );
     }
 
     function clientNameFromSubmission(submission) {
       return `${submission.client?.firstName || ""} ${submission.client?.secondName || ""}`.trim() || "-";
+    }
+
+    function getLeadTelephone(lead) {
+      return firstNonEmpty(
+        lead.telephone,
+        lead.landline,
+        lead.phone,
+        lead.client?.landline,
+        lead.client?.telephone
+      );
+    }
+
+    function getLeadMobile(lead) {
+      return firstNonEmpty(
+        lead.mobile,
+        lead.mobileNumber,
+        lead.cell,
+        lead.client?.mobile
+      );
+    }
+
+    function getLeadEmail(lead) {
+      return firstNonEmpty(
+        lead.email,
+        lead.emailAddress,
+        lead.client?.email
+      );
     }
 
     function formatAction(action) {
@@ -469,7 +523,6 @@
         }
 
         const userData = userSnap.data();
-
         if (userData.role !== "manager") {
           alert("You do not have permission to access the manager panel.");
           window.location.href = "/login.html";
@@ -512,7 +565,7 @@
         resultsSummary.textContent = "Could not load leads.";
         leadsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-red-600">Error loading leads.</td>
+            <td colspan="9" class="p-6 text-center text-red-600">Error loading leads.</td>
           </tr>
         `;
       }
@@ -528,9 +581,11 @@
           record: lead,
           status: isLocked(lead) ? "closed" : (lead.leadStatus || "new"),
           searchName: clientName(lead),
-          phone: lead.telephone || "",
-          postcode: lead.postcode || "",
-          claimType: lead.claimType || lead.type || "",
+          telephone: getLeadTelephone(lead),
+          mobile: getLeadMobile(lead),
+          email: getLeadEmail(lead),
+          postcode: firstNonEmpty(lead.postcode, lead.client?.postcode),
+          claimType: firstNonEmpty(lead.claimType, lead.type),
           listerUid: lead.assignedToUid || "",
           closerUid: lead.closerUid || "",
           appointmentDate: lead.closerAppointmentDate || "",
@@ -554,9 +609,11 @@
             record: submission,
             status: submission.status || "submitted",
             searchName: clientNameFromSubmission(submission),
-            phone: submission.client?.mobile || submission.client?.landline || "",
-            postcode: "",
-            claimType: submission.claimType || "",
+            telephone: firstNonEmpty(submission.client?.landline, submission.client?.telephone),
+            mobile: firstNonEmpty(submission.client?.mobile),
+            email: firstNonEmpty(submission.client?.email),
+            postcode: firstNonEmpty(submission.client?.postcode),
+            claimType: firstNonEmpty(submission.claimType),
             listerUid: submission.submittedBy?.uid || "",
             closerUid: "",
             appointmentDate: "",
@@ -573,10 +630,18 @@
 
     function renderStats() {
       const today = todayIso();
-      awaitingManagerStat.textContent = String(queueItems.filter(x => x.status === "awaiting_manager" || x.status === "submitted" || x.status === "in_review").length);
+      awaitingManagerStat.textContent = String(
+        queueItems.filter(x =>
+          x.status === "awaiting_manager" ||
+          x.status === "submitted" ||
+          x.status === "in_review"
+        ).length
+      );
       bookedTodayStat.textContent = String(queueItems.filter(x => x.appointmentDate === today).length);
       sentToCloserStat.textContent = String(queueItems.filter(x => x.status === "sent_to_closer").length);
-      qualifiedStat.textContent = String(queueItems.filter(x => x.status === "qualified" || x.status === "assessment_complete").length);
+      qualifiedStat.textContent = String(
+        queueItems.filter(x => x.status === "qualified" || x.status === "assessment_complete").length
+      );
       overdueStat.textContent = String(allLeadAssignments.filter(x => isOverdueManagerLead(x)).length);
     }
 
@@ -595,21 +660,21 @@
           (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
           (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
           (selectedTiming === "none" && !item.appointmentDate);
-
         const matchesCloser =
           selectedCloser === "all" ||
           item.closerUid === selectedCloser;
 
         const haystack = `
           ${item.searchName || ""}
-          ${item.phone || ""}
+          ${item.telephone || ""}
+          ${item.mobile || ""}
+          ${item.email || ""}
           ${item.postcode || ""}
           ${item.claimType || ""}
           ${item.status || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesTiming && matchesCloser && matchesSearch;
       }).sort((a, b) => b.updatedAtValue - a.updatedAtValue);
     }
@@ -621,7 +686,7 @@
       if (!filtered.length) {
         leadsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No manager leads found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No manager leads found.</td>
           </tr>
         `;
       } else {
@@ -629,24 +694,25 @@
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
 
-let actionHtml = "";
-
-if (item.sourceType === "submission") {
-  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.id}">Open</button>`;
-} else if (item.status === "intake_in_progress" && item.record.convertedToSubmissionId) {
-  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.record.convertedToSubmissionId}">Open</button>`;
-} else if (item.status === "intake_in_progress") {
-  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-intake-portal="${item.id}">Open</button>`;
-} else {
-  actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
-}
+          let actionHtml = "";
+          if (item.sourceType === "submission") {
+            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.id}">Open</button>`;
+          } else if (item.status === "intake_in_progress" && item.record.convertedToSubmissionId) {
+            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.record.convertedToSubmissionId}">Open</button>`;
+          } else if (item.status === "intake_in_progress") {
+            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-intake-portal="${item.id}">Open</button>`;
+          } else {
+            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
+          }
 
           tr.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${item.searchName || "-"}</div>
               <div class="text-xs text-slate-500">${item.claimType || "-"}</div>
             </td>
-            <td class="p-3">${item.phone || "-"}</td>
+            <td class="p-3">${item.telephone || "-"}</td>
+            <td class="p-3">${item.mobile || "-"}</td>
+            <td class="p-3">${item.email || "-"}</td>
             <td class="p-3">${userDisplay(item.listerUid)}</td>
             <td class="p-3">${statusBadgeFromStatus(item.status)}</td>
             <td class="p-3">${item.appointmentDate ? `${item.appointmentDate} ${item.appointmentTime || ""}`.trim() : "-"}</td>
@@ -660,32 +726,32 @@ if (item.sourceType === "submission") {
       resultsSummary.textContent = `${filtered.length} lead(s) shown`;
 
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    openLead(btn.getAttribute("data-open-lead"));
-  });
-});
+        btn.addEventListener("click", () => {
+          openLead(btn.getAttribute("data-open-lead"));
+        });
+      });
 
-document.querySelectorAll("[data-open-submission]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const submissionId = btn.getAttribute("data-open-submission");
-    if (!submissionId) {
-      alert("No submission ID found for this row.");
-      return;
-    }
-    window.location.href = `/intake-detail.html?id=${submissionId}`;
-  });
-});
+      document.querySelectorAll("[data-open-submission]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const submissionId = btn.getAttribute("data-open-submission");
+          if (!submissionId) {
+            alert("No submission ID found for this row.");
+            return;
+          }
+          window.location.href = `/intake-detail.html?id=${submissionId}`;
+        });
+      });
 
-document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const leadId = btn.getAttribute("data-open-intake-portal");
-    if (!leadId) {
-      alert("No lead ID found for this row.");
-      return;
-    }
-    window.location.href = `/client-intake-portal.html?leadId=${leadId}`;
-  });
-});
+      document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const leadId = btn.getAttribute("data-open-intake-portal");
+          if (!leadId) {
+            alert("No lead ID found for this row.");
+            return;
+          }
+          window.location.href = `/client-intake-portal.html?leadId=${leadId}`;
+        });
+      });
     }
 
     function renderHistory(history) {
@@ -720,14 +786,12 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
         const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
         return bTime - aTime;
       });
-
       return docs[0];
     }
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
       selectedSubmissionId = lead.convertedToSubmissionId || lead.submissionId || lead.claimSubmissionId || lead.intakeSubmissionId || "";
-
       if (!selectedSubmissionId) return null;
 
       try {
@@ -759,9 +823,11 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_telephone").textContent = getLeadTelephone(selectedLead) || "-";
+      document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
+      document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_postcode").textContent = firstNonEmpty(selectedLead.postcode, selectedLead.client?.postcode, "-");
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
       document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || "-";
       document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
@@ -810,7 +876,6 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
 
     async function refreshSelectedLead() {
       await loadAllData();
-
       if (selectedLead) {
         const updated = allLeadAssignments.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -837,7 +902,6 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
             notes
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -872,9 +936,9 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
           secondName: client.secondName || lead.surname || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || "",
-          mobile: client.mobile || lead.telephone || "",
-          email: client.email || lead.email || "",
+          landline: client.landline || getLeadTelephone(lead) || "",
+          mobile: client.mobile || getLeadMobile(lead) || getLeadTelephone(lead) || "",
+          email: client.email || getLeadEmail(lead) || "",
           address: client.address || formatAddress(lead)
         },
         appointment: {
@@ -931,7 +995,6 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
         showModalMessage("Please choose a closer first.", true);
         return;
       }
-
       if (!appointmentDate.value || !appointmentTime.value) {
         showModalMessage("Please choose appointment date and time.", true);
         return;
@@ -1019,7 +1082,6 @@ document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
