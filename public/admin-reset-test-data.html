@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Reset System Test Data</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="min-h-screen flex items-center justify-center p-6">
+    <div class="max-w-2xl w-full bg-white border border-slate-200 rounded-2xl shadow-lg p-8">
+      <h1 class="text-2xl font-extrabold text-red-700 mb-2">Quaerens Test Data Reset</h1>
+      <p class="text-sm text-slate-600 mb-6">
+        This will permanently delete all current test pipeline data and leave your user accounts in place.
+      </p>
+
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+        <div class="font-bold text-red-700 mb-2">Collections that will be cleared</div>
+        <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+          <li>leadAssignments</li>
+          <li>claimSubmissions</li>
+          <li>managerAssessments</li>
+          <li>closerAssignments</li>
+          <li>processingCases</li>
+          <li>processingCaseEvents</li>
+          <li>processingCaseTasks</li>
+          <li>processingFiles</li>
+          <li>staffAttendance</li>
+        </ul>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-semibold text-slate-700 mb-2">
+          Type <span class="font-extrabold">DELETE ALL TEST DATA</span> to confirm
+        </label>
+        <input
+          id="confirmInput"
+          type="text"
+          class="w-full border border-slate-300 rounded-xl px-4 py-3"
+          placeholder="DELETE ALL TEST DATA"
+        />
+      </div>
+
+      <div class="flex flex-wrap gap-3 items-center">
+        <button
+          id="resetBtn"
+          class="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-3 rounded-xl"
+          type="button"
+        >
+          Delete Everything
+        </button>
+        <div id="status" class="text-sm text-slate-600"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      writeBatch,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const confirmInput = document.getElementById("confirmInput");
+    const resetBtn = document.getElementById("resetBtn");
+    const status = document.getElementById("status");
+
+    const collectionsToClear = [
+      "leadAssignments",
+      "claimSubmissions",
+      "managerAssessments",
+      "closerAssignments",
+      "processingCases",
+      "processingCaseEvents",
+      "processingCaseTasks",
+      "processingFiles",
+      "staffAttendance"
+    ];
+
+    async function deleteCollectionInBatches(collectionName) {
+      let totalDeleted = 0;
+
+      while (true) {
+        const snap = await getDocs(collection(db, collectionName));
+        if (snap.empty) break;
+
+        const docsToDelete = snap.docs.slice(0, 400);
+        const batch = writeBatch(db);
+
+        docsToDelete.forEach(item => {
+          batch.delete(doc(db, collectionName, item.id));
+        });
+
+        await batch.commit();
+        totalDeleted += docsToDelete.length;
+
+        if (docsToDelete.length < 400) break;
+      }
+
+      return totalDeleted;
+    }
+
+    async function checkAccess(user) {
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists()) {
+        alert("No user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      if (userData.role !== "manager" && userData.role !== "admin") {
+        alert("You do not have permission to use this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      return true;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("You must be logged in.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      const allowed = await checkAccess(user);
+      if (!allowed) return;
+    });
+
+    resetBtn.addEventListener("click", async () => {
+      if (confirmInput.value.trim() !== "DELETE ALL TEST DATA") {
+        alert("Type the exact confirmation text first.");
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "This will permanently delete all test leads, submissions, assessments, closer assignments, processing cases, events, tasks, files, and attendance records. Continue?"
+      );
+      if (!confirmed) return;
+
+      resetBtn.disabled = true;
+      confirmInput.disabled = true;
+      status.textContent = "Deleting data...";
+
+      try {
+        const results = [];
+
+        for (const collectionName of collectionsToClear) {
+          const deletedCount = await deleteCollectionInBatches(collectionName);
+          results.push(`${collectionName}: ${deletedCount}`);
+        }
+
+        status.textContent = "Reset complete.";
+        alert("Reset complete.\n\n" + results.join("\n"));
+      } catch (error) {
+        console.error("Reset failed:", error);
+        status.textContent = "Reset failed.";
+        alert("Reset failed. Check console.");
+      } finally {
+        resetBtn.disabled = false;
+        confirmInput.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
