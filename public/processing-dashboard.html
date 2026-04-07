@@ -51,6 +51,7 @@
     .badge-violet { background: #ede9fe; color: #6d28d9; }
     .badge-indigo { background: #e0e7ff; color: #3730a3; }
     .badge-rose { background: #ffe4e6; color: #be123c; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
     #toast {
       position: fixed;
       top: 20px;
@@ -88,7 +89,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
-          <p class="text-sm text-slate-500">Processing workload, case ownership, payment tracking, and next actions</p>
+          <p class="text-sm text-slate-500">Processing workload, case ownership, payment tracking, report pack visibility, and next actions</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -105,7 +106,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-8 gap-4">
+      <section class="grid lg:grid-cols-9 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Cases</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -137,6 +138,10 @@
         <div class="card p-5">
           <div class="text-sm text-slate-500">With Payment Link</div>
           <div id="paymentLinkStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Report Pack</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
         </div>
       </section>
 
@@ -186,7 +191,7 @@
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
                   <th class="text-left p-3">Claim Type</th>
-                  <th class="text-left p-3">Payment Status</th>
+                  <th class="text-left p-3">Report Pack</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -208,7 +213,7 @@
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
                   <th class="text-left p-3">Claim Type</th>
-                  <th class="text-left p-3">Payment Status</th>
+                  <th class="text-left p-3">Report Pack</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -233,7 +238,7 @@
                   <th class="text-left p-3">Client</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Owner</th>
-                  <th class="text-left p-3">Payment Status</th>
+                  <th class="text-left p-3">Report Pack</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -386,6 +391,39 @@
       return `<span class="badge badge-amber">Awaiting Payment</span>`;
     }
 
+    function hasAssessmentReport(item) {
+      return !!String(item.assessmentReportText || item.generatedAssessmentText || item.assessmentSummary || "").trim();
+    }
+
+    function hasStrategyPack(item) {
+      return !!String(item.processingPackText || item.strategicAnalysisText || item.recommendedNextStepsText || item.strategySummary || "").trim();
+    }
+
+    function hasComplaintDocs(item) {
+      return !!String(
+        item.complaintLetterText ||
+        item.statementOfTruthText ||
+        item.lossSummaryText ||
+        item.evidenceChecklistText ||
+        item.escalationLetterText ||
+        item.internalFileNoteText ||
+        ""
+      ).trim();
+    }
+
+    function hasRichAssessmentPack(item) {
+      return hasAssessmentReport(item) || hasStrategyPack(item) || hasComplaintDocs(item);
+    }
+
+    function reportPackLabel(item) {
+      const parts = [];
+      if (hasAssessmentReport(item)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(item)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(item)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
+      return parts.join(" ");
+    }
+
     function getOpenLink(item) {
       return `/processing-case-detail.html?id=${item.id}`;
     }
@@ -462,11 +500,11 @@
       const fullyPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length;
       const urgentCases = allCases.filter(f => String(f.priority || "").toLowerCase() === "urgent").length;
       const withLinks = allCases.filter(f => String(f.paymentLink || "").trim()).length;
+      const withReportPack = allCases.filter(f => hasRichAssessmentPack(f)).length;
 
       const dueNow = allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
       const paidNow = allCases.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
       const followUp = allCases.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
-
       const myFiles = allCases.filter(f => f.assignedToUid === currentUser.uid).length;
       const unassigned = allCases.filter(f => !f.assignedToUid).length;
 
@@ -478,6 +516,7 @@
       document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
       document.getElementById("followUpStat").textContent = String(urgentCases);
       document.getElementById("paymentLinkStat").textContent = String(withLinks);
+      document.getElementById("reportPackStat").textContent = String(withReportPack);
       document.getElementById("dueNowTotal").textContent = money(dueNow);
       document.getElementById("paidNowTotal").textContent = money(paidNow);
       document.getElementById("followUpTotal").textContent = money(followUp);
@@ -510,7 +549,7 @@
             <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
-          <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
@@ -525,7 +564,12 @@
 
       const unassigned = [...allCases]
         .filter(f => !f.assignedToUid)
-        .sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0))
+        .sort((a, b) => {
+          const aPack = hasRichAssessmentPack(a) ? 0 : 1;
+          const bPack = hasRichAssessmentPack(b) ? 0 : 1;
+          if (aPack !== bPack) return aPack - bPack;
+          return Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0);
+        })
         .slice(0, 8);
 
       if (!unassigned.length) {
@@ -546,7 +590,7 @@
             <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
-          <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
             <button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>
           </td>
@@ -592,7 +636,7 @@
           </td>
           <td class="p-3">${formatClaimType(file.claimType)}</td>
           <td class="p-3">${ownerBadge(file)}</td>
-          <td class="p-3">${paymentStatusLabel(getEffectivePaymentStatus(file))}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>

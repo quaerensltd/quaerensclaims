@@ -60,6 +60,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -536,7 +537,6 @@
     const saveCaseBtn = document.getElementById("saveCaseBtn");
     const saveMessage = document.getElementById("saveMessage");
     const assignToMeBtn = document.getElementById("assignToMeBtn");
-
     const caseStage = document.getElementById("caseStage");
     const priority = document.getElementById("priority");
     const waitingOn = document.getElementById("waitingOn");
@@ -545,7 +545,6 @@
     const contractUrl = document.getElementById("contractUrl");
     const assessmentReportUrl = document.getElementById("assessmentReportUrl");
     const strategyReportUrl = document.getElementById("strategyReportUrl");
-
     const eventType = document.getElementById("eventType");
     const eventDirection = document.getElementById("eventDirection");
     const eventTargetParty = document.getElementById("eventTargetParty");
@@ -554,7 +553,6 @@
     const eventNotes = document.getElementById("eventNotes");
     const eventAttachmentUrl = document.getElementById("eventAttachmentUrl");
     const addEventBtn = document.getElementById("addEventBtn");
-
     const taskTitle = document.getElementById("taskTitle");
     const taskDueDate = document.getElementById("taskDueDate");
     const taskPriority = document.getElementById("taskPriority");
@@ -577,6 +575,19 @@
       setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
+    function safeString(value) {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safeString(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
     function setValue(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "-";
@@ -584,11 +595,21 @@
 
     function setTextBlock(id, value, fallback) {
       const el = document.getElementById(id);
-      if (el) el.textContent = (String(value || "").trim() || fallback);
+      if (el) el.textContent = (safeString(value) || fallback);
+    }
+
+    function normalizeClaimType(value) {
+      const raw = safeString(value).toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
+      return raw;
     }
 
     function formatClaimType(type) {
-      switch (type) {
+      switch (normalizeClaimType(type)) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
@@ -598,9 +619,9 @@
     }
 
     function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
-      return `${first} ${second}`.trim() || "-";
+      const first = firstNonEmpty(item.client?.firstName, item.client?.forename, item.firstName, item.clientFirstName);
+      const second = firstNonEmpty(item.client?.secondName, item.client?.surname, item.secondName, item.clientSecondName);
+      return `${first} ${second}`.trim() || item.caseReference || "-";
     }
 
     function formatDate(value) {
@@ -700,11 +721,34 @@
     }
 
     function objectToReadableLines(obj) {
-      const entries = Object.entries(obj || {}).filter(([_, value]) => String(value || "").trim() !== "");
+      const entries = Object.entries(obj || {}).filter(([_, value]) => safeString(value) !== "");
       if (!entries.length) return "No information recorded.";
       return entries
         .map(([key, value]) => `${key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase())}: ${value}`)
         .join("\n");
+    }
+
+    function buildFallbackClientEmailPreview() {
+      const client = clientName(caseData);
+      const report = firstNonEmpty(
+        caseData.clientEmailPreviewText,
+        caseData.assessmentReportText,
+        caseData.generatedAssessmentText,
+        caseData.assessmentSummary
+      );
+      if (!report) return "No client email preview available.";
+      return [
+        `Dear ${client},`,
+        "",
+        "Please find your case assessment summary below.",
+        "",
+        `Claim Type: ${formatClaimType(caseData.claimType)}`,
+        "",
+        report,
+        "",
+        "Kind regards,",
+        currentUserData?.name || "Quaerens"
+      ].join("\n");
     }
 
     async function checkProcessingAccess(user) {
@@ -733,8 +777,10 @@
     function setDocumentLink(baseId, url) {
       const link = document.getElementById(`${baseId}Link`);
       const empty = document.getElementById(`${baseId}Empty`);
-      if (url && url.trim()) {
-        link.href = url.trim();
+      const cleaned = safeString(url);
+
+      if (cleaned) {
+        link.href = cleaned;
         link.classList.remove("hidden");
         empty.classList.add("hidden");
       } else {
@@ -747,8 +793,10 @@
     function setPaymentLink(url) {
       const link = document.getElementById("paymentLinkDoc");
       const empty = document.getElementById("paymentLinkEmpty");
-      if (url && url.trim()) {
-        link.href = url.trim();
+      const cleaned = safeString(url);
+
+      if (cleaned) {
+        link.href = cleaned;
         link.classList.remove("hidden");
         empty.classList.add("hidden");
       } else {
@@ -761,40 +809,88 @@
     function renderCaseHeaderAndFields() {
       document.getElementById("detailTitle").textContent = clientName(caseData);
       document.getElementById("detailSubtitle").textContent = `Case ID: ${caseId}`;
-      document.getElementById("assignedToText").textContent = `Assigned To: ${caseData.assignedToName || caseData.assignedToEmail || "-"}`;
-      document.getElementById("sourceRefText").textContent = `Source Assignment: ${caseData.sourceAssignmentId || "-"}`;
-      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(caseData.lastActivityAt)}`;
+      document.getElementById("assignedToText").textContent = `Assigned To: ${firstNonEmpty(caseData.assignedToName, caseData.assignedToEmail, "-")}`;
+      document.getElementById("sourceRefText").textContent = `Source Assignment: ${firstNonEmpty(caseData.sourceAssignmentId, caseData.sourceLeadId, "-")}`;
+      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(firstNonEmpty(caseData.lastActivityAt, caseData.updatedAt, caseData.createdAt) ? (caseData.lastActivityAt || caseData.updatedAt || caseData.createdAt) : null)}`;
       document.getElementById("nextActionText").textContent = `Next Action: ${formatDate(caseData.nextActionDate)}`;
 
-      setValue("client_firstName", caseData.client?.firstName);
-      setValue("client_secondName", caseData.client?.secondName);
+      setValue("client_firstName", firstNonEmpty(caseData.client?.firstName, caseData.client?.forename));
+      setValue("client_secondName", firstNonEmpty(caseData.client?.secondName, caseData.client?.surname));
       setValue("client_firstName2", caseData.client?.firstName2);
       setValue("client_secondName2", caseData.client?.secondName2);
       setValue("client_landline", caseData.client?.landline);
-      setValue("client_mobile", caseData.client?.mobile);
+      setValue("client_mobile", firstNonEmpty(caseData.client?.mobile, caseData.client?.telephone));
       setValue("client_email", caseData.client?.email);
       setValue("client_address", caseData.client?.address);
 
       setValue("claimTypeText", formatClaimType(caseData.claimType));
-      setValue("closerText", caseData.closer?.name || caseData.closer?.email);
+      setValue("closerText", firstNonEmpty(caseData.closer?.name, caseData.closer?.email));
       setValue("caseReferenceText", caseData.caseReference || caseId);
 
       document.getElementById("caseStageBadge").innerHTML = stageBadge(caseData.caseStage || "");
       document.getElementById("priorityBadge").innerHTML = priorityBadge(caseData.priority || "normal");
       document.getElementById("waitingOnBadge").innerHTML = waitingOnBadge(caseData.waitingOn || "none");
 
-      setTextBlock("assessmentSummaryBox", caseData.assessmentSummary, "No assessment summary available.");
-      setTextBlock("processingPackBox", caseData.processingPackText || caseData.strategySummary, "No processing pack available.");
-      setTextBlock("assessmentReportBox", caseData.assessmentReportText || caseData.generatedAssessmentText, "No assessment report available.");
-      setTextBlock("strategicAnalysisBox", caseData.strategicAnalysisText || caseData.strategySummary, "No strategic analysis available.");
-      setTextBlock("recommendedNextStepsBox", caseData.recommendedNextStepsText, "No recommended next steps available.");
-      setTextBlock("complaintLetterBox", caseData.complaintLetterText, "No complaint letter available.");
-      setTextBlock("statementOfTruthBox", caseData.statementOfTruthText, "No statement of truth available.");
-      setTextBlock("lossSummaryBox", caseData.lossSummaryText, "No loss summary available.");
-      setTextBlock("evidenceChecklistBox", caseData.evidenceChecklistText, "No evidence checklist available.");
-      setTextBlock("escalationLetterBox", caseData.escalationLetterText, "No escalation letter available.");
-      setTextBlock("internalFileNoteBox", caseData.internalFileNoteText, "No internal file note available.");
-      setTextBlock("clientEmailPreviewBox", caseData.clientEmailPreviewText, "No client email preview available.");
+      setTextBlock("assessmentSummaryBox",
+        firstNonEmpty(caseData.assessmentSummary, caseData.summaryText),
+        "No assessment summary available."
+      );
+
+      setTextBlock("processingPackBox",
+        firstNonEmpty(caseData.processingPackText, caseData.strategySummary, caseData.processingSummaryText),
+        "No processing pack available."
+      );
+
+      setTextBlock("assessmentReportBox",
+        firstNonEmpty(caseData.assessmentReportText, caseData.generatedAssessmentText, caseData.fullAssessmentReportText),
+        "No assessment report available."
+      );
+
+      setTextBlock("strategicAnalysisBox",
+        firstNonEmpty(caseData.strategicAnalysisText, caseData.strategySummary, caseData.processingPackText),
+        "No strategic analysis available."
+      );
+
+      setTextBlock("recommendedNextStepsBox",
+        firstNonEmpty(caseData.recommendedNextStepsText, caseData.nextStepsText),
+        "No recommended next steps available."
+      );
+
+      setTextBlock("complaintLetterBox",
+        firstNonEmpty(caseData.complaintLetterText, caseData.complaintDraftText),
+        "No complaint letter available."
+      );
+
+      setTextBlock("statementOfTruthBox",
+        firstNonEmpty(caseData.statementOfTruthText),
+        "No statement of truth available."
+      );
+
+      setTextBlock("lossSummaryBox",
+        firstNonEmpty(caseData.lossSummaryText),
+        "No loss summary available."
+      );
+
+      setTextBlock("evidenceChecklistBox",
+        firstNonEmpty(caseData.evidenceChecklistText),
+        "No evidence checklist available."
+      );
+
+      setTextBlock("escalationLetterBox",
+        firstNonEmpty(caseData.escalationLetterText),
+        "No escalation letter available."
+      );
+
+      setTextBlock("internalFileNoteBox",
+        firstNonEmpty(caseData.internalFileNoteText, caseData.processingNotes),
+        "No internal file note available."
+      );
+
+      setTextBlock("clientEmailPreviewBox",
+        firstNonEmpty(caseData.clientEmailPreviewText, buildFallbackClientEmailPreview()),
+        "No client email preview available."
+      );
+
       setTextBlock("product1Box", objectToReadableLines(caseData.product1 || {}), "No product one information available.");
       setTextBlock("product2Box", objectToReadableLines(caseData.product2 || {}), "No product two information available.");
 
@@ -955,6 +1051,7 @@
           email: currentUser.email || ""
         }
       };
+
       await updateDoc(doc(db, "processingCases", caseId), payload);
     }
 
@@ -971,6 +1068,7 @@
           email: currentUser.email || ""
         }
       });
+
       showToast("Case assigned to you.");
       await loadCase();
     }
@@ -1023,6 +1121,7 @@
 
     async function addTask() {
       const title = taskTitle.value.trim();
+
       if (!title) {
         alert("Please enter a task title.");
         return;

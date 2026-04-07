@@ -40,6 +40,8 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
     #toast {
       position: fixed;
       top: 20px;
@@ -77,7 +79,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Payments</h1>
-          <p class="text-sm text-slate-500">Track amounts due, paid, follow-up balances, ownership, and payment links</p>
+          <p class="text-sm text-slate-500">Track amounts due, paid, follow-up balances, ownership, payment links, and report pack readiness</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -91,7 +93,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-8 gap-4">
+      <section class="grid lg:grid-cols-9 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Payment Cases</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -123,6 +125,10 @@
         <div class="card p-5">
           <div class="text-sm text-slate-500">With Payment Link</div>
           <div id="paymentLinkStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Report Pack</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
         </div>
       </section>
 
@@ -206,6 +212,7 @@
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Owner</th>
+                <th class="text-left p-3">Report Pack</th>
                 <th class="text-left p-3">Due Now</th>
                 <th class="text-left p-3">Paid Now</th>
                 <th class="text-left p-3">Follow-Up Due</th>
@@ -335,7 +342,6 @@
 
     function getEffectivePaymentStatus(file) {
       if (file.paymentStatus) return file.paymentStatus;
-
       const dueNow = Number(file.amountDueNow || 0);
       const paidNow = Number(file.amountPaidNow || 0);
       const followUpDue = Number(file.followUpDue || 0);
@@ -343,12 +349,43 @@
       if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
         return "part_paid";
       }
-
       if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
         return "fully_paid";
       }
-
       return "awaiting_payment";
+    }
+
+    function hasAssessmentReport(file) {
+      return !!String(file.assessmentReportText || file.generatedAssessmentText || file.assessmentSummary || "").trim();
+    }
+
+    function hasStrategyPack(file) {
+      return !!String(file.processingPackText || file.strategicAnalysisText || file.recommendedNextStepsText || file.strategySummary || "").trim();
+    }
+
+    function hasComplaintDocs(file) {
+      return !!String(
+        file.complaintLetterText ||
+        file.statementOfTruthText ||
+        file.lossSummaryText ||
+        file.evidenceChecklistText ||
+        file.escalationLetterText ||
+        file.internalFileNoteText ||
+        ""
+      ).trim();
+    }
+
+    function hasRichAssessmentPack(file) {
+      return hasAssessmentReport(file) || hasStrategyPack(file) || hasComplaintDocs(file);
+    }
+
+    function reportPackLabel(file) {
+      const parts = [];
+      if (hasAssessmentReport(file)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(file)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(file)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
+      return parts.join(" ");
     }
 
     async function checkProcessingAccess(user) {
@@ -383,6 +420,11 @@
       } catch (error) {
         console.error("Failed to load payments:", error);
         resultsSummary.textContent = "Could not load payment cases.";
+        paymentsBody.innerHTML = `
+          <tr>
+            <td colspan="10" class="p-6 text-center text-red-600">Error loading payment cases.</td>
+          </tr>
+        `;
       }
     }
 
@@ -408,6 +450,9 @@
       );
       document.getElementById("paymentLinkStat").textContent = String(
         allCases.filter(f => hasPaymentLink(f)).length
+      );
+      document.getElementById("reportPackStat").textContent = String(
+        allCases.filter(f => hasRichAssessmentPack(f)).length
       );
       document.getElementById("dueNowTotal").textContent = money(
         allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0)
@@ -457,6 +502,13 @@
           ${file.processingNotes || ""}
           ${file.claimType || ""}
           ${file.caseReference || ""}
+          ${file.assessmentSummary || ""}
+          ${file.generatedAssessmentText || ""}
+          ${file.processingPackText || ""}
+          ${file.strategicAnalysisText || ""}
+          ${file.recommendedNextStepsText || ""}
+          ${file.complaintLetterText || ""}
+          ${file.statementOfTruthText || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
@@ -471,6 +523,10 @@
         const bUnassigned = b.assignedToUid ? 1 : 0;
         if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
 
+        const aPack = hasRichAssessmentPack(a) ? 0 : 1;
+        const bPack = hasRichAssessmentPack(b) ? 0 : 1;
+        if (aPack !== bPack) return aPack - bPack;
+
         const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
         const bPriority = Number(b.followUpDue || 0) + Number(b.amountDueNow || 0);
         return bPriority - aPriority;
@@ -484,7 +540,7 @@
       if (!filtered.length) {
         paymentsBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No payment cases found.</td>
+            <td colspan="10" class="p-6 text-center text-slate-500">No payment cases found.</td>
           </tr>
         `;
       } else {
@@ -503,6 +559,9 @@
             </td>
             <td class="p-3">${formatClaimType(file.claimType)}</td>
             <td class="p-3">${ownerBadge(file)}</td>
+            <td class="p-3">
+              <div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div>
+            </td>
             <td class="p-3">${money(file.amountDueNow)}</td>
             <td class="p-3">${money(file.amountPaidNow)}</td>
             <td class="p-3">${money(file.followUpDue)}</td>
@@ -529,7 +588,6 @@
         window.location.href = "/login.html";
         return;
       }
-
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;
