@@ -5,11 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quaerens Reset System Test Data</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
   <div class="min-h-screen flex items-center justify-center p-6">
     <div class="max-w-2xl w-full bg-white border border-slate-200 rounded-2xl shadow-lg p-8">
-      <h1 class="text-2xl font-extrabold text-red-700 mb-2">Quaerens Test Data Reset</h1>
+      <h1 class="text-2xl font-extrabold text-red-700 mb-2">Quaerens Reset System Test Data</h1>
       <p class="text-sm text-slate-600 mb-6">
         This will permanently delete all current test pipeline data and leave your user accounts in place.
       </p>
@@ -51,6 +57,11 @@
         </button>
         <div id="status" class="text-sm text-slate-600"></div>
       </div>
+
+      <div id="errorBox" class="hidden mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="font-bold text-amber-800 mb-2">Error details</div>
+        <div id="errorText" class="text-sm text-slate-700 whitespace-pre-wrap"></div>
+      </div>
     </div>
   </div>
 
@@ -82,6 +93,8 @@
     const confirmInput = document.getElementById("confirmInput");
     const resetBtn = document.getElementById("resetBtn");
     const status = document.getElementById("status");
+    const errorBox = document.getElementById("errorBox");
+    const errorText = document.getElementById("errorText");
 
     const collectionsToClear = [
       "leadAssignments",
@@ -94,6 +107,16 @@
       "processingFiles",
       "staffAttendance"
     ];
+
+    function showError(message) {
+      errorText.textContent = message;
+      errorBox.classList.remove("hidden");
+    }
+
+    function clearError() {
+      errorText.textContent = "";
+      errorBox.classList.add("hidden");
+    }
 
     async function deleteCollectionInBatches(collectionName) {
       let totalDeleted = 0;
@@ -143,11 +166,18 @@
         return;
       }
 
-      const allowed = await checkAccess(user);
-      if (!allowed) return;
+      try {
+        const allowed = await checkAccess(user);
+        if (!allowed) return;
+      } catch (error) {
+        console.error("Access check failed:", error);
+        alert("Could not verify access.");
+      }
     });
 
     resetBtn.addEventListener("click", async () => {
+      clearError();
+
       if (confirmInput.value.trim() !== "DELETE ALL TEST DATA") {
         alert("Type the exact confirmation text first.");
         return;
@@ -166,6 +196,7 @@
         const results = [];
 
         for (const collectionName of collectionsToClear) {
+          status.textContent = `Deleting ${collectionName}...`;
           const deletedCount = await deleteCollectionInBatches(collectionName);
           results.push(`${collectionName}: ${deletedCount}`);
         }
@@ -174,8 +205,17 @@
         alert("Reset complete.\n\n" + results.join("\n"));
       } catch (error) {
         console.error("Reset failed:", error);
-        status.textContent = "Reset failed.";
-        alert("Reset failed. Check console.");
+
+        const detailedMessage =
+          `Reset failed.\n\n` +
+          `Message: ${error?.message || "Unknown error"}\n` +
+          `Code: ${error?.code || "No code"}\n\n` +
+          `Most likely cause:\n` +
+          `Your Firestore security rules do not currently allow delete access from this page.`;
+
+        status.textContent = `Reset failed: ${error?.message || "Unknown error"}`;
+        showError(detailedMessage);
+        alert(detailedMessage);
       } finally {
         resetBtn.disabled = false;
         confirmInput.disabled = false;
