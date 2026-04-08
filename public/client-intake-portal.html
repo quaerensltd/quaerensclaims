@@ -32,6 +32,14 @@
       line-height: 1.6;
       font-size: 0.95rem;
     }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -44,12 +52,16 @@
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Client Intake Portal</h1>
           <p class="text-sm text-slate-500">Secure staff intake, manager review, and claim assessment workflow</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Staff Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
+          <a href="/lister-callbacks.html" class="btn btn-secondary py-2 px-4">Callback Agenda</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
           <div class="text-sm text-slate-500 text-right">
             <div id="staffStatus">Checking access...</div>
             <div id="staffEmail" class="text-xs text-slate-400"></div>
@@ -79,12 +91,17 @@
 
         <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
           <h3 class="font-bold text-blue-900 mb-2">Current live form</h3>
-          <p class="text-sm text-slate-700">Solar Panel Claims intake is active. Other claim forms can be added next using the same portal structure.</p>
+          <p class="text-sm text-slate-700">Solar Panel Claims intake is active. Mortgage, Survey, and New Build can be added next using the same portal structure.</p>
         </div>
 
         <div class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
           <h3 class="font-bold text-slate-800 mb-2">Current submission</h3>
           <div id="submissionInfoBox" class="text-sm text-slate-600">No submission created yet.</div>
+        </div>
+
+        <div class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <h3 class="font-bold text-slate-800 mb-2">Linked lead</h3>
+          <div id="linkedLeadBox" class="text-sm text-slate-600">No lead linked.</div>
         </div>
       </aside>
 
@@ -93,7 +110,7 @@
           <div class="flex flex-col md:flex-row md:items-end gap-4 justify-between">
             <div>
               <h2 class="text-xl font-extrabold text-blue-900">New Intake</h2>
-              <p class="text-slate-600 mt-1">Claim-specific intake form for staff use</p>
+              <p class="text-slate-600 mt-1">Claim-specific intake form for staff and manager use</p>
             </div>
             <div class="w-full md:w-72">
               <label class="label" for="claimType">Claim type</label>
@@ -105,6 +122,13 @@
               </select>
             </div>
           </div>
+        </div>
+
+        <div id="comingSoonWrap" class="card p-6 hidden">
+          <h3 class="section-title mb-3">Claim form not yet live</h3>
+          <p class="text-slate-600">
+            This claim type is not yet wired into the intake portal. Solar Panel Claims is live now.
+          </p>
         </div>
 
         <form class="card p-6 space-y-8" id="solarForm">
@@ -138,6 +162,10 @@
               <div>
                 <label class="label">Email Address</label>
                 <input class="input" name="email" type="email" />
+              </div>
+              <div>
+                <label class="label">Postcode</label>
+                <input class="input" name="postcode" />
               </div>
               <div class="md:col-span-2">
                 <label class="label">Address</label>
@@ -233,6 +261,7 @@
       collection,
       serverTimestamp,
       updateDoc,
+      setDoc,
       arrayUnion,
       query,
       where,
@@ -261,15 +290,19 @@
     const leadNotice = document.getElementById("leadNotice");
     const leadNoticeText = document.getElementById("leadNoticeText");
     const submissionInfoBox = document.getElementById("submissionInfoBox");
+    const linkedLeadBox = document.getElementById("linkedLeadBox");
+    const comingSoonWrap = document.getElementById("comingSoonWrap");
 
     const params = new URLSearchParams(window.location.search);
     const leadId = params.get("leadId");
+    const submissionIdParam = params.get("submissionId");
 
     let currentUser = null;
     let currentUserData = null;
     let currentLeadData = null;
     let existingSubmissionId = null;
     let existingSubmissionData = null;
+    let attendanceHeartbeatInterval = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -282,8 +315,130 @@
       setTimeout(() => formMessage.classList.add("hidden"), 5000);
     }
 
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getTodayAttendanceId(uid) {
+      return `${uid}_${todayIso()}`;
+    }
+
+    async function recordStaffLoginFromPage() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const today = todayIso();
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          currentSessionStartAt: serverTimestamp(),
+          totalLoggedInMs: 0,
+          isOnline: true
+        });
+      } else {
+        const existingData = attendanceSnap.data() || {};
+        const updateData = {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        };
+
+        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
+          updateData.currentSessionStartAt = serverTimestamp();
+        }
+        if (typeof existingData.totalLoggedInMs !== "number") {
+          updateData.totalLoggedInMs = 0;
+        }
+
+        await setDoc(attendanceRef, updateData, { merge: true });
+      }
+    }
+
+    async function updateStaffHeartbeat() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        name: currentUserData.name || "",
+        email: currentUser.email || "",
+        role: currentUserData.role || "staff",
+        date: todayIso(),
+        lastSeenAt: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    }
+
+    function startAttendanceHeartbeat() {
+      if (attendanceHeartbeatInterval) {
+        clearInterval(attendanceHeartbeatInterval);
+      }
+      attendanceHeartbeatInterval = setInterval(async () => {
+        try {
+          await updateStaffHeartbeat();
+        } catch (error) {
+          console.error("Attendance heartbeat failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    async function recordStaffLogout() {
+      if (!currentUser || currentUserData?.role !== "staff") return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          lastLogoutAt: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
+        return;
+      }
+
+      const data = attendanceSnap.data() || {};
+      const now = Date.now();
+      let extraMs = 0;
+
+      if (data.currentSessionStartAt?.toDate) {
+        const sessionStart = data.currentSessionStartAt.toDate().getTime();
+        extraMs = Math.max(0, now - sessionStart);
+      }
+
+      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
+      const newTotal = existingTotal + extraMs;
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        totalLoggedInMs: newTotal,
+        currentSessionStartAt: null,
+        lastLogoutAt: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
+    }
+
     function buildAddressFromLead(lead) {
       const parts = [
+        lead.address || "",
         lead.address1 || "",
         lead.address2 || "",
         lead.address3 || "",
@@ -291,7 +446,7 @@
         lead.address5 || "",
         lead.postcode || ""
       ].filter(Boolean);
-      return parts.join(", ");
+      return [...new Set(parts)].join(", ");
     }
 
     function setInputValue(name, value) {
@@ -304,10 +459,25 @@
         submissionInfoBox.innerHTML = `
           <div><span class="font-semibold text-slate-800">Submission ID:</span> ${existingSubmissionId}</div>
           <div><span class="font-semibold text-slate-800">Status:</span> ${existingSubmissionData?.status || "-"}</div>
+          <div><span class="font-semibold text-slate-800">Claim Type:</span> ${existingSubmissionData?.claimType || "-"}</div>
         `;
       } else {
         submissionInfoBox.textContent = "No submission created yet.";
       }
+    }
+
+    function setLinkedLeadInfo() {
+      if (!currentLeadData) {
+        linkedLeadBox.textContent = "No lead linked.";
+        return;
+      }
+
+      linkedLeadBox.innerHTML = `
+        <div><span class="font-semibold text-slate-800">Lead ID:</span> ${currentLeadData.id}</div>
+        <div><span class="font-semibold text-slate-800">Client:</span> ${(currentLeadData.forename || "")} ${(currentLeadData.surname || "")}</div>
+        <div><span class="font-semibold text-slate-800">Phone:</span> ${currentLeadData.mobile || currentLeadData.telephone || "-"}</div>
+        <div><span class="font-semibold text-slate-800">Status:</span> ${currentLeadData.leadStatus || "-"}</div>
+      `;
     }
 
     function getFormData() {
@@ -322,6 +492,7 @@
           landline: fd.get("landline") || "",
           mobile: fd.get("mobile") || "",
           email: fd.get("email") || "",
+          postcode: fd.get("postcode") || "",
           address: fd.get("address") || ""
         },
         product1: {
@@ -391,6 +562,7 @@
       setInputValue("landline", client.landline);
       setInputValue("mobile", client.mobile);
       setInputValue("email", client.email);
+      setInputValue("postcode", client.postcode);
       setInputValue("address", client.address);
 
       Object.entries(product1).forEach(([key, value]) => setInputValue(`product1_${key}`, value));
@@ -408,7 +580,6 @@
       }
 
       const userData = userSnap.data();
-
       if (userData.role !== "staff" && userData.role !== "manager") {
         alert("Could not verify access. Role found: " + (userData.role || "none"));
         window.location.href = "/login.html";
@@ -428,7 +599,6 @@
 
       const q = query(collection(db, "claimSubmissions"), where("sourceLeadId", "==", leadId));
       const snap = await getDocs(q);
-
       if (snap.empty) return;
 
       const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -444,9 +614,21 @@
       setSubmissionInfo();
     }
 
+    async function loadExistingSubmissionById() {
+      if (!submissionIdParam) return;
+      const snap = await getDoc(doc(db, "claimSubmissions", submissionIdParam));
+      if (!snap.exists()) return;
+
+      existingSubmissionData = { id: snap.id, ...snap.data() };
+      existingSubmissionId = snap.id;
+      fillFormFromSubmission(existingSubmissionData);
+      setSubmissionInfo();
+    }
+
     async function loadLeadForPrefill() {
       if (!leadId) {
         setSubmissionInfo();
+        setLinkedLeadInfo();
         return;
       }
 
@@ -456,29 +638,34 @@
       if (!leadSnap.exists()) {
         alert("Linked lead not found.");
         setSubmissionInfo();
+        setLinkedLeadInfo();
         return;
       }
 
       currentLeadData = { id: leadSnap.id, ...leadSnap.data() };
 
-      await loadExistingSubmissionForLead();
+      if (!existingSubmissionId) {
+        await loadExistingSubmissionForLead();
+      }
 
       if (!existingSubmissionId) {
         setInputValue("firstName", currentLeadData.forename || "");
         setInputValue("secondName", currentLeadData.surname || "");
-        setInputValue("mobile", currentLeadData.telephone || "");
+        setInputValue("landline", currentLeadData.telephone || "");
+        setInputValue("mobile", currentLeadData.mobile || currentLeadData.telephone || "");
+        setInputValue("email", currentLeadData.email || "");
+        setInputValue("postcode", currentLeadData.postcode || "");
         setInputValue("address", buildAddressFromLead(currentLeadData));
-        setInputValue("product1_product", currentLeadData.hasSolar === "Y" ? "Solar Panel System" : "");
+        setInputValue("product1_product", currentLeadData.hasSolar === "Y" || currentLeadData.hasSolar === "Yes" ? "Solar Panel System" : "");
       }
 
-      claimType.value = currentLeadData.campaign || "solar";
-
+      claimType.value = currentLeadData.claimType || currentLeadData.campaign || "solar";
       leadNotice.classList.remove("hidden");
       leadNoticeText.textContent = `Lead ${leadId} loaded and prefilled for ${currentLeadData.forename || ""} ${currentLeadData.surname || ""}.`;
 
-      await updateDoc(leadRef, {
-        leadStatus: "intake_in_progress",
-        lastAction: "interested_intake_started",
+      const startPatch = {
+        leadStatus: currentLeadData.leadStatus === "awaiting_manager" ? "awaiting_manager" : "intake_in_progress",
+        lastAction: currentLeadData.leadStatus === "awaiting_manager" ? (currentLeadData.lastAction || "awaiting_manager") : "interested_intake_started",
         lastUpdatedAt: serverTimestamp(),
         actionHistory: arrayUnion({
           action: "interested_intake_started",
@@ -486,18 +673,34 @@
           byName: currentUserData.name || "",
           at: new Date().toISOString()
         })
-      });
+      };
+
+      await updateDoc(leadRef, startPatch);
 
       setSubmissionInfo();
+      setLinkedLeadInfo();
+    }
+
+    function updateClaimTypeView() {
+      const live = claimType.value === "solar";
+      solarForm.classList.toggle("hidden", !live);
+      comingSoonWrap.classList.toggle("hidden", live);
     }
 
     async function saveIntake(status = "draft") {
+      if (claimType.value !== "solar") {
+        showMessage("Only Solar Panel Claims is live right now.", true);
+        return;
+      }
+
       const formData = getFormData();
 
       if (!formData.client.firstName || !formData.client.secondName) {
         showMessage("Please complete at least first name and second name.", true);
         return;
       }
+
+      const nowIso = new Date().toISOString();
 
       const payload = {
         claimType: formData.claimType,
@@ -512,7 +715,7 @@
           role: currentUserData.role || ""
         },
         sourceLeadId: leadId || "",
-        sourceCampaign: currentLeadData?.campaign || "",
+        sourceCampaign: currentLeadData?.campaign || currentLeadData?.claimType || "",
         updatedAt: serverTimestamp()
       };
 
@@ -531,24 +734,31 @@
         setSubmissionInfo();
 
         if (leadId) {
-          await updateDoc(doc(db, "leadAssignments", leadId), {
+          const leadPatch = {
             convertedToSubmissionId: existingSubmissionId,
             submissionId: existingSubmissionId,
             claimSubmissionId: existingSubmissionId,
             intakeSubmissionId: existingSubmissionId,
             convertedToIntake: true,
             leadStatus: status === "submitted" ? "awaiting_manager" : "intake_in_progress",
-            sentToManagerAt: status === "submitted" ? serverTimestamp() : (currentLeadData?.sentToManagerAt || null),
+            callbackRequired: status === "submitted" ? false : (currentLeadData?.callbackRequired || false),
+            introEmailNeeded: status === "submitted" ? false : (currentLeadData?.introEmailNeeded || false),
             lastAction: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
             lastUpdatedAt: serverTimestamp(),
             actionHistory: arrayUnion({
               action: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
               byUid: currentUser.uid,
               byName: currentUserData.name || "",
-              at: new Date().toISOString(),
+              at: nowIso,
               submissionId: existingSubmissionId
             })
-          });
+          };
+
+          if (status === "submitted") {
+            leadPatch.sentToManagerAt = serverTimestamp();
+          }
+
+          await updateDoc(doc(db, "leadAssignments", leadId), leadPatch);
         }
 
         showMessage(status === "draft" ? "Draft saved successfully." : "Intake submitted successfully.");
@@ -585,6 +795,8 @@
       }
     });
 
+    claimType.addEventListener("change", updateClaimTypeView);
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
@@ -594,7 +806,19 @@
       try {
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
+
+        if (currentUserData?.role === "staff") {
+          try {
+            await recordStaffLoginFromPage();
+            startAttendanceHeartbeat();
+          } catch (attendanceError) {
+            console.error("Attendance login-from-page failed:", attendanceError);
+          }
+        }
+
+        await loadExistingSubmissionById();
         await loadLeadForPrefill();
+        updateClaimTypeView();
         hideLoader();
       } catch (error) {
         console.error(error);
@@ -605,11 +829,33 @@
 
     logoutBtn.addEventListener("click", async () => {
       try {
+        try {
+          await recordStaffLogout();
+        } catch (attendanceError) {
+          console.error("Attendance logout failed:", attendanceError);
+        }
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
         console.error("Logout failed:", error);
         alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", async () => {
+      try {
+        await recordStaffLogout();
+      } catch (error) {
+        console.error("Attendance beforeunload failed:", error);
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
       }
     });
   </script>

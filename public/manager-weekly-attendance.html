@@ -32,72 +32,28 @@
       background: #1d4ed8;
       color: white;
     }
-    .badge-online {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #dcfce7;
-      color: #166534;
-      padding: 0.35rem 0.7rem;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.8rem;
-    }
-    .badge-offline {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #e2e8f0;
-      color: #334155;
-      padding: 0.35rem 0.7rem;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.8rem;
-    }
-    .badge-missing {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 0.35rem 0.7rem;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.8rem;
-    }
-    .badge-ontime {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #dcfce7;
-      color: #166534;
-      padding: 0.35rem 0.7rem;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.8rem;
-    }
-    .badge-late {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #fef3c7;
-      color: #92400e;
-      padding: 0.35rem 0.7rem;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.8rem;
-    }
+
+    .badge-online,
+    .badge-offline,
+    .badge-missing,
+    .badge-ontime,
+    .badge-late,
     .badge-absent {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      background: #fee2e2;
-      color: #991b1b;
       padding: 0.35rem 0.7rem;
       border-radius: 999px;
       font-weight: 700;
       font-size: 0.8rem;
     }
+
+    .badge-online { background: #dcfce7; color: #166534; }
+    .badge-offline { background: #e2e8f0; color: #334155; }
+    .badge-missing { background: #fee2e2; color: #991b1b; }
+    .badge-ontime { background: #dcfce7; color: #166534; }
+    .badge-late { background: #fef3c7; color: #92400e; }
+    .badge-absent { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -119,6 +75,7 @@
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
@@ -145,12 +102,8 @@
           <div id="lateDaysStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Absent Days</div>
+          <div class="text-sm text-slate-500">Absent / Missing</div>
           <div id="absentDaysStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Missing Days</div>
-          <div id="missingDaysStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Online Right Now</div>
@@ -159,6 +112,10 @@
         <div class="card p-5">
           <div class="text-sm text-slate-500">On Time Days</div>
           <div id="onTimeDaysStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Weekly Hours</div>
+          <div id="weeklyHoursStat" class="text-3xl font-extrabold text-violet-600 mt-1">0h</div>
         </div>
       </section>
 
@@ -325,6 +282,15 @@
       return d;
     }
 
+    function normalizeWeekStartInput() {
+      if (!weekStartInput.value) {
+        weekStartInput.value = toIsoDate(getMonday(new Date()));
+        return;
+      }
+      const chosen = new Date(`${weekStartInput.value}T00:00:00`);
+      weekStartInput.value = toIsoDate(getMonday(chosen));
+    }
+
     function getWeekDates(startDateStr) {
       const start = new Date(`${startDateStr}T00:00:00`);
       const dates = [];
@@ -334,6 +300,10 @@
         dates.push(toIsoDate(d));
       }
       return dates;
+    }
+
+    function isFutureDate(dateStr) {
+      return dateStr > toIsoDate(new Date());
     }
 
     function isStaleOnline(docData) {
@@ -353,13 +323,13 @@
     function dayStatusBadge(status) {
       if (status === "on_time") return `<span class="badge-ontime">● On Time</span>`;
       if (status === "late") return `<span class="badge-late">● Late</span>`;
+      if (status === "future") return `<span class="badge-offline">● Future</span>`;
       return `<span class="badge-absent">● Absent</span>`;
     }
 
     function getWorkedMs(docData) {
       if (!docData) return 0;
       const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
-
       if (
         docData.isOnline &&
         docData.currentSessionStartAt?.toDate &&
@@ -369,16 +339,21 @@
         const liveExtra = Math.max(0, Date.now() - sessionStart);
         return baseMs + liveExtra;
       }
-
       return baseMs;
     }
 
     function getDayStatus(rec, dateStr) {
+      if (isFutureDate(dateStr)) return "future";
       if (!rec || !rec.firstLoginAt?.toDate) return "absent";
       const firstLogin = rec.firstLoginAt.toDate();
       const cutoff = new Date(`${dateStr}T00:00:00`);
       cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
       return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
+    }
+
+    function findStaffName(uid) {
+      const staff = staffUsers.find(x => x.id === uid);
+      return staff?.name || staff?.email || uid || "-";
     }
 
     async function checkAccess(user) {
@@ -446,7 +421,17 @@
       staffFilter.value = exists ? currentValue : "all";
     }
 
+    function getFilteredStaff() {
+      if (staffFilter.value === "all") return staffUsers;
+      return staffUsers.filter(u => u.id === staffFilter.value);
+    }
+
+    function getAttendanceFor(uid, dateStr) {
+      return attendanceDocs.find(item => item.uid === uid && item.date === dateStr) || null;
+    }
+
     function renderAll() {
+      normalizeWeekStartInput();
       currentWeekDates = getWeekDates(weekStartInput.value);
       renderStats();
       renderWeeklySummary();
@@ -454,37 +439,30 @@
       toggleView();
     }
 
-    function getFilteredStaff() {
-      if (staffFilter.value === "all") return staffUsers;
-      return staffUsers.filter(u => u.id === staffFilter.value);
-    }
-
-    function getAttendanceFor(uid, dateStr) {
-      return attendanceDocs.find(doc => doc.uid === uid && doc.date === dateStr) || null;
-    }
-
     function renderStats() {
       const filteredStaff = getFilteredStaff();
+
       let recordCount = 0;
       let presentDays = 0;
       let lateDays = 0;
       let absentDays = 0;
-      let missingDays = 0;
       let onlineNow = 0;
       let onTimeDays = 0;
+      let weeklyMs = 0;
 
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
+          const status = getDayStatus(rec, dateStr);
+
           if (rec) {
             recordCount += 1;
             presentDays += 1;
-            const status = getDayStatus(rec, dateStr);
+            weeklyMs += getWorkedMs(rec);
             if (status === "late") lateDays += 1;
             if (status === "on_time") onTimeDays += 1;
-          } else {
+          } else if (!isFutureDate(dateStr)) {
             absentDays += 1;
-            missingDays += 1;
           }
         });
 
@@ -499,9 +477,9 @@
       document.getElementById("presentDaysStat").textContent = String(presentDays);
       document.getElementById("lateDaysStat").textContent = String(lateDays);
       document.getElementById("absentDaysStat").textContent = String(absentDays);
-      document.getElementById("missingDaysStat").textContent = String(missingDays);
       document.getElementById("onlineNowStat").textContent = String(onlineNow);
       document.getElementById("onTimeDaysStat").textContent = String(onTimeDays);
+      document.getElementById("weeklyHoursStat").textContent = formatDuration(weeklyMs);
     }
 
     function renderWeeklySummary() {
@@ -546,7 +524,7 @@
 
             if (rec) {
               rowHtml += `
-                <td class="p-3">
+                <td class="p-3 align-top">
                   <div class="font-semibold text-slate-800">${formatDuration(workedMs)}</div>
                   <div class="mt-2">${dayStatusBadge(dayStatus)}</div>
                   <div class="mt-2">${liveStatusBadge(rec)}</div>
@@ -556,9 +534,9 @@
               `;
             } else {
               rowHtml += `
-                <td class="p-3">
+                <td class="p-3 align-top">
                   <div class="font-semibold text-slate-800">0m</div>
-                  <div class="mt-2">${dayStatusBadge("absent")}</div>
+                  <div class="mt-2">${dayStatusBadge(dayStatus)}</div>
                   <div class="mt-2"><span class="badge-missing">● No Record</span></div>
                 </td>
               `;
@@ -569,12 +547,14 @@
           weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
         });
 
-      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+      const weekEnd = currentWeekDates[currentWeekDates.length - 1];
+      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week ${weekStartInput.value} to ${weekEnd}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
     }
 
     function renderDailyView() {
       const filteredStaff = getFilteredStaff();
       dailyAttendanceBody.innerHTML = "";
+
       const rows = [];
 
       filteredStaff.forEach(user => {
@@ -635,8 +615,7 @@
     }
 
     function setDefaultWeekStart() {
-      const monday = getMonday(new Date());
-      weekStartInput.value = toIsoDate(monday);
+      weekStartInput.value = toIsoDate(getMonday(new Date()));
     }
 
     function startAutoRefresh() {
@@ -659,6 +638,7 @@
       try {
         const allowed = await checkAccess(user);
         if (!allowed) return;
+
         setDefaultWeekStart();
         await loadBaseData(true);
         startAutoRefresh();
@@ -681,7 +661,9 @@
 
     weekStartInput.addEventListener("change", renderAll);
     staffFilter.addEventListener("change", renderAll);
-    viewFilter.addEventListener("change", toggleView);
+    viewFilter.addEventListener("change", () => {
+      renderAll();
+    });
 
     logoutBtn.addEventListener("click", async () => {
       try {

@@ -139,7 +139,7 @@
             <a href="/lister-leads.html" class="btn btn-primary text-center">Open My Leads</a>
             <a href="/lister-intro-emails.html" class="btn btn-primary text-center">Open Intro Email Queue</a>
             <a href="/lister-callbacks.html" class="btn btn-primary text-center">Open Callback Agenda</a>
-            <a href="/client-intake-portal.html" class="btn btn-primary text-center">Open Intake Portal</a>
+            <button id="openNextCallbackBtn" class="btn btn-primary text-center" type="button">Open Next Callback</button>
           </div>
         </section>
 
@@ -328,7 +328,8 @@
       where,
       setDoc,
       updateDoc,
-      serverTimestamp
+      serverTimestamp,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -343,6 +344,7 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const openNextCallbackBtn = document.getElementById("openNextCallbackBtn");
 
     let currentUser = null;
     let currentUserData = null;
@@ -365,8 +367,7 @@
     }
 
     function getTodayAttendanceId(uid) {
-      const today = todayIso();
-      return `${uid}_${today}`;
+      return `${uid}_${todayIso()}`;
     }
 
     async function recordStaffLoginFromPage() {
@@ -408,7 +409,6 @@
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
-
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
@@ -438,7 +438,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -513,12 +512,10 @@
 
     function isUntouchedLead(lead) {
       if (isLocked(lead) || isConverted(lead) || isAwaitingManager(lead)) return false;
-
       const status = (lead.leadStatus || "").toString().toLowerCase();
       const noUsefulStatus = !status || status === "new" || status === "pending";
       const noCallbackSet = !lead.callbackRequired && !lead.callbackDate;
       const noIntroProgress = !lead.introEmailNeeded && !lead.introEmailSent;
-
       return noUsefulStatus && noCallbackSet && noIntroProgress;
     }
 
@@ -532,21 +529,30 @@
 
     function statusBadge(status) {
       const clean = (status || "new").toString().toLowerCase();
-
       if (clean === "qualified") return `<span class="badge badge-green">Qualified</span>`;
       if (clean === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
       if (clean === "no_answer") return `<span class="badge badge-amber">No Answer</span>`;
       if (clean === "not_interested") return `<span class="badge badge-red">Not Interested</span>`;
       if (clean === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (clean === "intro_email_needed") return `<span class="badge badge-blue">Intro Email Needed</span>`;
+      if (clean === "callback_required") return `<span class="badge badge-amber">Callback Required</span>`;
       return `<span class="badge badge-slate">${status || "New"}</span>`;
     }
 
-    async function updateLeadQuick(id, patch, successMessage) {
+    async function updateLeadQuick(id, patch, historyAction, successMessage, notes = "") {
       try {
         const leadRef = doc(db, "leadAssignments", id);
         await updateDoc(leadRef, {
           ...patch,
-          updatedAt: serverTimestamp()
+          lastAction: historyAction,
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: historyAction,
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes
+          })
         });
         showToast(successMessage);
         await loadLeads();
@@ -557,32 +563,67 @@
     }
 
     async function markNoAnswer(id) {
-      await updateLeadQuick(id, {
-        leadStatus: "no_answer",
-        callbackRequired: true
-      }, "Marked as no answer.");
+      await updateLeadQuick(
+        id,
+        {
+          leadStatus: "no_answer",
+          callbackRequired: true,
+          lastCallAt: serverTimestamp()
+        },
+        "no_answer",
+        "Marked as no answer.",
+        "Marked as no answer from dashboard."
+      );
     }
 
     async function markNotInterested(id) {
-      await updateLeadQuick(id, {
-        leadStatus: "not_interested",
-        usable: false,
-        closed: true
-      }, "Marked as not interested.");
+      await updateLeadQuick(
+        id,
+        {
+          leadStatus: "closed",
+          usable: false,
+          closed: true,
+          callbackRequired: false,
+          introEmailNeeded: false
+        },
+        "not_interested",
+        "Marked as not interested.",
+        "Marked as not interested from dashboard."
+      );
     }
 
     async function markQualified(id) {
-      await updateLeadQuick(id, {
-        leadStatus: "qualified",
-        qualifiedAt: serverTimestamp()
-      }, "Lead marked as qualified.");
+      await updateLeadQuick(
+        id,
+        {
+          leadStatus: "qualified",
+          qualifiedAt: serverTimestamp(),
+          callbackRequired: false
+        },
+        "qualified",
+        "Lead marked as qualified.",
+        "Lead marked as qualified from dashboard."
+      );
     }
 
     async function sendToManager(id) {
-      await updateLeadQuick(id, {
-        leadStatus: "awaiting_manager",
-        sentToManagerAt: serverTimestamp()
-      }, "Lead sent to manager.");
+      await updateLeadQuick(
+        id,
+        {
+          leadStatus: "awaiting_manager",
+          sentToManagerAt: serverTimestamp(),
+          callbackRequired: false
+        },
+        "awaiting_manager",
+        "Lead sent to manager.",
+        "Lead sent to manager from dashboard."
+      );
+    }
+
+    function getNextCallbackLead() {
+      return [...allLeads]
+        .filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate)
+        .sort((a, b) => appointmentKey(a).localeCompare(appointmentKey(b)))[0] || null;
     }
 
     async function checkStaffAccess(user) {
@@ -613,7 +654,6 @@
         collection(db, "leadAssignments"),
         where("assignedToUid", "==", currentUser.uid)
       );
-
       const snapshot = await getDocs(leadsQuery);
       allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -624,16 +664,16 @@
       renderOverdueCallbacks();
       renderCallbacks();
       renderIntroEmails();
+      updateNextCallbackButton();
     }
 
     function renderStats() {
       const today = todayIso();
-
       const callbacksToday = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate === today).length;
       const overdueCallbacks = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate && l.callbackDate < today).length;
       const introPending = allLeads.filter(l => !isLocked(l) && l.introEmailNeeded && !l.introEmailSent).length;
       const untouched = allLeads.filter(l => isUntouchedLead(l)).length;
-      const qualifiedReady = allLeads.filter(l => !isLocked(l) && isQualified(l) && !isAwaitingManager(l)).length;
+      const qualifiedReady = allLeads.filter(l => !isLocked(l) && (isQualified(l) || isAwaitingManager(l))).length;
 
       document.getElementById("totalLeadsStat").textContent = String(allLeads.length);
       document.getElementById("untouchedLeadsStat").textContent = String(untouched);
@@ -691,7 +731,7 @@
       body.innerHTML = "";
 
       const leads = allLeads
-        .filter(l => !isLocked(l) && isQualified(l) && !isAwaitingManager(l))
+        .filter(l => !isLocked(l) && (isQualified(l) || isAwaitingManager(l)))
         .slice(0, 8);
 
       if (!leads.length) {
@@ -714,7 +754,10 @@
           <td class="p-3">${lead.telephone || "-"}</td>
           <td class="p-3">${statusBadge(lead.leadStatus || "qualified")}</td>
           <td class="p-3">
-            <button class="btn-small btn-blue" data-action="send-to-manager" data-id="${lead.id}">Send to Manager</button>
+            ${isAwaitingManager(lead)
+              ? `<a href="/manager-panel.html" class="text-blue-600 font-semibold hover:underline">Open Manager Queue</a>`
+              : `<button class="btn-small btn-blue" data-action="send-to-manager" data-id="${lead.id}">Send to Manager</button>`
+            }
           </td>
         `;
         body.appendChild(row);
@@ -868,6 +911,22 @@
       });
     }
 
+    function updateNextCallbackButton() {
+      const nextLead = getNextCallbackLead();
+      if (!nextLead) {
+        openNextCallbackBtn.textContent = "No Callback Scheduled";
+        openNextCallbackBtn.disabled = true;
+        openNextCallbackBtn.classList.remove("btn-primary");
+        openNextCallbackBtn.classList.add("btn-secondary");
+        return;
+      }
+
+      openNextCallbackBtn.textContent = "Open Next Callback";
+      openNextCallbackBtn.disabled = false;
+      openNextCallbackBtn.classList.remove("btn-secondary");
+      openNextCallbackBtn.classList.add("btn-primary");
+    }
+
     document.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-action]");
       if (!button) return;
@@ -880,6 +939,12 @@
       if (action === "not-interested") await markNotInterested(id);
       if (action === "qualified") await markQualified(id);
       if (action === "send-to-manager") await sendToManager(id);
+    });
+
+    openNextCallbackBtn.addEventListener("click", () => {
+      const nextLead = getNextCallbackLead();
+      if (!nextLead) return;
+      window.location.href = "/lister-callbacks.html";
     });
 
     onAuthStateChanged(auth, async (user) => {
@@ -915,7 +980,6 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
-
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {

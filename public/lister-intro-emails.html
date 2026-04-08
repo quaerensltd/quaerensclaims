@@ -127,6 +127,7 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading queue...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -173,6 +174,8 @@
             <div><span class="font-semibold text-blue-900">Email Sent:</span> <span id="lead_emailSent">-</span></div>
             <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
+            <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
+            <div><span class="font-semibold text-blue-900">Awaiting Manager:</span> <span id="lead_manager_state">-</span></div>
           </div>
         </section>
 
@@ -181,6 +184,7 @@
           <textarea id="emailTemplate" class="input" rows="14"></textarea>
           <div class="mt-4 flex flex-wrap gap-3">
             <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="openMailAppBtn" class="btn btn-secondary" type="button">Open Email App</button>
             <button id="markSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
@@ -268,10 +272,12 @@
     const notSentStat = document.getElementById("notSentStat");
     const callbackStat = document.getElementById("callbackStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const emailTemplate = document.getElementById("emailTemplate");
     const copyEmailBtn = document.getElementById("copyEmailBtn");
+    const openMailAppBtn = document.getElementById("openMailAppBtn");
     const markSentBtn = document.getElementById("markSentBtn");
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const sendToManagerBtn = document.getElementById("sendToManagerBtn");
@@ -310,34 +316,36 @@
       return `${uid}_${todayIso()}`;
     }
 
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
     function getLeadTelephone(lead) {
-      return String(
+      return cleanValue(
         lead.telephone ||
         lead.landline ||
-        lead.phone ||
-        ""
-      ).trim();
+        lead.phone
+      );
     }
 
     function getLeadMobile(lead) {
-      return String(
+      return cleanValue(
         lead.mobile ||
         lead.mobileNumber ||
-        lead.cell ||
-        ""
-      ).trim();
+        lead.cell
+      );
     }
 
     function getLeadEmail(lead) {
-      return String(
+      return cleanValue(
         lead.email ||
-        lead.emailAddress ||
-        ""
-      ).trim();
+        lead.emailAddress
+      );
     }
 
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
@@ -370,12 +378,14 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
+
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
+
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -384,6 +394,7 @@
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -399,6 +410,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -410,6 +422,7 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -426,10 +439,12 @@
       const data = attendanceSnap.data() || {};
       const now = Date.now();
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
       }
+
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
 
@@ -443,9 +458,14 @@
     }
 
     function formatAddress(lead) {
-      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
-        .filter(Boolean)
-        .join(", ") || "-";
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
     }
 
     function formatAction(action) {
@@ -459,7 +479,9 @@
         interested_intake_started: "Intake Started",
         intake_submitted: "Intake Submitted",
         qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager Review"
+        awaiting_manager: "Awaiting Manager Review",
+        converted: "Converted",
+        closed: "Closed"
       };
       return map[action] || action || "-";
     }
@@ -486,7 +508,11 @@ Quaerens`;
     }
 
     function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
+    }
+
+    function isConverted(lead) {
+      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
     }
 
     function leadStatusBadge(lead) {
@@ -498,20 +524,98 @@ Quaerens`;
       return `<span class="badge badge-amber">Intro Email Needed</span>`;
     }
 
+    function setButtonDisabled(button, disabled) {
+      button.disabled = !!disabled;
+      if (disabled) {
+        button.classList.add("opacity-60", "cursor-not-allowed");
+      } else {
+        button.classList.remove("opacity-60", "cursor-not-allowed");
+      }
+    }
+
+    function updateActionAvailability(lead) {
+      const locked = isLocked(lead);
+      const converted = isConverted(lead);
+      const awaitingManager = lead.leadStatus === "awaiting_manager";
+
+      [
+        copyEmailBtn,
+        openMailAppBtn,
+        markSentBtn,
+        markQualifiedBtn,
+        sendToManagerBtn,
+        openIntakeBtn,
+        rescheduleBtn,
+        markDoneBtn,
+        notInterestedBtn,
+        saveNotesBtn
+      ].forEach(button => setButtonDisabled(button, false));
+
+      if (locked || converted) {
+        [
+          markSentBtn,
+          markQualifiedBtn,
+          sendToManagerBtn,
+          openIntakeBtn,
+          rescheduleBtn,
+          markDoneBtn,
+          notInterestedBtn
+        ].forEach(button => setButtonDisabled(button, true));
+      }
+
+      if (awaitingManager) {
+        [
+          markSentBtn,
+          markQualifiedBtn,
+          sendToManagerBtn,
+          openIntakeBtn,
+          rescheduleBtn,
+          markDoneBtn,
+          notInterestedBtn
+        ].forEach(button => setButtonDisabled(button, true));
+      }
+    }
+
+    function openMailApp() {
+      if (!selectedLead) return;
+
+      const email = getLeadEmail(selectedLead);
+      if (!email) {
+        showModalMessage("No client email address found for this lead.", true);
+        return;
+      }
+
+      const rawTemplate = emailTemplate.value || buildEmailTemplate(selectedLead);
+      const lines = rawTemplate.split("\n");
+      let subject = "Information about your potential solar claim";
+      let body = rawTemplate;
+
+      if (lines.length && lines[0].toLowerCase().startsWith("subject:")) {
+        subject = lines[0].replace(/^subject:\s*/i, "").trim() || subject;
+        body = lines.slice(1).join("\n").trim();
+      }
+
+      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    }
+
     async function checkListerAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No staff profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
+
       const userData = userSnap.data();
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
+
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -525,6 +629,7 @@ Quaerens`;
           where("assignedToUid", "==", currentUser.uid),
           where("introEmailNeeded", "==", true)
         );
+
         const snapshot = await getDocs(introQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         renderStats();
@@ -569,6 +674,12 @@ Quaerens`;
             ${getLeadMobile(lead)}
             ${getLeadEmail(lead)}
             ${lead.postcode || ""}
+            ${lead.address || ""}
+            ${lead.address1 || ""}
+            ${lead.address2 || ""}
+            ${lead.address3 || ""}
+            ${lead.address4 || ""}
+            ${lead.address5 || ""}
           `.toLowerCase();
 
           const matchesSearch = !term || haystack.includes(term);
@@ -622,17 +733,19 @@ Quaerens`;
     function renderHistory(history) {
       const wrap = document.getElementById("historyWrap");
       wrap.innerHTML = "";
+
       if (!history.length) {
         wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
         return;
       }
+
       [...history].reverse().forEach(item => {
         const div = document.createElement("div");
         div.className = "border border-slate-200 rounded-xl p-3";
         div.innerHTML = `
           <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
           <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
         `;
         wrap.appendChild(div);
       });
@@ -654,12 +767,16 @@ Quaerens`;
       document.getElementById("lead_emailSent").textContent = selectedLead.introEmailSent ? "Yes" : "No";
       document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
+      document.getElementById("lead_manager_state").textContent = selectedLead.leadStatus === "awaiting_manager" ? "Yes" : "No";
 
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
       emailTemplate.value = selectedLead.introEmailBody || buildEmailTemplate(selectedLead);
+
       renderHistory(selectedLead.actionHistory || []);
+      updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
     }
 
@@ -678,6 +795,7 @@ Quaerens`;
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -690,6 +808,7 @@ Quaerens`;
             notes
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -708,8 +827,13 @@ Quaerens`;
       }
     });
 
+    openMailAppBtn.addEventListener("click", () => {
+      openMailApp();
+    });
+
     markSentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         introEmailSent: true,
         introEmailSentAt: serverTimestamp(),
@@ -720,9 +844,11 @@ Quaerens`;
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "qualified",
         introEmailNeeded: true,
+        callbackRequired: false,
         introEmailBody: emailTemplate.value || "",
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
@@ -731,10 +857,13 @@ Quaerens`;
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "awaiting_manager",
         introEmailNeeded: false,
         callbackRequired: false,
+        callbackDate: "",
+        callbackTime: "",
         introEmailBody: emailTemplate.value || "",
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
@@ -743,20 +872,24 @@ Quaerens`;
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "intake_in_progress",
         lastAction: "interested_intake_started",
         introEmailBody: emailTemplate.value || ""
       }, "interested_intake_started", "Lead moved to intake from intro email queue.");
+
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time.", true);
         return;
       }
+
       await updateLead({
         callbackRequired: true,
         callbackDate: callbackDate.value,
@@ -768,6 +901,7 @@ Quaerens`;
 
     markDoneBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         introEmailNeeded: false,
         callbackRequired: false,
@@ -780,6 +914,7 @@ Quaerens`;
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         lastAction: "not_interested",
@@ -787,12 +922,15 @@ Quaerens`;
         usable: false,
         introEmailNeeded: false,
         callbackRequired: false,
+        callbackDate: "",
+        callbackTime: "",
         introEmailBody: emailTemplate.value || ""
       }, "not_interested", "Marked as not interested from intro email queue.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -806,6 +944,7 @@ Quaerens`;
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -829,15 +968,18 @@ Quaerens`;
         window.location.href = "/login.html";
         return;
       }
+
       try {
         const allowed = await checkListerAccess(user);
         if (!allowed) return;
+
         try {
           await recordStaffLoginFromPage();
           startAttendanceHeartbeat();
         } catch (attendanceError) {
           console.error("Attendance login-from-page failed:", attendanceError);
         }
+
         await loadLeads();
         hideLoader();
       } catch (error) {
@@ -854,6 +996,7 @@ Quaerens`;
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {

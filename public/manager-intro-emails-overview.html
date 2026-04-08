@@ -17,6 +17,8 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -39,6 +41,18 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
+    .readonly-box {
+      width: 100%;
+      min-height: 140px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      color: #1f2937;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -54,7 +68,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Intro Emails</h1>
-          <p class="text-sm text-slate-500">Manager oversight of intro emails across all listers</p>
+          <p class="text-sm text-slate-500">Manager oversight and direct emailing for intro-email leads</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -130,6 +144,7 @@
               <option value="all">All pipeline stages</option>
               <option value="intro_email_needed">Intro Email Needed</option>
               <option value="qualified">Qualified</option>
+              <option value="awaiting_manager">Awaiting Manager</option>
               <option value="sent_to_closer">Sent to Closer</option>
               <option value="converted">Converted</option>
               <option value="closed">Closed</option>
@@ -137,7 +152,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Name, phone, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Name, telephone, mobile, email, postcode..." />
           </div>
         </div>
         <div class="mt-4">
@@ -158,8 +173,9 @@
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Lister</th>
-                <th class="text-left p-3">Phone</th>
-                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Mobile</th>
+                <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Callback</th>
                 <th class="text-left p-3">Email Status</th>
                 <th class="text-left p-3">Lead Status</th>
@@ -174,7 +190,7 @@
   </div>
 
   <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
-    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="max-w-6xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
         <div>
           <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Intro Email Detail</h3>
@@ -189,25 +205,58 @@
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
             <div><span class="font-semibold text-blue-900">Lister:</span> <span id="lead_lister">-</span></div>
-            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_telephone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
             <div><span class="font-semibold text-blue-900">Email Sent:</span> <span id="lead_emailSent">-</span></div>
             <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
-            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
             <div><span class="font-semibold text-blue-900">Closer:</span> <span id="lead_closer">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Saved Email Body</h4>
-          <textarea id="lead_emailBody" class="input" rows="14" readonly></textarea>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Email Actions</h4>
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Follow-up Date</label>
+              <input id="callbackDate" type="date" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Follow-up Time</label>
+              <input id="callbackTime" type="time" class="input" />
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button id="emailClientBtn" class="btn btn-primary" type="button">Email Client</button>
+            <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="markSentBtn" class="btn btn-secondary" type="button">Mark Email Sent</button>
+            <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule Follow-up</button>
+            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+            <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Set Awaiting Manager</button>
+            <button id="openLeadBtn" class="btn btn-secondary" type="button">Open Full Lead</button>
+            <button id="openIntakeBtn" class="btn btn-secondary" type="button">Open Intake / Portal</button>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Email Body</h4>
+          <textarea id="lead_emailBody" class="input" rows="14" placeholder="Email body..."></textarea>
         </section>
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
-          <div id="lead_notes" class="text-sm text-slate-700 whitespace-pre-wrap">-</div>
+          <textarea id="notesBox" class="input" rows="6" placeholder="Manager notes, email notes, follow-up notes..."></textarea>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
+            <button id="markDoneBtn" class="btn btn-secondary" type="button">Mark Queue Done</button>
+            <button id="closeLeadBtn" class="btn btn-danger" type="button">Close Lead</button>
+            <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
         </section>
 
         <section class="card p-5">
@@ -230,7 +279,10 @@
       doc,
       getDoc,
       getDocs,
-      collection
+      updateDoc,
+      collection,
+      serverTimestamp,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -259,27 +311,63 @@
     const sentToCloserStat = document.getElementById("sentToCloserStat");
     const convertedStat = document.getElementById("convertedStat");
     const overdueStat = document.getElementById("overdueStat");
-
     const overviewBody = document.getElementById("overviewBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
+    const callbackDate = document.getElementById("callbackDate");
+    const callbackTime = document.getElementById("callbackTime");
+    const leadEmailBody = document.getElementById("lead_emailBody");
+    const notesBox = document.getElementById("notesBox");
+    const modalMessage = document.getElementById("modalMessage");
 
+    const emailClientBtn = document.getElementById("emailClientBtn");
+    const copyEmailBtn = document.getElementById("copyEmailBtn");
+    const markSentBtn = document.getElementById("markSentBtn");
+    const rescheduleBtn = document.getElementById("rescheduleBtn");
+    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
+    const sendToManagerBtn = document.getElementById("sendToManagerBtn");
+    const openLeadBtn = document.getElementById("openLeadBtn");
+    const openIntakeBtn = document.getElementById("openIntakeBtn");
+    const saveNotesBtn = document.getElementById("saveNotesBtn");
+    const markDoneBtn = document.getElementById("markDoneBtn");
+    const closeLeadBtn = document.getElementById("closeLeadBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
     let allLeads = [];
     let allUsers = [];
+    let selectedLead = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showModalMessage(text, isError = false) {
+      modalMessage.textContent = text;
+      modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
     }
 
     function getTodayIso() {
       return new Date().toISOString().slice(0, 10);
     }
 
+    function safe(value) {
+      return String(value || "").trim();
+    }
+
     function formatAddress(lead) {
-      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
-        .filter(Boolean)
-        .join(", ") || "-";
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
     }
 
     function formatAction(action) {
@@ -288,13 +376,16 @@
         intro_email_sent: "Intro Email Sent",
         intro_email_queue_done: "Intro Email Queue Done",
         callback_rescheduled: "Callback Rescheduled",
+        callback_required: "Callback Required",
         not_interested: "Not Interested",
         notes_saved: "Notes Saved",
         interested_intake_started: "Intake Started",
         intake_submitted: "Intake Submitted",
         qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager",
         sent_to_closer: "Sent to Closer",
-        converted: "Converted"
+        converted: "Converted",
+        closed: "Closed"
       };
       return map[action] || action || "-";
     }
@@ -313,13 +404,39 @@
       return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
     }
 
+    function effectiveLeadStatus(lead) {
+      if (isLocked(lead)) return "closed";
+      return lead.leadStatus || "intro_email_needed";
+    }
+
     function leadStatusBadge(lead) {
-      if (isLocked(lead)) return `<span class="badge badge-red">Closed</span>`;
-      if (lead.leadStatus === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
-      if (lead.leadStatus === "qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (lead.leadStatus === "converted") return `<span class="badge badge-green">Converted</span>`;
+      const status = effectiveLeadStatus(lead);
+      if (status === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
+      if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
       if (lead.introEmailSent) return `<span class="badge badge-blue">Email Sent</span>`;
       return `<span class="badge badge-amber">Intro Email Needed</span>`;
+    }
+
+    function buildEmailTemplate(lead) {
+      const fullName = `${safe(lead.forename)} ${safe(lead.surname)}`.trim() || "Client";
+      return `Subject: Information about your potential claim
+
+Dear ${fullName},
+
+Thank you for speaking with us.
+
+As discussed, we are sending you some introductory information regarding your potential claim review. This is an initial contact only and helps explain the next steps if you wish to proceed.
+
+At this stage, we may ask you for some basic information and documents so we can understand your situation properly and see whether your matter is suitable for a full intake and review.
+
+If you would like to continue, we can speak again at the arranged follow-up time.
+
+Kind regards,
+${currentUserData?.name || "Quaerens Team"}
+Quaerens`;
     }
 
     async function checkManagerAccess(user) {
@@ -339,6 +456,8 @@
         return false;
       }
 
+      currentUser = user;
+      currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -360,8 +479,8 @@
     function populateListerFilter() {
       const current = listerFilter.value || "all";
       const staffUsers = allUsers.filter(u => u.role === "staff");
-
       listerFilter.innerHTML = `<option value="all">All listers</option>`;
+
       staffUsers.forEach(user => {
         const option = document.createElement("option");
         option.value = user.id;
@@ -369,7 +488,9 @@
         listerFilter.appendChild(option);
       });
 
-      listerFilter.value = current;
+      if ([...listerFilter.options].some(o => o.value === current)) {
+        listerFilter.value = current;
+      }
     }
 
     function renderStats() {
@@ -407,13 +528,14 @@
           (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
           (timing === "future" && lead.callbackDate && lead.callbackDate > today);
 
-        const effectiveStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "intro_email_needed");
-        const matchesPipeline = pipeline === "all" || effectiveStatus === pipeline;
+        const matchesPipeline = pipeline === "all" || effectiveLeadStatus(lead) === pipeline;
 
         const haystack = `
           ${lead.forename || ""}
           ${lead.surname || ""}
           ${lead.telephone || ""}
+          ${lead.mobile || ""}
+          ${lead.email || ""}
           ${lead.postcode || ""}
           ${lead.assignedToName || ""}
           ${lead.assignedToEmail || ""}
@@ -436,7 +558,7 @@
       if (!filtered.length) {
         overviewBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No intro email leads found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No intro email leads found.</td>
           </tr>
         `;
       } else {
@@ -446,11 +568,12 @@
           tr.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
-              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+              <div class="text-xs text-slate-500">${lead.postcode || "-"}</div>
             </td>
             <td class="p-3">${userDisplay(lead.assignedToUid, lead.assignedToName, lead.assignedToEmail)}</td>
             <td class="p-3">${lead.telephone || "-"}</td>
-            <td class="p-3">${lead.postcode || "-"}</td>
+            <td class="p-3">${lead.mobile || "-"}</td>
+            <td class="p-3">${lead.email || "-"}</td>
             <td class="p-3">${getScheduledText(lead)}</td>
             <td class="p-3">${lead.introEmailSent ? '<span class="badge badge-green">Sent</span>' : '<span class="badge badge-amber">Not Sent</span>'}</td>
             <td class="p-3">${leadStatusBadge(lead)}</td>
@@ -484,34 +607,245 @@
         div.innerHTML = `
           <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
           <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
         `;
         wrap.appendChild(div);
       });
     }
 
     function openLead(leadId) {
-      const lead = allLeads.find(x => x.id === leadId);
-      if (!lead) return;
+      selectedLead = allLeads.find(x => x.id === leadId);
+      if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent = `${lead.forename || ""} ${lead.surname || ""}`.trim() || "Intro Email Detail";
-      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${lead.id}`;
-      document.getElementById("lead_name").textContent = `${lead.title || ""} ${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_lister").textContent = userDisplay(lead.assignedToUid, lead.assignedToName, lead.assignedToEmail);
-      document.getElementById("lead_phone").textContent = lead.telephone || "-";
-      document.getElementById("lead_postcode").textContent = lead.postcode || "-";
-      document.getElementById("lead_callback").textContent = getScheduledText(lead);
-      document.getElementById("lead_emailSent").textContent = lead.introEmailSent ? "Yes" : "No";
-      document.getElementById("lead_status").innerHTML = leadStatusBadge(lead);
-      document.getElementById("lead_converted").textContent = lead.convertedToSubmissionId || "-";
-      document.getElementById("lead_lastAction").textContent = formatAction(lead.lastAction);
-      document.getElementById("lead_closer").textContent = userDisplay(lead.closerUid, lead.closerName, lead.closerEmail);
-      document.getElementById("lead_notes").textContent = lead.managerNotes || lead.notes || "-";
-      document.getElementById("lead_emailBody").value = lead.introEmailBody || "";
-      renderHistory(lead.actionHistory || []);
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Intro Email Detail";
+      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_lister").textContent =
+        userDisplay(selectedLead.assignedToUid, selectedLead.assignedToName, selectedLead.assignedToEmail);
+      document.getElementById("lead_telephone").textContent = selectedLead.telephone || "-";
+      document.getElementById("lead_mobile").textContent = selectedLead.mobile || "-";
+      document.getElementById("lead_email").textContent = selectedLead.email || "-";
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_callback").textContent = getScheduledText(selectedLead);
+      document.getElementById("lead_emailSent").textContent = selectedLead.introEmailSent ? "Yes" : "No";
+      document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
+      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
+      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_closer").textContent =
+        userDisplay(selectedLead.closerUid, selectedLead.closerName, selectedLead.closerEmail);
 
+      callbackDate.value = selectedLead.callbackDate || "";
+      callbackTime.value = selectedLead.callbackTime || "";
+      notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
+      leadEmailBody.value = selectedLead.introEmailBody || buildEmailTemplate(selectedLead);
+
+      renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
+
+    async function refreshSelectedLead() {
+      const existingId = selectedLead?.id || "";
+      await loadData();
+      if (existingId) {
+        const updated = allLeads.find(x => x.id === existingId);
+        if (updated) {
+          selectedLead = updated;
+          openLead(updated.id);
+        } else {
+          leadModal.classList.add("hidden");
+        }
+      }
+    }
+
+    async function updateLead(patch, historyAction, notes = "") {
+      if (!selectedLead) return;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          ...patch,
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: historyAction,
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes
+          })
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Lead updated successfully.");
+      } catch (error) {
+        console.error("Lead update failed:", error);
+        showModalMessage("Could not update lead.", true);
+      }
+    }
+
+    function emailClient() {
+      if (!selectedLead) return;
+
+      const email = safe(selectedLead.email);
+      if (!email) {
+        showModalMessage("No client email address found.", true);
+        return;
+      }
+
+      const bodyText = safe(leadEmailBody.value) || buildEmailTemplate(selectedLead);
+      const lines = bodyText.split("\n");
+      let subject = "Quaerens Introduction Email";
+
+      if (lines[0]?.toLowerCase().startsWith("subject:")) {
+        subject = lines[0].replace(/^subject:/i, "").trim() || subject;
+      }
+
+      const body = lines[0]?.toLowerCase().startsWith("subject:") ? lines.slice(1).join("\n").trim() : bodyText;
+
+      window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
+
+    emailClientBtn.addEventListener("click", () => {
+      emailClient();
+    });
+
+    copyEmailBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(leadEmailBody.value || "");
+        showModalMessage("Email copied.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not copy email.", true);
+      }
+    });
+
+    markSentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        introEmailSent: true,
+        introEmailSentAt: serverTimestamp(),
+        introEmailBody: leadEmailBody.value || "",
+        managerNotes: notesBox.value || "",
+        lastAction: "intro_email_sent"
+      }, "intro_email_sent", "Manager marked introduction email as sent.");
+    });
+
+    rescheduleBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      if (!callbackDate.value || !callbackTime.value) {
+        showModalMessage("Please choose follow-up date and time.", true);
+        return;
+      }
+
+      await updateLead({
+        callbackRequired: true,
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value,
+        introEmailNeeded: true,
+        introEmailBody: leadEmailBody.value || "",
+        managerNotes: notesBox.value || "",
+        lastAction: "callback_rescheduled"
+      }, "callback_rescheduled", `Follow-up rescheduled for ${callbackDate.value} ${callbackTime.value}.`);
+    });
+
+    markQualifiedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "qualified",
+        introEmailNeeded: true,
+        introEmailBody: leadEmailBody.value || "",
+        managerNotes: notesBox.value || "",
+        qualifiedAt: serverTimestamp(),
+        lastAction: "qualified"
+      }, "qualified", "Lead marked as qualified from manager intro email overview.");
+    });
+
+    sendToManagerBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "awaiting_manager",
+        introEmailBody: leadEmailBody.value || "",
+        managerNotes: notesBox.value || "",
+        sentToManagerAt: serverTimestamp(),
+        lastAction: "awaiting_manager"
+      }, "awaiting_manager", "Lead set to awaiting manager from intro email overview.");
+    });
+
+    openLeadBtn.addEventListener("click", () => {
+      if (!selectedLead) return;
+      window.location.href = `/manager-leads-overview.html`;
+    });
+
+    openIntakeBtn.addEventListener("click", () => {
+      if (!selectedLead) return;
+
+      if (selectedLead.convertedToSubmissionId || selectedLead.submissionId || selectedLead.claimSubmissionId || selectedLead.intakeSubmissionId) {
+        const submissionId =
+          selectedLead.convertedToSubmissionId ||
+          selectedLead.submissionId ||
+          selectedLead.claimSubmissionId ||
+          selectedLead.intakeSubmissionId;
+        window.location.href = `/intake-detail.html?id=${submissionId}`;
+        return;
+      }
+
+      window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
+    });
+
+    saveNotesBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          managerNotes: notesBox.value || "",
+          introEmailBody: leadEmailBody.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "notes_saved",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: notesBox.value || ""
+          })
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Notes saved.");
+      } catch (error) {
+        console.error("Failed to save notes:", error);
+        showModalMessage("Could not save notes.", true);
+      }
+    });
+
+    markDoneBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        introEmailNeeded: false,
+        callbackRequired: false,
+        callbackDate: "",
+        callbackTime: "",
+        introEmailBody: leadEmailBody.value || "",
+        managerNotes: notesBox.value || "",
+        lastAction: "intro_email_queue_done"
+      }, "intro_email_queue_done", "Intro email queue item marked as done by manager.");
+    });
+
+    closeLeadBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await updateLead({
+        leadStatus: "closed",
+        closed: true,
+        usable: false,
+        introEmailNeeded: false,
+        callbackRequired: false,
+        introEmailBody: leadEmailBody.value || "",
+        managerNotes: notesBox.value || "",
+        lastAction: "closed"
+      }, "closed", "Lead closed by manager from intro email overview.");
+    });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {

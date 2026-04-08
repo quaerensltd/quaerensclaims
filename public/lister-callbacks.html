@@ -41,6 +41,7 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -128,6 +129,7 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -175,6 +177,8 @@
             <div><span class="font-semibold text-blue-900">Scheduled:</span> <span id="lead_scheduled">-</span></div>
             <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
+            <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
+            <div><span class="font-semibold text-blue-900">Intro Email Sent:</span> <span id="lead_intro_status">-</span></div>
           </div>
         </section>
 
@@ -277,6 +281,7 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const agendaBody = document.getElementById("agendaBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
@@ -313,36 +318,42 @@
       setTimeout(() => modalMessage.classList.add("hidden"), 3000);
     }
 
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
     function getLeadTelephone(lead) {
-      return String(
+      return cleanValue(
         lead.telephone ||
         lead.landline ||
-        lead.phone ||
-        ""
-      ).trim();
+        lead.phone
+      );
     }
 
     function getLeadMobile(lead) {
-      return String(
+      return cleanValue(
         lead.mobile ||
         lead.mobileNumber ||
-        lead.cell ||
-        ""
-      ).trim();
+        lead.cell
+      );
     }
 
     function getLeadEmail(lead) {
-      return String(
+      return cleanValue(
         lead.email ||
-        lead.emailAddress ||
-        ""
-      ).trim();
+        lead.emailAddress
+      );
     }
 
     function formatAddress(lead) {
-      return [lead.address1, lead.address2, lead.address3, lead.address4, lead.address5]
-        .filter(Boolean)
-        .join(", ") || "-";
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
     }
 
     function formatAction(action) {
@@ -378,6 +389,10 @@
       return lead.leadStatus === "qualified";
     }
 
+    function isConverted(lead) {
+      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
+    }
+
     function formatLeadStatus(lead) {
       if (isLocked(lead)) return "Closed";
       if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
@@ -410,8 +425,54 @@
       return `${uid}_${todayIso()}`;
     }
 
+    function setButtonDisabled(button, disabled) {
+      button.disabled = !!disabled;
+      if (disabled) {
+        button.classList.add("opacity-60", "cursor-not-allowed");
+      } else {
+        button.classList.remove("opacity-60", "cursor-not-allowed");
+      }
+    }
+
+    function updateActionAvailability(lead) {
+      const locked = isLocked(lead);
+      const converted = isConverted(lead);
+
+      [
+        openIntakeBtn,
+        rescheduleBtn,
+        keepIntroBtn,
+        keepCallbackBtn,
+        markQualifiedBtn,
+        sendToManagerBtn,
+        markCompletedBtn,
+        noAnswerBtn,
+        voicemailBtn,
+        wrongNumberBtn,
+        notInterestedBtn,
+        saveNotesBtn
+      ].forEach(button => setButtonDisabled(button, false));
+
+      if (locked || converted) {
+        [
+          openIntakeBtn,
+          rescheduleBtn,
+          keepIntroBtn,
+          keepCallbackBtn,
+          markQualifiedBtn,
+          sendToManagerBtn,
+          markCompletedBtn,
+          noAnswerBtn,
+          voicemailBtn,
+          wrongNumberBtn,
+          notInterestedBtn
+        ].forEach(button => setButtonDisabled(button, true));
+      }
+    }
+
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
@@ -444,12 +505,14 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
+
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
+
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -458,6 +521,7 @@
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -473,6 +537,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -484,6 +549,7 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -500,10 +566,12 @@
       const data = attendanceSnap.data() || {};
       const now = Date.now();
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
       }
+
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
 
@@ -535,17 +603,20 @@
     async function checkListerAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No staff profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
+
       const userData = userSnap.data();
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
+
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -611,6 +682,12 @@
           ${getLeadMobile(lead)}
           ${getLeadEmail(lead)}
           ${lead.postcode || ""}
+          ${lead.address || ""}
+          ${lead.address1 || ""}
+          ${lead.address2 || ""}
+          ${lead.address3 || ""}
+          ${lead.address4 || ""}
+          ${lead.address5 || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
@@ -618,8 +695,8 @@
       });
 
       filtered = sortLeadsBySchedule(filtered);
-      agendaBody.innerHTML = "";
 
+      agendaBody.innerHTML = "";
       if (!filtered.length) {
         agendaBody.innerHTML = `
           <tr>
@@ -663,17 +740,19 @@
     function renderHistory(history) {
       const wrap = document.getElementById("historyWrap");
       wrap.innerHTML = "";
+
       if (!history.length) {
         wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
         return;
       }
+
       [...history].reverse().forEach(item => {
         const div = document.createElement("div");
         div.className = "border border-slate-200 rounded-xl p-3";
         div.innerHTML = `
           <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
           <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
         `;
         wrap.appendChild(div);
       });
@@ -683,9 +762,11 @@
       selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Detail";
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Detail";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
       document.getElementById("lead_phone").textContent = getLeadTelephone(selectedLead) || "-";
       document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
       document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
@@ -695,11 +776,15 @@
       document.getElementById("lead_scheduled").textContent = getScheduledText(selectedLead);
       document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
+      document.getElementById("lead_intro_status").textContent = selectedLead.introEmailSent ? "Yes" : "No";
 
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
+
       renderHistory(selectedLead.actionHistory || []);
+      updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
     }
 
@@ -718,6 +803,7 @@
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -730,6 +816,7 @@
             notes
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -740,19 +827,23 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "intake_in_progress",
         lastAction: "interested_intake_started"
       }, "interested_intake_started", "Lead moved to intake from callback agenda.");
+
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose a new callback date and time.", true);
         return;
       }
+
       await updateLead({
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
@@ -764,6 +855,7 @@
 
     keepIntroBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         introEmailNeeded: true,
         callbackRequired: true,
@@ -774,6 +866,7 @@
 
     keepCallbackBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         introEmailNeeded: false,
         callbackRequired: true,
@@ -784,6 +877,7 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
@@ -794,8 +888,10 @@
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "awaiting_manager",
+        callbackRequired: false,
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager from callback agenda.");
@@ -803,6 +899,7 @@
 
     markCompletedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         callbackRequired: false,
         callbackDate: "",
@@ -814,6 +911,7 @@
 
     noAnswerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "no_answer",
         lastAction: "no_answer",
@@ -824,6 +922,7 @@
 
     voicemailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         lastAction: "voicemail",
         lastCallAt: serverTimestamp(),
@@ -834,6 +933,7 @@
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         lastAction: "wrong_number",
@@ -846,6 +946,7 @@
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         lastAction: "not_interested",
@@ -858,6 +959,7 @@
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -870,6 +972,7 @@
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -893,15 +996,18 @@
         window.location.href = "/login.html";
         return;
       }
+
       try {
         const allowed = await checkListerAccess(user);
         if (!allowed) return;
+
         try {
           await recordStaffLoginFromPage();
           startAttendanceHeartbeat();
         } catch (attendanceError) {
           console.error("Attendance login-from-page failed:", attendanceError);
         }
+
         await loadLeads();
         hideLoader();
       } catch (error) {
@@ -918,6 +1024,7 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
