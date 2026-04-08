@@ -20,14 +20,8 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav {
-      background: #2563eb;
-      color: white;
-    }
-    .active-nav:hover {
-      background: #1d4ed8;
-      color: white;
-    }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -42,6 +36,17 @@
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .readonly-box {
+      width: 100%;
+      min-height: 160px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      color: #1f2937;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -57,7 +62,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Panel</h1>
-          <p class="text-sm text-slate-500">Review qualified leads, assign closers, and book appointments</p>
+          <p class="text-sm text-slate-500">Review qualified leads, assign closers, book appointments, and send manager intro emails</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -169,7 +174,7 @@
   </div>
 
   <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
-    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="max-w-6xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
         <div>
           <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Manager Lead Review</h3>
@@ -209,6 +214,29 @@
         </section>
 
         <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Intro Email</h4>
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Client Email</label>
+              <input id="managerEmailTo" class="input" type="text" readonly />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Email Status</label>
+              <div id="managerEmailStatus" class="text-sm text-slate-700 pt-3">Not sent</div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerEmailTemplate">Email Template</label>
+            <textarea id="managerEmailTemplate" class="input" rows="12" placeholder="Manager intro email template..."></textarea>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button id="copyManagerEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="openManagerEmailBtn" class="btn btn-secondary" type="button">Open Email App</button>
+            <button id="markManagerEmailSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
+          </div>
+        </section>
+
+        <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Actions</h4>
           <div class="grid md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -235,8 +263,9 @@
             </div>
           </div>
           <div class="flex flex-wrap gap-3">
+            <button id="saveLeadChangesBtn" class="btn btn-primary" type="button">Save Changes</button>
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
-            <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Closer Appointment</button>
+            <button id="bookAppointmentBtn" class="btn btn-secondary" type="button">Book Closer Appointment</button>
             <button id="sendToCloserBtn" class="btn btn-secondary" type="button">Send to Closer</button>
             <button id="markConvertedBtn" class="btn btn-secondary" type="button">Mark Converted</button>
             <button id="markClosedBtn" class="btn btn-danger" type="button">Close Lead</button>
@@ -316,14 +345,24 @@
     const appointmentTime = document.getElementById("appointmentTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
+
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
     const sendToCloserBtn = document.getElementById("sendToCloserBtn");
     const markConvertedBtn = document.getElementById("markConvertedBtn");
     const markClosedBtn = document.getElementById("markClosedBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
+    const saveLeadChangesBtn = document.getElementById("saveLeadChangesBtn");
+
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const openAssessmentBtn = document.getElementById("openAssessmentBtn");
+
+    const managerEmailTo = document.getElementById("managerEmailTo");
+    const managerEmailStatus = document.getElementById("managerEmailStatus");
+    const managerEmailTemplate = document.getElementById("managerEmailTemplate");
+    const copyManagerEmailBtn = document.getElementById("copyManagerEmailBtn");
+    const openManagerEmailBtn = document.getElementById("openManagerEmailBtn");
+    const markManagerEmailSentBtn = document.getElementById("markManagerEmailSentBtn");
 
     let currentUser = null;
     let currentUserData = null;
@@ -356,18 +395,9 @@
       return String(value || "").trim();
     }
 
-    function firstNonEmpty(...values) {
-      for (const value of values) {
-        const s = safe(value);
-        if (s) return s;
-      }
-      return "";
-    }
-
     function formatAddress(lead) {
       return [
         lead.address,
-        lead.client?.address,
         lead.address1,
         lead.address2,
         lead.address3,
@@ -377,43 +407,11 @@
     }
 
     function clientName(lead) {
-      return firstNonEmpty(
-        `${safe(lead.forename)} ${safe(lead.surname)}`.trim(),
-        `${safe(lead.client?.firstName)} ${safe(lead.client?.secondName)}`.trim(),
-        lead.name,
-        "-"
-      );
+      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
     }
 
     function clientNameFromSubmission(submission) {
       return `${submission.client?.firstName || ""} ${submission.client?.secondName || ""}`.trim() || "-";
-    }
-
-    function getLeadTelephone(lead) {
-      return firstNonEmpty(
-        lead.telephone,
-        lead.landline,
-        lead.phone,
-        lead.client?.landline,
-        lead.client?.telephone
-      );
-    }
-
-    function getLeadMobile(lead) {
-      return firstNonEmpty(
-        lead.mobile,
-        lead.mobileNumber,
-        lead.cell,
-        lead.client?.mobile
-      );
-    }
-
-    function getLeadEmail(lead) {
-      return firstNonEmpty(
-        lead.email,
-        lead.emailAddress,
-        lead.client?.email
-      );
     }
 
     function formatAction(action) {
@@ -427,6 +425,7 @@
         notes_saved: "Notes Saved",
         callback_required: "Callback Required",
         send_intro_email: "Send Intro Email",
+        manager_intro_email_sent: "Manager Intro Email Sent",
         no_answer: "No Answer",
         voicemail: "Voicemail",
         wrong_number: "Wrong Number",
@@ -434,7 +433,8 @@
         intake_in_progress: "Intake In Progress",
         submitted: "Submitted",
         in_review: "In Review",
-        assessment_complete: "Assessment Complete"
+        assessment_complete: "Assessment Complete",
+        manager_changes_saved: "Manager Changes Saved"
       };
       return map[action] || action || "-";
     }
@@ -484,10 +484,53 @@
       return Date.now() - sentAt > 24 * 60 * 60 * 1000;
     }
 
+    function getLeadEmail(lead) {
+      return safe(
+        lead.email ||
+        selectedSubmissionData?.client?.email ||
+        ""
+      );
+    }
+
+    function getLeadMobile(lead) {
+      return safe(
+        lead.mobile ||
+        selectedSubmissionData?.client?.mobile ||
+        ""
+      );
+    }
+
+    function getLeadTelephone(lead) {
+      return safe(
+        lead.telephone ||
+        selectedSubmissionData?.client?.landline ||
+        ""
+      );
+    }
+
+    function buildManagerEmailTemplate(lead) {
+      const name = clientName(lead);
+      const claimType = safe(lead.claimType || lead.type || "your claim");
+      return `Subject: Quaerens follow-up regarding ${claimType}
+
+Dear ${name || "Client"},
+
+Thank you for your enquiry.
+
+I am following up regarding your potential ${claimType}. We can review the matter further and guide you on the next step in the process.
+
+If needed, we may ask for further details or documents so we can move your matter forward properly.
+
+Please reply to this email or speak with us at the arranged follow-up time.
+
+Kind regards,
+${currentUserData?.name || "Quaerens Manager"}
+Quaerens`;
+    }
+
     function populateCloserFilters() {
       const currentCloserFilter = closerFilter.value || "all";
       const currentModalCloser = closerSelect.value || "";
-
       closerFilter.innerHTML = `<option value="all">All closers</option>`;
       closerSelect.innerHTML = `<option value="">Select closer</option>`;
 
@@ -515,20 +558,17 @@
       try {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
-
         if (!userSnap.exists()) {
           alert("No staff profile found for this account.");
           window.location.href = "/login.html";
           return false;
         }
-
         const userData = userSnap.data();
         if (userData.role !== "manager") {
           alert("You do not have permission to access the manager panel.");
           window.location.href = "/login.html";
           return false;
         }
-
         currentUser = user;
         currentUserData = userData;
         staffStatus.textContent = "Logged in as Manager";
@@ -581,11 +621,11 @@
           record: lead,
           status: isLocked(lead) ? "closed" : (lead.leadStatus || "new"),
           searchName: clientName(lead),
-          telephone: getLeadTelephone(lead),
-          mobile: getLeadMobile(lead),
-          email: getLeadEmail(lead),
-          postcode: firstNonEmpty(lead.postcode, lead.client?.postcode),
-          claimType: firstNonEmpty(lead.claimType, lead.type),
+          telephone: lead.telephone || "",
+          mobile: lead.mobile || "",
+          email: lead.email || "",
+          postcode: lead.postcode || "",
+          claimType: lead.claimType || lead.type || "",
           listerUid: lead.assignedToUid || "",
           closerUid: lead.closerUid || "",
           appointmentDate: lead.closerAppointmentDate || "",
@@ -609,11 +649,11 @@
             record: submission,
             status: submission.status || "submitted",
             searchName: clientNameFromSubmission(submission),
-            telephone: firstNonEmpty(submission.client?.landline, submission.client?.telephone),
-            mobile: firstNonEmpty(submission.client?.mobile),
-            email: firstNonEmpty(submission.client?.email),
-            postcode: firstNonEmpty(submission.client?.postcode),
-            claimType: firstNonEmpty(submission.claimType),
+            telephone: submission.client?.landline || "",
+            mobile: submission.client?.mobile || "",
+            email: submission.client?.email || "",
+            postcode: submission.client?.postcode || "",
+            claimType: submission.claimType || "",
             listerUid: submission.submittedBy?.uid || "",
             closerUid: "",
             appointmentDate: "",
@@ -630,18 +670,10 @@
 
     function renderStats() {
       const today = todayIso();
-      awaitingManagerStat.textContent = String(
-        queueItems.filter(x =>
-          x.status === "awaiting_manager" ||
-          x.status === "submitted" ||
-          x.status === "in_review"
-        ).length
-      );
+      awaitingManagerStat.textContent = String(queueItems.filter(x => x.status === "awaiting_manager" || x.status === "submitted" || x.status === "in_review").length);
       bookedTodayStat.textContent = String(queueItems.filter(x => x.appointmentDate === today).length);
       sentToCloserStat.textContent = String(queueItems.filter(x => x.status === "sent_to_closer").length);
-      qualifiedStat.textContent = String(
-        queueItems.filter(x => x.status === "qualified" || x.status === "assessment_complete").length
-      );
+      qualifiedStat.textContent = String(queueItems.filter(x => x.status === "qualified" || x.status === "assessment_complete").length);
       overdueStat.textContent = String(allLeadAssignments.filter(x => isOverdueManagerLead(x)).length);
     }
 
@@ -660,6 +692,7 @@
           (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
           (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
           (selectedTiming === "none" && !item.appointmentDate);
+
         const matchesCloser =
           selectedCloser === "all" ||
           item.closerUid === selectedCloser;
@@ -803,8 +836,24 @@
       } catch (error) {
         console.error("Failed loading linked submission:", error);
       }
-
       return null;
+    }
+
+    function renderManagerEmailSection() {
+      if (!selectedLead) return;
+
+      const email = getLeadEmail(selectedLead);
+      managerEmailTo.value = email;
+      managerEmailTemplate.value = selectedLead.managerIntroEmailBody || selectedLead.introEmailBody || buildManagerEmailTemplate(selectedLead);
+
+      if (selectedLead.managerIntroEmailSent || selectedLead.introEmailSent) {
+        managerEmailStatus.innerHTML = `<span class="badge badge-green">Sent</span>`;
+      } else {
+        managerEmailStatus.innerHTML = `<span class="badge badge-amber">Not Sent</span>`;
+      }
+
+      openManagerEmailBtn.disabled = !email;
+      markManagerEmailSentBtn.disabled = !email;
     }
 
     async function openLead(leadId) {
@@ -818,6 +867,10 @@
         return;
       }
 
+      await loadLinkedSubmissionForLead(selectedLead);
+      const assessment = await findAssessmentForLead(selectedLead.id);
+      selectedAssessmentId = assessment?.id || selectedLead.assessmentId || "";
+
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Manager Lead Review";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
@@ -827,27 +880,22 @@
       document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
       document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = firstNonEmpty(selectedLead.postcode, selectedLead.client?.postcode, "-");
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || selectedSubmissionData?.client?.postcode || "-";
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
-      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || "-";
+      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || selectedSubmissionData?.claimType || "-";
       document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
       document.getElementById("lead_status").innerHTML = statusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
       document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
+      document.getElementById("lead_submissionId").textContent = selectedSubmissionId || "-";
+      document.getElementById("lead_assessmentId").textContent = selectedAssessmentId || "-";
 
       closerSelect.value = selectedLead.closerUid || "";
       managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
       appointmentDate.value = selectedLead.closerAppointmentDate || "";
       appointmentTime.value = selectedLead.closerAppointmentTime || "";
       notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
-
-      await loadLinkedSubmissionForLead(selectedLead);
-      const assessment = await findAssessmentForLead(selectedLead.id);
-      selectedAssessmentId = assessment?.id || selectedLead.assessmentId || "";
-
-      document.getElementById("lead_submissionId").textContent = selectedSubmissionId || "-";
-      document.getElementById("lead_assessmentId").textContent = selectedAssessmentId || "-";
 
       if (selectedSubmissionId) {
         openIntakeBtn.href = `/intake-detail.html?id=${selectedSubmissionId}`;
@@ -870,6 +918,7 @@
         openAssessmentBtn.classList.add("hidden");
       }
 
+      renderManagerEmailSection();
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
     }
@@ -889,7 +938,6 @@
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -919,7 +967,6 @@
       }
 
       const client = selectedSubmissionData?.client || {};
-
       const payload = {
         sourceLeadId: lead.id,
         leadAssignmentId: lead.id,
@@ -936,9 +983,9 @@
           secondName: client.secondName || lead.surname || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || getLeadTelephone(lead) || "",
-          mobile: client.mobile || getLeadMobile(lead) || getLeadTelephone(lead) || "",
-          email: client.email || getLeadEmail(lead) || "",
+          landline: client.landline || lead.telephone || "",
+          mobile: client.mobile || lead.mobile || lead.telephone || "",
+          email: client.email || lead.email || "",
           address: client.address || formatAddress(lead)
         },
         appointment: {
@@ -980,6 +1027,74 @@
       }
     }
 
+    copyManagerEmailBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(managerEmailTemplate.value || "");
+        showModalMessage("Email copied.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not copy email.", true);
+      }
+    });
+
+    openManagerEmailBtn.addEventListener("click", () => {
+      if (!selectedLead) return;
+      const email = getLeadEmail(selectedLead);
+      if (!email) {
+        showModalMessage("No client email available for this lead.", true);
+        return;
+      }
+
+      const lines = (managerEmailTemplate.value || "").split("\n");
+      let subject = "Quaerens Follow-Up";
+      let body = managerEmailTemplate.value || "";
+
+      if (lines[0]?.toLowerCase().startsWith("subject:")) {
+        subject = lines[0].replace(/^subject:/i, "").trim() || subject;
+        body = lines.slice(1).join("\n").trim();
+      }
+
+      const href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = href;
+    });
+
+    markManagerEmailSentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      const email = getLeadEmail(selectedLead);
+      if (!email) {
+        showModalMessage("No client email available for this lead.", true);
+        return;
+      }
+
+      await updateLead({
+        email,
+        managerIntroEmailBody: managerEmailTemplate.value || "",
+        managerIntroEmailSent: true,
+        managerIntroEmailSentAt: serverTimestamp(),
+        introEmailNeeded: true,
+        introEmailSent: true,
+        introEmailSentAt: serverTimestamp(),
+        lastAction: "manager_intro_email_sent"
+      }, "manager_intro_email_sent", "Manager marked intro email as sent.");
+    });
+
+    saveLeadChangesBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        leadStatus: managerStatusSelect.value || selectedLead.leadStatus || "awaiting_manager",
+        closerUid: closerSelect.value || "",
+        closerAppointmentDate: appointmentDate.value || "",
+        closerAppointmentTime: appointmentTime.value || "",
+        managerNotes: notesBox.value || "",
+        managerIntroEmailBody: managerEmailTemplate.value || "",
+        email: getLeadEmail(selectedLead) || selectedLead.email || "",
+        mobile: getLeadMobile(selectedLead) || selectedLead.mobile || "",
+        telephone: getLeadTelephone(selectedLead) || selectedLead.telephone || "",
+        lastAction: "manager_changes_saved"
+      }, "manager_changes_saved", "Manager saved lead status, closer, appointment, email template, and notes.");
+    });
+
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
       await updateLead({
@@ -990,7 +1105,6 @@
 
     bookAppointmentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!closerSelect.value) {
         showModalMessage("Please choose a closer first.", true);
         return;
@@ -999,7 +1113,6 @@
         showModalMessage("Please choose appointment date and time.", true);
         return;
       }
-
       try {
         await createOrUpdateCloserAssignment(selectedLead, "book");
         await updateLead({
@@ -1010,6 +1123,8 @@
           sentToCloserAt: serverTimestamp(),
           callbackRequired: false,
           introEmailNeeded: false,
+          managerNotes: notesBox.value || "",
+          managerIntroEmailBody: managerEmailTemplate.value || "",
           lastAction: "closer_appointment_booked"
         }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
       } catch (error) {
@@ -1020,12 +1135,10 @@
 
     sendToCloserBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!closerSelect.value) {
         showModalMessage("Please choose a closer first.", true);
         return;
       }
-
       try {
         await createOrUpdateCloserAssignment(selectedLead, "send");
         await updateLead({
@@ -1034,6 +1147,8 @@
           sentToCloserAt: serverTimestamp(),
           callbackRequired: false,
           introEmailNeeded: false,
+          managerNotes: notesBox.value || "",
+          managerIntroEmailBody: managerEmailTemplate.value || "",
           lastAction: "sent_to_closer"
         }, "sent_to_closer", "Lead sent to closer by manager.");
       } catch (error) {
@@ -1065,10 +1180,13 @@
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           managerNotes: notesBox.value || "",
+          managerIntroEmailBody: managerEmailTemplate.value || "",
+          email: getLeadEmail(selectedLead) || selectedLead.email || "",
+          mobile: getLeadMobile(selectedLead) || selectedLead.mobile || "",
+          telephone: getLeadTelephone(selectedLead) || selectedLead.telephone || "",
           closerUid: closerSelect.value || "",
           closerAppointmentDate: appointmentDate.value || "",
           closerAppointmentTime: appointmentTime.value || "",
@@ -1105,10 +1223,8 @@
         window.location.href = "/login.html";
         return;
       }
-
       const allowed = await checkManagerAccess(user);
       if (!allowed) return;
-
       hideLoader();
       await loadAllData();
     });
