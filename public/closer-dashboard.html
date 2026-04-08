@@ -29,6 +29,7 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -58,6 +59,7 @@
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Closer Panel</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -78,6 +80,10 @@
           <div id="upcomingAppointmentsStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue</div>
+          <div id="overdueAppointmentsStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
           <div class="text-sm text-slate-500">Call Backs</div>
           <div id="callbacksStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
@@ -90,12 +96,8 @@
           <div id="sentToProcessingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Not Interested</div>
-          <div id="notInterestedStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">No Answer</div>
-          <div id="noAnswerStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">No Answer / Not Interested</div>
+          <div id="inactiveOutcomesStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
       </section>
 
@@ -104,7 +106,7 @@
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
             <a href="/closer-panel.html" class="btn btn-primary text-center">Open Closer Panel</a>
-            <a href="/closer-panel.html" class="btn btn-primary text-center">View Assigned Files</a>
+            <a href="/closer-panel.html?view=today" class="btn btn-primary text-center">Today’s Files</a>
           </div>
         </section>
 
@@ -228,6 +230,7 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
 
     let currentUser = null;
     let allAssignments = [];
@@ -237,9 +240,21 @@
       authLoader.style.display = "none";
     }
 
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function appointmentDate(item) {
+      return item.appointment?.date || "";
+    }
+
+    function appointmentTime(item) {
+      return item.appointment?.time || "";
+    }
+
     function appointmentText(item) {
-      const date = item.appointment?.date || "-";
-      const time = item.appointment?.time || "-";
+      const date = appointmentDate(item) || "-";
+      const time = appointmentTime(item) || "-";
       return `${date} ${time}`.trim();
     }
 
@@ -264,29 +279,34 @@
       }
     }
 
-    function todayIso() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
     function getEffectiveStatus(item) {
       return item.status || "Assigned";
     }
 
-    function isClosedDeal(item) {
-      return item.outcome === "Closed Deal" || item.status === "Closed";
+    function getOutcome(item) {
+      return item.outcome || "";
     }
 
-    function paymentBadgeForProcessing(sent) {
-      return sent
-        ? `<span class="badge badge-violet">Sent to Processing</span>`
-        : `<span class="badge badge-slate">Not Sent</span>`;
+    function isClosedDeal(item) {
+      return getOutcome(item) === "Closed Deal" || getEffectiveStatus(item) === "Closed";
+    }
+
+    function isCallbackOutcome(item) {
+      return getOutcome(item) === "Call Back" || getOutcome(item) === "No Answer";
+    }
+
+    function isOverdueAppointment(item) {
+      const date = appointmentDate(item);
+      if (!date) return false;
+      return date < todayIso() && !isClosedDeal(item);
     }
 
     function statusBadge(status) {
       if (status === "Closed") return `<span class="badge badge-green">Closed</span>`;
       if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
       if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
-      return `<span class="badge badge-amber">Assigned</span>`;
+      if (status === "Assigned") return `<span class="badge badge-amber">Assigned</span>`;
+      return `<span class="badge badge-slate">${status || "-"}</span>`;
     }
 
     function outcomeBadge(outcome) {
@@ -296,6 +316,22 @@
       if (outcome === "No Answer") return `<span class="badge badge-red">No Answer</span>`;
       if (outcome === "Not Interested") return `<span class="badge badge-slate">Not Interested</span>`;
       return `<span class="badge badge-slate">-</span>`;
+    }
+
+    function processingBadge(sent) {
+      return sent
+        ? `<span class="badge badge-violet">Sent to Processing</span>`
+        : `<span class="badge badge-slate">Not Sent</span>`;
+    }
+
+    function sortByAppointment(a, b) {
+      const aKey = `${appointmentDate(a) || "9999-12-31"} ${appointmentTime(a) || "23:59"}`;
+      const bKey = `${appointmentDate(b) || "9999-12-31"} ${appointmentTime(b) || "23:59"}`;
+      return aKey.localeCompare(bKey);
+    }
+
+    function detailHref(item) {
+      return `/closer-panel.html?id=${item.id}`;
     }
 
     async function checkCloserAccess(user) {
@@ -320,6 +356,31 @@
       return true;
     }
 
+    async function loadProcessingLinks() {
+      processingAssignmentIds = new Set();
+
+      try {
+        const processingCasesSnap = await getDocs(collection(db, "processingCases"));
+        processingCasesSnap.docs.forEach(d => {
+          const data = d.data() || {};
+          if (data.sourceAssignmentId) processingAssignmentIds.add(data.sourceAssignmentId);
+          if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+        });
+      } catch (error) {
+        console.error("Could not load processingCases:", error);
+      }
+
+      try {
+        const processingFilesSnap = await getDocs(collection(db, "processingFiles"));
+        processingFilesSnap.docs.forEach(d => {
+          const data = d.data() || {};
+          if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+        });
+      } catch (error) {
+        console.error("Could not load processingFiles:", error);
+      }
+    }
+
     async function loadData() {
       const assignmentsQuery = query(
         collection(db, "closerAssignments"),
@@ -328,17 +389,9 @@
 
       const assignmentsSnap = await getDocs(assignmentsQuery);
       allAssignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allAssignments.sort(sortByAppointment);
 
-      allAssignments.sort((a, b) => {
-        const aKey = `${a.appointment?.date || "9999-12-31"} ${a.appointment?.time || "23:59"}`;
-        const bKey = `${b.appointment?.date || "9999-12-31"} ${b.appointment?.time || "23:59"}`;
-        return aKey.localeCompare(bKey);
-      });
-
-      const processingSnap = await getDocs(collection(db, "processingFiles"));
-      processingAssignmentIds = new Set(
-        processingSnap.docs.map(d => d.data()?.assignmentId).filter(Boolean)
-      );
+      await loadProcessingLinks();
 
       renderStats();
       renderAppointments();
@@ -349,19 +402,26 @@
     function renderStats() {
       const today = todayIso();
       const closedDeals = allAssignments.filter(isClosedDeal);
+
       const dueNow = closedDeals.reduce((sum, x) => sum + Number(x.amountDueNow || 0), 0);
       const paidNow = closedDeals.reduce((sum, x) => sum + Number(x.amountPaidNow || 0), 0);
       const followUp = closedDeals.reduce((sum, x) => sum + Number(x.followUpDue || 0), 0);
-      const upcoming = allAssignments.filter(x => (x.appointment?.date || "") > today).length;
+
+      const upcoming = allAssignments.filter(x => appointmentDate(x) && appointmentDate(x) > today && !isClosedDeal(x)).length;
+      const overdue = allAssignments.filter(isOverdueAppointment).length;
+      const callbacks = allAssignments.filter(x => getOutcome(x) === "Call Back").length;
+      const sentToProcessing = allAssignments.filter(x => processingAssignmentIds.has(x.id)).length;
+      const inactiveOutcomes = allAssignments.filter(x => getOutcome(x) === "No Answer" || getOutcome(x) === "Not Interested").length;
 
       document.getElementById("totalAssignmentsStat").textContent = String(allAssignments.length);
-      document.getElementById("todayAppointmentsStat").textContent = String(allAssignments.filter(x => x.appointment?.date === today).length);
+      document.getElementById("todayAppointmentsStat").textContent = String(allAssignments.filter(x => appointmentDate(x) === today).length);
       document.getElementById("upcomingAppointmentsStat").textContent = String(upcoming);
-      document.getElementById("callbacksStat").textContent = String(allAssignments.filter(x => x.outcome === "Call Back").length);
+      document.getElementById("overdueAppointmentsStat").textContent = String(overdue);
+      document.getElementById("callbacksStat").textContent = String(callbacks);
       document.getElementById("closedDealsStat").textContent = String(closedDeals.length);
-      document.getElementById("sentToProcessingStat").textContent = String(allAssignments.filter(x => processingAssignmentIds.has(x.id)).length);
-      document.getElementById("notInterestedStat").textContent = String(allAssignments.filter(x => x.outcome === "Not Interested").length);
-      document.getElementById("noAnswerStat").textContent = String(allAssignments.filter(x => x.outcome === "No Answer").length);
+      document.getElementById("sentToProcessingStat").textContent = String(sentToProcessing);
+      document.getElementById("inactiveOutcomesStat").textContent = String(inactiveOutcomes);
+
       document.getElementById("dueNowTotal").textContent = money(dueNow);
       document.getElementById("paidNowTotal").textContent = money(paidNow);
       document.getElementById("followUpTotal").textContent = money(followUp);
@@ -371,18 +431,24 @@
       const body = document.getElementById("appointmentsBody");
       body.innerHTML = "";
 
-      const upcoming = allAssignments.slice(0, 8);
+      const rows = allAssignments
+        .filter(item => {
+          const date = appointmentDate(item);
+          return !!date && !isClosedDeal(item);
+        })
+        .sort(sortByAppointment)
+        .slice(0, 8);
 
-      if (!upcoming.length) {
+      if (!rows.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No assignments found.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No appointments found.</td>
           </tr>
         `;
         return;
       }
 
-      upcoming.forEach(item => {
+      rows.forEach(item => {
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
@@ -392,9 +458,9 @@
             <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
           </td>
           <td class="p-3">${statusBadge(getEffectiveStatus(item))}</td>
-          <td class="p-3">${outcomeBadge(item.outcome)}</td>
+          <td class="p-3">${outcomeBadge(getOutcome(item))}</td>
           <td class="p-3">
-            <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -408,8 +474,8 @@
       const deals = allAssignments
         .filter(isClosedDeal)
         .sort((a, b) => {
-          const aKey = `${a.appointment?.date || "0000-00-00"} ${a.appointment?.time || "00:00"}`;
-          const bKey = `${b.appointment?.date || "0000-00-00"} ${b.appointment?.time || "00:00"}`;
+          const aKey = `${appointmentDate(a) || "0000-00-00"} ${appointmentTime(a) || "00:00"}`;
+          const bKey = `${appointmentDate(b) || "0000-00-00"} ${appointmentTime(b) || "00:00"}`;
           return bKey.localeCompare(aKey);
         })
         .slice(0, 8);
@@ -433,9 +499,9 @@
             <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
           </td>
           <td class="p-3">${formatClaimType(item.claimType)}</td>
-          <td class="p-3">${paymentBadgeForProcessing(sent)}</td>
+          <td class="p-3">${processingBadge(sent)}</td>
           <td class="p-3">
-            <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -447,7 +513,8 @@
       body.innerHTML = "";
 
       const callbacks = allAssignments
-        .filter(item => item.outcome === "Call Back" || item.outcome === "No Answer")
+        .filter(isCallbackOutcome)
+        .sort(sortByAppointment)
         .slice(0, 10);
 
       if (!callbacks.length) {
@@ -468,10 +535,10 @@
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
             <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
           </td>
-          <td class="p-3">${outcomeBadge(item.outcome)}</td>
+          <td class="p-3">${outcomeBadge(getOutcome(item))}</td>
           <td class="p-3">${statusBadge(getEffectiveStatus(item))}</td>
           <td class="p-3">
-            <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -496,6 +563,15 @@
       }
     });
 
+    refreshBtn.addEventListener("click", async () => {
+      try {
+        await loadData();
+      } catch (error) {
+        console.error(error);
+        alert("Could not refresh closer dashboard.");
+      }
+    });
+
     logoutBtn.addEventListener("click", async () => {
       try {
         await signOut(auth);
@@ -516,4 +592,3 @@
     });
   </script>
 </body>
-</html>
