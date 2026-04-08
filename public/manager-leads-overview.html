@@ -146,7 +146,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, phone, mobile, email, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, telephone, mobile, email, postcode..." />
           </div>
         </div>
       </section>
@@ -159,7 +159,6 @@
           </div>
           <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -211,6 +210,31 @@
             <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
             <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
             <div><span class="font-semibold text-blue-900">Submission ID:</span> <span id="lead_submissionId">-</span></div>
+            <div><span class="font-semibold text-blue-900">Assessment ID:</span> <span id="lead_assessmentId">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Email Tools</h4>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="emailSubjectInput">Email Subject</label>
+              <input id="emailSubjectInput" type="text" class="input" placeholder="Email subject" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Email Status</label>
+              <div id="emailStatusBadge" class="pt-3">-</div>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label class="block text-sm font-semibold text-blue-900 mb-2" for="emailBodyBox">Email Body</label>
+            <textarea id="emailBodyBox" class="input" rows="10" placeholder="Manager email template..."></textarea>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button id="openEmailBtn" class="btn btn-primary" type="button">Open Email Draft</button>
+            <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="markEmailNeededBtn" class="btn btn-secondary" type="button">Mark Email Needed</button>
+            <button id="markEmailSentBtn" class="btn btn-secondary" type="button">Mark Email Sent</button>
           </div>
         </section>
 
@@ -232,12 +256,10 @@
               <input id="recommendedCloserText" type="text" class="input" placeholder="Optional recommendation" />
             </div>
           </div>
-
           <div class="mt-4">
             <label class="block text-sm font-semibold text-blue-900 mb-2" for="assessmentSummaryBox">Manager Assessment Summary</label>
             <textarea id="assessmentSummaryBox" class="input" rows="8" placeholder="This will auto-fill from the intake submission if available."></textarea>
           </div>
-
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="createAssessmentBtn" class="btn btn-primary" type="button">Create / Update Assessment Report</button>
             <a id="viewAssessmentBtn" href="#" class="btn btn-secondary hidden">View Assessment Report</a>
@@ -255,6 +277,7 @@
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerStatusSelect">Lead Status</label>
               <select id="managerStatusSelect" class="input">
                 <option value="awaiting_manager">Awaiting Manager</option>
+                <option value="intro_email_needed">Intro Email Needed</option>
                 <option value="qualified">Qualified</option>
                 <option value="sent_to_closer">Sent to Closer</option>
                 <option value="converted">Converted</option>
@@ -270,13 +293,21 @@
               <input id="appointmentTime" type="time" class="input" />
             </div>
           </div>
-
           <div class="flex flex-wrap gap-3">
+            <button id="savePipelineBtn" class="btn btn-primary" type="button">Save Pipeline Changes</button>
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
-            <button id="bookAppointmentBtn" class="btn btn-primary" type="button">Book Appointment</button>
+            <button id="bookAppointmentBtn" class="btn btn-secondary" type="button">Book Appointment</button>
             <button id="sendToCloserBtn" class="btn btn-secondary" type="button">Send to Closer</button>
             <button id="markConvertedBtn" class="btn btn-secondary" type="button">Mark Converted</button>
             <button id="markClosedBtn" class="btn btn-danger" type="button">Close Lead</button>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Assessment & Intake</h4>
+          <div class="flex flex-wrap gap-3">
+            <a id="openIntakeBtn" href="#" class="btn btn-secondary hidden">Open Intake Detail</a>
+            <a id="openAssessmentBtn" href="#" class="btn btn-secondary hidden">Open Assessment</a>
           </div>
         </section>
 
@@ -299,11 +330,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import {
       getFirestore,
       doc,
@@ -340,6 +367,7 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
@@ -356,17 +384,31 @@
     const appointmentTime = document.getElementById("appointmentTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
+
     const assessmentOutcomeSelect = document.getElementById("assessmentOutcomeSelect");
     const recommendedCloserText = document.getElementById("recommendedCloserText");
     const assessmentSummaryBox = document.getElementById("assessmentSummaryBox");
     const createAssessmentBtn = document.getElementById("createAssessmentBtn");
     const viewAssessmentBtn = document.getElementById("viewAssessmentBtn");
+
+    const emailSubjectInput = document.getElementById("emailSubjectInput");
+    const emailBodyBox = document.getElementById("emailBodyBox");
+    const emailStatusBadge = document.getElementById("emailStatusBadge");
+    const openEmailBtn = document.getElementById("openEmailBtn");
+    const copyEmailBtn = document.getElementById("copyEmailBtn");
+    const markEmailNeededBtn = document.getElementById("markEmailNeededBtn");
+    const markEmailSentBtn = document.getElementById("markEmailSentBtn");
+
+    const savePipelineBtn = document.getElementById("savePipelineBtn");
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
     const sendToCloserBtn = document.getElementById("sendToCloserBtn");
     const markConvertedBtn = document.getElementById("markConvertedBtn");
     const markClosedBtn = document.getElementById("markClosedBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
+
+    const openIntakeBtn = document.getElementById("openIntakeBtn");
+    const openAssessmentBtn = document.getElementById("openAssessmentBtn");
 
     let currentUser = null;
     let currentUserData = null;
@@ -437,6 +479,8 @@
         notes_saved: "Notes Saved",
         callback_required: "Callback Required",
         send_intro_email: "Send Intro Email",
+        intro_email_sent: "Intro Email Sent",
+        intro_email_needed: "Intro Email Needed",
         no_answer: "No Answer",
         voicemail: "Voicemail",
         wrong_number: "Wrong Number",
@@ -518,9 +562,7 @@
 
     function buildSubmissionAssessmentSummary(submission) {
       if (!submission) return "";
-      if ((submission.assessmentSummary || "").trim()) {
-        return submission.assessmentSummary.trim();
-      }
+      if ((submission.assessmentSummary || "").trim()) return submission.assessmentSummary.trim();
 
       const client = submission.client || {};
       const product1 = submission.product1 || {};
@@ -541,18 +583,13 @@
       if (Object.keys(product2).length) {
         productLines.push(`Product Two: ${Object.entries(product2).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
       }
-      if (productLines.length) {
-        blocks.push(productLines.join("\n"));
-      }
-
-      if ((submission.managerNotes || "").trim()) {
-        blocks.push(`Existing Manager Notes: ${submission.managerNotes.trim()}`);
-      }
+      if (productLines.length) blocks.push(productLines.join("\n"));
+      if ((submission.managerNotes || "").trim()) blocks.push(`Existing Manager Notes: ${submission.managerNotes.trim()}`);
 
       return blocks.join("\n\n").trim();
     }
 
-    function buildQuaerensAssessmentPack({ selectedLead, selectedSubmissionData, managerNotes, assessmentSummary }) {
+    function buildQuaerensAssessmentPack({ selectedLead, selectedSubmissionData, assessmentSummary }) {
       const client = selectedSubmissionData?.client || {};
       const product1 = selectedSubmissionData?.product1 || {};
       const product2 = selectedSubmissionData?.product2 || {};
@@ -790,6 +827,54 @@
       };
     }
 
+    function getLeadEmailAddress(lead) {
+      return safe(lead?.email || selectedSubmissionData?.client?.email);
+    }
+
+    function getLeadMobileNumber(lead) {
+      return safe(lead?.mobile || selectedSubmissionData?.client?.mobile);
+    }
+
+    function getLeadTelephoneNumber(lead) {
+      return safe(lead?.telephone || selectedSubmissionData?.client?.landline);
+    }
+
+    function buildManagerEmailSubject(lead) {
+      const fullName = clientName(lead);
+      return `Quaerens follow-up for ${fullName || "client"}`;
+    }
+
+    function buildManagerEmailBody(lead) {
+      const fullName = clientName(lead);
+      const claimType = safe(lead?.claimType || lead?.type || selectedSubmissionData?.claimType || "your matter");
+      return [
+        `Dear ${fullName || "Client"},`,
+        "",
+        "Thank you for your time.",
+        "",
+        `We are following up with you regarding ${claimType}.`,
+        "A manager has now reviewed the matter at this stage and we may need to confirm a few details and supporting documents before progressing further.",
+        "",
+        "Please reply to this email or let us know the best time to contact you if you would like to continue.",
+        "",
+        "Kind regards,",
+        currentUserData?.name || "Quaerens",
+        "Quaerens"
+      ].join("\n");
+    }
+
+    function updateEmailStatusBadge(lead) {
+      if (lead?.introEmailSent) {
+        emailStatusBadge.innerHTML = `<span class="badge badge-green">Email Sent</span>`;
+        return;
+      }
+      if (lead?.introEmailNeeded) {
+        emailStatusBadge.innerHTML = `<span class="badge badge-blue">Email Needed</span>`;
+        return;
+      }
+      emailStatusBadge.innerHTML = `<span class="badge badge-slate">No Email Flag</span>`;
+    }
+
     async function checkManagerAccess(user) {
       try {
         const userRef = doc(db, "users", user.uid);
@@ -868,7 +953,6 @@
         const appointmentDateValue = lead.closerAppointmentDate || "";
 
         const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
-
         const matchesTiming =
           selectedTiming === "all" ||
           (selectedTiming === "today" && appointmentDateValue === today) ||
@@ -897,7 +981,6 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesTiming && matchesLister && matchesCloser && matchesSearch;
       });
     }
@@ -939,7 +1022,6 @@
       }
 
       resultsSummary.textContent = `${filtered.length} lead(s) shown`;
-
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
       });
@@ -982,7 +1064,6 @@
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
-
       const possibleIds = [
         lead.convertedToSubmissionId,
         lead.submissionId,
@@ -1001,7 +1082,6 @@
           console.error("Failed loading linked submission:", error);
         }
       }
-
       return null;
     }
 
@@ -1034,12 +1114,9 @@
       selectedAssessmentPack = null;
       if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent =
-        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
+      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-
-      document.getElementById("lead_name").textContent =
-        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
       document.getElementById("lead_telephone").textContent = selectedLead.telephone || "-";
       document.getElementById("lead_mobile").textContent = selectedLead.mobile || "-";
       document.getElementById("lead_email").textContent = selectedLead.email || "-";
@@ -1053,7 +1130,11 @@
       document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
       document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
       document.getElementById("lead_submissionId").textContent =
-        selectedLead.convertedToSubmissionId || selectedLead.submissionId || selectedLead.claimSubmissionId || selectedLead.intakeSubmissionId || "-";
+        selectedLead.convertedToSubmissionId ||
+        selectedLead.submissionId ||
+        selectedLead.claimSubmissionId ||
+        selectedLead.intakeSubmissionId ||
+        "-";
 
       closerSelect.value = selectedLead.closerUid || "";
       managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
@@ -1072,9 +1153,45 @@
         intakeSummary ||
         "";
 
+      emailSubjectInput.value = selectedLead.introEmailSubject || buildManagerEmailSubject(selectedLead);
+      emailBodyBox.value = selectedLead.introEmailBody || buildManagerEmailBody(selectedLead);
+      updateEmailStatusBadge(selectedLead);
+
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
+
       await updateAssessmentButton();
+
+      const assessment = await findAssessmentForLead(selectedLead.id);
+      document.getElementById("lead_assessmentId").textContent = assessment?.id || selectedLead.assessmentId || "-";
+
+      const submissionId =
+        selectedLead.convertedToSubmissionId ||
+        selectedLead.submissionId ||
+        selectedLead.claimSubmissionId ||
+        selectedLead.intakeSubmissionId ||
+        "";
+
+      if (submissionId) {
+        openIntakeBtn.href = `/intake-detail.html?id=${submissionId}`;
+        openIntakeBtn.classList.remove("hidden");
+      } else {
+        openIntakeBtn.href = "#";
+        openIntakeBtn.classList.add("hidden");
+      }
+
+      if (assessment?.id) {
+        openAssessmentBtn.href = `/manager-assessment-detail.html?id=${assessment.id}`;
+        openAssessmentBtn.textContent = "Open Assessment";
+        openAssessmentBtn.classList.remove("hidden");
+      } else if (submissionId) {
+        openAssessmentBtn.href = `/intake-detail.html?id=${submissionId}`;
+        openAssessmentBtn.textContent = "Create Assessment";
+        openAssessmentBtn.classList.remove("hidden");
+      } else {
+        openAssessmentBtn.href = "#";
+        openAssessmentBtn.classList.add("hidden");
+      }
     }
 
     async function refreshSelectedLead() {
@@ -1092,7 +1209,6 @@
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -1105,7 +1221,6 @@
             notes
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -1219,7 +1334,6 @@
       const quaerensPack = buildQuaerensAssessmentPack({
         selectedLead,
         selectedSubmissionData,
-        managerNotes: notesBox.value.trim(),
         assessmentSummary: summary
       });
 
@@ -1286,9 +1400,90 @@
       return newDoc.id;
     }
 
-    createAssessmentBtn.addEventListener("click", async () => {
+    async function savePipelineChanges() {
       if (!selectedLead) return;
 
+      const patch = {
+        closerUid: closerSelect.value || "",
+        closerAppointmentDate: appointmentDate.value || "",
+        closerAppointmentTime: appointmentTime.value || "",
+        leadStatus: managerStatusSelect.value || selectedLead.leadStatus || "awaiting_manager",
+        assessmentOutcome: assessmentOutcomeSelect.value || "",
+        recommendedCloser: recommendedCloserText.value.trim(),
+        assessmentSummary: assessmentSummaryBox.value.trim(),
+        introEmailSubject: emailSubjectInput.value.trim(),
+        introEmailBody: emailBodyBox.value.trim(),
+        managerNotes: notesBox.value || "",
+        lastAction: "notes_saved"
+      };
+
+      await updateLead(
+        patch,
+        "notes_saved",
+        "Manager saved pipeline changes."
+      );
+    }
+
+    function getSelectedLeadEmailForSending() {
+      return getLeadEmailAddress(selectedLead);
+    }
+
+    function openEmailDraft() {
+      if (!selectedLead) return;
+
+      const email = getSelectedLeadEmailForSending();
+      if (!email) {
+        showModalMessage("No email address found for this lead.", true);
+        return;
+      }
+
+      const subject = encodeURIComponent(emailSubjectInput.value.trim() || buildManagerEmailSubject(selectedLead));
+      const body = encodeURIComponent(emailBodyBox.value.trim() || buildManagerEmailBody(selectedLead));
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    }
+
+    async function copyManagerEmail() {
+      try {
+        const subject = emailSubjectInput.value.trim() || buildManagerEmailSubject(selectedLead);
+        const body = emailBodyBox.value.trim() || buildManagerEmailBody(selectedLead);
+        await navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+        showModalMessage("Email copied.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not copy email.", true);
+      }
+    }
+
+    async function markLeadEmailNeeded() {
+      if (!selectedLead) return;
+      await updateLead({
+        introEmailNeeded: true,
+        introEmailSent: false,
+        introEmailSubject: emailSubjectInput.value.trim(),
+        introEmailBody: emailBodyBox.value.trim(),
+        leadStatus: "intro_email_needed",
+        lastAction: "intro_email_needed"
+      }, "intro_email_needed", "Manager marked lead as needing an email.");
+    }
+
+    async function markLeadEmailSent() {
+      if (!selectedLead) return;
+      await updateLead({
+        introEmailNeeded: true,
+        introEmailSent: true,
+        introEmailSentAt: serverTimestamp(),
+        introEmailSentByUid: currentUser.uid,
+        introEmailSentByName: currentUserData.name || "",
+        introEmailSentByEmail: currentUser.email || "",
+        introEmailSubject: emailSubjectInput.value.trim(),
+        introEmailBody: emailBodyBox.value.trim(),
+        leadStatus: "intro_email_needed",
+        lastAction: "intro_email_sent"
+      }, "intro_email_sent", "Manager marked lead email as sent.");
+    }
+
+    createAssessmentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
       try {
         const assessmentId = await createOrUpdateAssessment();
         selectedAssessmentId = assessmentId;
@@ -1323,6 +1518,26 @@
       }
     });
 
+    savePipelineBtn.addEventListener("click", async () => {
+      await savePipelineChanges();
+    });
+
+    openEmailBtn.addEventListener("click", () => {
+      openEmailDraft();
+    });
+
+    copyEmailBtn.addEventListener("click", async () => {
+      await copyManagerEmail();
+    });
+
+    markEmailNeededBtn.addEventListener("click", async () => {
+      await markLeadEmailNeeded();
+    });
+
+    markEmailSentBtn.addEventListener("click", async () => {
+      await markLeadEmailSent();
+    });
+
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
       await updateLead({
@@ -1333,12 +1548,10 @@
 
     bookAppointmentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!closerSelect.value) {
         showModalMessage("Please choose a closer first.", true);
         return;
       }
-
       if (!appointmentDate.value || !appointmentTime.value) {
         showModalMessage("Please choose appointment date and time.", true);
         return;
@@ -1385,7 +1598,6 @@
 
     sendToCloserBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!closerSelect.value) {
         showModalMessage("Please choose a closer first.", true);
         return;
@@ -1451,10 +1663,11 @@
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           managerNotes: notesBox.value || "",
+          introEmailSubject: emailSubjectInput.value.trim(),
+          introEmailBody: emailBodyBox.value.trim(),
           closerUid: closerSelect.value || "",
           closerAppointmentDate: appointmentDate.value || "",
           closerAppointmentTime: appointmentTime.value || "",
@@ -1483,7 +1696,6 @@
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {

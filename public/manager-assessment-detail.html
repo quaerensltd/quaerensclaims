@@ -22,14 +22,8 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav {
-      background: #2563eb;
-      color: white;
-    }
-    .active-nav:hover {
-      background: #1d4ed8;
-      color: white;
-    }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -113,6 +107,7 @@
       <p class="text-slate-600 font-medium">Loading assessment report...</p>
     </div>
   </div>
+
   <div id="toast"></div>
 
   <div class="min-h-screen">
@@ -154,6 +149,7 @@
             <div><span class="label">Client Name</span><div class="value" id="clientNameText">-</div></div>
             <div><span class="label">Claim Type</span><div class="value" id="claimTypeText">-</div></div>
             <div><span class="label">Telephone</span><div class="value" id="telephoneText">-</div></div>
+            <div><span class="label">Mobile</span><div class="value" id="mobileText">-</div></div>
             <div><span class="label">Email</span><div class="value" id="emailText">-</div></div>
             <div><span class="label">Postcode</span><div class="value" id="postcodeText">-</div></div>
             <div><span class="label">Recommended Closer</span><div class="value" id="recommendedCloserLabel">-</div></div>
@@ -181,6 +177,7 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
           <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
         </section>
+
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Email Preview</h3>
           <div id="clientEmailPreviewBox" class="readonly-box">No client email preview available.</div>
@@ -197,6 +194,7 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Strategic Analysis</h3>
           <div id="strategicAnalysisBox" class="readonly-box">No strategic analysis available.</div>
         </section>
+
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Recommended Next Steps</h3>
           <div id="recommendedNextStepsBox" class="readonly-box">No recommended next steps available.</div>
@@ -208,6 +206,7 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Processing Pack Summary</h3>
           <div id="processingPackBox" class="readonly-box">No processing pack prepared yet.</div>
         </section>
+
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Source Product Snapshot</h3>
           <div class="space-y-4">
@@ -228,6 +227,7 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Complaint Letter Draft</h3>
           <div id="complaintLetterBox" class="readonly-box">No complaint letter available.</div>
         </section>
+
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Statement of Truth</h3>
           <div id="statementOfTruthBox" class="readonly-box">No statement of truth available.</div>
@@ -239,6 +239,7 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Loss Summary</h3>
           <div id="lossSummaryBox" class="readonly-box">No loss summary available.</div>
         </section>
+
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Evidence Checklist</h3>
           <div id="evidenceChecklistBox" class="readonly-box">No evidence checklist available.</div>
@@ -250,6 +251,7 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Escalation Letter</h3>
           <div id="escalationLetterBox" class="readonly-box">No escalation letter available.</div>
         </section>
+
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Internal File Note</h3>
           <div id="internalFileNoteBox" class="readonly-box">No internal file note available.</div>
@@ -397,19 +399,56 @@
     }
 
     function clientEmailFromAssessment(data) {
-      return data.client?.email || "";
+      return (
+        data.client?.email ||
+        linkedSubmission?.client?.email ||
+        linkedLead?.email ||
+        ""
+      );
     }
 
-    function clientPhoneFromAssessment(data) {
-      return data.client?.telephone || data.client?.mobile || data.client?.landline || "-";
+    function clientTelephoneFromAssessment(data) {
+      return (
+        data.client?.telephone ||
+        data.client?.landline ||
+        linkedSubmission?.client?.landline ||
+        linkedLead?.telephone ||
+        "-"
+      );
+    }
+
+    function clientMobileFromAssessment(data) {
+      return (
+        data.client?.mobile ||
+        linkedSubmission?.client?.mobile ||
+        linkedLead?.mobile ||
+        "-"
+      );
     }
 
     function addressFromAssessment(data) {
-      return data.client?.address || "-";
+      return (
+        data.client?.address ||
+        linkedSubmission?.client?.address ||
+        [
+          linkedLead?.address,
+          linkedLead?.address1,
+          linkedLead?.address2,
+          linkedLead?.address3,
+          linkedLead?.address4,
+          linkedLead?.address5
+        ].filter(Boolean).join(", ") ||
+        "-"
+      );
     }
 
     function postcodeFromAssessment(data) {
-      return data.client?.postcode || "-";
+      return (
+        data.client?.postcode ||
+        linkedSubmission?.client?.postcode ||
+        linkedLead?.postcode ||
+        "-"
+      );
     }
 
     function objectToReadableLines(obj) {
@@ -547,7 +586,6 @@
       const assessmentSummary = assessmentData.assessmentSummary || assessmentData.generatedAssessmentText || "-";
       const claimType = formatClaimType(assessmentData.claimType);
       const clientName = clientNameFromAssessment(assessmentData);
-
       return [
         "INTERNAL PROCESSING PACK",
         "",
@@ -643,23 +681,28 @@
 
       assessmentData = { id: assessmentSnap.id, ...assessmentSnap.data() };
 
+      await loadLinkedLeadAndSubmission();
+      await loadExistingProcessingCase();
+
       document.getElementById("detailTitle").textContent = clientNameFromAssessment(assessmentData);
       document.getElementById("detailSubtitle").textContent = `Assessment ID: ${assessmentData.id}`;
       document.getElementById("assessmentDateText").textContent = `Created: ${formatDateTime(assessmentData.createdAt)}`;
       document.getElementById("createdByText").textContent = `Prepared by: ${assessmentData.createdBy?.name || assessmentData.createdBy?.email || "-"}`;
       document.getElementById("linkedLeadText").textContent = `Lead ID: ${assessmentData.leadId || "-"}`;
       document.getElementById("submissionText").textContent = `Submission ID: ${assessmentData.submissionId || "-"}`;
+
       document.getElementById("clientNameText").textContent = clientNameFromAssessment(assessmentData);
       document.getElementById("claimTypeText").textContent = formatClaimType(assessmentData.claimType);
-      document.getElementById("telephoneText").textContent = clientPhoneFromAssessment(assessmentData);
+      document.getElementById("telephoneText").textContent = clientTelephoneFromAssessment(assessmentData);
+      document.getElementById("mobileText").textContent = clientMobileFromAssessment(assessmentData);
       document.getElementById("emailText").textContent = clientEmailFromAssessment(assessmentData) || "-";
       document.getElementById("postcodeText").textContent = postcodeFromAssessment(assessmentData);
       document.getElementById("addressText").textContent = addressFromAssessment(assessmentData);
       document.getElementById("recommendedCloserLabel").textContent = assessmentData.recommendedCloser || "-";
+
       document.getElementById("assessmentOutcomeBadge").innerHTML = assessmentOutcomeBadge(assessmentData.assessmentOutcome);
       document.getElementById("managerNotesBox").textContent = assessmentData.managerNotes || "No manager notes recorded.";
       document.getElementById("assessmentSummaryBox").textContent = assessmentData.assessmentSummary || "No assessment summary available.";
-
       document.getElementById("assessmentReportBox").textContent =
         assessmentData.assessmentReportText ||
         assessmentData.generatedAssessmentText ||
@@ -709,16 +752,17 @@
         assessmentData.internalFileNoteText ||
         buildFallbackInternalFileNote();
 
-      if (assessmentData.recommendedCloser) {
+      if (linkedLead?.closerAppointmentDate) appointmentDate.value = linkedLead.closerAppointmentDate;
+      if (linkedLead?.closerAppointmentTime) appointmentTime.value = linkedLead.closerAppointmentTime;
+      if (linkedLead?.closerUid) closerSelect.value = linkedLead.closerUid;
+
+      if (!closerSelect.value && assessmentData.recommendedCloser) {
         const recommended = closerUsers.find(user => {
           const label = `${user.name || ""} ${user.email || ""}`.toLowerCase();
           return label.includes(assessmentData.recommendedCloser.toLowerCase());
         });
         if (recommended) closerSelect.value = recommended.id;
       }
-
-      await loadLinkedLeadAndSubmission();
-      await loadExistingProcessingCase();
 
       if (assessmentData.leadId) {
         openLeadBtn.href = `/manager-leads-overview.html`;
@@ -737,9 +781,6 @@
           const leadSnap = await getDoc(doc(db, "leadAssignments", assessmentData.leadId));
           if (leadSnap.exists()) {
             linkedLead = { id: leadSnap.id, ...leadSnap.data() };
-            if (linkedLead.closerAppointmentDate) appointmentDate.value = linkedLead.closerAppointmentDate;
-            if (linkedLead.closerAppointmentTime) appointmentTime.value = linkedLead.closerAppointmentTime;
-            if (linkedLead.closerUid) closerSelect.value = linkedLead.closerUid;
           }
         } catch (error) {
           console.error("Could not load linked lead:", error);
@@ -750,6 +791,8 @@
         assessmentData.submissionId ||
         linkedLead?.convertedToSubmissionId ||
         linkedLead?.submissionId ||
+        linkedLead?.claimSubmissionId ||
+        linkedLead?.intakeSubmissionId ||
         "";
 
       if (possibleSubmissionId) {
@@ -827,10 +870,10 @@
           secondName: client.secondName || linkedLead?.surname || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || "",
-          mobile: client.mobile || linkedLead?.telephone || "",
+          landline: client.landline || linkedLead?.telephone || "",
+          mobile: client.mobile || linkedLead?.mobile || linkedLead?.telephone || "",
           email: client.email || linkedLead?.email || "",
-          address: client.address || assessmentData.client?.address || ""
+          address: client.address || assessmentData.client?.address || addressFromAssessment(assessmentData) || ""
         },
         appointment,
         status: statusValue,
@@ -866,10 +909,7 @@
         }
       };
 
-      const existingQuery = query(
-        collection(db, "closerAssignments"),
-        where("assessmentId", "==", assessmentData.id)
-      );
+      const existingQuery = query(collection(db, "closerAssignments"), where("assessmentId", "==", assessmentData.id));
       const existingSnap = await getDocs(existingQuery);
 
       if (!existingSnap.empty) {
@@ -933,10 +973,10 @@
           secondName: client.secondName || linkedLead?.surname || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || "",
-          mobile: client.mobile || linkedLead?.telephone || "",
+          landline: client.landline || linkedLead?.telephone || "",
+          mobile: client.mobile || linkedLead?.mobile || linkedLead?.telephone || "",
           email: client.email || linkedLead?.email || "",
-          address: client.address || assessmentData.client?.address || ""
+          address: client.address || assessmentData.client?.address || addressFromAssessment(assessmentData) || ""
         },
         closer: linkedLead?.closerUid
           ? {
