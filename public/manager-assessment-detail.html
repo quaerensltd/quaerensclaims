@@ -30,6 +30,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -121,6 +122,7 @@
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -177,7 +179,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
           <div id="assessmentSummaryBox" class="readonly-box">No assessment summary available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Email Preview</h3>
           <div id="clientEmailPreviewBox" class="readonly-box">No client email preview available.</div>
@@ -194,7 +195,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Strategic Analysis</h3>
           <div id="strategicAnalysisBox" class="readonly-box">No strategic analysis available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Recommended Next Steps</h3>
           <div id="recommendedNextStepsBox" class="readonly-box">No recommended next steps available.</div>
@@ -206,7 +206,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Processing Pack Summary</h3>
           <div id="processingPackBox" class="readonly-box">No processing pack prepared yet.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Source Product Snapshot</h3>
           <div class="space-y-4">
@@ -227,7 +226,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Complaint Letter Draft</h3>
           <div id="complaintLetterBox" class="readonly-box">No complaint letter available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Statement of Truth</h3>
           <div id="statementOfTruthBox" class="readonly-box">No statement of truth available.</div>
@@ -239,7 +237,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Loss Summary</h3>
           <div id="lossSummaryBox" class="readonly-box">No loss summary available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Evidence Checklist</h3>
           <div id="evidenceChecklistBox" class="readonly-box">No evidence checklist available.</div>
@@ -251,7 +248,6 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Escalation Letter</h3>
           <div id="escalationLetterBox" class="readonly-box">No escalation letter available.</div>
         </section>
-
         <section class="card p-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Internal File Note</h3>
           <div id="internalFileNoteBox" class="readonly-box">No internal file note available.</div>
@@ -327,6 +323,7 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
     const closerSelect = document.getElementById("closerSelect");
     const appointmentDate = document.getElementById("appointmentDate");
     const appointmentTime = document.getElementById("appointmentTime");
@@ -346,6 +343,7 @@
     let linkedLead = null;
     let linkedSubmission = null;
     let existingProcessingCase = null;
+    let existingCloserAssignment = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -365,18 +363,41 @@
       setTimeout(() => actionMessage.classList.add("hidden"), 3500);
     }
 
+    function safeString(value) {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safeString(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
+    function normalizeClaimType(value) {
+      const raw = safeString(value).toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
+      return raw;
+    }
+
     function formatDateTime(value) {
       if (!value) return "-";
       try {
-        const d = value.toDate ? value.toDate() : new Date(value);
-        return d.toLocaleString("en-GB");
+        const d = value?.toDate ? value.toDate() : new Date(value);
+        return isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB");
       } catch {
         return "-";
       }
     }
 
     function formatClaimType(type) {
-      switch (type) {
+      switch (normalizeClaimType(type)) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
@@ -626,6 +647,22 @@
       ].join("\n");
     }
 
+    function createCaseReference() {
+      const type = (normalizeClaimType(assessmentData.claimType) || "case").toUpperCase().slice(0, 4);
+      const surname = firstNonEmpty(
+        assessmentData.client?.surname,
+        assessmentData.client?.secondName,
+        assessmentData.client?.forename,
+        assessmentData.client?.firstName,
+        linkedLead?.surname,
+        linkedLead?.forename,
+        "CLIENT"
+      ).replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6);
+      const today = new Date();
+      const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      return `${type}-${surname}-${stamp}`;
+    }
+
     async function checkManagerAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -661,115 +698,6 @@
         option.textContent = user.name || user.email || user.id;
         closerSelect.appendChild(option);
       });
-    }
-
-    async function loadAssessment() {
-      if (!assessmentId) {
-        alert("Missing assessment ID.");
-        window.location.href = "/manager-leads-overview.html";
-        return;
-      }
-
-      const assessmentRef = doc(db, "managerAssessments", assessmentId);
-      const assessmentSnap = await getDoc(assessmentRef);
-
-      if (!assessmentSnap.exists()) {
-        alert("Assessment report not found.");
-        window.location.href = "/manager-leads-overview.html";
-        return;
-      }
-
-      assessmentData = { id: assessmentSnap.id, ...assessmentSnap.data() };
-
-      await loadLinkedLeadAndSubmission();
-      await loadExistingProcessingCase();
-
-      document.getElementById("detailTitle").textContent = clientNameFromAssessment(assessmentData);
-      document.getElementById("detailSubtitle").textContent = `Assessment ID: ${assessmentData.id}`;
-      document.getElementById("assessmentDateText").textContent = `Created: ${formatDateTime(assessmentData.createdAt)}`;
-      document.getElementById("createdByText").textContent = `Prepared by: ${assessmentData.createdBy?.name || assessmentData.createdBy?.email || "-"}`;
-      document.getElementById("linkedLeadText").textContent = `Lead ID: ${assessmentData.leadId || "-"}`;
-      document.getElementById("submissionText").textContent = `Submission ID: ${assessmentData.submissionId || "-"}`;
-
-      document.getElementById("clientNameText").textContent = clientNameFromAssessment(assessmentData);
-      document.getElementById("claimTypeText").textContent = formatClaimType(assessmentData.claimType);
-      document.getElementById("telephoneText").textContent = clientTelephoneFromAssessment(assessmentData);
-      document.getElementById("mobileText").textContent = clientMobileFromAssessment(assessmentData);
-      document.getElementById("emailText").textContent = clientEmailFromAssessment(assessmentData) || "-";
-      document.getElementById("postcodeText").textContent = postcodeFromAssessment(assessmentData);
-      document.getElementById("addressText").textContent = addressFromAssessment(assessmentData);
-      document.getElementById("recommendedCloserLabel").textContent = assessmentData.recommendedCloser || "-";
-
-      document.getElementById("assessmentOutcomeBadge").innerHTML = assessmentOutcomeBadge(assessmentData.assessmentOutcome);
-      document.getElementById("managerNotesBox").textContent = assessmentData.managerNotes || "No manager notes recorded.";
-      document.getElementById("assessmentSummaryBox").textContent = assessmentData.assessmentSummary || "No assessment summary available.";
-      document.getElementById("assessmentReportBox").textContent =
-        assessmentData.assessmentReportText ||
-        assessmentData.generatedAssessmentText ||
-        assessmentData.assessmentSummary ||
-        "No assessment report available.";
-
-      document.getElementById("strategicAnalysisBox").textContent =
-        assessmentData.strategicAnalysisText ||
-        buildFallbackStrategicAnalysis();
-
-      document.getElementById("recommendedNextStepsBox").textContent =
-        assessmentData.recommendedNextStepsText ||
-        buildFallbackNextSteps();
-
-      document.getElementById("processingPackBox").textContent =
-        assessmentData.processingPackText ||
-        buildProcessingPackText();
-
-      document.getElementById("clientEmailPreviewBox").textContent =
-        assessmentData.clientEmailPreviewText ||
-        buildClientEmailPreview();
-
-      document.getElementById("product1Box").textContent = objectToReadableLines(assessmentData.product1 || {});
-      document.getElementById("product2Box").textContent = objectToReadableLines(assessmentData.product2 || {});
-
-      document.getElementById("complaintLetterBox").textContent =
-        assessmentData.complaintLetterText ||
-        buildFallbackComplaintLetter();
-
-      document.getElementById("statementOfTruthBox").textContent =
-        assessmentData.statementOfTruthText ||
-        buildFallbackStatementOfTruth();
-
-      document.getElementById("lossSummaryBox").textContent =
-        assessmentData.lossSummaryText ||
-        buildFallbackLossSummary();
-
-      document.getElementById("evidenceChecklistBox").textContent =
-        assessmentData.evidenceChecklistText ||
-        buildFallbackEvidenceChecklist();
-
-      document.getElementById("escalationLetterBox").textContent =
-        assessmentData.escalationLetterText ||
-        buildFallbackEscalationLetter();
-
-      document.getElementById("internalFileNoteBox").textContent =
-        assessmentData.internalFileNoteText ||
-        buildFallbackInternalFileNote();
-
-      if (linkedLead?.closerAppointmentDate) appointmentDate.value = linkedLead.closerAppointmentDate;
-      if (linkedLead?.closerAppointmentTime) appointmentTime.value = linkedLead.closerAppointmentTime;
-      if (linkedLead?.closerUid) closerSelect.value = linkedLead.closerUid;
-
-      if (!closerSelect.value && assessmentData.recommendedCloser) {
-        const recommended = closerUsers.find(user => {
-          const label = `${user.name || ""} ${user.email || ""}`.toLowerCase();
-          return label.includes(assessmentData.recommendedCloser.toLowerCase());
-        });
-        if (recommended) closerSelect.value = recommended.id;
-      }
-
-      if (assessmentData.leadId) {
-        openLeadBtn.href = `/manager-leads-overview.html`;
-        openLeadBtn.classList.remove("hidden");
-      }
-
-      hideLoader();
     }
 
     async function loadLinkedLeadAndSubmission() {
@@ -809,34 +737,178 @@
 
     async function loadExistingProcessingCase() {
       existingProcessingCase = null;
-
-      if (!assessmentData.leadId) {
-        openProcessingBtn.classList.add("hidden");
-        return;
-      }
+      openProcessingBtn.classList.add("hidden");
 
       try {
-        const q = query(collection(db, "processingCases"), where("assessmentId", "==", assessmentData.id));
-        const snap = await getDocs(q);
+        const queries = [];
+        if (assessmentData?.id) {
+          queries.push(query(collection(db, "processingCases"), where("assessmentId", "==", assessmentData.id)));
+        }
+        if (assessmentData?.leadId) {
+          queries.push(query(collection(db, "processingCases"), where("sourceLeadId", "==", assessmentData.leadId)));
+          queries.push(query(collection(db, "processingCases"), where("sourceAssignmentId", "==", assessmentData.leadId)));
+        }
 
-        if (!snap.empty) {
-          existingProcessingCase = { id: snap.docs[0].id, ...snap.docs[0].data() };
+        for (const q of queries) {
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            existingProcessingCase = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            break;
+          }
+        }
+
+        if (existingProcessingCase?.id) {
           openProcessingBtn.href = `/processing-case-detail.html?id=${existingProcessingCase.id}`;
           openProcessingBtn.classList.remove("hidden");
-        } else {
-          openProcessingBtn.href = "#";
-          openProcessingBtn.classList.add("hidden");
         }
       } catch (error) {
         console.error("Could not load existing processing case:", error);
       }
     }
 
+    async function loadExistingCloserAssignment() {
+      existingCloserAssignment = null;
+
+      try {
+        const queries = [];
+        if (assessmentData?.id) {
+          queries.push(query(collection(db, "closerAssignments"), where("assessmentId", "==", assessmentData.id)));
+        }
+        if (assessmentData?.leadId) {
+          queries.push(query(collection(db, "closerAssignments"), where("sourceLeadId", "==", assessmentData.leadId)));
+          queries.push(query(collection(db, "closerAssignments"), where("leadAssignmentId", "==", assessmentData.leadId)));
+        }
+
+        for (const q of queries) {
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            existingCloserAssignment = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            break;
+          }
+        }
+      } catch (error) {
+        console.error("Could not load existing closer assignment:", error);
+      }
+    }
+
+    function renderAssessment() {
+      document.getElementById("detailTitle").textContent = clientNameFromAssessment(assessmentData);
+      document.getElementById("detailSubtitle").textContent = `Assessment ID: ${assessmentData.id}`;
+      document.getElementById("assessmentDateText").textContent = `Created: ${formatDateTime(assessmentData.createdAt)}`;
+      document.getElementById("createdByText").textContent = `Prepared by: ${assessmentData.createdBy?.name || assessmentData.createdBy?.email || "-"}`;
+      document.getElementById("linkedLeadText").textContent = `Lead ID: ${assessmentData.leadId || "-"}`;
+      document.getElementById("submissionText").textContent = `Submission ID: ${assessmentData.submissionId || linkedSubmission?.id || "-"}`;
+
+      document.getElementById("clientNameText").textContent = clientNameFromAssessment(assessmentData);
+      document.getElementById("claimTypeText").textContent = formatClaimType(assessmentData.claimType);
+      document.getElementById("telephoneText").textContent = clientTelephoneFromAssessment(assessmentData);
+      document.getElementById("mobileText").textContent = clientMobileFromAssessment(assessmentData);
+      document.getElementById("emailText").textContent = clientEmailFromAssessment(assessmentData) || "-";
+      document.getElementById("postcodeText").textContent = postcodeFromAssessment(assessmentData);
+      document.getElementById("addressText").textContent = addressFromAssessment(assessmentData);
+      document.getElementById("recommendedCloserLabel").textContent = assessmentData.recommendedCloser || "-";
+
+      document.getElementById("assessmentOutcomeBadge").innerHTML = assessmentOutcomeBadge(assessmentData.assessmentOutcome);
+      document.getElementById("managerNotesBox").textContent = assessmentData.managerNotes || "No manager notes recorded.";
+      document.getElementById("assessmentSummaryBox").textContent = assessmentData.assessmentSummary || "No assessment summary available.";
+      document.getElementById("assessmentReportBox").textContent =
+        assessmentData.assessmentReportText ||
+        assessmentData.generatedAssessmentText ||
+        assessmentData.assessmentSummary ||
+        "No assessment report available.";
+
+      document.getElementById("strategicAnalysisBox").textContent =
+        assessmentData.strategicAnalysisText ||
+        buildFallbackStrategicAnalysis();
+
+      document.getElementById("recommendedNextStepsBox").textContent =
+        assessmentData.recommendedNextStepsText ||
+        buildFallbackNextSteps();
+
+      document.getElementById("processingPackBox").textContent =
+        assessmentData.processingPackText ||
+        buildProcessingPackText();
+
+      document.getElementById("clientEmailPreviewBox").textContent =
+        assessmentData.clientEmailPreviewText ||
+        buildClientEmailPreview();
+
+      document.getElementById("product1Box").textContent = objectToReadableLines(assessmentData.product1 || {});
+      document.getElementById("product2Box").textContent = objectToReadableLines(assessmentData.product2 || {});
+      document.getElementById("complaintLetterBox").textContent =
+        assessmentData.complaintLetterText ||
+        buildFallbackComplaintLetter();
+      document.getElementById("statementOfTruthBox").textContent =
+        assessmentData.statementOfTruthText ||
+        buildFallbackStatementOfTruth();
+      document.getElementById("lossSummaryBox").textContent =
+        assessmentData.lossSummaryText ||
+        buildFallbackLossSummary();
+      document.getElementById("evidenceChecklistBox").textContent =
+        assessmentData.evidenceChecklistText ||
+        buildFallbackEvidenceChecklist();
+      document.getElementById("escalationLetterBox").textContent =
+        assessmentData.escalationLetterText ||
+        buildFallbackEscalationLetter();
+      document.getElementById("internalFileNoteBox").textContent =
+        assessmentData.internalFileNoteText ||
+        buildFallbackInternalFileNote();
+
+      if (existingCloserAssignment?.appointment?.date) appointmentDate.value = existingCloserAssignment.appointment.date;
+      else if (linkedLead?.closerAppointmentDate) appointmentDate.value = linkedLead.closerAppointmentDate;
+
+      if (existingCloserAssignment?.appointment?.time) appointmentTime.value = existingCloserAssignment.appointment.time;
+      else if (linkedLead?.closerAppointmentTime) appointmentTime.value = linkedLead.closerAppointmentTime;
+
+      if (existingCloserAssignment?.closer?.uid) {
+        closerSelect.value = existingCloserAssignment.closer.uid;
+      } else if (linkedLead?.closerUid) {
+        closerSelect.value = linkedLead.closerUid;
+      } else if (assessmentData.recommendedCloser) {
+        const recommended = closerUsers.find(user => {
+          const label = `${user.name || ""} ${user.email || ""}`.toLowerCase();
+          return label.includes(assessmentData.recommendedCloser.toLowerCase());
+        });
+        if (recommended) closerSelect.value = recommended.id;
+      }
+
+      if (assessmentData.leadId) {
+        openLeadBtn.href = `/manager-leads-overview.html`;
+        openLeadBtn.classList.remove("hidden");
+      } else {
+        openLeadBtn.classList.add("hidden");
+      }
+    }
+
+    async function loadAssessment() {
+      if (!assessmentId) {
+        alert("Missing assessment ID.");
+        window.location.href = "/manager-leads-overview.html";
+        return;
+      }
+
+      const assessmentRef = doc(db, "managerAssessments", assessmentId);
+      const assessmentSnap = await getDoc(assessmentRef);
+
+      if (!assessmentSnap.exists()) {
+        alert("Assessment report not found.");
+        window.location.href = "/manager-leads-overview.html";
+        return;
+      }
+
+      assessmentData = { id: assessmentSnap.id, ...assessmentSnap.data() };
+
+      await loadLinkedLeadAndSubmission();
+      await loadExistingProcessingCase();
+      await loadExistingCloserAssignment();
+      renderAssessment();
+      hideLoader();
+    }
+
     async function createOrUpdateCloserAssignment() {
       if (!linkedLead && !assessmentData.leadId) {
         throw new Error("This assessment is not linked to a lead.");
       }
-
       if (!closerSelect.value) {
         throw new Error("Please select a closer.");
       }
@@ -866,18 +938,18 @@
           email: closerUser.email || ""
         },
         client: {
-          firstName: client.firstName || linkedLead?.forename || "",
-          secondName: client.secondName || linkedLead?.surname || "",
+          firstName: client.firstName || linkedLead?.forename || assessmentData.client?.forename || assessmentData.client?.firstName || "",
+          secondName: client.secondName || linkedLead?.surname || assessmentData.client?.surname || assessmentData.client?.secondName || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || linkedLead?.telephone || "",
-          mobile: client.mobile || linkedLead?.mobile || linkedLead?.telephone || "",
-          email: client.email || linkedLead?.email || "",
+          landline: client.landline || linkedLead?.telephone || assessmentData.client?.telephone || assessmentData.client?.landline || "",
+          mobile: client.mobile || linkedLead?.mobile || linkedLead?.telephone || assessmentData.client?.mobile || "",
+          email: client.email || linkedLead?.email || assessmentData.client?.email || "",
           address: client.address || assessmentData.client?.address || addressFromAssessment(assessmentData) || ""
         },
         appointment,
         status: statusValue,
-        outcome: "",
+        outcome: existingCloserAssignment?.outcome || "",
         assessmentSummary: assessmentData.assessmentSummary || "",
         generatedAssessmentText: assessmentData.generatedAssessmentText || assessmentData.assessmentReportText || assessmentData.assessmentSummary || "",
         assessmentReportText: assessmentData.assessmentReportText || assessmentData.generatedAssessmentText || "",
@@ -909,16 +981,14 @@
         }
       };
 
-      const existingQuery = query(collection(db, "closerAssignments"), where("assessmentId", "==", assessmentData.id));
-      const existingSnap = await getDocs(existingQuery);
-
-      if (!existingSnap.empty) {
-        await updateDoc(doc(db, "closerAssignments", existingSnap.docs[0].id), payload);
+      if (existingCloserAssignment?.id) {
+        await updateDoc(doc(db, "closerAssignments", existingCloserAssignment.id), payload);
       } else {
-        await addDoc(collection(db, "closerAssignments"), {
+        const newDoc = await addDoc(collection(db, "closerAssignments"), {
           ...payload,
           createdAt: serverTimestamp()
         });
+        existingCloserAssignment = { id: newDoc.id, ...payload };
       }
 
       if (assessmentData.leadId) {
@@ -956,6 +1026,8 @@
           })
         });
       }
+
+      await loadExistingCloserAssignment();
     }
 
     async function createOrUpdateProcessingCase() {
@@ -966,25 +1038,19 @@
         sourceAssignmentId: assessmentData.leadId || linkedLead?.id || "",
         sourceLeadId: assessmentData.leadId || linkedLead?.id || "",
         assessmentId: assessmentData.id,
-        caseReference: existingProcessingCase?.caseReference || linkedLead?.caseReference || `CASE-${Date.now()}`,
+        caseReference: existingProcessingCase?.caseReference || linkedLead?.caseReference || createCaseReference(),
         claimType: assessmentData.claimType || linkedLead?.claimType || linkedLead?.type || "",
         client: {
-          firstName: client.firstName || linkedLead?.forename || "",
-          secondName: client.secondName || linkedLead?.surname || "",
+          firstName: client.firstName || linkedLead?.forename || assessmentData.client?.forename || assessmentData.client?.firstName || "",
+          secondName: client.secondName || linkedLead?.surname || assessmentData.client?.surname || assessmentData.client?.secondName || "",
           firstName2: client.firstName2 || "",
           secondName2: client.secondName2 || "",
-          landline: client.landline || linkedLead?.telephone || "",
-          mobile: client.mobile || linkedLead?.mobile || linkedLead?.telephone || "",
-          email: client.email || linkedLead?.email || "",
+          landline: client.landline || linkedLead?.telephone || assessmentData.client?.telephone || assessmentData.client?.landline || "",
+          mobile: client.mobile || linkedLead?.mobile || linkedLead?.telephone || assessmentData.client?.mobile || "",
+          email: client.email || linkedLead?.email || assessmentData.client?.email || "",
           address: client.address || assessmentData.client?.address || addressFromAssessment(assessmentData) || ""
         },
-        closer: linkedLead?.closerUid
-          ? {
-              uid: linkedLead.closerUid,
-              name: "",
-              email: ""
-            }
-          : {},
+        closer: existingCloserAssignment?.closer || {},
         assignedBy: {
           uid: currentUser.uid,
           name: currentUserData.name || "",
@@ -1094,6 +1160,16 @@
       } catch (error) {
         console.error("Failed creating processing case:", error);
         setActionMessage(error.message || "Could not create processing case.", true);
+      }
+    });
+
+    refreshBtn.addEventListener("click", async () => {
+      try {
+        await loadAssessment();
+        showToast("Assessment refreshed.");
+      } catch (error) {
+        console.error("Refresh failed:", error);
+        alert("Could not refresh assessment report.");
       }
     });
 

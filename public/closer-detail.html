@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Closer Detail | Quaerens</title>
+  <title>Quaerens Closer Detail</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,6 +46,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -53,6 +54,19 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
+    .summary-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #334155;
+    }
     #toast {
       position: fixed;
       top: 20px;
@@ -90,11 +104,12 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Detail</h1>
-          <p class="text-sm text-slate-500">Assigned client overview, handoff, and outcome tracking</p>
+          <p class="text-sm text-slate-500">Assigned client overview, deal handling, and processing handoff</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Closer Panel</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -114,6 +129,17 @@
             <div id="processingSummaryText"></div>
             <div id="caseSummaryText"></div>
           </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <div class="summary-chip" id="claimTypeChip">Claim Type: -</div>
+          <div class="summary-chip" id="caseReferenceChip">Case Ref: -</div>
+          <div class="summary-chip" id="paymentPreviewChip">Payment: Awaiting Payment</div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-3">
+          <a id="openProcessingFileLink" href="#" class="text-blue-600 font-semibold hover:underline hidden">Open Processing File</a>
+          <a id="openCaseFileLink" href="#" class="text-blue-600 font-semibold hover:underline hidden">Open Case File</a>
         </div>
       </section>
 
@@ -184,7 +210,6 @@
             </select>
           </div>
         </div>
-
         <div class="mt-4">
           <label class="label" for="closerNotes">Closer Notes</label>
           <textarea id="closerNotes" class="input" rows="6" placeholder="Call notes, objections, follow-up points, outcome, next step..."></textarea>
@@ -277,6 +302,7 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
     const statusSelect = document.getElementById("statusSelect");
     const outcomeSelect = document.getElementById("outcomeSelect");
     const closerNotes = document.getElementById("closerNotes");
@@ -289,12 +315,19 @@
     const paymentLink = document.getElementById("paymentLink");
     const processingNotes = document.getElementById("processingNotes");
     const paymentStatusPreview = document.getElementById("paymentStatusPreview");
+    const paymentPreviewChip = document.getElementById("paymentPreviewChip");
+    const claimTypeChip = document.getElementById("claimTypeChip");
+    const caseReferenceChip = document.getElementById("caseReferenceChip");
+    const openProcessingFileLink = document.getElementById("openProcessingFileLink");
+    const openCaseFileLink = document.getElementById("openCaseFileLink");
 
     let currentUser = null;
     let currentUserData = null;
     let assignmentData = null;
     let existingProcessingDocId = null;
+    let existingProcessingDocData = null;
     let existingCaseDocId = null;
+    let existingCaseDocData = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -320,8 +353,24 @@
       return "";
     }
 
+    function clientName(data) {
+      const first = firstNonEmpty(data?.client?.firstName, data?.client?.forename);
+      const second = firstNonEmpty(data?.client?.secondName, data?.client?.surname);
+      return `${first} ${second}`.trim() || "Assigned Client";
+    }
+
+    function normalizeClaimType(value) {
+      const raw = safeString(value).toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
+      return raw;
+    }
+
     function formatClaimType(type) {
-      switch (type) {
+      switch (normalizeClaimType(type)) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
@@ -351,11 +400,21 @@
       entries.forEach(([key, value]) => {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = `
-          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
+          <span class="label">${key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase())}</span>
           <div class="value">${value || "-"}</div>
         `;
         container.appendChild(wrapper);
       });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      try {
+        const d = value?.toDate ? value.toDate() : new Date(value);
+        return isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB");
+      } catch {
+        return "-";
+      }
     }
 
     function statusBadge(status) {
@@ -393,11 +452,15 @@
     function updatePaymentPreview() {
       const derived = derivePaymentStatus(amountDueNow.value, amountPaidNow.value, followUpDue.value);
       paymentStatusPreview.innerHTML = paymentStatusBadge(derived);
+      paymentPreviewChip.textContent =
+        derived === "fully_paid" ? "Payment: Fully Paid" :
+        derived === "part_paid" ? "Payment: Part Paid" :
+        "Payment: Awaiting Payment";
     }
 
     function createCaseReference(data) {
-      const type = (data.claimType || "case").toUpperCase().slice(0, 4);
-      const surname = (data.client?.secondName || data.client?.firstName || "CLIENT")
+      const type = (normalizeClaimType(data.claimType) || "case").toUpperCase().slice(0, 4);
+      const surname = firstNonEmpty(data.client?.secondName, data.client?.firstName, "CLIENT")
         .replace(/[^a-zA-Z0-9]/g, "")
         .toUpperCase()
         .slice(0, 6);
@@ -417,7 +480,6 @@
       }
 
       const userData = userSnap.data();
-
       if (userData.role !== "closer") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -428,6 +490,113 @@
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
       return true;
+    }
+
+    async function lookupProcessingLinks() {
+      existingProcessingDocId = null;
+      existingProcessingDocData = null;
+      existingCaseDocId = null;
+      existingCaseDocData = null;
+
+      try {
+        const processingQuery = query(
+          collection(db, "processingFiles"),
+          where("assignmentId", "==", assignmentId)
+        );
+        const processingSnap = await getDocs(processingQuery);
+        if (!processingSnap.empty) {
+          existingProcessingDocId = processingSnap.docs[0].id;
+          existingProcessingDocData = { id: processingSnap.docs[0].id, ...processingSnap.docs[0].data() };
+        }
+      } catch (error) {
+        console.error("Processing file lookup failed:", error);
+      }
+
+      try {
+        const caseQuery = query(
+          collection(db, "processingCases"),
+          where("sourceAssignmentId", "==", assignmentId)
+        );
+        const caseSnap = await getDocs(caseQuery);
+        if (!caseSnap.empty) {
+          existingCaseDocId = caseSnap.docs[0].id;
+          existingCaseDocData = { id: caseSnap.docs[0].id, ...caseSnap.docs[0].data() };
+        }
+      } catch (error) {
+        console.error("Processing case lookup failed:", error);
+      }
+    }
+
+    function renderTopLinks() {
+      if (existingProcessingDocId) {
+        openProcessingFileLink.href = `/processing-panel.html`;
+        openProcessingFileLink.classList.remove("hidden");
+      } else {
+        openProcessingFileLink.href = "#";
+        openProcessingFileLink.classList.add("hidden");
+      }
+
+      if (existingCaseDocId) {
+        openCaseFileLink.href = `/processing-case-detail.html?id=${existingCaseDocId}`;
+        openCaseFileLink.classList.remove("hidden");
+      } else {
+        openCaseFileLink.href = "#";
+        openCaseFileLink.classList.add("hidden");
+      }
+    }
+
+    function renderAssignment() {
+      const computedCaseRef = assignmentData.caseReference || existingCaseDocData?.caseReference || createCaseReference(assignmentData);
+
+      document.getElementById("detailTitle").textContent = clientName(assignmentData);
+      document.getElementById("detailSubtitle").textContent = `Assignment ID: ${assignmentId}`;
+      document.getElementById("appointmentText").textContent = `Appointment: ${assignmentData.appointment?.date || "-"} ${assignmentData.appointment?.time || "-"}`;
+      document.getElementById("assignedByText").textContent = `Assigned by: ${assignmentData.assignedBy?.name || assignmentData.assignedBy?.email || "-"}`;
+      document.getElementById("statusSummaryText").innerHTML = `Status: ${statusBadge(assignmentData.status || "Assigned")} &nbsp; ${outcomeBadge(assignmentData.outcome || "")}`;
+      document.getElementById("processingSummaryText").innerHTML = existingProcessingDocId
+        ? `Processing File: <span class="badge badge-violet">Created</span>`
+        : `Processing File: <span class="badge badge-slate">Not Yet Created</span>`;
+      document.getElementById("caseSummaryText").innerHTML = existingCaseDocId
+        ? `Case File: <span class="badge badge-green">Created</span>`
+        : `Case File: <span class="badge badge-slate">Not Yet Created</span>`;
+
+      claimTypeChip.textContent = `Claim Type: ${formatClaimType(assignmentData.claimType)}`;
+      caseReferenceChip.textContent = `Case Ref: ${computedCaseRef}`;
+
+      setValue("client_firstName", assignmentData.client?.firstName);
+      setValue("client_secondName", assignmentData.client?.secondName);
+      setValue("client_firstName2", assignmentData.client?.firstName2);
+      setValue("client_secondName2", assignmentData.client?.secondName2);
+      setValue("client_landline", assignmentData.client?.landline);
+      setValue("client_mobile", assignmentData.client?.mobile);
+      setValue("client_email", assignmentData.client?.email);
+      setValue("client_address", assignmentData.client?.address);
+
+      setValue("claimTypeText", formatClaimType(assignmentData.claimType));
+      setValue("assessmentSummaryText", assignmentData.assessmentSummary);
+      setValue("managerNotesText", assignmentData.managerNotes);
+      setValue("handoffNotesText", assignmentData.handoffNotes);
+
+      generatedAssessmentText.textContent =
+        firstNonEmpty(
+          assignmentData.generatedAssessmentText,
+          assignmentData.assessmentReportText,
+          assignmentData.assessmentSummary
+        ) || "No assessment report available.";
+
+      statusSelect.value = assignmentData.status || "Assigned";
+      outcomeSelect.value = assignmentData.outcome || "";
+      closerNotes.value = assignmentData.closerNotes || "";
+      amountDueNow.value = assignmentData.amountDueNow ?? existingCaseDocData?.amountDueNow ?? "";
+      amountPaidNow.value = assignmentData.amountPaidNow ?? existingCaseDocData?.amountPaidNow ?? "";
+      followUpDue.value = assignmentData.followUpDue ?? existingCaseDocData?.followUpDue ?? "";
+      paymentLink.value = assignmentData.paymentLink || existingCaseDocData?.paymentLink || "";
+      processingNotes.value = assignmentData.processingNotes || existingCaseDocData?.processingNotes || "";
+
+      renderFieldGrid("product1Fields", assignmentData.product1 || {});
+      renderFieldGrid("product2Fields", assignmentData.product2 || {});
+      updatePaymentPreview();
+      renderTopLinks();
     }
 
     async function loadAssignment() {
@@ -463,70 +632,8 @@
         return;
       }
 
-      existingProcessingDocId = null;
-      existingCaseDocId = null;
-
-      try {
-        const processingQuery = query(
-          collection(db, "processingFiles"),
-          where("assignmentId", "==", assignmentId)
-        );
-        const processingSnap = await getDocs(processingQuery);
-        existingProcessingDocId = !processingSnap.empty ? processingSnap.docs[0].id : null;
-      } catch (error) {
-        console.error("Processing file lookup failed:", error);
-      }
-
-      try {
-        const caseQuery = query(
-          collection(db, "processingCases"),
-          where("sourceAssignmentId", "==", assignmentId)
-        );
-        const caseSnap = await getDocs(caseQuery);
-        existingCaseDocId = !caseSnap.empty ? caseSnap.docs[0].id : null;
-      } catch (error) {
-        console.error("Processing case lookup failed:", error);
-      }
-
-      document.getElementById("detailTitle").textContent = formatClaimType(assignmentData.claimType);
-      document.getElementById("detailSubtitle").textContent = `Assignment ID: ${assignmentId}`;
-      document.getElementById("appointmentText").textContent = `Appointment: ${assignmentData.appointment?.date || "-"} ${assignmentData.appointment?.time || "-"}`;
-      document.getElementById("assignedByText").textContent = `Assigned by: ${assignmentData.assignedBy?.name || assignmentData.assignedBy?.email || "-"}`;
-      document.getElementById("statusSummaryText").innerHTML = `Status: ${statusBadge(assignmentData.status || "Assigned")} &nbsp; ${outcomeBadge(assignmentData.outcome || "")}`;
-      document.getElementById("processingSummaryText").innerHTML = existingProcessingDocId
-        ? `Processing File: <span class="badge badge-violet">Created</span>`
-        : `Processing File: <span class="badge badge-slate">Not Yet Created</span>`;
-      document.getElementById("caseSummaryText").innerHTML = existingCaseDocId
-        ? `Case File: <span class="badge badge-green">Created</span>`
-        : `Case File: <span class="badge badge-slate">Not Yet Created</span>`;
-
-      setValue("client_firstName", assignmentData.client?.firstName);
-      setValue("client_secondName", assignmentData.client?.secondName);
-      setValue("client_firstName2", assignmentData.client?.firstName2);
-      setValue("client_secondName2", assignmentData.client?.secondName2);
-      setValue("client_landline", assignmentData.client?.landline);
-      setValue("client_mobile", assignmentData.client?.mobile);
-      setValue("client_email", assignmentData.client?.email);
-      setValue("client_address", assignmentData.client?.address);
-      setValue("claimTypeText", formatClaimType(assignmentData.claimType));
-      setValue("assessmentSummaryText", assignmentData.assessmentSummary);
-      setValue("managerNotesText", assignmentData.managerNotes);
-      setValue("handoffNotesText", assignmentData.handoffNotes);
-
-      generatedAssessmentText.textContent = assignmentData.generatedAssessmentText || "No assessment report available.";
-
-      statusSelect.value = assignmentData.status || "Assigned";
-      outcomeSelect.value = assignmentData.outcome || "";
-      closerNotes.value = assignmentData.closerNotes || "";
-      amountDueNow.value = assignmentData.amountDueNow || "";
-      amountPaidNow.value = assignmentData.amountPaidNow || "";
-      followUpDue.value = assignmentData.followUpDue || "";
-      paymentLink.value = assignmentData.paymentLink || "";
-      processingNotes.value = assignmentData.processingNotes || "";
-
-      renderFieldGrid("product1Fields", assignmentData.product1 || {});
-      renderFieldGrid("product2Fields", assignmentData.product2 || {});
-      updatePaymentPreview();
+      await lookupProcessingLinks();
+      renderAssignment();
       hideLoader();
     }
 
@@ -549,10 +656,14 @@
         assessmentSummary: assignmentData.assessmentSummary || "",
         managerNotes: assignmentData.managerNotes || "",
         handoffNotes: assignmentData.handoffNotes || "",
-        generatedAssessmentText: assignmentData.generatedAssessmentText || "",
+        generatedAssessmentText: firstNonEmpty(
+          assignmentData.generatedAssessmentText,
+          assignmentData.assessmentReportText,
+          assignmentData.assessmentSummary
+        ),
         product1: assignmentData.product1 || {},
         product2: assignmentData.product2 || {},
-        closerNotes: closerNotes.value || "",
+        closerNotes: closerNotes.value.trim(),
         amountDueNow: dueNow,
         amountPaidNow: paidNow,
         followUpDue: followUp,
@@ -584,9 +695,13 @@
     }
 
     async function createOrUpdateProcessingCase() {
-      const caseReference = assignmentData.caseReference || createCaseReference(assignmentData);
+      const dueNow = Number(amountDueNow.value || 0);
+      const paidNow = Number(amountPaidNow.value || 0);
+      const followUp = Number(followUpDue.value || 0);
+      const paymentStatus = derivePaymentStatus(dueNow, paidNow, followUp);
+      const caseReference = assignmentData.caseReference || existingCaseDocData?.caseReference || createCaseReference(assignmentData);
 
-      const payload = {
+      const basePayload = {
         sourceAssignmentId: assignmentId,
         assessmentId: assignmentData.assessmentId || "",
         caseReference,
@@ -594,30 +709,32 @@
         client: assignmentData.client || {},
         closer: assignmentData.closer || {},
         assignedBy: assignmentData.assignedBy || {},
-        assignedToUid: "",
-        assignedToName: "",
-        assignedToEmail: "",
-        caseStage: "new_case",
-        priority: "normal",
-        waitingOn: "internal",
-        contractUrl: assignmentData.contractUrl || "",
-        assessmentReportUrl: assignmentData.assessmentReportUrl || "",
-        strategyReportUrl: assignmentData.strategyReportUrl || "",
+        contractUrl: existingCaseDocData?.contractUrl || assignmentData.contractUrl || "",
+        assessmentReportUrl: existingCaseDocData?.assessmentReportUrl || assignmentData.assessmentReportUrl || "",
+        strategyReportUrl: existingCaseDocData?.strategyReportUrl || assignmentData.strategyReportUrl || "",
         assessmentSummary: assignmentData.assessmentSummary || "",
-        strategySummary: assignmentData.strategySummary || assignmentData.generatedAssessmentText || "",
-        generatedAssessmentText: assignmentData.generatedAssessmentText || "",
+        strategySummary: firstNonEmpty(
+          existingCaseDocData?.strategySummary,
+          assignmentData.strategySummary,
+          assignmentData.generatedAssessmentText,
+          assignmentData.assessmentSummary
+        ),
+        generatedAssessmentText: firstNonEmpty(
+          assignmentData.generatedAssessmentText,
+          assignmentData.assessmentReportText,
+          assignmentData.assessmentSummary
+        ),
         managerNotes: assignmentData.managerNotes || "",
         handoffNotes: assignmentData.handoffNotes || "",
-        processingNotes: processingNotes.value.trim() || "",
+        processingNotes: processingNotes.value.trim(),
         paymentLink: paymentLink.value.trim(),
-        amountDueNow: Number(amountDueNow.value || 0),
-        amountPaidNow: Number(amountPaidNow.value || 0),
-        followUpDue: Number(followUpDue.value || 0),
-        paymentStatus: derivePaymentStatus(amountDueNow.value, amountPaidNow.value, followUpDue.value),
+        amountDueNow: dueNow,
+        amountPaidNow: paidNow,
+        followUpDue: followUp,
+        paymentStatus,
         product1: assignmentData.product1 || {},
         product2: assignmentData.product2 || {},
         lastActivityAt: serverTimestamp(),
-        nextActionDate: null,
         updatedAt: serverTimestamp(),
         updatedBy: {
           uid: currentUser.uid,
@@ -627,10 +744,17 @@
       };
 
       if (existingCaseDocId) {
-        await updateDoc(doc(db, "processingCases", existingCaseDocId), payload);
+        await updateDoc(doc(db, "processingCases", existingCaseDocId), basePayload);
       } else {
         const newDoc = await addDoc(collection(db, "processingCases"), {
-          ...payload,
+          ...basePayload,
+          assignedToUid: "",
+          assignedToName: "",
+          assignedToEmail: "",
+          caseStage: "new_case",
+          priority: "normal",
+          waitingOn: "internal",
+          nextActionDate: null,
           createdAt: serverTimestamp(),
           createdBy: {
             uid: currentUser.uid,
@@ -649,17 +773,23 @@
     saveCloserBtn.addEventListener("click", async () => {
       try {
         const effectiveStatus = outcomeSelect.value === "Closed Deal" ? "Closed" : statusSelect.value;
+        const dueNow = Number(amountDueNow.value || 0);
+        const paidNow = Number(amountPaidNow.value || 0);
+        const followUp = Number(followUpDue.value || 0);
+        const paymentStatus = derivePaymentStatus(dueNow, paidNow, followUp);
+        const caseReference = assignmentData.caseReference || existingCaseDocData?.caseReference || createCaseReference(assignmentData);
 
         const closerPayload = {
           status: effectiveStatus,
           outcome: outcomeSelect.value,
-          closerNotes: closerNotes.value,
-          amountDueNow: Number(amountDueNow.value || 0),
-          amountPaidNow: Number(amountPaidNow.value || 0),
-          followUpDue: Number(followUpDue.value || 0),
+          closerNotes: closerNotes.value.trim(),
+          amountDueNow: dueNow,
+          amountPaidNow: paidNow,
+          followUpDue: followUp,
           paymentLink: paymentLink.value.trim(),
+          paymentStatus,
           processingNotes: processingNotes.value.trim(),
-          caseReference: assignmentData.caseReference || createCaseReference(assignmentData),
+          caseReference,
           lastUpdatedAt: serverTimestamp(),
           lastUpdatedBy: {
             uid: currentUser.uid,
@@ -668,13 +798,23 @@
           }
         };
 
+        if (outcomeSelect.value === "Closed Deal") {
+          closerPayload.closedAt = serverTimestamp();
+          closerPayload.closedBy = {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          };
+        }
+
         await updateDoc(doc(db, "closerAssignments", assignmentId), closerPayload);
         assignmentData = { ...assignmentData, ...closerPayload };
 
-        if (outcomeSelect.value === "Closed Deal") {
+        const shouldSyncProcessing = outcomeSelect.value === "Closed Deal" || existingProcessingDocId || existingCaseDocId;
+        if (shouldSyncProcessing) {
           await createOrUpdateProcessingFile();
           await createOrUpdateProcessingCase();
-          saveMessage.textContent = "Closer progress saved, processing file updated, and case file created.";
+          saveMessage.textContent = "Closer progress saved and processing handoff synced.";
         } else {
           saveMessage.textContent = "Closer progress saved successfully.";
         }
@@ -687,6 +827,16 @@
       } catch (error) {
         console.error("Failed to save closer progress:", error);
         alert("Could not save closer progress.");
+      }
+    });
+
+    refreshBtn.addEventListener("click", async () => {
+      try {
+        await loadAssignment();
+        showToast("Assigned file refreshed.");
+      } catch (error) {
+        console.error("Refresh failed:", error);
+        alert("Could not refresh assigned file.");
       }
     });
 
@@ -719,10 +869,10 @@
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
-      const href = link.getAttribute('href');
+      const href = link.getAttribute("href");
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add('active-nav');
+        link.classList.add("active-nav");
       }
     });
   </script>
