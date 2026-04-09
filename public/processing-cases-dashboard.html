@@ -326,6 +326,16 @@
       return "";
     }
 
+    function normalizeClaimType(value) {
+      const raw = safeString(value).toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
+      return raw;
+    }
+
     function normalizeStage(item) {
       return firstNonEmpty(item.caseStage, item.stage, item.processingStage, "new_case");
     }
@@ -354,7 +364,7 @@
     }
 
     function formatClaimType(type) {
-      switch (type) {
+      switch (normalizeClaimType(type)) {
         case "solar": return "Solar Panel Claims";
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
@@ -448,7 +458,13 @@
     }
 
     function hasAssessmentReport(item) {
-      return !!firstNonEmpty(item.assessmentReportText, item.generatedAssessmentText, item.assessmentSummary);
+      return !!firstNonEmpty(
+        item.assessmentReportText,
+        item.generatedAssessmentText,
+        item.fullAssessmentReportText,
+        item.assessmentSummary,
+        item.summaryText
+      );
     }
 
     function hasStrategyPack(item) {
@@ -456,7 +472,9 @@
         item.processingPackText,
         item.strategicAnalysisText,
         item.recommendedNextStepsText,
-        item.strategySummary
+        item.strategySummary,
+        item.processingSummaryText,
+        item.nextStepsText
       );
     }
 
@@ -467,7 +485,8 @@
         item.lossSummaryText,
         item.evidenceChecklistText,
         item.escalationLetterText,
-        item.internalFileNoteText
+        item.internalFileNoteText,
+        item.complaintDraftText
       );
     }
 
@@ -535,6 +554,8 @@
         const normalizedStage = normalizeStage(item);
         const normalizedPriority = normalizePriority(item);
         const normalizedWaitingOn = normalizeWaitingOn(item);
+        const normalizedClaimType = normalizeClaimType(item.claimType);
+
         const itemAssignedUid = firstNonEmpty(
           item.assignedToUid,
           item.processingAssignedToUid,
@@ -549,19 +570,22 @@
           (selectedAssignment === "mine" && itemAssignedUid === currentUser.uid) ||
           (selectedAssignment === "unassigned" && !itemAssignedUid) ||
           (selectedAssignment === "others" && itemAssignedUid && itemAssignedUid !== currentUser.uid);
-        const matchesClaimType = selectedClaimType === "all" || safeString(item.claimType) === selectedClaimType;
+
+        const matchesClaimType =
+          selectedClaimType === "all" || normalizedClaimType === selectedClaimType;
 
         const haystack = `
           ${clientName(item)}
           ${clientEmail(item)}
           ${clientMobile(item)}
           ${safeString(item.claimType)}
+          ${normalizeClaimType(item.claimType)}
           ${firstNonEmpty(item.caseReference, item.reference, item.sourceAssignmentId)}
           ${assignedToText(item)}
-          ${firstNonEmpty(item.processingNotes, item.assessmentSummary, item.strategySummary)}
-          ${firstNonEmpty(item.assessmentReportText, item.generatedAssessmentText)}
-          ${firstNonEmpty(item.processingPackText, item.strategicAnalysisText, item.recommendedNextStepsText)}
-          ${firstNonEmpty(item.complaintLetterText, item.statementOfTruthText)}
+          ${firstNonEmpty(item.processingNotes, item.assessmentSummary, item.strategySummary, item.summaryText, item.processingSummaryText)}
+          ${firstNonEmpty(item.assessmentReportText, item.generatedAssessmentText, item.fullAssessmentReportText)}
+          ${firstNonEmpty(item.processingPackText, item.strategicAnalysisText, item.recommendedNextStepsText, item.nextStepsText)}
+          ${firstNonEmpty(item.complaintLetterText, item.statementOfTruthText, item.complaintDraftText)}
           ${firstNonEmpty(item.lossSummaryText, item.evidenceChecklistText)}
           ${firstNonEmpty(item.escalationLetterText, item.internalFileNoteText)}
           ${firstNonEmpty(item.clientEmailPreviewText)}

@@ -188,6 +188,10 @@
               <span class="label">Case Reference</span>
               <div class="value" id="caseReferenceText">-</div>
             </div>
+            <div>
+              <span class="label">Report Pack Status</span>
+              <div class="value flex flex-wrap gap-2" id="reportPackBadges">-</div>
+            </div>
           </div>
         </div>
       </section>
@@ -378,7 +382,6 @@
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-extrabold text-blue-900">Add Activity Log Entry</h3>
           </div>
-
           <div class="grid md:grid-cols-2 gap-4">
             <div>
               <label class="label" for="eventType">Type</label>
@@ -537,6 +540,7 @@
     const saveCaseBtn = document.getElementById("saveCaseBtn");
     const saveMessage = document.getElementById("saveMessage");
     const assignToMeBtn = document.getElementById("assignToMeBtn");
+
     const caseStage = document.getElementById("caseStage");
     const priority = document.getElementById("priority");
     const waitingOn = document.getElementById("waitingOn");
@@ -545,6 +549,7 @@
     const contractUrl = document.getElementById("contractUrl");
     const assessmentReportUrl = document.getElementById("assessmentReportUrl");
     const strategyReportUrl = document.getElementById("strategyReportUrl");
+
     const eventType = document.getElementById("eventType");
     const eventDirection = document.getElementById("eventDirection");
     const eventTargetParty = document.getElementById("eventTargetParty");
@@ -553,6 +558,7 @@
     const eventNotes = document.getElementById("eventNotes");
     const eventAttachmentUrl = document.getElementById("eventAttachmentUrl");
     const addEventBtn = document.getElementById("addEventBtn");
+
     const taskTitle = document.getElementById("taskTitle");
     const taskDueDate = document.getElementById("taskDueDate");
     const taskPriority = document.getElementById("taskPriority");
@@ -728,6 +734,48 @@
         .join("\n");
     }
 
+    function hasAssessmentReport(item) {
+      return !!firstNonEmpty(
+        item.assessmentReportText,
+        item.generatedAssessmentText,
+        item.fullAssessmentReportText,
+        item.assessmentSummary,
+        item.summaryText
+      );
+    }
+
+    function hasStrategyPack(item) {
+      return !!firstNonEmpty(
+        item.processingPackText,
+        item.strategySummary,
+        item.processingSummaryText,
+        item.strategicAnalysisText,
+        item.recommendedNextStepsText,
+        item.nextStepsText
+      );
+    }
+
+    function hasComplaintDocs(item) {
+      return !!firstNonEmpty(
+        item.complaintLetterText,
+        item.complaintDraftText,
+        item.statementOfTruthText,
+        item.lossSummaryText,
+        item.evidenceChecklistText,
+        item.escalationLetterText,
+        item.internalFileNoteText
+      );
+    }
+
+    function reportPackBadges(item) {
+      const parts = [];
+      if (hasAssessmentReport(item)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(item)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(item)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) parts.push(`<span class="badge badge-slate">Basic</span>`);
+      return parts.join(" ");
+    }
+
     function buildFallbackClientEmailPreview() {
       const client = clientName(caseData);
       const report = firstNonEmpty(
@@ -737,6 +785,7 @@
         caseData.assessmentSummary
       );
       if (!report) return "No client email preview available.";
+
       return [
         `Dear ${client},`,
         "",
@@ -811,7 +860,7 @@
       document.getElementById("detailSubtitle").textContent = `Case ID: ${caseId}`;
       document.getElementById("assignedToText").textContent = `Assigned To: ${firstNonEmpty(caseData.assignedToName, caseData.assignedToEmail, "-")}`;
       document.getElementById("sourceRefText").textContent = `Source Assignment: ${firstNonEmpty(caseData.sourceAssignmentId, caseData.sourceLeadId, "-")}`;
-      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(firstNonEmpty(caseData.lastActivityAt, caseData.updatedAt, caseData.createdAt) ? (caseData.lastActivityAt || caseData.updatedAt || caseData.createdAt) : null)}`;
+      document.getElementById("lastActivityText").textContent = `Last Activity: ${formatDateTime(caseData.lastActivityAt || caseData.updatedAt || caseData.createdAt)}`;
       document.getElementById("nextActionText").textContent = `Next Action: ${formatDate(caseData.nextActionDate)}`;
 
       setValue("client_firstName", firstNonEmpty(caseData.client?.firstName, caseData.client?.forename));
@@ -830,63 +879,76 @@
       document.getElementById("caseStageBadge").innerHTML = stageBadge(caseData.caseStage || "");
       document.getElementById("priorityBadge").innerHTML = priorityBadge(caseData.priority || "normal");
       document.getElementById("waitingOnBadge").innerHTML = waitingOnBadge(caseData.waitingOn || "none");
+      document.getElementById("reportPackBadges").innerHTML = reportPackBadges(caseData);
 
-      setTextBlock("assessmentSummaryBox",
+      setTextBlock(
+        "assessmentSummaryBox",
         firstNonEmpty(caseData.assessmentSummary, caseData.summaryText),
         "No assessment summary available."
       );
 
-      setTextBlock("processingPackBox",
+      setTextBlock(
+        "processingPackBox",
         firstNonEmpty(caseData.processingPackText, caseData.strategySummary, caseData.processingSummaryText),
         "No processing pack available."
       );
 
-      setTextBlock("assessmentReportBox",
+      setTextBlock(
+        "assessmentReportBox",
         firstNonEmpty(caseData.assessmentReportText, caseData.generatedAssessmentText, caseData.fullAssessmentReportText),
         "No assessment report available."
       );
 
-      setTextBlock("strategicAnalysisBox",
+      setTextBlock(
+        "strategicAnalysisBox",
         firstNonEmpty(caseData.strategicAnalysisText, caseData.strategySummary, caseData.processingPackText),
         "No strategic analysis available."
       );
 
-      setTextBlock("recommendedNextStepsBox",
+      setTextBlock(
+        "recommendedNextStepsBox",
         firstNonEmpty(caseData.recommendedNextStepsText, caseData.nextStepsText),
         "No recommended next steps available."
       );
 
-      setTextBlock("complaintLetterBox",
+      setTextBlock(
+        "complaintLetterBox",
         firstNonEmpty(caseData.complaintLetterText, caseData.complaintDraftText),
         "No complaint letter available."
       );
 
-      setTextBlock("statementOfTruthBox",
+      setTextBlock(
+        "statementOfTruthBox",
         firstNonEmpty(caseData.statementOfTruthText),
         "No statement of truth available."
       );
 
-      setTextBlock("lossSummaryBox",
+      setTextBlock(
+        "lossSummaryBox",
         firstNonEmpty(caseData.lossSummaryText),
         "No loss summary available."
       );
 
-      setTextBlock("evidenceChecklistBox",
+      setTextBlock(
+        "evidenceChecklistBox",
         firstNonEmpty(caseData.evidenceChecklistText),
         "No evidence checklist available."
       );
 
-      setTextBlock("escalationLetterBox",
+      setTextBlock(
+        "escalationLetterBox",
         firstNonEmpty(caseData.escalationLetterText),
         "No escalation letter available."
       );
 
-      setTextBlock("internalFileNoteBox",
+      setTextBlock(
+        "internalFileNoteBox",
         firstNonEmpty(caseData.internalFileNoteText, caseData.processingNotes),
         "No internal file note available."
       );
 
-      setTextBlock("clientEmailPreviewBox",
+      setTextBlock(
+        "clientEmailPreviewBox",
         firstNonEmpty(caseData.clientEmailPreviewText, buildFallbackClientEmailPreview()),
         "No client email preview available."
       );
@@ -1121,7 +1183,6 @@
 
     async function addTask() {
       const title = taskTitle.value.trim();
-
       if (!title) {
         alert("Please enter a task title.");
         return;

@@ -56,6 +56,7 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
     #toast {
       position: fixed;
       top: 20px;
@@ -93,7 +94,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Panel</h1>
-          <p class="text-sm text-slate-500">Shared processing queue with ownership and payment tracking</p>
+          <p class="text-sm text-slate-500">Shared processing queue with ownership, payment tracking, and report-pack visibility</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -107,7 +108,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-6 gap-4">
+      <section class="grid lg:grid-cols-7 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Cases</div>
           <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -132,10 +133,14 @@
           <div class="text-sm text-slate-500">Fully Paid</div>
           <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Report Pack</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+        </div>
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-5 gap-4">
+        <div class="grid md:grid-cols-6 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership View</label>
             <select id="ownershipFilter" class="input">
@@ -145,6 +150,7 @@
               <option value="others">Assigned to others</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
             <select id="paymentStatusFilter" class="input">
@@ -154,6 +160,7 @@
               <option value="fully_paid">Fully Paid</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeFilter" class="input">
@@ -164,10 +171,24 @@
               <option value="newbuild">New Build Issues</option>
             </select>
           </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Report Pack</label>
+            <select id="reportPackFilter" class="input">
+              <option value="all">All cases</option>
+              <option value="basic">Basic only</option>
+              <option value="rich">Any report pack</option>
+              <option value="assessment">Assessment only</option>
+              <option value="strategy">Strategy only</option>
+              <option value="docs">Docs only</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Client, email, owner..." />
           </div>
+
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Cases</button>
           </div>
@@ -181,12 +202,14 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading processing cases...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Report Pack</th>
                 <th class="text-left p-3">Owner</th>
                 <th class="text-left p-3">Due Now</th>
                 <th class="text-left p-3">Paid</th>
@@ -234,6 +257,7 @@
     const ownershipFilter = document.getElementById("ownershipFilter");
     const paymentStatusFilter = document.getElementById("paymentStatusFilter");
     const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const reportPackFilter = document.getElementById("reportPackFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const refreshTopBtn = document.getElementById("refreshTopBtn");
@@ -293,6 +317,7 @@
 
     function getEffectivePaymentStatus(file) {
       if (file.paymentStatus) return file.paymentStatus;
+
       const dueNow = Number(file.amountDueNow || 0);
       const paidNow = Number(file.amountPaidNow || 0);
       const followUpDue = Number(file.followUpDue || 0);
@@ -300,9 +325,11 @@
       if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
         return "part_paid";
       }
+
       if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
@@ -320,6 +347,61 @@
         return `<span class="badge badge-green">Mine</span>`;
       }
       return `<span class="badge badge-slate">${ownerName(file)}</span>`;
+    }
+
+    function hasAssessmentReport(file) {
+      return !!String(
+        file.assessmentReportText ||
+        file.generatedAssessmentText ||
+        file.assessmentSummary ||
+        ""
+      ).trim();
+    }
+
+    function hasStrategyPack(file) {
+      return !!String(
+        file.processingPackText ||
+        file.strategicAnalysisText ||
+        file.recommendedNextStepsText ||
+        file.strategySummary ||
+        ""
+      ).trim();
+    }
+
+    function hasComplaintDocs(file) {
+      return !!String(
+        file.complaintLetterText ||
+        file.statementOfTruthText ||
+        file.lossSummaryText ||
+        file.evidenceChecklistText ||
+        file.escalationLetterText ||
+        file.internalFileNoteText ||
+        ""
+      ).trim();
+    }
+
+    function hasRichAssessmentPack(file) {
+      return hasAssessmentReport(file) || hasStrategyPack(file) || hasComplaintDocs(file);
+    }
+
+    function reportPackLabel(file) {
+      const parts = [];
+      if (hasAssessmentReport(file)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(file)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(file)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
+      return parts.join(" ");
+    }
+
+    function matchesReportPackFilter(file) {
+      const filter = reportPackFilter.value;
+      if (filter === "all") return true;
+      if (filter === "basic") return !hasRichAssessmentPack(file);
+      if (filter === "rich") return hasRichAssessmentPack(file);
+      if (filter === "assessment") return hasAssessmentReport(file);
+      if (filter === "strategy") return hasStrategyPack(file);
+      if (filter === "docs") return hasComplaintDocs(file);
+      return true;
     }
 
     async function checkProcessingAccess(user) {
@@ -374,6 +456,9 @@
       document.getElementById("fullyPaidStat").textContent = String(
         allFiles.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length
       );
+      document.getElementById("reportPackStat").textContent = String(
+        allFiles.filter(f => hasRichAssessmentPack(f)).length
+      );
     }
 
     function getFilteredFiles() {
@@ -397,6 +482,8 @@
         const matchesClaim =
           claimFilter === "all" || normalizeClaimType(file.claimType) === claimFilter;
 
+        const matchesPack = matchesReportPackFilter(file);
+
         const haystack = `
           ${clientName(file)}
           ${file.client?.email || ""}
@@ -404,10 +491,24 @@
           ${file.claimType || ""}
           ${file.processingNotes || ""}
           ${file.caseReference || ""}
+          ${file.assessmentReportText || ""}
+          ${file.generatedAssessmentText || ""}
+          ${file.assessmentSummary || ""}
+          ${file.processingPackText || ""}
+          ${file.strategicAnalysisText || ""}
+          ${file.recommendedNextStepsText || ""}
+          ${file.strategySummary || ""}
+          ${file.complaintLetterText || ""}
+          ${file.statementOfTruthText || ""}
+          ${file.lossSummaryText || ""}
+          ${file.evidenceChecklistText || ""}
+          ${file.escalationLetterText || ""}
+          ${file.internalFileNoteText || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-        return matchesOwnership && matchesPayment && matchesClaim && matchesSearch;
+
+        return matchesOwnership && matchesPayment && matchesClaim && matchesPack && matchesSearch;
       }).sort((a, b) => {
         const aMine = a.assignedToUid === currentUser.uid ? 0 : 1;
         const bMine = b.assignedToUid === currentUser.uid ? 0 : 1;
@@ -416,6 +517,10 @@
         const aUnassigned = a.assignedToUid ? 1 : 0;
         const bUnassigned = b.assignedToUid ? 1 : 0;
         if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
+
+        const aPack = hasRichAssessmentPack(a) ? 0 : 1;
+        const bPack = hasRichAssessmentPack(b) ? 0 : 1;
+        if (aPack !== bPack) return aPack - bPack;
 
         const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
         const bPriority = Number(b.followUpDue || 0) + Number(b.amountDueNow || 0);
@@ -474,7 +579,7 @@
       if (!filtered.length) {
         filesBody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-6 text-center text-slate-500">No processing cases found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No processing cases found.</td>
           </tr>
         `;
       } else {
@@ -503,6 +608,7 @@
               <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
             </td>
             <td class="p-3">${formatClaimType(file.claimType)}</td>
+            <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
             <td class="p-3"><div>${ownerBadge(file)}</div></td>
             <td class="p-3">${money(file.amountDueNow)}</td>
             <td class="p-3">${money(file.amountPaidNow)}</td>
@@ -539,6 +645,7 @@
         window.location.href = "/login.html";
         return;
       }
+
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;
@@ -564,6 +671,7 @@
     ownershipFilter.addEventListener("change", renderFiles);
     paymentStatusFilter.addEventListener("change", renderFiles);
     claimTypeFilter.addEventListener("change", renderFiles);
+    reportPackFilter.addEventListener("change", renderFiles);
     searchInput.addEventListener("input", renderFiles);
     refreshBtn.addEventListener("click", refreshCases);
     if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshCases);

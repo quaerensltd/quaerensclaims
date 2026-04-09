@@ -109,6 +109,26 @@
       font-weight: 700;
       font-size: 0.8rem;
     }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -118,6 +138,8 @@
       <p class="text-slate-600 font-medium">Loading monthly attendance...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -347,6 +369,13 @@
       authLoader.style.display = "none";
     }
 
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
     function toIsoDate(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -427,6 +456,7 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -473,7 +503,7 @@
 
       processingUsers = usersSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.role === "processing" || u.role === "staff");
+        .filter(u => u.role === "processing");
 
       attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       processingCases = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -554,6 +584,7 @@
         monthDates.forEach(dateStr => {
           const rec = attendanceDocs.find(docItem => docItem.uid === user.id && docItem.date === dateStr) || null;
           const dayStatus = getDayStatus(rec, dateStr);
+
           if (selectedStatus !== "all" && dayStatus !== selectedStatus) return;
 
           filteredRows.push({
@@ -585,7 +616,6 @@
       const lateDays = filteredRows.filter(r => r.dayStatus === "late").length;
       const absentDays = filteredRows.filter(r => r.dayStatus === "absent").length;
       const totalMs = filteredRows.reduce((sum, r) => sum + r.workedMs, 0);
-
       const myFiles = processingCases.filter(file => file.assignedToUid === currentUser.uid).length;
       const unassignedFiles = processingCases.filter(file => !file.assignedToUid).length;
 
@@ -829,7 +859,6 @@
           <p><strong>Staff:</strong> ${user.name || "-"}</p>
           <p><strong>Email:</strong> ${user.email || user.id}</p>
           <p><strong>Month:</strong> ${monthInput.value}</p>
-
           <div class="summary">
             <p><strong>Present Days:</strong> ${present}</p>
             <p><strong>On Time Days:</strong> ${onTime}</p>
@@ -838,7 +867,6 @@
             <p><strong>Total Hours:</strong> ${formatDuration(totalMs)}</p>
             <p><strong>Start Time Cutoff:</strong> ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time</p>
           </div>
-
           <table>
             <thead>
               <tr>
@@ -856,7 +884,6 @@
               ${dayRows}
             </tbody>
           </table>
-
           <script>
             window.onload = function () {
               setTimeout(function () {
@@ -874,6 +901,7 @@
     async function refreshMonth() {
       try {
         await loadBaseData();
+        showToast("Monthly attendance refreshed.");
       } catch (error) {
         console.error("Refresh failed:", error);
         alert("Could not refresh monthly attendance.");
@@ -907,6 +935,7 @@
     downloadCsvBtn.addEventListener("click", () => {
       try {
         downloadMonthlyCsv();
+        showToast("CSV downloaded.");
       } catch (error) {
         console.error("Could not download CSV:", error);
         alert("Could not download CSV.");

@@ -205,6 +205,7 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading payment cases...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -280,13 +281,26 @@
       setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
+    function safeString(value) {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safeString(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
     function money(n) {
       const num = Number(n || 0);
       return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
     function normalizeClaimType(value) {
-      const raw = String(value || "").trim().toLowerCase();
+      const raw = safeString(value).toLowerCase();
       if (!raw) return "";
       if (raw.includes("solar")) return "solar";
       if (raw.includes("mortgage")) return "mortgage";
@@ -302,25 +316,30 @@
         case "mortgage": return "Mortgage Review";
         case "survey": return "Survey Review";
         case "newbuild": return "New Build Issues";
-        default: return type || "-";
+        default: return safeString(type) || "-";
       }
     }
 
     function clientName(file) {
-      const first = file.client?.firstName || "";
-      const second = file.client?.secondName || "";
-      return `${first} ${second}`.trim() || file.caseReference || "-";
+      const first = firstNonEmpty(file.client?.firstName, file.client?.forename, file.firstName, file.clientFirstName);
+      const second = firstNonEmpty(file.client?.secondName, file.client?.surname, file.secondName, file.clientSecondName);
+      return `${first} ${second}`.trim() || firstNonEmpty(file.caseReference, file.client?.name, file.clientName, "-");
+    }
+
+    function clientEmail(file) {
+      return firstNonEmpty(file.client?.email, file.email, file.clientEmail, "-");
     }
 
     function ownerName(file) {
-      return file.assignedToName || file.assignedToEmail || "-";
+      return firstNonEmpty(file.assignedToName, file.assignedToEmail, file.processingAssignedToName, file.processingAssignedToEmail, "-");
     }
 
     function ownerBadge(file) {
-      if (!file.assignedToUid) {
+      const assignedUid = firstNonEmpty(file.assignedToUid, file.processingAssignedToUid, "");
+      if (!assignedUid) {
         return `<span class="badge badge-amber">Unassigned</span>`;
       }
-      if (file.assignedToUid === currentUser.uid) {
+      if (assignedUid === currentUser.uid) {
         return `<span class="badge badge-green">Mine</span>`;
       }
       return `<span class="badge badge-slate">${ownerName(file)}</span>`;
@@ -333,7 +352,7 @@
     }
 
     function hasPaymentLink(file) {
-      return !!String(file.paymentLink || "").trim();
+      return !!safeString(file.paymentLink);
     }
 
     function hasFollowUpDue(file) {
@@ -341,7 +360,8 @@
     }
 
     function getEffectivePaymentStatus(file) {
-      if (file.paymentStatus) return file.paymentStatus;
+      if (safeString(file.paymentStatus)) return file.paymentStatus;
+
       const dueNow = Number(file.amountDueNow || 0);
       const paidNow = Number(file.amountPaidNow || 0);
       const followUpDue = Number(file.followUpDue || 0);
@@ -349,30 +369,45 @@
       if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
         return "part_paid";
       }
+
       if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
     function hasAssessmentReport(file) {
-      return !!String(file.assessmentReportText || file.generatedAssessmentText || file.assessmentSummary || "").trim();
+      return !!firstNonEmpty(
+        file.assessmentReportText,
+        file.generatedAssessmentText,
+        file.fullAssessmentReportText,
+        file.assessmentSummary,
+        file.summaryText
+      );
     }
 
     function hasStrategyPack(file) {
-      return !!String(file.processingPackText || file.strategicAnalysisText || file.recommendedNextStepsText || file.strategySummary || "").trim();
+      return !!firstNonEmpty(
+        file.processingPackText,
+        file.strategicAnalysisText,
+        file.recommendedNextStepsText,
+        file.strategySummary,
+        file.processingSummaryText,
+        file.nextStepsText
+      );
     }
 
     function hasComplaintDocs(file) {
-      return !!String(
-        file.complaintLetterText ||
-        file.statementOfTruthText ||
-        file.lossSummaryText ||
-        file.evidenceChecklistText ||
-        file.escalationLetterText ||
-        file.internalFileNoteText ||
-        ""
-      ).trim();
+      return !!firstNonEmpty(
+        file.complaintLetterText,
+        file.statementOfTruthText,
+        file.lossSummaryText,
+        file.evidenceChecklistText,
+        file.escalationLetterText,
+        file.internalFileNoteText,
+        file.complaintDraftText
+      );
     }
 
     function hasRichAssessmentPack(file) {
@@ -431,10 +466,10 @@
     function renderStats() {
       document.getElementById("totalFilesStat").textContent = String(allCases.length);
       document.getElementById("myFilesStat").textContent = String(
-        allCases.filter(f => f.assignedToUid === currentUser.uid).length
+        allCases.filter(f => firstNonEmpty(f.assignedToUid, f.processingAssignedToUid, "") === currentUser.uid).length
       );
       document.getElementById("unassignedStat").textContent = String(
-        allCases.filter(f => !f.assignedToUid).length
+        allCases.filter(f => !firstNonEmpty(f.assignedToUid, f.processingAssignedToUid, "")).length
       );
       document.getElementById("awaitingStat").textContent = String(
         allCases.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
@@ -454,6 +489,7 @@
       document.getElementById("reportPackStat").textContent = String(
         allCases.filter(f => hasRichAssessmentPack(f)).length
       );
+
       document.getElementById("dueNowTotal").textContent = money(
         allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0)
       );
@@ -473,13 +509,14 @@
       const term = searchInput.value.trim().toLowerCase();
 
       return allCases.filter(file => {
+        const assignedUid = firstNonEmpty(file.assignedToUid, file.processingAssignedToUid, "");
         const effectiveStatus = getEffectivePaymentStatus(file);
 
         const matchesOwnership =
           ownership === "all" ||
-          (ownership === "mine" && file.assignedToUid === currentUser.uid) ||
-          (ownership === "unassigned" && !file.assignedToUid) ||
-          (ownership === "others" && file.assignedToUid && file.assignedToUid !== currentUser.uid);
+          (ownership === "mine" && assignedUid === currentUser.uid) ||
+          (ownership === "unassigned" && !assignedUid) ||
+          (ownership === "others" && assignedUid && assignedUid !== currentUser.uid);
 
         const matchesPayment =
           paymentFilter === "all" || effectiveStatus === paymentFilter;
@@ -496,31 +533,43 @@
 
         const haystack = `
           ${clientName(file)}
-          ${file.client?.email || ""}
+          ${clientEmail(file)}
           ${ownerName(file)}
           ${file.paymentLink || ""}
           ${file.processingNotes || ""}
           ${file.claimType || ""}
+          ${normalizeClaimType(file.claimType)}
           ${file.caseReference || ""}
           ${file.assessmentSummary || ""}
+          ${file.summaryText || ""}
           ${file.generatedAssessmentText || ""}
+          ${file.assessmentReportText || ""}
+          ${file.fullAssessmentReportText || ""}
           ${file.processingPackText || ""}
+          ${file.processingSummaryText || ""}
           ${file.strategicAnalysisText || ""}
           ${file.recommendedNextStepsText || ""}
+          ${file.strategySummary || ""}
+          ${file.nextStepsText || ""}
           ${file.complaintLetterText || ""}
           ${file.statementOfTruthText || ""}
+          ${file.lossSummaryText || ""}
+          ${file.evidenceChecklistText || ""}
+          ${file.escalationLetterText || ""}
+          ${file.internalFileNoteText || ""}
+          ${file.complaintDraftText || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
 
         return matchesOwnership && matchesPayment && matchesLink && matchesFollowUp && matchesSearch;
       }).sort((a, b) => {
-        const aMine = a.assignedToUid === currentUser.uid ? 0 : 1;
-        const bMine = b.assignedToUid === currentUser.uid ? 0 : 1;
+        const aMine = firstNonEmpty(a.assignedToUid, a.processingAssignedToUid, "") === currentUser.uid ? 0 : 1;
+        const bMine = firstNonEmpty(b.assignedToUid, b.processingAssignedToUid, "") === currentUser.uid ? 0 : 1;
         if (aMine !== bMine) return aMine - bMine;
 
-        const aUnassigned = a.assignedToUid ? 1 : 0;
-        const bUnassigned = b.assignedToUid ? 1 : 0;
+        const aUnassigned = firstNonEmpty(a.assignedToUid, a.processingAssignedToUid, "") ? 1 : 0;
+        const bUnassigned = firstNonEmpty(b.assignedToUid, b.processingAssignedToUid, "") ? 1 : 0;
         if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
 
         const aPack = hasRichAssessmentPack(a) ? 0 : 1;
@@ -550,12 +599,13 @@
             : "-";
 
           const effectiveStatus = getEffectivePaymentStatus(file);
+
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
           row.innerHTML = `
             <td class="p-3">
               <div class="font-semibold text-slate-800">${clientName(file)}</div>
-              <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
+              <div class="text-xs text-slate-500">${clientEmail(file)}</div>
             </td>
             <td class="p-3">${formatClaimType(file.claimType)}</td>
             <td class="p-3">${ownerBadge(file)}</td>
@@ -588,6 +638,7 @@
         window.location.href = "/login.html";
         return;
       }
+
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;

@@ -109,9 +109,7 @@
       <p class="text-slate-600 font-medium">Loading daily attendance...</p>
     </div>
   </div>
-
   <div id="toast"></div>
-
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
@@ -132,7 +130,6 @@
         </div>
       </div>
     </header>
-
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
@@ -552,7 +549,6 @@
       if (item.callbackAppointmentSetAt) return item.callbackAppointmentSetAt;
       if (item.appointmentBookedAt) return item.appointmentBookedAt;
       if (item.appointmentSetAt) return item.appointmentSetAt;
-
       const action = String(item.lastAction || "").toLowerCase();
       if (hasCallbackAppointment(item) && (action.includes("callback") || action.includes("appointment"))) {
         return item.lastUpdatedAt || item.updatedAt || null;
@@ -617,9 +613,23 @@
       });
     }
 
+    function getProcessingUsers() {
+      return userDocs.filter(u => u.role === "processing");
+    }
+
+    function getProcessingUserIds() {
+      return new Set(getProcessingUsers().map(u => u.id));
+    }
+
+    function getProcessingAttendanceDocs() {
+      const processingIds = getProcessingUserIds();
+      return attendanceDocs.filter(item => processingIds.has(item.uid));
+    }
+
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -676,8 +686,9 @@
     }
 
     function renderStats() {
-      const processingUsers = userDocs.filter(u => u.role === "processing");
-      const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
+      const processingUsers = getProcessingUsers();
+      const processingAttendance = getProcessingAttendanceDocs();
+      const onlineNow = processingAttendance.filter(a => a.isOnline && !isStaleOnline(a)).length;
 
       let onTimeCount = 0;
       let lateCount = 0;
@@ -700,19 +711,18 @@
 
       document.getElementById("totalStaffStat").textContent = String(processingUsers.length);
       document.getElementById("onlineStaffStat").textContent = String(onlineNow);
-      document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
+      document.getElementById("loggedInTodayStat").textContent = String(processingAttendance.length);
       document.getElementById("onTimeStat").textContent = String(onTimeCount);
       document.getElementById("lateStat").textContent = String(lateCount);
       document.getElementById("absentStat").textContent = String(absentCount);
       document.getElementById("myFilesStat").textContent = String(myFiles);
       document.getElementById("unassignedFilesStat").textContent = String(unassignedFiles);
-
       document.getElementById("intakesSentStat").textContent = String(totalIntakes);
       document.getElementById("emailsOutStat").textContent = String(totalEmails);
       document.getElementById("callbacksSetStat").textContent = String(totalCallbacks);
 
       document.getElementById("snapshotOnline").textContent = String(onlineNow);
-      document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
+      document.getElementById("snapshotAttendance").textContent = String(processingAttendance.length);
       document.getElementById("snapshotLate").textContent = String(lateCount);
       document.getElementById("snapshotAbsent").textContent = String(absentCount);
       document.getElementById("snapshotIntakes").textContent = String(totalIntakes);
@@ -725,8 +735,7 @@
     function renderAttendance() {
       attendanceBody.innerHTML = "";
 
-      const processingUsers = userDocs
-        .filter(u => u.role === "processing")
+      const processingUsers = getProcessingUsers()
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
       const attendanceMap = todayAttendanceMap();
@@ -797,7 +806,7 @@
     function renderCaseSummary() {
       caseSummaryBody.innerHTML = "";
 
-      const processingUsers = userDocs.filter(u => u.role === "processing");
+      const processingUsers = getProcessingUsers();
       const grouped = {};
 
       processingUsers.forEach(user => {
@@ -813,6 +822,7 @@
 
       processingCases.forEach(item => {
         const uid = item.assignedToUid || "unassigned";
+
         if (!grouped[uid]) {
           grouped[uid] = {
             uid,
@@ -868,8 +878,7 @@
     }
 
     function downloadDailyCsv() {
-      const processingUsers = userDocs
-        .filter(u => u.role === "processing")
+      const processingUsers = getProcessingUsers()
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
 
       const attendanceMap = todayAttendanceMap();

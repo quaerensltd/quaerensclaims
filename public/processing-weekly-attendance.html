@@ -109,6 +109,26 @@
       font-weight: 700;
       font-size: 0.8rem;
     }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -118,6 +138,8 @@
       <p class="text-slate-600 font-medium">Loading weekly attendance...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -340,6 +362,13 @@
       authLoader.style.display = "none";
     }
 
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
     function toIsoDate(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -447,6 +476,7 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -478,7 +508,7 @@
 
         processingUsers = usersSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.role === "processing" || u.role === "staff");
+          .filter(u => u.role === "processing");
 
         attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         processingCases = processingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -530,6 +560,7 @@
 
     function renderStats() {
       const filteredStaff = getFilteredStaff();
+
       let recordCount = 0;
       let presentDays = 0;
       let lateDays = 0;
@@ -589,7 +620,7 @@
             <td colspan="${currentWeekDates.length + 3}" class="p-6 text-center text-slate-500">No staff found.</td>
           </tr>
         `;
-        summaryText.textContent = "No staff found for this filter.";
+        summaryText.textContent = "No processing staff found for this filter.";
         return;
       }
 
@@ -597,6 +628,7 @@
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
         .forEach(user => {
           let weeklyMs = 0;
+
           let rowHtml = `
             <tr class="border-t border-slate-200">
               <td class="p-3">
@@ -643,7 +675,7 @@
           weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
         });
 
-      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week starting ${weekStartInput.value}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+      summaryText.textContent = `${filteredStaff.length} processing staff member(s) shown for week starting ${weekStartInput.value}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
 
       document.querySelectorAll("[data-pdf-staff]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -656,8 +688,8 @@
     function renderDailyView() {
       const filteredStaff = getFilteredStaff();
       dailyAttendanceBody.innerHTML = "";
-
       const rows = [];
+
       filteredStaff.forEach(user => {
         currentWeekDates.forEach(dateStr => {
           const rec = getAttendanceFor(user.id, dateStr);
@@ -860,12 +892,10 @@
           <p><strong>Staff:</strong> ${user.name || "-"}</p>
           <p><strong>Email:</strong> ${user.email || user.id}</p>
           <p><strong>Week Starting:</strong> ${weekStartInput.value}</p>
-
           <div class="summary">
             <p><strong>Total Weekly Logged Time:</strong> ${formatDuration(weeklyMs)}</p>
             <p><strong>Start Time Cutoff:</strong> ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time</p>
           </div>
-
           <table>
             <thead>
               <tr>
@@ -883,7 +913,6 @@
               ${dayRows}
             </tbody>
           </table>
-
           <script>
             window.onload = function () {
               setTimeout(function () {
@@ -894,7 +923,6 @@
         </body>
         </html>
       `);
-
       printWindow.document.close();
     }
 
@@ -907,6 +935,16 @@
           console.error("Auto-refresh failed:", error);
         }
       }, 2 * 60 * 1000);
+    }
+
+    async function refreshWeek() {
+      try {
+        await loadBaseData(true);
+        showToast("Weekly attendance refreshed.");
+      } catch (error) {
+        console.error("Refresh failed:", error);
+        alert("Could not refresh weekly attendance.");
+      }
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -928,21 +966,13 @@
       }
     });
 
-    async function refreshWeek() {
-      try {
-        await loadBaseData(true);
-      } catch (error) {
-        console.error("Refresh failed:", error);
-        alert("Could not refresh weekly attendance.");
-      }
-    }
-
     refreshBtn.addEventListener("click", refreshWeek);
     refreshBtnTop.addEventListener("click", refreshWeek);
 
     downloadCsvBtn.addEventListener("click", () => {
       try {
         downloadWeeklyCsv();
+        showToast("CSV downloaded.");
       } catch (error) {
         console.error("Could not download CSV:", error);
         alert("Could not download CSV.");

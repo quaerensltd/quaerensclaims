@@ -39,6 +39,39 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
+    .readonly-box {
+      width: 100%;
+      min-height: 140px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #f8fafc;
+      color: #1f2937;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -49,16 +82,19 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Panel</h1>
-          <p class="text-sm text-slate-500">Assigned appointments, callbacks, and closed deals</p>
+          <p class="text-sm text-slate-500">Assigned appointments, callbacks, closed deals, and client email workflow</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Closer Panel</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
           <div class="text-sm text-slate-500 text-right">
             <div id="staffStatus">Checking access...</div>
             <div id="staffEmail" class="text-xs text-slate-400"></div>
@@ -69,7 +105,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-7 gap-4">
+      <section class="grid lg:grid-cols-8 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Assignments</div>
           <div id="totalAssignmentsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
@@ -98,6 +134,93 @@
           <div class="text-sm text-slate-500">No Answer</div>
           <div id="noAnswerStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Sent to Processing</div>
+          <div id="sentToProcessingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section id="selectedAssignmentSection" class="card p-6 hidden">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900" id="selectedTitle">Assignment Detail</h2>
+            <p class="text-sm text-slate-500 mt-1" id="selectedSubtitle">No assignment selected.</p>
+          </div>
+          <div class="flex gap-3 flex-wrap">
+            <button id="clearSelectedBtn" class="btn btn-secondary hidden" type="button">Clear Selection</button>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-6 mt-6">
+          <section class="card p-5">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client & Appointment</h3>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+              <div><span class="font-semibold text-blue-900">Client:</span> <span id="detailClientName">-</span></div>
+              <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="detailClaimType">-</span></div>
+              <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="detailAppointment">-</span></div>
+              <div><span class="font-semibold text-blue-900">Status:</span> <span id="detailStatus">-</span></div>
+              <div><span class="font-semibold text-blue-900">Outcome:</span> <span id="detailOutcome">-</span></div>
+              <div><span class="font-semibold text-blue-900">Processing:</span> <span id="detailProcessing">-</span></div>
+              <div><span class="font-semibold text-blue-900">Email:</span> <span id="detailEmail">-</span></div>
+              <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="detailMobile">-</span></div>
+              <div class="md:col-span-2"><span class="font-semibold text-blue-900">Address:</span> <span id="detailAddress">-</span></div>
+            </div>
+          </section>
+
+          <section class="card p-5">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal Figures</h3>
+            <div class="grid md:grid-cols-3 gap-4">
+              <div>
+                <div class="text-sm text-slate-500">Due Now</div>
+                <div id="detailDueNow" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
+              </div>
+              <div>
+                <div class="text-sm text-slate-500">Paid Now</div>
+                <div id="detailPaidNow" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
+              </div>
+              <div>
+                <div class="text-sm text-slate-500">Follow-Up Due</div>
+                <div id="detailFollowUpDue" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
+              </div>
+            </div>
+            <div class="mt-4 text-sm text-slate-600">
+              <div><span class="font-semibold text-slate-800">Payment Link:</span> <span id="detailPaymentLink">-</span></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="grid lg:grid-cols-2 gap-6 mt-6">
+          <section class="card p-5">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
+            <div id="detailAssessmentSummary" class="readonly-box">No assessment summary available.</div>
+          </section>
+
+          <section class="card p-5">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Manager / Handoff Notes</h3>
+            <div id="detailManagerNotes" class="readonly-box">No notes available.</div>
+          </section>
+        </section>
+
+        <section class="card p-5 mt-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client Email Draft</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="emailSubjectInput">Email Subject</label>
+              <input id="emailSubjectInput" class="input" type="text" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="emailBodyInput">Email Body</label>
+              <textarea id="emailBodyInput" class="input" rows="14"></textarea>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-3 flex-wrap">
+            <button id="generateEmailBtn" class="btn btn-secondary" type="button">Generate Email</button>
+            <button id="saveEmailDraftBtn" class="btn btn-secondary" type="button">Save Email Draft</button>
+            <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="openMailBtn" class="btn btn-primary" type="button">Open Email App</button>
+          </div>
+          <p id="emailMessage" class="text-sm text-green-700 hidden mt-4"></p>
+        </section>
       </section>
 
       <section class="card p-6">
@@ -136,7 +259,7 @@
             <input id="searchInput" type="text" class="input" placeholder="Search client, email, phone..." />
           </div>
           <div class="flex items-end">
-            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh</button>
+            <button id="tableRefreshBtn" class="btn btn-secondary w-full" type="button">Refresh</button>
           </div>
         </div>
       </section>
@@ -148,7 +271,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading assignments...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -183,7 +305,9 @@
       getDocs,
       collection,
       query,
-      where
+      where,
+      updateDoc,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -196,17 +320,24 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const params = new URLSearchParams(window.location.search);
+    const selectedAssignmentIdFromUrl = params.get("id");
+
     const authLoader = document.getElementById("authLoader");
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const tableRefreshBtn = document.getElementById("tableRefreshBtn");
+
     const statusFilter = document.getElementById("statusFilter");
     const outcomeFilter = document.getElementById("outcomeFilter");
     const processingFilter = document.getElementById("processingFilter");
     const searchInput = document.getElementById("searchInput");
-    const refreshBtn = document.getElementById("refreshBtn");
+
     const assignmentsBody = document.getElementById("assignmentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const totalAssignmentsStat = document.getElementById("totalAssignmentsStat");
     const assignedStat = document.getElementById("assignedStat");
     const contactedStat = document.getElementById("contactedStat");
@@ -214,14 +345,59 @@
     const closedDealsStat = document.getElementById("closedDealsStat");
     const callbacksStat = document.getElementById("callbacksStat");
     const noAnswerStat = document.getElementById("noAnswerStat");
+    const sentToProcessingStat = document.getElementById("sentToProcessingStat");
+
+    const selectedAssignmentSection = document.getElementById("selectedAssignmentSection");
+    const selectedTitle = document.getElementById("selectedTitle");
+    const selectedSubtitle = document.getElementById("selectedSubtitle");
+    const clearSelectedBtn = document.getElementById("clearSelectedBtn");
+
+    const detailClientName = document.getElementById("detailClientName");
+    const detailClaimType = document.getElementById("detailClaimType");
+    const detailAppointment = document.getElementById("detailAppointment");
+    const detailStatus = document.getElementById("detailStatus");
+    const detailOutcome = document.getElementById("detailOutcome");
+    const detailProcessing = document.getElementById("detailProcessing");
+    const detailEmail = document.getElementById("detailEmail");
+    const detailMobile = document.getElementById("detailMobile");
+    const detailAddress = document.getElementById("detailAddress");
+    const detailDueNow = document.getElementById("detailDueNow");
+    const detailPaidNow = document.getElementById("detailPaidNow");
+    const detailFollowUpDue = document.getElementById("detailFollowUpDue");
+    const detailPaymentLink = document.getElementById("detailPaymentLink");
+    const detailAssessmentSummary = document.getElementById("detailAssessmentSummary");
+    const detailManagerNotes = document.getElementById("detailManagerNotes");
+
+    const emailSubjectInput = document.getElementById("emailSubjectInput");
+    const emailBodyInput = document.getElementById("emailBodyInput");
+    const generateEmailBtn = document.getElementById("generateEmailBtn");
+    const saveEmailDraftBtn = document.getElementById("saveEmailDraftBtn");
+    const copyEmailBtn = document.getElementById("copyEmailBtn");
+    const openMailBtn = document.getElementById("openMailBtn");
+    const emailMessage = document.getElementById("emailMessage");
 
     let currentUser = null;
     let currentUserData = null;
     let allAssignments = [];
     let processingAssignmentIds = new Set();
+    let selectedAssignment = null;
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function showEmailMessage(text, isError = false) {
+      emailMessage.textContent = text;
+      emailMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      emailMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => emailMessage.classList.add("hidden"), 3500);
     }
 
     function formatClaimType(type) {
@@ -234,34 +410,71 @@
       }
     }
 
+    function appointmentDate(item) {
+      return item?.appointment?.date || "";
+    }
+
+    function appointmentTime(item) {
+      return item?.appointment?.time || "";
+    }
+
     function appointmentText(item) {
-      const date = item.appointment?.date || "-";
-      const time = item.appointment?.time || "-";
+      const date = appointmentDate(item) || "-";
+      const time = appointmentTime(item) || "-";
       return `${date} ${time}`.trim();
     }
 
     function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
+      const first = item?.client?.firstName || "";
+      const second = item?.client?.secondName || "";
       return `${first} ${second}`.trim() || "-";
     }
 
-    function processingLabel(item) {
-      if (processingAssignmentIds.has(item.id)) {
-        return `<span class="badge badge-violet">Sent to Processing</span>`;
-      }
-      return `<span class="badge badge-slate">Not Sent</span>`;
+    function clientEmail(item) {
+      return item?.client?.email || "";
+    }
+
+    function clientMobile(item) {
+      return item?.client?.mobile || item?.client?.landline || "";
+    }
+
+    function clientAddress(item) {
+      return item?.client?.address || "-";
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
     function effectiveStatus(item) {
-      return item.status || "Assigned";
+      return item?.status || "Assigned";
+    }
+
+    function outcomeValue(item) {
+      return item?.outcome || "";
+    }
+
+    function isClosedDeal(item) {
+      return outcomeValue(item) === "Closed Deal" || effectiveStatus(item) === "Closed";
+    }
+
+    function processingSent(item) {
+      return processingAssignmentIds.has(item.id);
+    }
+
+    function processingLabel(item) {
+      return processingSent(item)
+        ? `<span class="badge badge-violet">Sent to Processing</span>`
+        : `<span class="badge badge-slate">Not Sent</span>`;
     }
 
     function statusBadge(status) {
       if (status === "Closed") return `<span class="badge badge-green">Closed</span>`;
       if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
       if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
-      return `<span class="badge badge-amber">Assigned</span>`;
+      if (status === "Assigned") return `<span class="badge badge-amber">Assigned</span>`;
+      return `<span class="badge badge-slate">${status || "-"}</span>`;
     }
 
     function outcomeBadge(outcome) {
@@ -271,6 +484,105 @@
       if (outcome === "No Answer") return `<span class="badge badge-red">No Answer</span>`;
       if (outcome === "Not Interested") return `<span class="badge badge-slate">Not Interested</span>`;
       return `<span class="badge badge-slate">-</span>`;
+    }
+
+    function sortByAppointment(a, b) {
+      const aKey = `${appointmentDate(a) || "9999-12-31"} ${appointmentTime(a) || "23:59"}`;
+      const bKey = `${appointmentDate(b) || "9999-12-31"} ${appointmentTime(b) || "23:59"}`;
+      return aKey.localeCompare(bKey);
+    }
+
+    function detailHref(item) {
+      return `/closer-panel.html?id=${item.id}`;
+    }
+
+    function safeText(value, fallback = "-") {
+      const text = String(value || "").trim();
+      return text || fallback;
+    }
+
+    function buildDefaultEmailSubject(item) {
+      const outcome = outcomeValue(item);
+      const name = clientName(item);
+      if (outcome === "Closed Deal") return `Quaerens - next steps for ${name}`;
+      if (outcome === "Call Back") return `Quaerens - follow-up appointment for ${name}`;
+      if (outcome === "Interested") return `Quaerens - your claim follow-up`;
+      if (outcome === "No Answer") return `Quaerens - attempted follow-up`;
+      return `Quaerens - update regarding your claim`;
+    }
+
+    function buildDefaultEmailBody(item) {
+      const name = clientName(item);
+      const firstName = item?.client?.firstName || "Client";
+      const claimType = formatClaimType(item?.claimType);
+      const appt = appointmentText(item);
+      const dueNow = Number(item?.amountDueNow || 0);
+      const followUpDue = Number(item?.followUpDue || 0);
+      const paymentLink = item?.paymentLink || "";
+      const outcome = outcomeValue(item);
+
+      if (outcome === "Closed Deal") {
+        return [
+          `Dear ${firstName},`,
+          "",
+          "Thank you for your time today.",
+          "",
+          `Following our discussion regarding your ${claimType.toLowerCase()} matter, I am writing to confirm the next steps.`,
+          dueNow > 0 ? `Amount due now: ${money(dueNow)}` : "",
+          followUpDue > 0 ? `Follow-up amount: ${money(followUpDue)}` : "",
+          paymentLink ? `Payment link: ${paymentLink}` : "",
+          "",
+          "Once this has been completed, your file can continue to the next stage.",
+          "",
+          "Kind regards,",
+          currentUserData?.name || "Quaerens",
+          "Quaerens"
+        ].filter(Boolean).join("\n");
+      }
+
+      if (outcome === "Call Back") {
+        return [
+          `Dear ${firstName},`,
+          "",
+          "Thank you for speaking with me.",
+          "",
+          `This email confirms your follow-up appointment: ${appt}.`,
+          "If you need to rearrange, please reply to this email.",
+          "",
+          "Kind regards,",
+          currentUserData?.name || "Quaerens",
+          "Quaerens"
+        ].join("\n");
+      }
+
+      if (outcome === "No Answer") {
+        return [
+          `Dear ${firstName},`,
+          "",
+          "I attempted to contact you regarding your matter but was unable to reach you.",
+          "",
+          "Please reply to this email if you would like to arrange a more convenient time.",
+          "",
+          "Kind regards,",
+          currentUserData?.name || "Quaerens",
+          "Quaerens"
+        ].join("\n");
+      }
+
+      return [
+        `Dear ${firstName},`,
+        "",
+        "Thank you for your time.",
+        "",
+        "I am writing with a follow-up regarding your Quaerens matter.",
+        appointmentDate(item) ? `Appointment reference: ${appt}` : "",
+        "",
+        "Please reply if you have any questions.",
+        "",
+        "Kind regards,",
+        currentUserData?.name || "Quaerens",
+        "Quaerens"
+      ].filter(Boolean).join("\n");
     }
 
     async function checkCloserAccess(user) {
@@ -298,6 +610,31 @@
       return true;
     }
 
+    async function loadProcessingLinks() {
+      processingAssignmentIds = new Set();
+
+      try {
+        const processingCasesSnap = await getDocs(collection(db, "processingCases"));
+        processingCasesSnap.docs.forEach(d => {
+          const data = d.data() || {};
+          if (data.sourceAssignmentId) processingAssignmentIds.add(data.sourceAssignmentId);
+          if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+        });
+      } catch (error) {
+        console.error("Could not load processingCases:", error);
+      }
+
+      try {
+        const processingFilesSnap = await getDocs(collection(db, "processingFiles"));
+        processingFilesSnap.docs.forEach(d => {
+          const data = d.data() || {};
+          if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+        });
+      } catch (error) {
+        console.error("Could not load processingFiles:", error);
+      }
+    }
+
     async function loadAssignments() {
       try {
         const assignmentsQuery = query(
@@ -311,21 +648,21 @@
           ...docSnap.data()
         }));
 
-        allAssignments.sort((a, b) => {
-          const aKey = `${a.appointment?.date || "9999-12-31"} ${a.appointment?.time || "23:59"}`;
-          const bKey = `${b.appointment?.date || "9999-12-31"} ${b.appointment?.time || "23:59"}`;
-          return aKey.localeCompare(bKey);
-        });
+        allAssignments.sort(sortByAppointment);
 
-        const processingSnap = await getDocs(collection(db, "processingFiles"));
-        processingAssignmentIds = new Set(
-          processingSnap.docs
-            .map(d => d.data()?.assignmentId)
-            .filter(Boolean)
-        );
+        await loadProcessingLinks();
+
+        if (selectedAssignmentIdFromUrl) {
+          const fromUrl = allAssignments.find(x => x.id === selectedAssignmentIdFromUrl);
+          selectedAssignment = fromUrl || null;
+        } else if (selectedAssignment?.id) {
+          const refreshedSelected = allAssignments.find(x => x.id === selectedAssignment.id);
+          selectedAssignment = refreshedSelected || null;
+        }
 
         renderStats();
         renderAssignments();
+        renderSelectedAssignment();
       } catch (error) {
         console.error("Failed to load closer assignments:", error);
         resultsSummary.textContent = "Could not load assignments.";
@@ -337,9 +674,10 @@
       assignedStat.textContent = String(allAssignments.filter(x => effectiveStatus(x) === "Assigned").length);
       contactedStat.textContent = String(allAssignments.filter(x => effectiveStatus(x) === "Contacted").length);
       bookedStat.textContent = String(allAssignments.filter(x => effectiveStatus(x) === "Appointment Booked").length);
-      closedDealsStat.textContent = String(allAssignments.filter(x => x.outcome === "Closed Deal" || effectiveStatus(x) === "Closed").length);
-      callbacksStat.textContent = String(allAssignments.filter(x => x.outcome === "Call Back").length);
-      noAnswerStat.textContent = String(allAssignments.filter(x => x.outcome === "No Answer").length);
+      closedDealsStat.textContent = String(allAssignments.filter(x => isClosedDeal(x)).length);
+      callbacksStat.textContent = String(allAssignments.filter(x => outcomeValue(x) === "Call Back").length);
+      noAnswerStat.textContent = String(allAssignments.filter(x => outcomeValue(x) === "No Answer").length);
+      sentToProcessingStat.textContent = String(allAssignments.filter(x => processingSent(x)).length);
     }
 
     function renderAssignments() {
@@ -350,9 +688,8 @@
 
       const filtered = allAssignments.filter(item => {
         const matchesStatus = selectedStatus === "all" || effectiveStatus(item) === selectedStatus;
-        const matchesOutcome = selectedOutcome === "all" || (item.outcome || "") === selectedOutcome;
-
-        const isSent = processingAssignmentIds.has(item.id);
+        const matchesOutcome = selectedOutcome === "all" || outcomeValue(item) === selectedOutcome;
+        const isSent = processingSent(item);
         const matchesProcessing =
           selectedProcessing === "all" ||
           (selectedProcessing === "sent" && isSent) ||
@@ -364,7 +701,7 @@
           ${item.client?.mobile || ""}
           ${item.client?.landline || ""}
           ${item.claimType || ""}
-          ${item.outcome || ""}
+          ${outcomeValue(item)}
           ${effectiveStatus(item)}
         `.toLowerCase();
 
@@ -392,10 +729,10 @@
             </td>
             <td class="p-3">${formatClaimType(item.claimType)}</td>
             <td class="p-3">${statusBadge(effectiveStatus(item))}</td>
-            <td class="p-3">${outcomeBadge(item.outcome)}</td>
+            <td class="p-3">${outcomeBadge(outcomeValue(item))}</td>
             <td class="p-3">${processingLabel(item)}</td>
             <td class="p-3">
-              <a href="/closer-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">
+              <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">
                 Open File
               </a>
             </td>
@@ -406,6 +743,126 @@
 
       resultsSummary.textContent = `${filtered.length} assignment(s) shown`;
     }
+
+    function renderSelectedAssignment() {
+      if (!selectedAssignment) {
+        selectedAssignmentSection.classList.add("hidden");
+        clearSelectedBtn.classList.add("hidden");
+        return;
+      }
+
+      selectedAssignmentSection.classList.remove("hidden");
+      clearSelectedBtn.classList.remove("hidden");
+
+      selectedTitle.textContent = clientName(selectedAssignment);
+      selectedSubtitle.textContent = `Assignment ID: ${selectedAssignment.id}`;
+
+      detailClientName.textContent = clientName(selectedAssignment);
+      detailClaimType.textContent = formatClaimType(selectedAssignment.claimType);
+      detailAppointment.textContent = appointmentText(selectedAssignment);
+      detailStatus.innerHTML = statusBadge(effectiveStatus(selectedAssignment));
+      detailOutcome.innerHTML = outcomeBadge(outcomeValue(selectedAssignment));
+      detailProcessing.innerHTML = processingLabel(selectedAssignment);
+      detailEmail.textContent = safeText(clientEmail(selectedAssignment));
+      detailMobile.textContent = safeText(clientMobile(selectedAssignment));
+      detailAddress.textContent = safeText(clientAddress(selectedAssignment));
+      detailDueNow.textContent = money(selectedAssignment.amountDueNow || 0);
+      detailPaidNow.textContent = money(selectedAssignment.amountPaidNow || 0);
+      detailFollowUpDue.textContent = money(selectedAssignment.followUpDue || 0);
+      detailPaymentLink.textContent = safeText(selectedAssignment.paymentLink);
+      detailAssessmentSummary.textContent =
+        selectedAssignment.assessmentSummary ||
+        selectedAssignment.generatedAssessmentText ||
+        selectedAssignment.assessmentReportText ||
+        "No assessment summary available.";
+      detailManagerNotes.textContent =
+        selectedAssignment.handoffNotes ||
+        selectedAssignment.managerNotes ||
+        "No notes available.";
+
+      emailSubjectInput.value =
+        selectedAssignment.closerEmailSubject ||
+        buildDefaultEmailSubject(selectedAssignment);
+
+      emailBodyInput.value =
+        selectedAssignment.closerEmailBody ||
+        buildDefaultEmailBody(selectedAssignment);
+    }
+
+    async function saveEmailDraft() {
+      if (!selectedAssignment) {
+        showEmailMessage("No assignment selected.", true);
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, "closerAssignments", selectedAssignment.id), {
+          closerEmailSubject: emailSubjectInput.value || "",
+          closerEmailBody: emailBodyInput.value || "",
+          lastUpdatedAt: serverTimestamp()
+        });
+
+        selectedAssignment.closerEmailSubject = emailSubjectInput.value || "";
+        selectedAssignment.closerEmailBody = emailBodyInput.value || "";
+
+        showEmailMessage("Email draft saved.");
+        showToast("Email draft saved.");
+      } catch (error) {
+        console.error("Failed to save email draft:", error);
+        showEmailMessage("Could not save email draft.", true);
+      }
+    }
+
+    function openMailApp() {
+      if (!selectedAssignment) {
+        showEmailMessage("No assignment selected.", true);
+        return;
+      }
+
+      const to = encodeURIComponent(clientEmail(selectedAssignment) || "");
+      if (!to) {
+        showEmailMessage("No client email address found.", true);
+        return;
+      }
+
+      const subject = encodeURIComponent(emailSubjectInput.value || "");
+      const body = encodeURIComponent(emailBodyInput.value || "");
+      window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    }
+
+    generateEmailBtn.addEventListener("click", () => {
+      if (!selectedAssignment) {
+        showEmailMessage("No assignment selected.", true);
+        return;
+      }
+      emailSubjectInput.value = buildDefaultEmailSubject(selectedAssignment);
+      emailBodyInput.value = buildDefaultEmailBody(selectedAssignment);
+      showEmailMessage("Email regenerated.");
+    });
+
+    saveEmailDraftBtn.addEventListener("click", saveEmailDraft);
+
+    copyEmailBtn.addEventListener("click", async () => {
+      try {
+        const fullText = `Subject: ${emailSubjectInput.value || ""}\n\n${emailBodyInput.value || ""}`;
+        await navigator.clipboard.writeText(fullText);
+        showEmailMessage("Email copied.");
+        showToast("Email copied.");
+      } catch (error) {
+        console.error("Copy failed:", error);
+        showEmailMessage("Could not copy email.", true);
+      }
+    });
+
+    openMailBtn.addEventListener("click", openMailApp);
+
+    clearSelectedBtn.addEventListener("click", () => {
+      selectedAssignment = null;
+      const url = new URL(window.location.href);
+      url.searchParams.delete("id");
+      window.history.replaceState({}, "", url.toString());
+      renderSelectedAssignment();
+    });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -439,7 +896,9 @@
     outcomeFilter.addEventListener("change", renderAssignments);
     processingFilter.addEventListener("change", renderAssignments);
     searchInput.addEventListener("input", renderAssignments);
+
     refreshBtn.addEventListener("click", loadAssignments);
+    tableRefreshBtn.addEventListener("click", loadAssignments);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
