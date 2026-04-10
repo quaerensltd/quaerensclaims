@@ -22,7 +22,13 @@
     .hidden { display: none; }
     .active-nav { background: #2563eb; color: white; }
     .active-nav:hover { background: #1d4ed8; color: white; }
-    .badge { display: inline-block; padding: 0.25rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-amber { background: #fef3c7; color: #92400e; }
@@ -442,29 +448,29 @@
 
     function formatAddress(lead) {
       return [
-        lead.address,
-        lead.address1,
-        lead.address2,
-        lead.address3,
-        lead.address4,
-        lead.address5
+        lead?.address,
+        lead?.address1,
+        lead?.address2,
+        lead?.address3,
+        lead?.address4,
+        lead?.address5
       ].filter(Boolean).join(", ") || "-";
     }
 
     function clientName(lead) {
-      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+      return `${lead?.forename || ""} ${lead?.surname || ""}`.trim() || "-";
     }
 
     function leadTelephone(lead) {
-      return lead.telephone || "-";
+      return lead?.telephone || "-";
     }
 
     function leadMobile(lead) {
-      return lead.mobile || "-";
+      return lead?.mobile || "-";
     }
 
     function leadEmail(lead) {
-      return lead.email || "-";
+      return lead?.email || "-";
     }
 
     function formatAction(action) {
@@ -518,8 +524,8 @@
     }
 
     function getAppointmentText(lead) {
-      const date = lead.closerAppointmentDate || "";
-      const time = lead.closerAppointmentTime || "";
+      const date = lead?.closerAppointmentDate || "";
+      const time = lead?.closerAppointmentTime || "";
       return date ? `${date} ${time}`.trim() : "-";
     }
 
@@ -558,6 +564,36 @@
 
     function labelFromKey(key) {
       return key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
+    }
+
+    function getLeadSubmissionId(lead) {
+      return (
+        lead?.convertedToSubmissionId ||
+        lead?.submissionId ||
+        lead?.claimSubmissionId ||
+        lead?.intakeSubmissionId ||
+        ""
+      );
+    }
+
+    function getLeadEmailAddress(lead) {
+      return safe(lead?.email || selectedSubmissionData?.client?.email);
+    }
+
+    function getLeadMobileNumber(lead) {
+      return safe(lead?.mobile || selectedSubmissionData?.client?.mobile);
+    }
+
+    function getLeadTelephoneNumber(lead) {
+      return safe(lead?.telephone || selectedSubmissionData?.client?.landline);
+    }
+
+    function getLeadPostcode(lead) {
+      return safe(lead?.postcode || selectedSubmissionData?.client?.postcode);
+    }
+
+    function getLeadAddress(lead) {
+      return safe(selectedSubmissionData?.client?.address || formatAddress(lead));
     }
 
     function buildSubmissionAssessmentSummary(submission) {
@@ -827,18 +863,6 @@
       };
     }
 
-    function getLeadEmailAddress(lead) {
-      return safe(lead?.email || selectedSubmissionData?.client?.email);
-    }
-
-    function getLeadMobileNumber(lead) {
-      return safe(lead?.mobile || selectedSubmissionData?.client?.mobile);
-    }
-
-    function getLeadTelephoneNumber(lead) {
-      return safe(lead?.telephone || selectedSubmissionData?.client?.landline);
-    }
-
     function buildManagerEmailSubject(lead) {
       const fullName = clientName(lead);
       return `Quaerens follow-up for ${fullName || "client"}`;
@@ -1013,15 +1037,14 @@
             <td class="p-3">${statusBadge(lead)}</td>
             <td class="p-3">${getAppointmentText(lead)}</td>
             <td class="p-3">${userDisplay(lead.closerUid)}</td>
-            <td class="p-3">
-              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button>
-            </td>
+            <td class="p-3"><button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button></td>
           `;
           leadsBody.appendChild(tr);
         });
       }
 
       resultsSummary.textContent = `${filtered.length} lead(s) shown`;
+
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
       });
@@ -1053,35 +1076,32 @@
       const snap = await getDocs(q);
       if (snap.empty) return null;
 
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
-        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-        return bTime - aTime;
-      });
+      const docs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+          return bTime - aTime;
+        });
 
       return docs[0];
     }
 
     async function loadLinkedSubmissionForLead(lead) {
       selectedSubmissionData = null;
-      const possibleIds = [
-        lead.convertedToSubmissionId,
-        lead.submissionId,
-        lead.claimSubmissionId,
-        lead.intakeSubmissionId
-      ].filter(Boolean);
+      const submissionId = getLeadSubmissionId(lead);
+      if (!submissionId) return null;
 
-      for (const id of possibleIds) {
-        try {
-          const snap = await getDoc(doc(db, "claimSubmissions", id));
-          if (snap.exists()) {
-            selectedSubmissionData = { id: snap.id, ...snap.data() };
-            return selectedSubmissionData;
-          }
-        } catch (error) {
-          console.error("Failed loading linked submission:", error);
+      try {
+        const snap = await getDoc(doc(db, "claimSubmissions", submissionId));
+        if (snap.exists()) {
+          selectedSubmissionData = { id: snap.id, ...snap.data() };
+          return selectedSubmissionData;
         }
+      } catch (error) {
+        console.error("Failed loading linked submission:", error);
       }
+
       return null;
     }
 
@@ -1114,27 +1134,26 @@
       selectedAssessmentPack = null;
       if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
+      await loadLinkedSubmissionForLead(selectedLead);
+
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Review";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_telephone").textContent = selectedLead.telephone || "-";
-      document.getElementById("lead_mobile").textContent = selectedLead.mobile || "-";
-      document.getElementById("lead_email").textContent = selectedLead.email || "-";
-      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_telephone").textContent = getLeadTelephoneNumber(selectedLead) || "-";
+      document.getElementById("lead_mobile").textContent = getLeadMobileNumber(selectedLead) || "-";
+      document.getElementById("lead_email").textContent = getLeadEmailAddress(selectedLead) || "-";
+      document.getElementById("lead_address").textContent = getLeadAddress(selectedLead) || "-";
+      document.getElementById("lead_postcode").textContent = getLeadPostcode(selectedLead) || "-";
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
-      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || "-";
+      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || selectedSubmissionData?.claimType || "-";
       document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
       document.getElementById("lead_status").innerHTML = statusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
       document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
-      document.getElementById("lead_submissionId").textContent =
-        selectedLead.convertedToSubmissionId ||
-        selectedLead.submissionId ||
-        selectedLead.claimSubmissionId ||
-        selectedLead.intakeSubmissionId ||
-        "-";
+      document.getElementById("lead_submissionId").textContent = getLeadSubmissionId(selectedLead) || "-";
 
       closerSelect.value = selectedLead.closerUid || "";
       managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
@@ -1144,9 +1163,7 @@
       assessmentOutcomeSelect.value = selectedLead.assessmentOutcome || "";
       recommendedCloserText.value = selectedLead.recommendedCloser || "";
 
-      const linkedSubmission = await loadLinkedSubmissionForLead(selectedLead);
-      const intakeSummary = buildSubmissionAssessmentSummary(linkedSubmission);
-
+      const intakeSummary = buildSubmissionAssessmentSummary(selectedSubmissionData);
       assessmentSummaryBox.value =
         selectedLead.assessmentSummary ||
         selectedLead.generatedAssessmentText ||
@@ -1165,12 +1182,7 @@
       const assessment = await findAssessmentForLead(selectedLead.id);
       document.getElementById("lead_assessmentId").textContent = assessment?.id || selectedLead.assessmentId || "-";
 
-      const submissionId =
-        selectedLead.convertedToSubmissionId ||
-        selectedLead.submissionId ||
-        selectedLead.claimSubmissionId ||
-        selectedLead.intakeSubmissionId ||
-        "";
+      const submissionId = getLeadSubmissionId(selectedLead);
 
       if (submissionId) {
         openIntakeBtn.href = `/intake-detail.html?id=${submissionId}`;
@@ -1267,7 +1279,7 @@
           time: appointmentTime.value || ""
         },
         assessmentId: selectedAssessmentId || "",
-        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
+        submissionId: getLeadSubmissionId(lead),
         assessmentSummary: selectedAssessmentPack?.assessmentSummaryText || assessmentSummaryBox.value.trim(),
         generatedAssessmentText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
         assessmentReportText: selectedAssessmentPack?.assessmentReportText || assessmentSummaryBox.value.trim(),
@@ -1341,7 +1353,7 @@
 
       const payload = {
         leadId: selectedLead.id,
-        submissionId: selectedLead.convertedToSubmissionId || selectedLead.submissionId || "",
+        submissionId: getLeadSubmissionId(selectedLead),
         client: {
           title: selectedLead.title || "",
           forename: selectedLead.forename || "",
@@ -1349,7 +1361,7 @@
           telephone: selectedLead.telephone || "",
           mobile: selectedLead.mobile || "",
           email: selectedLead.email || selectedSubmissionData?.client?.email || "",
-          postcode: selectedLead.postcode || "",
+          postcode: selectedLead.postcode || selectedSubmissionData?.client?.postcode || "",
           address: selectedSubmissionData?.client?.address || formatAddress(selectedLead)
         },
         claimType: selectedLead.claimType || selectedLead.type || "",
@@ -1417,21 +1429,13 @@
         lastAction: "notes_saved"
       };
 
-      await updateLead(
-        patch,
-        "notes_saved",
-        "Manager saved pipeline changes."
-      );
-    }
-
-    function getSelectedLeadEmailForSending() {
-      return getLeadEmailAddress(selectedLead);
+      await updateLead(patch, "notes_saved", "Manager saved pipeline changes.");
     }
 
     function openEmailDraft() {
       if (!selectedLead) return;
 
-      const email = getSelectedLeadEmailForSending();
+      const email = getLeadEmailAddress(selectedLead);
       if (!email) {
         showModalMessage("No email address found for this lead.", true);
         return;
@@ -1484,6 +1488,7 @@
 
     createAssessmentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         const assessmentId = await createOrUpdateAssessment();
         selectedAssessmentId = assessmentId;
@@ -1723,8 +1728,8 @@
       const allowed = await checkManagerAccess(user);
       if (!allowed) return;
 
-      hideLoader();
       await loadLeads();
+      hideLoader();
     });
 
     logoutBtn.addEventListener("click", async () => {

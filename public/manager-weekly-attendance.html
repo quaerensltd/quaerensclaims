@@ -32,13 +32,13 @@
       background: #1d4ed8;
       color: white;
     }
-
     .badge-online,
     .badge-offline,
     .badge-missing,
     .badge-ontime,
     .badge-late,
-    .badge-absent {
+    .badge-absent,
+    .badge-future {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
@@ -46,14 +46,15 @@
       border-radius: 999px;
       font-weight: 700;
       font-size: 0.8rem;
+      white-space: nowrap;
     }
-
     .badge-online { background: #dcfce7; color: #166534; }
     .badge-offline { background: #e2e8f0; color: #334155; }
     .badge-missing { background: #fee2e2; color: #991b1b; }
     .badge-ontime { background: #dcfce7; color: #166534; }
     .badge-late { background: #fef3c7; color: #92400e; }
     .badge-absent { background: #fee2e2; color: #991b1b; }
+    .badge-future { background: #e0e7ff; color: #4338ca; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -78,6 +79,7 @@
           <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Week</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -210,6 +212,7 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const refreshBtn = document.getElementById("refreshBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
     const weekStartInput = document.getElementById("weekStartInput");
     const staffFilter = document.getElementById("staffFilter");
     const viewFilter = document.getElementById("viewFilter");
@@ -323,7 +326,7 @@
     function dayStatusBadge(status) {
       if (status === "on_time") return `<span class="badge-ontime">● On Time</span>`;
       if (status === "late") return `<span class="badge-late">● Late</span>`;
-      if (status === "future") return `<span class="badge-offline">● Future</span>`;
+      if (status === "future") return `<span class="badge-future">● Future</span>`;
       return `<span class="badge-absent">● Absent</span>`;
     }
 
@@ -351,11 +354,6 @@
       return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
     }
 
-    function findStaffName(uid) {
-      const staff = staffUsers.find(x => x.id === uid);
-      return staff?.name || staff?.email || uid || "-";
-    }
-
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -367,7 +365,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "manager" && userData.role !== "processing") {
+      if (userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -441,7 +439,6 @@
 
     function renderStats() {
       const filteredStaff = getFilteredStaff();
-
       let recordCount = 0;
       let presentDays = 0;
       let lateDays = 0;
@@ -510,7 +507,7 @@
           let weeklyMs = 0;
           let rowHtml = `
             <tr class="border-t border-slate-200">
-              <td class="p-3">
+              <td class="p-3 align-top">
                 <div class="font-semibold text-slate-800">${user.name || "-"}</div>
                 <div class="text-xs text-slate-500">${user.email || user.id}</div>
               </td>
@@ -543,18 +540,18 @@
             }
           });
 
-          rowHtml += `<td class="p-3 font-bold text-blue-900">${formatDuration(weeklyMs)}</td></tr>`;
+          rowHtml += `<td class="p-3 font-bold text-blue-900 align-top">${formatDuration(weeklyMs)}</td></tr>`;
           weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
         });
 
       const weekEnd = currentWeekDates[currentWeekDates.length - 1];
-      summaryText.textContent = `${filteredStaff.length} staff member(s) shown for week ${weekStartInput.value} to ${weekEnd}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+      summaryText.textContent =
+        `${filteredStaff.length} staff member(s) shown for week ${weekStartInput.value} to ${weekEnd}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
     }
 
     function renderDailyView() {
       const filteredStaff = getFilteredStaff();
       dailyAttendanceBody.innerHTML = "";
-
       const rows = [];
 
       filteredStaff.forEach(user => {
@@ -638,7 +635,6 @@
       try {
         const allowed = await checkAccess(user);
         if (!allowed) return;
-
         setDefaultWeekStart();
         await loadBaseData(true);
         startAutoRefresh();
@@ -650,20 +646,21 @@
       }
     });
 
-    refreshBtn.addEventListener("click", async () => {
+    async function refreshWeek() {
       try {
         await loadBaseData(true);
       } catch (error) {
         console.error("Refresh failed:", error);
         alert("Could not refresh weekly attendance.");
       }
-    });
+    }
+
+    refreshBtn.addEventListener("click", refreshWeek);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshWeek);
 
     weekStartInput.addEventListener("change", renderAll);
     staffFilter.addEventListener("change", renderAll);
-    viewFilter.addEventListener("change", () => {
-      renderAll();
-    });
+    viewFilter.addEventListener("change", renderAll);
 
     logoutBtn.addEventListener("click", async () => {
       try {

@@ -94,14 +94,12 @@
             <label class="block text-sm font-semibold text-blue-900 mb-2">Select CSV file</label>
             <input id="csvFile" type="file" accept=".csv" class="input" />
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Assign to lister</label>
             <select id="listerSelect" class="input">
               <option value="">Select lister</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
             <select id="campaignSelect" class="input">
@@ -111,7 +109,6 @@
               <option value="newbuild">New Build</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeSelect" class="input">
@@ -145,7 +142,6 @@
             <p id="previewSummary" class="text-sm text-slate-500 mt-1">No file loaded.</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -213,7 +209,6 @@
     const previewBody = document.getElementById("previewBody");
     const previewSummary = document.getElementById("previewSummary");
     const uploadMessage = document.getElementById("uploadMessage");
-
     const rowsLoadedStat = document.getElementById("rowsLoadedStat");
     const rowsReadyStat = document.getElementById("rowsReadyStat");
     const missingContactStat = document.getElementById("missingContactStat");
@@ -326,6 +321,8 @@
       normalized.hasContact = !!(normalized.telephone || normalized.mobile || normalized.email);
       normalized.hasIdentity = !!(normalized.forename || normalized.surname);
       normalized.contactKey = buildContactKey(normalized);
+      normalized.isDuplicate = false;
+      normalized.validationMessage = "";
 
       return normalized;
     }
@@ -340,9 +337,11 @@
 
       normalizedRows.forEach(row => {
         if (!row.contactKey) return;
+
         if (seenKeys.has(row.contactKey)) {
           row.isDuplicate = true;
           row.validationMessage = "Duplicate contact";
+
           const first = seenKeys.get(row.contactKey);
           if (!first.validationMessage) {
             first.isDuplicate = true;
@@ -363,16 +362,12 @@
     }
 
     function updateStats() {
+      const readyRows = normalizedRows.filter(row => row.hasContact && !row.isDuplicate);
+
       rowsLoadedStat.textContent = String(parsedRows.length);
-      rowsReadyStat.textContent = String(
-        normalizedRows.filter(row => row.hasIdentity || row.hasContact).length
-      );
-      missingContactStat.textContent = String(
-        normalizedRows.filter(row => !row.hasContact).length
-      );
-      duplicateStat.textContent = String(
-        normalizedRows.filter(row => row.isDuplicate).length
-      );
+      rowsReadyStat.textContent = String(readyRows.length);
+      missingContactStat.textContent = String(normalizedRows.filter(row => !row.hasContact).length);
+      duplicateStat.textContent = String(normalizedRows.filter(row => row.isDuplicate).length);
     }
 
     async function checkManagerAccess(user) {
@@ -416,6 +411,18 @@
       });
     }
 
+    function resetPreview() {
+      parsedRows = [];
+      normalizedRows = [];
+      previewBody.innerHTML = `
+        <tr>
+          <td colspan="10" class="p-6 text-center text-slate-500">No rows to preview.</td>
+        </tr>
+      `;
+      previewSummary.textContent = "No file loaded.";
+      updateStats();
+    }
+
     function renderPreview() {
       previewBody.innerHTML = "";
 
@@ -437,8 +444,7 @@
         let validationBadge = `<span class="badge badge-green">Ready</span>`;
         if (!row.hasContact) {
           validationBadge = `<span class="badge badge-amber">Missing Contact</span>`;
-        }
-        if (row.isDuplicate) {
+        } else if (row.isDuplicate) {
           validationBadge = `<span class="badge badge-red">Duplicate</span>`;
         }
 
@@ -483,6 +489,7 @@
         },
         error: (error) => {
           console.error(error);
+          resetPreview();
           showMessage("Could not parse CSV.", true);
         }
       });
@@ -504,9 +511,10 @@
         return;
       }
 
-      const rowsToImport = normalizedRows.filter(row => row.hasContact);
+      const rowsToImport = normalizedRows.filter(row => row.hasContact && !row.isDuplicate);
+
       if (!rowsToImport.length) {
-        showMessage("There are no valid rows with contact details to import.", true);
+        showMessage("There are no valid non-duplicate rows with contact details to import.", true);
         return;
       }
 
@@ -520,19 +528,15 @@
             assignedToUid: lister.uid,
             assignedToName: lister.name || "",
             assignedToEmail: lister.email || "",
-
             uploadedByUid: currentUser.uid,
             uploadedByName: currentUserData.name || "",
             uploadedByEmail: currentUser.email || "",
-
             uploadedAt: serverTimestamp(),
             createdAt: serverTimestamp(),
             lastUpdatedAt: serverTimestamp(),
-
             title: row.title,
             forename: row.forename,
             surname: row.surname,
-
             address1: row.address1,
             address2: row.address2,
             address3: row.address3,
@@ -540,22 +544,17 @@
             address5: row.address5,
             address: row.address,
             postcode: row.postcode,
-
             telephone: row.telephone,
             mobile: row.mobile,
             email: row.email,
-
             landline: row.telephone,
             phone: row.telephone,
             mobileNumber: row.mobile,
             emailAddress: row.email,
-
             homeOwner: row.homeOwner,
             hasSolar: row.hasSolar,
-
             campaign,
             claimType,
-
             leadStatus: "new",
             usable: true,
             closed: false,
@@ -563,18 +562,15 @@
             introEmailNeeded: false,
             introEmailSent: false,
             attemptCount: 0,
-
             notes: "",
             managerNotes: "",
             lastAction: "lead_uploaded",
-
             callbackDate: "",
             callbackTime: "",
             closerUid: "",
             closerAppointmentDate: "",
             closerAppointmentTime: "",
             convertedToSubmissionId: "",
-
             actionHistory: [
               {
                 action: "lead_uploaded",
@@ -587,7 +583,10 @@
           });
         }
 
-        showMessage(`Imported ${rowsToImport.length} lead(s) successfully.${rowsToImport.length !== normalizedRows.length ? ` Skipped ${normalizedRows.length - rowsToImport.length} row(s) with no contact details.` : ""}`);
+        const skippedCount = normalizedRows.length - rowsToImport.length;
+        showMessage(
+          `Imported ${rowsToImport.length} lead(s) successfully.${skippedCount > 0 ? ` Skipped ${skippedCount} invalid or duplicate row(s).` : ""}`
+        );
       } catch (error) {
         console.error(error);
         showMessage("Could not import leads.", true);
