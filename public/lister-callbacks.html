@@ -42,6 +42,20 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
+
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .table-fixed-clean {
+      table-layout: fixed;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -129,9 +143,20 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
+          <table class="w-full min-w-[1180px] table-fixed-clean text-sm border-collapse">
+            <colgroup>
+              <col class="w-[100px]">
+              <col class="w-[90px]">
+              <col class="w-[220px]">
+              <col class="w-[120px]">
+              <col class="w-[120px]">
+              <col class="w-[190px]">
+              <col class="w-[100px]">
+              <col class="w-[130px]">
+              <col class="w-[130px]">
+              <col class="w-[90px]">
+            </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Date</th>
@@ -274,11 +299,13 @@
     const timingFilter = document.getElementById("timingFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
+
     const totalScheduledStat = document.getElementById("totalScheduledStat");
     const todayStat = document.getElementById("todayStat");
     const overdueStat = document.getElementById("overdueStat");
     const introStat = document.getElementById("introStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
+
     const agendaBody = document.getElementById("agendaBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
@@ -288,6 +315,7 @@
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
+
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const rescheduleBtn = document.getElementById("rescheduleBtn");
     const keepIntroBtn = document.getElementById("keepIntroBtn");
@@ -323,26 +351,15 @@
     }
 
     function getLeadTelephone(lead) {
-      return cleanValue(
-        lead.telephone ||
-        lead.landline ||
-        lead.phone
-      );
+      return cleanValue(lead.telephone || lead.landline || lead.phone);
     }
 
     function getLeadMobile(lead) {
-      return cleanValue(
-        lead.mobile ||
-        lead.mobileNumber ||
-        lead.cell
-      );
+      return cleanValue(lead.mobile || lead.mobileNumber || lead.cell);
     }
 
     function getLeadEmail(lead) {
-      return cleanValue(
-        lead.email ||
-        lead.emailAddress
-      );
+      return cleanValue(lead.email || lead.emailAddress);
     }
 
     function formatAddress(lead) {
@@ -378,7 +395,7 @@
     }
 
     function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
     }
 
     function isIntroLead(lead) {
@@ -410,7 +427,7 @@
       if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
       if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
       if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
-      if (status === "Intro Email Needed") return `<span class="badge badge-blue">Intro Email Needed</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
       if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
       if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
       if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
@@ -519,6 +536,7 @@
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
 
@@ -537,7 +555,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -650,6 +667,7 @@
     function renderStats() {
       const scheduled = getScheduledLeads();
       const today = todayIso();
+
       totalScheduledStat.textContent = String(scheduled.length);
       todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
       overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
@@ -697,6 +715,7 @@
       filtered = sortLeadsBySchedule(filtered);
 
       agendaBody.innerHTML = "";
+
       if (!filtered.length) {
         agendaBody.innerHTML = `
           <tr>
@@ -708,19 +727,19 @@
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
           tr.innerHTML = `
-            <td class="p-3">${lead.callbackDate || "-"}</td>
-            <td class="p-3">${lead.callbackTime || "-"}</td>
-            <td class="p-3">
-              <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
-              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+            <td class="p-3 cell-wrap">${lead.callbackDate || "-"}</td>
+            <td class="p-3 cell-wrap">${lead.callbackTime || "-"}</td>
+            <td class="p-3 cell-wrap align-top">
+              <div class="font-semibold text-slate-800 cell-wrap">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="text-xs text-slate-500 cell-wrap mt-1">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3">${getLeadTelephone(lead) || "-"}</td>
-            <td class="p-3">${getLeadMobile(lead) || "-"}</td>
-            <td class="p-3">${getLeadEmail(lead) || "-"}</td>
-            <td class="p-3">${lead.postcode || "-"}</td>
-            <td class="p-3">${getLeadType(lead)}</td>
-            <td class="p-3">${leadStatusBadge(lead)}</td>
-            <td class="p-3">
+            <td class="p-3 cell-tight">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3 cell-tight">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3 cell-tight">${getLeadEmail(lead) || "-"}</td>
+            <td class="p-3 cell-wrap">${lead.postcode || "-"}</td>
+            <td class="p-3 cell-wrap">${getLeadType(lead)}</td>
+            <td class="p-3 cell-wrap">${leadStatusBadge(lead)}</td>
+            <td class="p-3 cell-wrap">
               <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
                 Open
               </button>

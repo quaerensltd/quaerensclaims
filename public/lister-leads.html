@@ -67,9 +67,20 @@
       border-collapse: collapse;
     }
 
+    .leads-table th,
+    .leads-table td {
+      vertical-align: top;
+    }
+
     .cell-wrap {
       white-space: normal;
       word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
       overflow-wrap: anywhere;
     }
 
@@ -208,18 +219,18 @@
         </div>
 
         <div class="overflow-x-auto">
-          <table class="leads-table text-sm">
+          <table class="leads-table text-sm min-w-full">
             <colgroup>
-              <col style="width: 23%">
-              <col style="width: 10%">
-              <col style="width: 7%">
-              <col style="width: 7%">
-              <col style="width: 8%">
-              <col style="width: 8%">
+              <col style="width: 22%">
               <col style="width: 10%">
               <col style="width: 10%">
+              <col style="width: 12%">
               <col style="width: 8%">
+              <col style="width: 10%">
+              <col style="width: 10%">
               <col style="width: 9%">
+              <col style="width: 5%">
+              <col style="width: 4%">
             </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
@@ -369,12 +380,14 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
+
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const callbackRequiredBtn = document.getElementById("callbackRequiredBtn");
@@ -463,12 +476,15 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
+
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
+
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
+
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -494,6 +510,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -661,6 +678,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -763,20 +781,19 @@
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
-
           tr.innerHTML = `
             <td class="p-3 align-top client-cell">
               <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
               <div class="client-address">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3 align-top cell-wrap">${getLeadTelephone(lead) || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${getLeadMobile(lead) || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${getLeadEmail(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
             <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
             <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
             <td class="p-3 align-top cell-wrap">${formatAction(lead.lastAction)}</td>
             <td class="p-3 align-top cell-wrap">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
-            <td class="p-3 align-top cell-wrap">${lead.convertedToSubmissionId || "-"}</td>
+            <td class="p-3 align-top cell-tight">${lead.convertedToSubmissionId || "-"}</td>
             <td class="p-3 align-top">
               <button class="table-link" data-open-lead="${lead.id}">
                 Open Lead
@@ -836,9 +853,11 @@
         selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
       document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
       document.getElementById("lead_intro_status").textContent = selectedLead.introEmailSent ? "Yes" : "No";
+
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
+
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
@@ -846,6 +865,7 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
+
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -883,11 +903,13 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateLead({
           leadStatus: "intake_in_progress",
           lastAction: "interested_intake_started"
         }, "interested_intake_started", "Lead moved to intake.");
+
         window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
       } catch (error) {
         console.error(error);
@@ -967,6 +989,7 @@
           callbackTime: callbackTime.value || "",
           lastUpdatedAt: serverTimestamp()
         });
+
         await refreshSelectedLead();
         showModalMessage("Lead saved.");
       } catch (error) {
@@ -1038,6 +1061,7 @@
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {

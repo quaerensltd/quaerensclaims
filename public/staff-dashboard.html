@@ -1,4 +1,4 @@
-"<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -55,6 +55,21 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .table-fixed-clean {
+      table-layout: fixed;
+    }
+
     #toast {
       position: fixed;
       top: 20px;
@@ -179,7 +194,13 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full min-w-[760px] table-fixed-clean text-sm border-collapse">
+              <colgroup>
+                <col class="w-[240px]">
+                <col class="w-[130px]">
+                <col class="w-[150px]">
+                <col class="w-[240px]">
+              </colgroup>
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
@@ -201,7 +222,13 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full min-w-[760px] table-fixed-clean text-sm border-collapse">
+              <colgroup>
+                <col class="w-[260px]">
+                <col class="w-[140px]">
+                <col class="w-[150px]">
+                <col class="w-[210px]">
+              </colgroup>
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
@@ -225,7 +252,13 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full min-w-[720px] table-fixed-clean text-sm border-collapse">
+              <colgroup>
+                <col class="w-[100px]">
+                <col class="w-[280px]">
+                <col class="w-[170px]">
+                <col class="w-[170px]">
+              </colgroup>
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Time</th>
@@ -247,7 +280,13 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full min-w-[760px] table-fixed-clean text-sm border-collapse">
+              <colgroup>
+                <col class="w-[120px]">
+                <col class="w-[280px]">
+                <col class="w-[150px]">
+                <col class="w-[170px]">
+              </colgroup>
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Date</th>
@@ -271,7 +310,14 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full min-w-[860px] table-fixed-clean text-sm border-collapse">
+              <colgroup>
+                <col class="w-[120px]">
+                <col class="w-[90px]">
+                <col class="w-[280px]">
+                <col class="w-[170px]">
+                <col class="w-[170px]">
+              </colgroup>
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Date</th>
@@ -294,7 +340,13 @@
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full min-w-[760px] table-fixed-clean text-sm border-collapse">
+              <colgroup>
+                <col class="w-[280px]">
+                <col class="w-[150px]">
+                <col class="w-[160px]">
+                <col class="w-[170px]">
+              </colgroup>
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
@@ -370,6 +422,14 @@
       return `${uid}_${todayIso()}`;
     }
 
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function getLeadTelephone(lead) {
+      return cleanValue(lead.telephone || lead.landline || lead.phone);
+    }
+
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
 
@@ -438,6 +498,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -493,7 +554,7 @@
     }
 
     function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
     }
 
     function isConverted(lead) {
@@ -512,10 +573,12 @@
 
     function isUntouchedLead(lead) {
       if (isLocked(lead) || isConverted(lead) || isAwaitingManager(lead)) return false;
+
       const status = (lead.leadStatus || "").toString().toLowerCase();
       const noUsefulStatus = !status || status === "new" || status === "pending";
       const noCallbackSet = !lead.callbackRequired && !lead.callbackDate;
       const noIntroProgress = !lead.introEmailNeeded && !lead.introEmailSent;
+
       return noUsefulStatus && noCallbackSet && noIntroProgress;
     }
 
@@ -536,6 +599,7 @@
       if (clean === "converted") return `<span class="badge badge-green">Converted</span>`;
       if (clean === "intro_email_needed") return `<span class="badge badge-blue">Intro Email Needed</span>`;
       if (clean === "callback_required") return `<span class="badge badge-amber">Callback Required</span>`;
+      if (clean === "closed") return `<span class="badge badge-red">Closed</span>`;
       return `<span class="badge badge-slate">${status || "New"}</span>`;
     }
 
@@ -554,6 +618,7 @@
             notes
           })
         });
+
         showToast(successMessage);
         await loadLeads();
       } catch (error) {
@@ -654,6 +719,7 @@
         collection(db, "leadAssignments"),
         where("assignedToUid", "==", currentUser.uid)
       );
+
       const snapshot = await getDocs(leadsQuery);
       allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -669,9 +735,19 @@
 
     function renderStats() {
       const today = todayIso();
-      const callbacksToday = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate === today).length;
-      const overdueCallbacks = allLeads.filter(l => !isLocked(l) && l.callbackRequired && l.callbackDate && l.callbackDate < today).length;
-      const introPending = allLeads.filter(l => !isLocked(l) && l.introEmailNeeded && !l.introEmailSent).length;
+
+      const callbacksToday = allLeads.filter(l =>
+        !isLocked(l) && l.callbackRequired && l.callbackDate === today
+      ).length;
+
+      const overdueCallbacks = allLeads.filter(l =>
+        !isLocked(l) && l.callbackRequired && l.callbackDate && l.callbackDate < today
+      ).length;
+
+      const introPending = allLeads.filter(l =>
+        !isLocked(l) && l.introEmailNeeded && !l.introEmailSent
+      ).length;
+
       const untouched = allLeads.filter(l => isUntouchedLead(l)).length;
       const qualifiedReady = allLeads.filter(l => !isLocked(l) && (isQualified(l) || isAwaitingManager(l))).length;
 
@@ -710,13 +786,13 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
-            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800 cell-wrap">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500 cell-tight mt-1">${getLeadTelephone(lead) || "-"}</div>
           </td>
-          <td class="p-3">${lead.claimType || lead.type || "-"}</td>
-          <td class="p-3">${statusBadge(lead.leadStatus || "new")}</td>
-          <td class="p-3">
+          <td class="p-3 cell-wrap">${lead.claimType || lead.type || "-"}</td>
+          <td class="p-3 cell-wrap">${statusBadge(lead.leadStatus || "new")}</td>
+          <td class="p-3 cell-wrap">
             <button class="btn-small btn-amber" data-action="no-answer" data-id="${lead.id}">No Answer</button>
             <button class="btn-small btn-red" data-action="not-interested" data-id="${lead.id}">Not Interested</button>
             <button class="btn-small btn-green" data-action="qualified" data-id="${lead.id}">Qualified</button>
@@ -747,13 +823,13 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
-            <div class="text-xs text-slate-500">${lead.claimType || lead.type || "-"}</div>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800 cell-wrap">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500 cell-wrap mt-1">${lead.claimType || lead.type || "-"}</div>
           </td>
-          <td class="p-3">${lead.telephone || "-"}</td>
-          <td class="p-3">${statusBadge(lead.leadStatus || "qualified")}</td>
-          <td class="p-3">
+          <td class="p-3 cell-tight">${getLeadTelephone(lead) || "-"}</td>
+          <td class="p-3 cell-wrap">${statusBadge(lead.leadStatus || "qualified")}</td>
+          <td class="p-3 cell-wrap">
             ${isAwaitingManager(lead)
               ? `<a href="/manager-panel.html" class="text-blue-600 font-semibold hover:underline">Open Manager Queue</a>`
               : `<button class="btn-small btn-blue" data-action="send-to-manager" data-id="${lead.id}">Send to Manager</button>`
@@ -787,13 +863,13 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${lead.callbackTime || "-"}</td>
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
-            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          <td class="p-3 cell-wrap">${lead.callbackTime || "-"}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800 cell-wrap">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500 cell-tight mt-1">${getLeadTelephone(lead) || "-"}</div>
           </td>
-          <td class="p-3">${callbackType(lead)}</td>
-          <td class="p-3">
+          <td class="p-3 cell-wrap">${callbackType(lead)}</td>
+          <td class="p-3 cell-wrap">
             <a href="/lister-callbacks.html" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
@@ -824,13 +900,13 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${lead.callbackDate || "-"}</td>
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
-            <div class="text-xs text-slate-500">${lead.claimType || lead.type || "-"}</div>
+          <td class="p-3 cell-wrap">${lead.callbackDate || "-"}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800 cell-wrap">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500 cell-wrap mt-1">${lead.claimType || lead.type || "-"}</div>
           </td>
-          <td class="p-3">${lead.telephone || "-"}</td>
-          <td class="p-3">
+          <td class="p-3 cell-tight">${getLeadTelephone(lead) || "-"}</td>
+          <td class="p-3 cell-wrap">
             <a href="/lister-callbacks.html" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
@@ -860,14 +936,14 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${lead.callbackDate || "-"}</td>
-          <td class="p-3">${lead.callbackTime || "-"}</td>
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
-            <div class="text-xs text-slate-500">${lead.telephone || "-"}</div>
+          <td class="p-3 cell-wrap">${lead.callbackDate || "-"}</td>
+          <td class="p-3 cell-wrap">${lead.callbackTime || "-"}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800 cell-wrap">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500 cell-tight mt-1">${getLeadTelephone(lead) || "-"}</div>
           </td>
-          <td class="p-3">${callbackType(lead)}</td>
-          <td class="p-3">
+          <td class="p-3 cell-wrap">${callbackType(lead)}</td>
+          <td class="p-3 cell-wrap">
             <a href="/lister-callbacks.html" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
@@ -897,13 +973,13 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(lead)}</div>
-            <div class="text-xs text-slate-500">${lead.postcode || "-"}</div>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800 cell-wrap">${clientName(lead)}</div>
+            <div class="text-xs text-slate-500 cell-wrap mt-1">${lead.postcode || "-"}</div>
           </td>
-          <td class="p-3">${lead.telephone || "-"}</td>
-          <td class="p-3">${formatScheduled(lead)}</td>
-          <td class="p-3">
+          <td class="p-3 cell-tight">${getLeadTelephone(lead) || "-"}</td>
+          <td class="p-3 cell-wrap">${formatScheduled(lead)}</td>
+          <td class="p-3 cell-wrap">
             <a href="/lister-intro-emails.html" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
@@ -913,6 +989,7 @@
 
     function updateNextCallbackButton() {
       const nextLead = getNextCallbackLead();
+
       if (!nextLead) {
         openNextCallbackBtn.textContent = "No Callback Scheduled";
         openNextCallbackBtn.disabled = true;
@@ -980,6 +1057,7 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
@@ -1006,4 +1084,4 @@
     });
   </script>
 </body>
-</html>"
+</html>

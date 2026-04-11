@@ -40,6 +40,53 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+
+    .queue-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      vertical-align: top;
+    }
+
+    .client-cell {
+      min-width: 0;
+    }
+
+    .client-name {
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .client-address {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.35;
+      margin-top: 0.25rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .table-link {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .table-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -129,7 +176,18 @@
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
+          <table class="queue-table text-sm">
+            <colgroup>
+              <col style="width: 24%">
+              <col style="width: 10%">
+              <col style="width: 8%">
+              <col style="width: 10%">
+              <col style="width: 8%">
+              <col style="width: 11%">
+              <col style="width: 9%">
+              <col style="width: 11%">
+              <col style="width: 9%">
+            </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
@@ -272,7 +330,6 @@
     const notSentStat = document.getElementById("notSentStat");
     const callbackStat = document.getElementById("callbackStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const emailTemplate = document.getElementById("emailTemplate");
@@ -345,7 +402,6 @@
 
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
@@ -378,14 +434,12 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
@@ -394,7 +448,6 @@
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
-
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -410,7 +463,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -422,7 +474,6 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -578,8 +629,8 @@ Quaerens`;
 
     function openMailApp() {
       if (!selectedLead) return;
-
       const email = getLeadEmail(selectedLead);
+
       if (!email) {
         showModalMessage("No client email address found for this lead.", true);
         return;
@@ -629,7 +680,6 @@ Quaerens`;
           where("assignedToUid", "==", currentUser.uid),
           where("introEmailNeeded", "==", true)
         );
-
         const snapshot = await getDocs(introQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         renderStats();
@@ -704,19 +754,19 @@ Quaerens`;
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
           tr.innerHTML = `
-            <td class="p-3">
-              <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
-              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+            <td class="p-3 cell-wrap client-cell">
+              <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="client-address">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3">${getLeadTelephone(lead) || "-"}</td>
-            <td class="p-3">${getLeadMobile(lead) || "-"}</td>
-            <td class="p-3">${getLeadEmail(lead) || "-"}</td>
-            <td class="p-3">${lead.postcode || "-"}</td>
-            <td class="p-3">${getScheduledText(lead)}</td>
-            <td class="p-3">${lead.introEmailSent ? '<span class="badge badge-green">Sent</span>' : '<span class="badge badge-amber">Not Sent</span>'}</td>
-            <td class="p-3">${leadStatusBadge(lead)}</td>
-            <td class="p-3">
-              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button>
+            <td class="p-3 cell-wrap">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3 cell-wrap">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3 cell-wrap">${getLeadEmail(lead) || "-"}</td>
+            <td class="p-3 cell-wrap">${lead.postcode || "-"}</td>
+            <td class="p-3 cell-wrap">${getScheduledText(lead)}</td>
+            <td class="p-3 cell-wrap">${lead.introEmailSent ? '<span class="badge badge-green">Sent</span>' : '<span class="badge badge-amber">Not Sent</span>'}</td>
+            <td class="p-3 cell-wrap">${leadStatusBadge(lead)}</td>
+            <td class="p-3 cell-wrap">
+              <button class="table-link" data-open-lead="${lead.id}">Open</button>
             </td>
           `;
           queueBody.appendChild(tr);
@@ -769,12 +819,10 @@ Quaerens`;
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
       document.getElementById("lead_manager_state").textContent = selectedLead.leadStatus === "awaiting_manager" ? "Yes" : "No";
-
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
       emailTemplate.value = selectedLead.introEmailBody || buildEmailTemplate(selectedLead);
-
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
@@ -833,7 +881,6 @@ Quaerens`;
 
     markSentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         introEmailSent: true,
         introEmailSentAt: serverTimestamp(),
@@ -844,7 +891,6 @@ Quaerens`;
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "qualified",
         introEmailNeeded: true,
@@ -857,7 +903,6 @@ Quaerens`;
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "awaiting_manager",
         introEmailNeeded: false,
@@ -872,24 +917,20 @@ Quaerens`;
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "intake_in_progress",
         lastAction: "interested_intake_started",
         introEmailBody: emailTemplate.value || ""
       }, "interested_intake_started", "Lead moved to intake from intro email queue.");
-
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time.", true);
         return;
       }
-
       await updateLead({
         callbackRequired: true,
         callbackDate: callbackDate.value,
@@ -901,7 +942,6 @@ Quaerens`;
 
     markDoneBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         introEmailNeeded: false,
         callbackRequired: false,
@@ -914,7 +954,6 @@ Quaerens`;
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "closed",
         lastAction: "not_interested",
@@ -930,7 +969,6 @@ Quaerens`;
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -944,7 +982,6 @@ Quaerens`;
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -996,7 +1033,6 @@ Quaerens`;
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
-
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
