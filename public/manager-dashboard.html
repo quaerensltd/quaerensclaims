@@ -58,6 +58,27 @@
       background: #1d4ed8;
       color: white;
     }
+
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -67,6 +88,8 @@
       <p class="text-slate-600 font-medium">Loading manager dashboard...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
@@ -82,6 +105,7 @@
           <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <button id="refreshDashboardBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Dashboard</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
@@ -306,6 +330,7 @@
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const refreshAttendanceBtn = document.getElementById("refreshAttendanceBtn");
+    const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
     const attendanceBody = document.getElementById("attendanceBody");
     const attendanceSummary = document.getElementById("attendanceSummary");
     const leadSummaryBody = document.getElementById("leadSummaryBody");
@@ -319,12 +344,18 @@
     let userDocs = [];
     let closerAssignments = [];
     let claimSubmissions = [];
-
     let autoRefreshInterval = null;
     let refreshInProgress = false;
 
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
     function todayIso() {
@@ -335,6 +366,7 @@
       if (!ts) return "-";
       try {
         const d = ts.toDate ? ts.toDate() : new Date(ts);
+        if (Number.isNaN(d.getTime())) return "-";
         return d.toLocaleString("en-GB");
       } catch {
         return "-";
@@ -380,24 +412,8 @@
       return `<span class="badge-awaiting">● Awaiting</span>`;
     }
 
-    function bookedBadge() {
-      return `<span class="badge-booked">● Booked</span>`;
-    }
-
     function overdueBadge() {
       return `<span class="badge-overdue">● Overdue</span>`;
-    }
-
-    function indigoBadge(label) {
-      return `<span class="badge-indigo">● ${label}</span>`;
-    }
-
-    function greenBadge(label) {
-      return `<span class="badge-green">● ${label}</span>`;
-    }
-
-    function slateBadge(label) {
-      return `<span class="badge-slate">● ${label}</span>`;
     }
 
     function todayAttendanceMap() {
@@ -447,14 +463,6 @@
       ).trim();
     }
 
-    function getLeadEmail(lead) {
-      return String(
-        lead.email ||
-        lead.emailAddress ||
-        ""
-      ).trim();
-    }
-
     function clientName(lead) {
       return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
     }
@@ -496,7 +504,7 @@
     }
 
     function isQualifiedLead(lead) {
-      return getEffectiveLeadStatus(lead) === "qualified";
+      return getEffectiveLeadStatus(lead) === "qualified" || getEffectiveLeadStatus(lead) === "assessment_complete";
     }
 
     function isSentToCloserLead(lead) {
@@ -562,6 +570,7 @@
     async function checkAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No user profile found.");
         window.location.href = "/login.html";
@@ -569,7 +578,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "manager" && userData.role !== "processing") {
+      if (userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -634,7 +643,6 @@
         if (!isSubmissionAwaitingManager(submission)) return false;
         return !findLinkedLeadForSubmission(submission.id);
       }).length;
-
       const awaitingManager = awaitingManagerLeads + orphanAwaitingSubmissions;
 
       const mergedAppointments = getMergedCloserAppointments();
@@ -721,7 +729,6 @@
     function renderAwaitingManager() {
       const body = document.getElementById("awaitingManagerBody");
       body.innerHTML = "";
-
       const rows = getAwaitingManagerItems().slice(0, 8);
 
       if (!rows.length) {
@@ -766,8 +773,7 @@
           findUserName(item.closer?.uid);
 
         const clientNameText =
-          `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() ||
-          "-";
+          `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
 
         merged.push({
           sourceType: "closer_assignment",
@@ -810,7 +816,6 @@
     function renderCloserAppointments() {
       const body = document.getElementById("closerAppointmentsBody");
       body.innerHTML = "";
-
       const rows = getMergedCloserAppointments().slice(0, 8);
 
       if (!rows.length) {
@@ -842,7 +847,6 @@
 
     function renderAttendance() {
       attendanceBody.innerHTML = "";
-
       const staffUsers = userDocs
         .filter(u => u.role === "staff")
         .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
@@ -888,7 +892,6 @@
 
     function renderLeadSummary() {
       leadSummaryBody.innerHTML = "";
-
       const grouped = {};
 
       leadAssignments.forEach(lead => {
@@ -908,7 +911,6 @@
         }
 
         grouped[uid].assigned += 1;
-
         if (hasPendingCallback(lead)) grouped[uid].callbacks += 1;
         if (hasPendingIntroEmail(lead)) grouped[uid].intro += 1;
         if (!isLocked(lead) && isAwaitingManagerLead(lead)) grouped[uid].awaitingManager += 1;
@@ -960,6 +962,16 @@
       }, 2 * 60 * 1000);
     }
 
+    async function refreshDashboard(showToastMessage = true) {
+      try {
+        await loadDashboardData(true);
+        if (showToastMessage) showToast("Manager dashboard refreshed.");
+      } catch (error) {
+        console.error("Could not refresh dashboard:", error);
+        alert("Could not refresh dashboard.");
+      }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "/login.html";
@@ -983,10 +995,15 @@
     refreshAttendanceBtn.addEventListener("click", async () => {
       try {
         await loadDashboardData(true);
+        showToast("Attendance refreshed.");
       } catch (error) {
         console.error("Could not refresh attendance:", error);
         alert("Could not refresh attendance.");
       }
+    });
+
+    refreshDashboardBtn.addEventListener("click", async () => {
+      await refreshDashboard(true);
     });
 
     logoutBtn.addEventListener("click", async () => {
