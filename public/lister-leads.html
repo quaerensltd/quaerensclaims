@@ -60,6 +60,52 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
+
+    .leads-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .client-cell {
+      min-width: 0;
+    }
+
+    .client-name {
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .client-address {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.35;
+      margin-top: 0.25rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .table-link {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .table-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -160,8 +206,21 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
+          <table class="leads-table text-sm">
+            <colgroup>
+              <col style="width: 23%">
+              <col style="width: 10%">
+              <col style="width: 7%">
+              <col style="width: 7%">
+              <col style="width: 8%">
+              <col style="width: 8%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 8%">
+              <col style="width: 9%">
+            </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
@@ -310,14 +369,12 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const callbackRequiredBtn = document.getElementById("callbackRequiredBtn");
@@ -360,26 +417,15 @@
     }
 
     function getLeadTelephone(lead) {
-      return cleanValue(
-        lead.telephone ||
-        lead.landline ||
-        lead.phone
-      );
+      return cleanValue(lead.telephone || lead.landline || lead.phone);
     }
 
     function getLeadMobile(lead) {
-      return cleanValue(
-        lead.mobile ||
-        lead.mobileNumber ||
-        lead.cell
-      );
+      return cleanValue(lead.mobile || lead.mobileNumber || lead.cell);
     }
 
     function getLeadEmail(lead) {
-      return cleanValue(
-        lead.email ||
-        lead.emailAddress
-      );
+      return cleanValue(lead.email || lead.emailAddress);
     }
 
     async function recordStaffLoginFromPage() {
@@ -417,20 +463,19 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
 
@@ -449,7 +494,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -674,7 +718,6 @@
           "new";
 
         const matchesStatus = status === "all" || currentStatus === status;
-
         const matchesSpecial =
           special === "all" ||
           (special === "callbacks_only" && lead.callbackRequired) ||
@@ -702,15 +745,14 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesSpecial && matchesSearch;
       });
     }
 
     function renderLeads() {
       const filtered = getFilteredLeads();
-
       leadsBody.innerHTML = "";
+
       if (!filtered.length) {
         leadsBody.innerHTML = `
           <tr>
@@ -721,21 +763,22 @@
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
+
           tr.innerHTML = `
-            <td class="p-3">
-              <div class="font-semibold text-slate-800">${lead.forename || ""} ${lead.surname || ""}</div>
-              <div class="text-xs text-slate-500">${formatAddress(lead)}</div>
+            <td class="p-3 align-top client-cell">
+              <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="client-address">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3">${getLeadTelephone(lead) || "-"}</td>
-            <td class="p-3">${getLeadMobile(lead) || "-"}</td>
-            <td class="p-3">${getLeadEmail(lead) || "-"}</td>
-            <td class="p-3">${lead.postcode || "-"}</td>
-            <td class="p-3">${leadStatusBadge(lead)}</td>
-            <td class="p-3">${formatAction(lead.lastAction)}</td>
-            <td class="p-3">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
-            <td class="p-3">${lead.convertedToSubmissionId || "-"}</td>
-            <td class="p-3">
-              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
+            <td class="p-3 align-top cell-wrap">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${getLeadEmail(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
+            <td class="p-3 align-top cell-wrap">${formatAction(lead.lastAction)}</td>
+            <td class="p-3 align-top cell-wrap">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
+            <td class="p-3 align-top cell-wrap">${lead.convertedToSubmissionId || "-"}</td>
+            <td class="p-3 align-top">
+              <button class="table-link" data-open-lead="${lead.id}">
                 Open Lead
               </button>
             </td>
@@ -793,11 +836,9 @@
         selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
       document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
       document.getElementById("lead_intro_status").textContent = selectedLead.introEmailSent ? "Yes" : "No";
-
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
-
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
@@ -847,7 +888,6 @@
           leadStatus: "intake_in_progress",
           lastAction: "interested_intake_started"
         }, "interested_intake_started", "Lead moved to intake.");
-
         window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
       } catch (error) {
         console.error(error);
@@ -861,6 +901,7 @@
         showModalMessage("This lead has no email address saved.", true);
         return;
       }
+
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time first.", true);
         return;
@@ -926,7 +967,6 @@
           callbackTime: callbackTime.value || "",
           lastUpdatedAt: serverTimestamp()
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead saved.");
       } catch (error) {
@@ -998,7 +1038,6 @@
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
