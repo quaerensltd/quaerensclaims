@@ -46,18 +46,15 @@
       table-layout: fixed;
       border-collapse: collapse;
     }
-
     .cell-wrap {
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
       vertical-align: top;
     }
-
     .client-cell {
       min-width: 0;
     }
-
     .client-name {
       font-weight: 600;
       color: #1f2937;
@@ -66,7 +63,6 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-
     .client-address {
       font-size: 0.75rem;
       color: #64748b;
@@ -76,14 +72,12 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-
     .table-link {
       color: #2563eb;
       font-weight: 600;
       text-decoration: none;
       white-space: nowrap;
     }
-
     .table-link:hover {
       text-decoration: underline;
     }
@@ -330,6 +324,7 @@
     const notSentStat = document.getElementById("notSentStat");
     const callbackStat = document.getElementById("callbackStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const emailTemplate = document.getElementById("emailTemplate");
@@ -378,134 +373,15 @@
     }
 
     function getLeadTelephone(lead) {
-      return cleanValue(
-        lead.telephone ||
-        lead.landline ||
-        lead.phone
-      );
+      return cleanValue(lead.telephone || lead.landline || lead.phone);
     }
 
     function getLeadMobile(lead) {
-      return cleanValue(
-        lead.mobile ||
-        lead.mobileNumber ||
-        lead.cell
-      );
+      return cleanValue(lead.mobile || lead.mobileNumber || lead.cell);
     }
 
     function getLeadEmail(lead) {
-      return cleanValue(
-        lead.email ||
-        lead.emailAddress
-      );
-    }
-
-    async function recordStaffLoginFromPage() {
-      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-      const today = todayIso();
-      const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
-      const attendanceSnap = await getDoc(attendanceRef);
-
-      if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || "",
-          role: currentUserData.role || "staff",
-          date: today,
-          firstLoginAt: serverTimestamp(),
-          lastLoginAt: serverTimestamp(),
-          lastSeenAt: serverTimestamp(),
-          currentSessionStartAt: serverTimestamp(),
-          totalLoggedInMs: 0,
-          isOnline: true
-        });
-      } else {
-        const existingData = attendanceSnap.data() || {};
-        const updateData = {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || "",
-          role: currentUserData.role || "staff",
-          date: today,
-          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
-          lastLoginAt: serverTimestamp(),
-          lastSeenAt: serverTimestamp(),
-          isOnline: true
-        };
-        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
-          updateData.currentSessionStartAt = serverTimestamp();
-        }
-        if (typeof existingData.totalLoggedInMs !== "number") {
-          updateData.totalLoggedInMs = 0;
-        }
-        await setDoc(attendanceRef, updateData, { merge: true });
-      }
-    }
-
-    async function updateStaffHeartbeat() {
-      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-      const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
-      await setDoc(attendanceRef, {
-        uid: currentUser.uid,
-        name: currentUserData.name || "",
-        email: currentUser.email || "",
-        role: currentUserData.role || "staff",
-        date: todayIso(),
-        lastSeenAt: serverTimestamp(),
-        isOnline: true
-      }, { merge: true });
-    }
-
-    function startAttendanceHeartbeat() {
-      if (attendanceHeartbeatInterval) {
-        clearInterval(attendanceHeartbeatInterval);
-      }
-      attendanceHeartbeatInterval = setInterval(async () => {
-        try {
-          await updateStaffHeartbeat();
-        } catch (error) {
-          console.error("Attendance heartbeat failed:", error);
-        }
-      }, 2 * 60 * 1000);
-    }
-
-    async function recordStaffLogout() {
-      if (!currentUser) return;
-      const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
-      const attendanceSnap = await getDoc(attendanceRef);
-
-      if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
-          uid: currentUser.uid,
-          lastLogoutAt: serverTimestamp(),
-          isOnline: false
-        }, { merge: true });
-        return;
-      }
-
-      const data = attendanceSnap.data() || {};
-      const now = Date.now();
-      let extraMs = 0;
-
-      if (data.currentSessionStartAt?.toDate) {
-        const sessionStart = data.currentSessionStartAt.toDate().getTime();
-        extraMs = Math.max(0, now - sessionStart);
-      }
-
-      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
-      const newTotal = existingTotal + extraMs;
-
-      await setDoc(attendanceRef, {
-        uid: currentUser.uid,
-        totalLoggedInMs: newTotal,
-        currentSessionStartAt: null,
-        lastLogoutAt: serverTimestamp(),
-        isOnline: false
-      }, { merge: true });
+      return cleanValue(lead.email || lead.emailAddress);
     }
 
     function formatAddress(lead) {
@@ -544,11 +420,17 @@
     function buildEmailTemplate(lead) {
       const name = `${lead.forename || ""} ${lead.surname || ""}`.trim();
       return `Subject: Information about your potential solar claim
+
 Dear ${name || "Client"},
+
 Thank you for speaking with us.
+
 As discussed, we are sending you some introductory information regarding a possible solar-related claim review. This is an initial contact only and helps explain the next steps if you wish to proceed.
+
 At this stage, we may ask you for some basic information and documents so we can understand your situation properly and see whether your matter is suitable for a full intake and review.
+
 If you would like to continue, we can speak again at the arranged follow-up time.
+
 Kind regards,
 ${currentUserData?.name || "Quaerens Team"}
 Quaerens`;
@@ -602,19 +484,7 @@ Quaerens`;
         saveNotesBtn
       ].forEach(button => setButtonDisabled(button, false));
 
-      if (locked || converted) {
-        [
-          markSentBtn,
-          markQualifiedBtn,
-          sendToManagerBtn,
-          openIntakeBtn,
-          rescheduleBtn,
-          markDoneBtn,
-          notInterestedBtn
-        ].forEach(button => setButtonDisabled(button, true));
-      }
-
-      if (awaitingManager) {
+      if (locked || converted || awaitingManager) {
         [
           markSentBtn,
           markQualifiedBtn,
@@ -627,27 +497,141 @@ Quaerens`;
       }
     }
 
-    function openMailApp() {
-      if (!selectedLead) return;
-      const email = getLeadEmail(selectedLead);
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
 
-      if (!email) {
-        showModalMessage("No client email address found for this lead.", true);
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
         return;
       }
 
-      const rawTemplate = emailTemplate.value || buildEmailTemplate(selectedLead);
-      const lines = rawTemplate.split("\n");
-      let subject = "Information about your potential solar claim";
-      let body = rawTemplate;
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
 
-      if (lines.length && lines[0].toLowerCase().startsWith("subject:")) {
-        subject = lines[0].replace(/^subject:\s*/i, "").trim() || subject;
-        body = lines.slice(1).join("\n").trim();
+    async function recordStaffLoginFromPage() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const today = todayIso();
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          currentSessionStartAt: serverTimestamp(),
+          totalLoggedInMs: 0,
+          isOnline: true
+        });
+      } else {
+        const existingData = attendanceSnap.data() || {};
+        const updateData = {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        };
+
+        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
+          updateData.currentSessionStartAt = serverTimestamp();
+        }
+
+        if (typeof existingData.totalLoggedInMs !== "number") {
+          updateData.totalLoggedInMs = 0;
+        }
+
+        await setDoc(attendanceRef, updateData, { merge: true });
+      }
+    }
+
+    async function updateStaffHeartbeat() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        name: currentUserData.name || "",
+        email: currentUser.email || "",
+        role: currentUserData.role || "staff",
+        date: todayIso(),
+        lastSeenAt: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    }
+
+    function startAttendanceHeartbeat() {
+      if (attendanceHeartbeatInterval) {
+        clearInterval(attendanceHeartbeatInterval);
       }
 
-      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
+      attendanceHeartbeatInterval = setInterval(async () => {
+        try {
+          await updateStaffHeartbeat();
+        } catch (error) {
+          console.error("Attendance heartbeat failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    async function recordStaffLogout() {
+      if (!currentUser) return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          lastLogoutAt: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
+        return;
+      }
+
+      const data = attendanceSnap.data() || {};
+      const now = Date.now();
+      let extraMs = 0;
+
+      if (data.currentSessionStartAt?.toDate) {
+        const sessionStart = data.currentSessionStartAt.toDate().getTime();
+        extraMs = Math.max(0, now - sessionStart);
+      }
+
+      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
+      const newTotal = existingTotal + extraMs;
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        totalLoggedInMs: newTotal,
+        currentSessionStartAt: null,
+        lastLogoutAt: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
     }
 
     async function checkListerAccess(user) {
@@ -661,6 +645,7 @@ Quaerens`;
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -680,8 +665,10 @@ Quaerens`;
           where("assignedToUid", "==", currentUser.uid),
           where("introEmailNeeded", "==", true)
         );
+
         const snapshot = await getDocs(introQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         renderStats();
         renderQueue();
       } catch (error) {
@@ -733,6 +720,7 @@ Quaerens`;
           `.toLowerCase();
 
           const matchesSearch = !term || haystack.includes(term);
+
           return matchesStatus && matchesTiming && matchesSearch;
         })
         .sort((a, b) => {
@@ -780,34 +768,15 @@ Quaerens`;
       });
     }
 
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
-
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
-
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
-      });
-    }
-
     function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Intro Email Detail";
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Intro Email Detail";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-      document.getElementById("lead_name").textContent = `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
       document.getElementById("lead_phone").textContent = getLeadTelephone(selectedLead) || "-";
       document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
       document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
@@ -819,19 +788,23 @@ Quaerens`;
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
       document.getElementById("lead_manager_state").textContent = selectedLead.leadStatus === "awaiting_manager" ? "Yes" : "No";
+
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
       emailTemplate.value = selectedLead.introEmailBody || buildEmailTemplate(selectedLead);
+
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
     }
 
     async function refreshSelectedLead() {
+      const currentLeadId = selectedLead?.id || null;
       await loadLeads();
-      if (selectedLead) {
-        const updated = allLeads.find(x => x.id === selectedLead.id);
+
+      if (currentLeadId) {
+        const updated = allLeads.find(x => x.id === currentLeadId);
         if (updated) {
           selectedLead = updated;
           openLead(updated.id);
@@ -865,6 +838,30 @@ Quaerens`;
       }
     }
 
+    async function openMailApp() {
+      if (!selectedLead) return;
+
+      const email = getLeadEmail(selectedLead);
+      if (!email) {
+        showModalMessage("No client email address found for this lead.", true);
+        return;
+      }
+
+      const rawTemplate = emailTemplate.value || buildEmailTemplate(selectedLead);
+      const lines = rawTemplate.split("\n");
+
+      let subject = "Information about your potential solar claim";
+      let body = rawTemplate;
+
+      if (lines.length && lines[0].toLowerCase().startsWith("subject:")) {
+        subject = lines[0].replace(/^subject:\s*/i, "").trim() || subject;
+        body = lines.slice(1).join("\n").trim();
+      }
+
+      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    }
+
     copyEmailBtn.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(emailTemplate.value || "");
@@ -881,6 +878,7 @@ Quaerens`;
 
     markSentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         introEmailSent: true,
         introEmailSentAt: serverTimestamp(),
@@ -891,6 +889,7 @@ Quaerens`;
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "qualified",
         introEmailNeeded: true,
@@ -903,6 +902,7 @@ Quaerens`;
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "awaiting_manager",
         introEmailNeeded: false,
@@ -917,43 +917,49 @@ Quaerens`;
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "intake_in_progress",
         lastAction: "interested_intake_started",
         introEmailBody: emailTemplate.value || ""
       }, "interested_intake_started", "Lead moved to intake from intro email queue.");
+
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time.", true);
         return;
       }
+
       await updateLead({
         callbackRequired: true,
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
-        lastAction: "callback_rescheduled",
-        introEmailBody: emailTemplate.value || ""
+        introEmailBody: emailTemplate.value || "",
+        lastAction: "callback_rescheduled"
       }, "callback_rescheduled", `Follow-up rescheduled for ${callbackDate.value} ${callbackTime.value}`);
     });
 
     markDoneBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         introEmailNeeded: false,
         callbackRequired: false,
         callbackDate: "",
         callbackTime: "",
-        lastAction: "intro_email_queue_done",
-        introEmailBody: emailTemplate.value || ""
+        introEmailBody: emailTemplate.value || "",
+        lastAction: "intro_email_queue_done"
       }, "intro_email_queue_done", "Intro email queue item marked as done.");
     });
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         lastAction: "not_interested",
@@ -969,6 +975,7 @@ Quaerens`;
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -982,6 +989,7 @@ Quaerens`;
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -1033,6 +1041,7 @@ Quaerens`;
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {

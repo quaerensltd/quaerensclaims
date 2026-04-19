@@ -20,7 +20,6 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .disabled-actions { opacity: 0.55; pointer-events: none; }
     .active-nav {
       background: #2563eb;
       color: white;
@@ -42,7 +41,6 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
-
     .cell-wrap {
       white-space: normal;
       word-break: break-word;
@@ -143,6 +141,7 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1180px] table-fixed-clean text-sm border-collapse">
             <colgroup>
@@ -209,7 +208,7 @@
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Quick Actions</h4>
-          <div id="actionWrap" class="space-y-4">
+          <div class="space-y-4">
             <div class="grid md:grid-cols-4 gap-3">
               <button id="openIntakeBtn" class="btn btn-primary" type="button">Fill Out Intake Now</button>
               <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
@@ -236,7 +235,7 @@
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
-          <div id="outcomeWrap" class="space-y-4">
+          <div class="space-y-4">
             <div class="grid md:grid-cols-4 gap-3">
               <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
               <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
@@ -442,6 +441,22 @@
       return `${uid}_${todayIso()}`;
     }
 
+    function getLeadType(lead) {
+      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
+    }
+
+    function getScheduledText(lead) {
+      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    function sortLeadsBySchedule(leads) {
+      return [...leads].sort((a, b) => {
+        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
+        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
+        return aKey.localeCompare(bKey);
+      });
+    }
+
     function setButtonDisabled(button, disabled) {
       button.disabled = !!disabled;
       if (disabled) {
@@ -526,6 +541,7 @@
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
+
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
@@ -555,6 +571,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -601,22 +618,6 @@
       }, { merge: true });
     }
 
-    function getLeadType(lead) {
-      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
-    }
-
-    function getScheduledText(lead) {
-      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
-    }
-
-    function sortLeadsBySchedule(leads) {
-      return [...leads].sort((a, b) => {
-        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
-        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
-        return aKey.localeCompare(bKey);
-      });
-    }
-
     async function checkListerAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -628,6 +629,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -646,8 +648,10 @@
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid)
         );
+
         const snapshot = await getDocs(leadsQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         renderStats();
         renderAgenda();
       } catch (error) {
@@ -659,8 +663,8 @@
     function getScheduledLeads() {
       return allLeads.filter(lead =>
         !isLocked(lead) &&
-        lead.callbackRequired &&
-        lead.callbackDate
+        !!lead.callbackDate &&
+        (lead.callbackRequired || lead.introEmailNeeded)
       );
     }
 
@@ -670,9 +674,9 @@
 
       totalScheduledStat.textContent = String(scheduled.length);
       todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
-      overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
+      overdueStat.textContent = String(scheduled.filter(x => x.callbackDate && x.callbackDate < today).length);
       introStat.textContent = String(scheduled.filter(x => x.introEmailNeeded).length);
-      qualifiedStat.textContent = String(scheduled.filter(x => isQualified(x)).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
     }
 
     function renderAgenda() {
@@ -690,8 +694,8 @@
         const matchesTiming =
           timing === "all" ||
           (timing === "today" && lead.callbackDate === today) ||
-          (timing === "overdue" && lead.callbackDate < today) ||
-          (timing === "future" && lead.callbackDate > today);
+          (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
+          (timing === "future" && lead.callbackDate && lead.callbackDate > today);
 
         const haystack = `
           ${lead.forename || ""}
@@ -713,7 +717,6 @@
       });
 
       filtered = sortLeadsBySchedule(filtered);
-
       agendaBody.innerHTML = "";
 
       if (!filtered.length) {
@@ -783,6 +786,7 @@
 
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Detail";
+
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
@@ -809,6 +813,7 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
+
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -900,6 +905,9 @@
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
+        introEmailNeeded: false,
+        callbackDate: "",
+        callbackTime: "",
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
       }, "qualified", "Lead marked as qualified from callback agenda.");
@@ -911,6 +919,9 @@
       await updateLead({
         leadStatus: "awaiting_manager",
         callbackRequired: false,
+        introEmailNeeded: false,
+        callbackDate: "",
+        callbackTime: "",
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager from callback agenda.");
@@ -921,6 +932,7 @@
 
       await updateLead({
         callbackRequired: false,
+        introEmailNeeded: false,
         callbackDate: "",
         callbackTime: "",
         lastAction: "callback_completed",
@@ -959,7 +971,9 @@
         closed: true,
         usable: false,
         callbackRequired: false,
-        introEmailNeeded: false
+        introEmailNeeded: false,
+        callbackDate: "",
+        callbackTime: ""
       }, "wrong_number", "Marked as wrong number from callback agenda.");
     });
 
@@ -972,7 +986,9 @@
         closed: true,
         usable: false,
         callbackRequired: false,
-        introEmailNeeded: false
+        introEmailNeeded: false,
+        callbackDate: "",
+        callbackTime: ""
       }, "not_interested", "Marked as not interested from callback agenda.");
     });
 
