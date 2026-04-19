@@ -60,34 +60,28 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
-
     .leads-table {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
     }
-
     .leads-table th,
     .leads-table td {
       vertical-align: top;
     }
-
     .cell-wrap {
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-
     .cell-tight {
       white-space: normal;
       word-break: break-all;
       overflow-wrap: anywhere;
     }
-
     .client-cell {
       min-width: 0;
     }
-
     .client-name {
       font-weight: 600;
       color: #1f2937;
@@ -96,7 +90,6 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-
     .client-address {
       font-size: 0.75rem;
       color: #64748b;
@@ -106,14 +99,12 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-
     .table-link {
       color: #2563eb;
       font-weight: 600;
       text-decoration: none;
       white-space: nowrap;
     }
-
     .table-link:hover {
       text-decoration: underline;
     }
@@ -380,14 +371,12 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const callbackRequiredBtn = document.getElementById("callbackRequiredBtn");
@@ -438,7 +427,14 @@
     }
 
     function getLeadEmail(lead) {
-      return cleanValue(lead.email || lead.emailAddress);
+      return cleanValue(
+        lead.email ||
+        lead.emailAddress ||
+        lead.email_address ||
+        lead.Email ||
+        lead.contactEmail ||
+        lead.clientEmail
+      );
     }
 
     async function recordStaffLoginFromPage() {
@@ -589,7 +585,7 @@
     }
 
     function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
     }
 
     function isConverted(lead) {
@@ -632,7 +628,6 @@
     function updateActionAvailability(lead) {
       const locked = isLocked(lead);
       const converted = isConverted(lead);
-      const introNeedsEmail = !getLeadEmail(lead);
 
       [
         openIntakeBtn,
@@ -660,10 +655,6 @@
           wrongNumberBtn,
           notInterestedBtn
         ].forEach(button => setButtonDisabled(button, true));
-      }
-
-      if (introNeedsEmail) {
-        setButtonDisabled(sendIntroEmailBtn, true);
       }
     }
 
@@ -736,6 +727,7 @@
           "new";
 
         const matchesStatus = status === "all" || currentStatus === status;
+
         const matchesSpecial =
           special === "all" ||
           (special === "callbacks_only" && lead.callbackRequired) ||
@@ -763,6 +755,7 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
+
         return matchesStatus && matchesSpecial && matchesSearch;
       });
     }
@@ -903,7 +896,6 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateLead({
           leadStatus: "intake_in_progress",
