@@ -372,12 +372,14 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
+
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const callbackRequiredBtn = document.getElementById("callbackRequiredBtn");
@@ -429,140 +431,6 @@
 
     function getLeadEmail(lead) {
       return cleanValue(lead.email || lead.emailAddress);
-    }
-
-    function formatAddress(lead) {
-      return [
-        lead.address,
-        lead.address1,
-        lead.address2,
-        lead.address3,
-        lead.address4,
-        lead.address5
-      ].filter(Boolean).join(", ") || "-";
-    }
-
-    function formatAction(action) {
-      const map = {
-        no_answer: "No Answer",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        no_product: "No Relevant Product",
-        voicemail: "Voicemail",
-        callback_required: "Callback Required",
-        send_intro_email: "Send Intro Email",
-        interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted",
-        intake_draft_saved: "Intake Draft Saved",
-        notes_saved: "Notes Saved",
-        callback_rescheduled: "Callback Rescheduled",
-        qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager Review"
-      };
-      return map[action] || action || "-";
-    }
-
-    function isLocked(lead) {
-      return lead.closed === true || lead.usable === false;
-    }
-
-    function isConverted(lead) {
-      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
-    }
-
-    function formatLeadStatus(lead) {
-      if (isLocked(lead)) return "Closed";
-      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
-      if (lead.leadStatus === "qualified") return "Qualified";
-      if (lead.leadStatus === "no_answer") return "No Answer";
-      if (lead.leadStatus === "callback_required") return "Callback Booked";
-      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
-      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
-      if (lead.leadStatus === "converted") return "Converted";
-      return "New";
-    }
-
-    function leadStatusBadge(lead) {
-      const status = formatLeadStatus(lead);
-      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
-      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
-      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
-      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
-      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
-      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
-      return `<span class="badge badge-slate">${status}</span>`;
-    }
-
-    function setButtonDisabled(button, disabled) {
-      button.disabled = !!disabled;
-      if (disabled) {
-        button.classList.add("opacity-60", "cursor-not-allowed");
-      } else {
-        button.classList.remove("opacity-60", "cursor-not-allowed");
-      }
-    }
-
-    function updateActionAvailability(lead) {
-      const locked = isLocked(lead);
-      const converted = isConverted(lead);
-      const introNeedsEmail = !getLeadEmail(lead);
-
-      [
-        openIntakeBtn,
-        sendIntroEmailBtn,
-        callbackRequiredBtn,
-        markQualifiedBtn,
-        sendToManagerBtn,
-        saveLeadBtn,
-        noAnswerBtn,
-        voicemailBtn,
-        wrongNumberBtn,
-        notInterestedBtn,
-        saveNotesBtn
-      ].forEach(button => setButtonDisabled(button, false));
-
-      if (locked || converted) {
-        [
-          openIntakeBtn,
-          sendIntroEmailBtn,
-          callbackRequiredBtn,
-          markQualifiedBtn,
-          sendToManagerBtn,
-          noAnswerBtn,
-          voicemailBtn,
-          wrongNumberBtn,
-          notInterestedBtn
-        ].forEach(button => setButtonDisabled(button, true));
-      }
-
-      if (introNeedsEmail) {
-        setButtonDisabled(sendIntroEmailBtn, true);
-      }
-    }
-
-    async function checkStaffAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No staff profile found for this account.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
-
-      if (userData.role !== "staff") {
-        alert("You do not have permission to access this page.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      currentUser = user;
-      currentUserData = userData;
-      logoutBtn.classList.remove("hidden");
-      return true;
     }
 
     async function recordStaffLoginFromPage() {
@@ -679,6 +547,141 @@
         lastLogoutAt: serverTimestamp(),
         isOnline: false
       }, { merge: true });
+    }
+
+    function formatAddress(lead) {
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
+    }
+
+    function formatAction(action) {
+      const map = {
+        no_answer: "No Answer",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested",
+        no_product: "No Relevant Product",
+        voicemail: "Voicemail",
+        callback_required: "Callback Required",
+        send_intro_email: "Send Intro Email",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
+        intake_draft_saved: "Intake Draft Saved",
+        notes_saved: "Notes Saved",
+        callback_rescheduled: "Callback Rescheduled",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review",
+        archived_closed_lead: "Archived Closed Lead"
+      };
+      return map[action] || action || "-";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false;
+    }
+
+    function isConverted(lead) {
+      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
+    }
+
+    function formatLeadStatus(lead) {
+      if (isLocked(lead)) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      return "New";
+    }
+
+    function leadStatusBadge(lead) {
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
+    }
+
+    function setButtonDisabled(button, disabled) {
+      button.disabled = !!disabled;
+      if (disabled) {
+        button.classList.add("opacity-60", "cursor-not-allowed");
+      } else {
+        button.classList.remove("opacity-60", "cursor-not-allowed");
+      }
+    }
+
+    function updateActionAvailability(lead) {
+      const locked = isLocked(lead);
+      const converted = isConverted(lead);
+      const introNeedsEmail = !getLeadEmail(lead);
+
+      [
+        openIntakeBtn,
+        sendIntroEmailBtn,
+        callbackRequiredBtn,
+        markQualifiedBtn,
+        sendToManagerBtn,
+        saveLeadBtn,
+        noAnswerBtn,
+        voicemailBtn,
+        wrongNumberBtn,
+        notInterestedBtn,
+        saveNotesBtn
+      ].forEach(button => setButtonDisabled(button, false));
+
+      if (locked || converted) {
+        [
+          openIntakeBtn,
+          sendIntroEmailBtn,
+          callbackRequiredBtn,
+          markQualifiedBtn,
+          sendToManagerBtn,
+          noAnswerBtn,
+          voicemailBtn,
+          wrongNumberBtn,
+          notInterestedBtn
+        ].forEach(button => setButtonDisabled(button, true));
+      }
+
+      if (introNeedsEmail) {
+        setButtonDisabled(sendIntroEmailBtn, true);
+      }
+    }
+
+    async function checkStaffAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No staff profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+
+      if (userData.role !== "staff") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
     }
 
     async function loadLeads() {
@@ -847,9 +850,11 @@
         selectedLead.callbackDate ? `${selectedLead.callbackDate} ${selectedLead.callbackTime || ""}` : "-";
       document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
       document.getElementById("lead_intro_status").textContent = selectedLead.introEmailSent ? "Yes" : "No";
+
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
+
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
@@ -865,6 +870,7 @@
           openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
+          selectedLead = null;
         }
       }
     }
@@ -893,46 +899,50 @@
       }
     }
 
-    async function archiveAndDeleteLead(reason, noteText) {
+    async function archiveAndRemoveLead(reason, notes = "") {
       if (!selectedLead) return;
 
       try {
-        const historyEntry = {
-          action: reason,
-          byUid: currentUser.uid,
-          byName: currentUserData.name || "",
-          at: new Date().toISOString(),
-          notes: noteText || ""
-        };
+        const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
 
-        await setDoc(doc(db, "closedLeadsArchive", selectedLead.id), {
+        await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
           originalLeadId: selectedLead.id,
           archiveReason: reason,
-          archiveNotes: noteText || "",
+          archiveNotes: notes || "",
           closedByUid: currentUser.uid,
-          closedByName: currentUserData.name || "",
+          closedByName: currentUserData.name || currentUser.email || "",
           archivedByUid: currentUser.uid,
-          archivedByName: currentUserData.name || "",
+          archivedByName: currentUserData.name || currentUser.email || "",
           closedFromPage: "lister-leads",
           closedAt: new Date().toISOString(),
+          archivedAt: new Date().toISOString(),
+          lastAction: reason,
+          leadStatus: "closed",
           closed: true,
           usable: false,
-          leadStatus: "closed",
-          lastAction: reason,
-          lastUpdatedAt: new Date().toISOString(),
-          actionHistory: [...(selectedLead.actionHistory || []), historyEntry]
+          callbackRequired: false,
+          introEmailNeeded: false,
+          actionHistory: [
+            ...(selectedLead.actionHistory || []),
+            {
+              action: "archived_closed_lead",
+              byUid: currentUser.uid,
+              byName: currentUserData.name || "",
+              at: new Date().toISOString(),
+              notes: notes || `Lead archived as ${reason}.`
+            }
+          ]
         });
 
         await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
 
-        selectedLead = null;
         leadModal.classList.add("hidden");
+        selectedLead = null;
         await loadLeads();
-        showModalMessage("Lead archived and removed from your list.");
       } catch (error) {
-        console.error("Archive/delete failed:", error);
-        showModalMessage("Could not archive lead.", true);
+        console.error("Archive/remove failed:", error);
+        showModalMessage("Could not archive this lead.", true);
       }
     }
 
@@ -998,6 +1008,7 @@
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
+        introEmailNeeded: false,
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
       }, "qualified", "Lead marked as qualified.");
@@ -1009,6 +1020,7 @@
       await updateLead({
         leadStatus: "awaiting_manager",
         callbackRequired: false,
+        introEmailNeeded: false,
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager.");
@@ -1057,12 +1069,12 @@
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndDeleteLead("wrong_number", notesBox.value || "Marked as wrong number.");
+      await archiveAndRemoveLead("wrong_number", "Marked as wrong number.");
     });
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndDeleteLead("not_interested", notesBox.value || "Marked as not interested.");
+      await archiveAndRemoveLead("not_interested", "Marked as not interested.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
