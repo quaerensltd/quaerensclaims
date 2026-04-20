@@ -148,7 +148,6 @@
           </div>
           <div class="flex gap-3 flex-wrap">
             <button id="clearSelectedBtn" class="btn btn-secondary hidden" type="button">Clear Selection</button>
-            <a id="openDetailPageBtn" href="#" class="btn btn-primary hidden">Open Full File</a>
           </div>
         </div>
 
@@ -199,6 +198,69 @@
             <h3 class="text-lg font-extrabold text-blue-900 mb-4">Manager / Handoff Notes</h3>
             <div id="detailManagerNotes" class="readonly-box">No notes available.</div>
           </section>
+        </section>
+
+        <section class="card p-5 mt-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Closer Actions</h3>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelStatusSelect">Closer Status</label>
+              <select id="panelStatusSelect" class="input">
+                <option value="Assigned">Assigned</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Appointment Booked">Appointment Booked</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelOutcomeSelect">Outcome</label>
+              <select id="panelOutcomeSelect" class="input">
+                <option value="">Select outcome</option>
+                <option value="Interested">Interested</option>
+                <option value="Call Back">Call Back</option>
+                <option value="No Answer">No Answer</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Closed Deal">Closed Deal</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelAmountDueNow">Amount Due Now (£)</label>
+              <input id="panelAmountDueNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelAmountPaidNow">Amount Paid Now (£)</label>
+              <input id="panelAmountPaidNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelFollowUpDue">Follow-Up Due (£)</label>
+              <input id="panelFollowUpDue" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelPaymentLink">Payment Link</label>
+              <input id="panelPaymentLink" class="input" type="text" placeholder="https://..." />
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelCloserNotes">Closer Notes</label>
+              <textarea id="panelCloserNotes" class="input" rows="6" placeholder="Call notes, objections, follow-up points, outcome, next step..."></textarea>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelProcessingNotes">Processing Notes</label>
+              <textarea id="panelProcessingNotes" class="input" rows="5" placeholder="Payment references, instalment notes, documents to prepare, urgent remarks..."></textarea>
+            </div>
+          </div>
+
+          <div class="mt-4 flex gap-3 flex-wrap">
+            <button id="savePanelCloserBtn" class="btn btn-primary" type="button">Save Closer Actions</button>
+            <p id="panelSaveMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
         </section>
 
         <section class="card p-5 mt-6">
@@ -334,6 +396,7 @@
     const outcomeFilter = document.getElementById("outcomeFilter");
     const processingFilter = document.getElementById("processingFilter");
     const searchInput = document.getElementById("searchInput");
+
     const assignmentsBody = document.getElementById("assignmentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
@@ -350,7 +413,6 @@
     const selectedTitle = document.getElementById("selectedTitle");
     const selectedSubtitle = document.getElementById("selectedSubtitle");
     const clearSelectedBtn = document.getElementById("clearSelectedBtn");
-    const openDetailPageBtn = document.getElementById("openDetailPageBtn");
 
     const detailClientName = document.getElementById("detailClientName");
     const detailClaimType = document.getElementById("detailClaimType");
@@ -367,6 +429,17 @@
     const detailPaymentLink = document.getElementById("detailPaymentLink");
     const detailAssessmentSummary = document.getElementById("detailAssessmentSummary");
     const detailManagerNotes = document.getElementById("detailManagerNotes");
+
+    const panelStatusSelect = document.getElementById("panelStatusSelect");
+    const panelOutcomeSelect = document.getElementById("panelOutcomeSelect");
+    const panelAmountDueNow = document.getElementById("panelAmountDueNow");
+    const panelAmountPaidNow = document.getElementById("panelAmountPaidNow");
+    const panelFollowUpDue = document.getElementById("panelFollowUpDue");
+    const panelPaymentLink = document.getElementById("panelPaymentLink");
+    const panelCloserNotes = document.getElementById("panelCloserNotes");
+    const panelProcessingNotes = document.getElementById("panelProcessingNotes");
+    const savePanelCloserBtn = document.getElementById("savePanelCloserBtn");
+    const panelSaveMessage = document.getElementById("panelSaveMessage");
 
     const emailSubjectInput = document.getElementById("emailSubjectInput");
     const emailBodyInput = document.getElementById("emailBodyInput");
@@ -400,14 +473,20 @@
       setTimeout(() => emailMessage.classList.add("hidden"), 3500);
     }
 
+    function showPanelSaveMessage(text, isError = false) {
+      panelSaveMessage.textContent = text;
+      panelSaveMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      panelSaveMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => panelSaveMessage.classList.add("hidden"), 3500);
+    }
+
     function formatClaimType(type) {
-      switch (type) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
+      const normalized = String(type || "").toLowerCase();
+      if (normalized.includes("solar")) return "Solar Panel Claims";
+      if (normalized.includes("mortgage")) return "Mortgage Review";
+      if (normalized.includes("survey")) return "Survey Review";
+      if (normalized.includes("newbuild") || normalized.includes("new build")) return "New Build Issues";
+      return type || "-";
     }
 
     function appointmentDate(item) {
@@ -493,7 +572,7 @@
     }
 
     function detailHref(item) {
-      return `/closer-detail.html?id=${item.id}`;
+      return `/closer-panel.html?id=${item.id}`;
     }
 
     function safeText(value, fallback = "-") {
@@ -517,7 +596,7 @@
       const appt = appointmentText(item);
       const dueNow = Number(item?.amountDueNow || 0);
       const followUpDue = Number(item?.followUpDue || 0);
-      const paymentLink = item?.paymentLink || "";
+      const link = item?.paymentLink || "";
       const outcome = outcomeValue(item);
 
       if (outcome === "Closed Deal") {
@@ -529,7 +608,7 @@
           `Following our discussion regarding your ${claimType.toLowerCase()} matter, I am writing to confirm the next steps.`,
           dueNow > 0 ? `Amount due now: ${money(dueNow)}` : "",
           followUpDue > 0 ? `Follow-up amount: ${money(followUpDue)}` : "",
-          paymentLink ? `Payment link: ${paymentLink}` : "",
+          link ? `Payment link: ${link}` : "",
           "",
           "Once this has been completed, your file can continue to the next stage.",
           "",
@@ -587,20 +666,17 @@
     async function checkCloserAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
       if (userData.role !== "closer") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       currentUser = user;
       currentUserData = userData;
       staffStatus.textContent = "Logged in as Closer";
@@ -687,8 +763,8 @@
       const filtered = allAssignments.filter(item => {
         const matchesStatus = selectedStatus === "all" || effectiveStatus(item) === selectedStatus;
         const matchesOutcome = selectedOutcome === "all" || outcomeValue(item) === selectedOutcome;
-        const isSent = processingSent(item);
 
+        const isSent = processingSent(item);
         const matchesProcessing =
           selectedProcessing === "all" ||
           (selectedProcessing === "sent" && isSent) ||
@@ -731,17 +807,9 @@
             <td class="p-3">${outcomeBadge(outcomeValue(item))}</td>
             <td class="p-3">${processingLabel(item)}</td>
             <td class="p-3">
-              <div class="flex flex-col gap-1">
-                <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">
-                  Open File
-                </a>
-                <button
-                  type="button"
-                  class="text-left text-slate-600 hover:text-blue-600 hover:underline"
-                  data-select-id="${item.id}">
-                  Preview Here
-                </button>
-              </div>
+              <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">
+                Open File
+              </a>
             </td>
           `;
           assignmentsBody.appendChild(row);
@@ -749,37 +817,17 @@
       }
 
       resultsSummary.textContent = `${filtered.length} assignment(s) shown`;
-
-      document.querySelectorAll("[data-select-id]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-select-id");
-          selectedAssignment = allAssignments.find(x => x.id === id) || null;
-
-          const url = new URL(window.location.href);
-          if (selectedAssignment) {
-            url.searchParams.set("id", selectedAssignment.id);
-          } else {
-            url.searchParams.delete("id");
-          }
-          window.history.replaceState({}, "", url.toString());
-
-          renderSelectedAssignment();
-        });
-      });
     }
 
     function renderSelectedAssignment() {
       if (!selectedAssignment) {
         selectedAssignmentSection.classList.add("hidden");
         clearSelectedBtn.classList.add("hidden");
-        openDetailPageBtn.classList.add("hidden");
         return;
       }
 
       selectedAssignmentSection.classList.remove("hidden");
       clearSelectedBtn.classList.remove("hidden");
-      openDetailPageBtn.classList.remove("hidden");
-      openDetailPageBtn.href = detailHref(selectedAssignment);
 
       selectedTitle.textContent = clientName(selectedAssignment);
       selectedSubtitle.textContent = `Assignment ID: ${selectedAssignment.id}`;
@@ -797,17 +845,24 @@
       detailPaidNow.textContent = money(selectedAssignment.amountPaidNow || 0);
       detailFollowUpDue.textContent = money(selectedAssignment.followUpDue || 0);
       detailPaymentLink.textContent = safeText(selectedAssignment.paymentLink);
-
       detailAssessmentSummary.textContent =
         selectedAssignment.assessmentSummary ||
         selectedAssignment.generatedAssessmentText ||
         selectedAssignment.assessmentReportText ||
         "No assessment summary available.";
-
       detailManagerNotes.textContent =
         selectedAssignment.handoffNotes ||
         selectedAssignment.managerNotes ||
         "No notes available.";
+
+      panelStatusSelect.value = selectedAssignment.status || "Assigned";
+      panelOutcomeSelect.value = selectedAssignment.outcome || "";
+      panelAmountDueNow.value = selectedAssignment.amountDueNow ?? "";
+      panelAmountPaidNow.value = selectedAssignment.amountPaidNow ?? "";
+      panelFollowUpDue.value = selectedAssignment.followUpDue ?? "";
+      panelPaymentLink.value = selectedAssignment.paymentLink || "";
+      panelCloserNotes.value = selectedAssignment.closerNotes || "";
+      panelProcessingNotes.value = selectedAssignment.processingNotes || "";
 
       emailSubjectInput.value =
         selectedAssignment.closerEmailSubject ||
@@ -816,6 +871,60 @@
       emailBodyInput.value =
         selectedAssignment.closerEmailBody ||
         buildDefaultEmailBody(selectedAssignment);
+    }
+
+    async function saveSelectedAssignmentActions() {
+      if (!selectedAssignment) {
+        showPanelSaveMessage("No assignment selected.", true);
+        return;
+      }
+
+      try {
+        const effectiveSavedStatus =
+          panelOutcomeSelect.value === "Closed Deal" ? "Closed" : (panelStatusSelect.value || "Assigned");
+
+        const payload = {
+          status: effectiveSavedStatus,
+          outcome: panelOutcomeSelect.value || "",
+          closerNotes: panelCloserNotes.value.trim(),
+          processingNotes: panelProcessingNotes.value.trim(),
+          amountDueNow: Number(panelAmountDueNow.value || 0),
+          amountPaidNow: Number(panelAmountPaidNow.value || 0),
+          followUpDue: Number(panelFollowUpDue.value || 0),
+          paymentLink: panelPaymentLink.value.trim(),
+          lastUpdatedAt: serverTimestamp(),
+          lastUpdatedBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        };
+
+        if (panelOutcomeSelect.value === "Closed Deal") {
+          payload.closedAt = serverTimestamp();
+          payload.closedBy = {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          };
+        }
+
+        await updateDoc(doc(db, "closerAssignments", selectedAssignment.id), payload);
+
+        showPanelSaveMessage("Closer actions saved.");
+        showToast("Closer actions saved.");
+
+        await loadAssignments();
+
+        const refreshed = allAssignments.find(x => x.id === selectedAssignment.id);
+        if (refreshed) {
+          selectedAssignment = refreshed;
+          renderSelectedAssignment();
+        }
+      } catch (error) {
+        console.error("Failed to save closer actions:", error);
+        showPanelSaveMessage("Could not save closer actions.", true);
+      }
     }
 
     async function saveEmailDraft() {
@@ -885,6 +994,7 @@
     });
 
     openMailBtn.addEventListener("click", openMailApp);
+    savePanelCloserBtn.addEventListener("click", saveSelectedAssignmentActions);
 
     clearSelectedBtn.addEventListener("click", () => {
       selectedAssignment = null;
