@@ -20,14 +20,8 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav {
-      background: #2563eb;
-      color: white;
-    }
-    .active-nav:hover {
-      background: #1d4ed8;
-      color: white;
-    }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -208,7 +202,7 @@
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Quick Actions</h4>
-          <div class="space-y-4">
+          <div id="actionWrap" class="space-y-4">
             <div class="grid md:grid-cols-4 gap-3">
               <button id="openIntakeBtn" class="btn btn-primary" type="button">Fill Out Intake Now</button>
               <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
@@ -235,7 +229,7 @@
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
-          <div class="space-y-4">
+          <div id="outcomeWrap" class="space-y-4">
             <div class="grid md:grid-cols-4 gap-3">
               <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
               <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
@@ -274,6 +268,7 @@
       getDoc,
       getDocs,
       updateDoc,
+      deleteDoc,
       collection,
       query,
       where,
@@ -298,23 +293,19 @@
     const timingFilter = document.getElementById("timingFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
-
     const totalScheduledStat = document.getElementById("totalScheduledStat");
     const todayStat = document.getElementById("todayStat");
     const overdueStat = document.getElementById("overdueStat");
     const introStat = document.getElementById("introStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
-
     const agendaBody = document.getElementById("agendaBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const rescheduleBtn = document.getElementById("rescheduleBtn");
     const keepIntroBtn = document.getElementById("keepIntroBtn");
@@ -441,22 +432,6 @@
       return `${uid}_${todayIso()}`;
     }
 
-    function getLeadType(lead) {
-      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
-    }
-
-    function getScheduledText(lead) {
-      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
-    }
-
-    function sortLeadsBySchedule(leads) {
-      return [...leads].sort((a, b) => {
-        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
-        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
-        return aKey.localeCompare(bKey);
-      });
-    }
-
     function setButtonDisabled(button, disabled) {
       button.disabled = !!disabled;
       if (disabled) {
@@ -499,6 +474,94 @@
           wrongNumberBtn,
           notInterestedBtn
         ].forEach(button => setButtonDisabled(button, true));
+      }
+    }
+
+    function getLeadType(lead) {
+      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
+    }
+
+    function getScheduledText(lead) {
+      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    function sortLeadsBySchedule(leads) {
+      return [...leads].sort((a, b) => {
+        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
+        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
+        return aKey.localeCompare(bKey);
+      });
+    }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    async function archiveAndRemoveLead(reason, noteText = "") {
+      if (!selectedLead) return;
+
+      try {
+        const leadRef = doc(db, "leadAssignments", selectedLead.id);
+        const archiveRef = doc(db, "closedLeadAssignments", selectedLead.id);
+
+        const existingHistory = Array.isArray(selectedLead.actionHistory)
+          ? selectedLead.actionHistory
+          : [];
+
+        const archiveEntry = {
+          action: reason,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString(),
+          notes: noteText
+        };
+
+        await setDoc(archiveRef, {
+          ...selectedLead,
+          leadStatus: "closed",
+          lastAction: reason,
+          closed: true,
+          usable: false,
+          callbackRequired: false,
+          introEmailNeeded: false,
+          callbackDate: "",
+          callbackTime: "",
+          archived: true,
+          archivedReason: reason,
+          archivedAt: serverTimestamp(),
+          archivedByUid: currentUser.uid,
+          archivedByName: currentUserData.name || "",
+          originalAssignedToUid: selectedLead.assignedToUid || "",
+          originalAssignedToName: selectedLead.assignedToName || "",
+          removedFromActiveLeadsAt: serverTimestamp(),
+          actionHistory: [...existingHistory, archiveEntry]
+        }, { merge: true });
+
+        await deleteDoc(leadRef);
+
+        leadModal.classList.add("hidden");
+        selectedLead = null;
+        await loadLeads();
+      } catch (error) {
+        console.error("Failed to archive lead:", error);
+        showModalMessage("Could not archive lead.", true);
       }
     }
 
@@ -648,10 +711,8 @@
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid)
         );
-
         const snapshot = await getDocs(leadsQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
         renderStats();
         renderAgenda();
       } catch (error) {
@@ -674,9 +735,9 @@
 
       totalScheduledStat.textContent = String(scheduled.length);
       todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
-      overdueStat.textContent = String(scheduled.filter(x => x.callbackDate && x.callbackDate < today).length);
+      overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
       introStat.textContent = String(scheduled.filter(x => x.introEmailNeeded).length);
-      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
+      qualifiedStat.textContent = String(scheduled.filter(x => isQualified(x)).length);
     }
 
     function renderAgenda() {
@@ -694,8 +755,8 @@
         const matchesTiming =
           timing === "all" ||
           (timing === "today" && lead.callbackDate === today) ||
-          (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
-          (timing === "future" && lead.callbackDate && lead.callbackDate > today);
+          (timing === "overdue" && lead.callbackDate < today) ||
+          (timing === "future" && lead.callbackDate > today);
 
         const haystack = `
           ${lead.forename || ""}
@@ -759,34 +820,12 @@
       });
     }
 
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
-
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
-
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
-      });
-    }
-
     function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Detail";
-
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
@@ -813,7 +852,6 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
-
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -851,12 +889,10 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "intake_in_progress",
         lastAction: "interested_intake_started"
       }, "interested_intake_started", "Lead moved to intake from callback agenda.");
-
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
@@ -906,8 +942,6 @@
         leadStatus: "qualified",
         callbackRequired: false,
         introEmailNeeded: false,
-        callbackDate: "",
-        callbackTime: "",
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
       }, "qualified", "Lead marked as qualified from callback agenda.");
@@ -920,8 +954,6 @@
         leadStatus: "awaiting_manager",
         callbackRequired: false,
         introEmailNeeded: false,
-        callbackDate: "",
-        callbackTime: "",
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager from callback agenda.");
@@ -964,32 +996,12 @@
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "closed",
-        lastAction: "wrong_number",
-        closed: true,
-        usable: false,
-        callbackRequired: false,
-        introEmailNeeded: false,
-        callbackDate: "",
-        callbackTime: ""
-      }, "wrong_number", "Marked as wrong number from callback agenda.");
+      await archiveAndRemoveLead("wrong_number", "Marked as wrong number from callback agenda.");
     });
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "closed",
-        lastAction: "not_interested",
-        closed: true,
-        usable: false,
-        callbackRequired: false,
-        introEmailNeeded: false,
-        callbackDate: "",
-        callbackTime: ""
-      }, "not_interested", "Marked as not interested from callback agenda.");
+      await archiveAndRemoveLead("not_interested", "Marked as not interested from callback agenda.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
@@ -1082,11 +1094,11 @@
     refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll('a[href]').forEach(link => {
-      const href = link.getAttribute('href');
+    document.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add('active-nav');
+        link.classList.add("active-nav");
       }
     });
   </script>

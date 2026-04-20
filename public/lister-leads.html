@@ -19,34 +19,9 @@
     .btn-secondary:hover { background: #dbeafe; }
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
-    .btn-small {
-      border-radius: 10px;
-      padding: 0.45rem 0.7rem;
-      font-weight: 700;
-      font-size: 0.75rem;
-      border: none;
-      cursor: pointer;
-      margin-right: 0.35rem;
-      margin-bottom: 0.35rem;
-    }
-    .btn-red { background: #fee2e2; color: #991b1b; }
-    .btn-red:hover { background: #fecaca; }
-    .btn-amber { background: #fef3c7; color: #92400e; }
-    .btn-amber:hover { background: #fde68a; }
-    .btn-green { background: #dcfce7; color: #166534; }
-    .btn-green:hover { background: #bbf7d0; }
-    .btn-blue { background: #dbeafe; color: #1d4ed8; }
-    .btn-blue:hover { background: #bfdbfe; }
     .hidden { display: none; }
-    .disabled-actions { opacity: 0.55; pointer-events: none; }
-    .active-nav {
-      background: #2563eb;
-      color: white;
-    }
-    .active-nav:hover {
-      background: #1d4ed8;
-      color: white;
-    }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -79,9 +54,7 @@
       word-break: break-all;
       overflow-wrap: anywhere;
     }
-    .client-cell {
-      min-width: 0;
-    }
+    .client-cell { min-width: 0; }
     .client-name {
       font-weight: 600;
       color: #1f2937;
@@ -105,9 +78,7 @@
       text-decoration: none;
       white-space: nowrap;
     }
-    .table-link:hover {
-      text-decoration: underline;
-    }
+    .table-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -339,6 +310,7 @@
       getDoc,
       getDocs,
       updateDoc,
+      deleteDoc,
       collection,
       query,
       where,
@@ -371,6 +343,7 @@
     const qualifiedStat = document.getElementById("qualifiedStat");
     const awaitingManagerStat = document.getElementById("awaitingManagerStat");
     const lockedStat = document.getElementById("lockedStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
@@ -427,14 +400,188 @@
     }
 
     function getLeadEmail(lead) {
-      return cleanValue(
-        lead.email ||
-        lead.emailAddress ||
-        lead.email_address ||
-        lead.Email ||
-        lead.contactEmail ||
-        lead.clientEmail
-      );
+      return cleanValue(lead.email || lead.emailAddress);
+    }
+
+    function formatAddress(lead) {
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
+    }
+
+    function formatAction(action) {
+      const map = {
+        no_answer: "No Answer",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested",
+        no_product: "No Relevant Product",
+        voicemail: "Voicemail",
+        callback_required: "Callback Required",
+        send_intro_email: "Send Intro Email",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
+        intake_draft_saved: "Intake Draft Saved",
+        notes_saved: "Notes Saved",
+        callback_rescheduled: "Callback Rescheduled",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review"
+      };
+      return map[action] || action || "-";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
+    }
+
+    function isConverted(lead) {
+      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
+    }
+
+    function formatLeadStatus(lead) {
+      if (isLocked(lead)) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      return "New";
+    }
+
+    function leadStatusBadge(lead) {
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
+    }
+
+    function setButtonDisabled(button, disabled) {
+      button.disabled = !!disabled;
+      if (disabled) {
+        button.classList.add("opacity-60", "cursor-not-allowed");
+      } else {
+        button.classList.remove("opacity-60", "cursor-not-allowed");
+      }
+    }
+
+    function updateActionAvailability(lead) {
+      const locked = isLocked(lead);
+      const converted = isConverted(lead);
+      const introNeedsEmail = !getLeadEmail(lead);
+
+      [
+        openIntakeBtn,
+        sendIntroEmailBtn,
+        callbackRequiredBtn,
+        markQualifiedBtn,
+        sendToManagerBtn,
+        saveLeadBtn,
+        noAnswerBtn,
+        voicemailBtn,
+        wrongNumberBtn,
+        notInterestedBtn,
+        saveNotesBtn
+      ].forEach(button => setButtonDisabled(button, false));
+
+      if (locked || converted) {
+        [
+          openIntakeBtn,
+          sendIntroEmailBtn,
+          callbackRequiredBtn,
+          markQualifiedBtn,
+          sendToManagerBtn,
+          noAnswerBtn,
+          voicemailBtn,
+          wrongNumberBtn,
+          notInterestedBtn
+        ].forEach(button => setButtonDisabled(button, true));
+      }
+
+      if (introNeedsEmail) {
+        setButtonDisabled(sendIntroEmailBtn, true);
+      }
+    }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    async function archiveAndRemoveLead(reason, noteText = "") {
+      if (!selectedLead) return;
+
+      try {
+        const leadRef = doc(db, "leadAssignments", selectedLead.id);
+        const archiveRef = doc(db, "closedLeadAssignments", selectedLead.id);
+
+        const existingHistory = Array.isArray(selectedLead.actionHistory)
+          ? selectedLead.actionHistory
+          : [];
+
+        const archiveEntry = {
+          action: reason,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString(),
+          notes: noteText
+        };
+
+        await setDoc(archiveRef, {
+          ...selectedLead,
+          leadStatus: "closed",
+          lastAction: reason,
+          closed: true,
+          usable: false,
+          callbackRequired: false,
+          introEmailNeeded: false,
+          callbackDate: "",
+          callbackTime: "",
+          archived: true,
+          archivedReason: reason,
+          archivedAt: serverTimestamp(),
+          archivedByUid: currentUser.uid,
+          archivedByName: currentUserData.name || "",
+          originalAssignedToUid: selectedLead.assignedToUid || "",
+          originalAssignedToName: selectedLead.assignedToName || "",
+          removedFromActiveLeadsAt: serverTimestamp(),
+          actionHistory: [...existingHistory, archiveEntry]
+        }, { merge: true });
+
+        await deleteDoc(leadRef);
+
+        leadModal.classList.add("hidden");
+        selectedLead = null;
+        await loadLeads();
+      } catch (error) {
+        console.error("Failed to archive lead:", error);
+        showModalMessage("Could not archive lead.", true);
+      }
     }
 
     async function recordStaffLoginFromPage() {
@@ -553,111 +700,6 @@
       }, { merge: true });
     }
 
-    function formatAddress(lead) {
-      return [
-        lead.address,
-        lead.address1,
-        lead.address2,
-        lead.address3,
-        lead.address4,
-        lead.address5
-      ].filter(Boolean).join(", ") || "-";
-    }
-
-    function formatAction(action) {
-      const map = {
-        no_answer: "No Answer",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        no_product: "No Relevant Product",
-        voicemail: "Voicemail",
-        callback_required: "Callback Required",
-        send_intro_email: "Send Intro Email",
-        interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted",
-        intake_draft_saved: "Intake Draft Saved",
-        notes_saved: "Notes Saved",
-        callback_rescheduled: "Callback Rescheduled",
-        qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager Review"
-      };
-      return map[action] || action || "-";
-    }
-
-    function isLocked(lead) {
-      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
-    }
-
-    function isConverted(lead) {
-      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
-    }
-
-    function formatLeadStatus(lead) {
-      if (isLocked(lead)) return "Closed";
-      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
-      if (lead.leadStatus === "qualified") return "Qualified";
-      if (lead.leadStatus === "no_answer") return "No Answer";
-      if (lead.leadStatus === "callback_required") return "Callback Booked";
-      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
-      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
-      if (lead.leadStatus === "converted") return "Converted";
-      return "New";
-    }
-
-    function leadStatusBadge(lead) {
-      const status = formatLeadStatus(lead);
-      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
-      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
-      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
-      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
-      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
-      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
-      return `<span class="badge badge-slate">${status}</span>`;
-    }
-
-    function setButtonDisabled(button, disabled) {
-      button.disabled = !!disabled;
-      if (disabled) {
-        button.classList.add("opacity-60", "cursor-not-allowed");
-      } else {
-        button.classList.remove("opacity-60", "cursor-not-allowed");
-      }
-    }
-
-    function updateActionAvailability(lead) {
-      const locked = isLocked(lead);
-      const converted = isConverted(lead);
-
-      [
-        openIntakeBtn,
-        sendIntroEmailBtn,
-        callbackRequiredBtn,
-        markQualifiedBtn,
-        sendToManagerBtn,
-        saveLeadBtn,
-        noAnswerBtn,
-        voicemailBtn,
-        wrongNumberBtn,
-        notInterestedBtn,
-        saveNotesBtn
-      ].forEach(button => setButtonDisabled(button, false));
-
-      if (locked || converted) {
-        [
-          openIntakeBtn,
-          sendIntroEmailBtn,
-          callbackRequiredBtn,
-          markQualifiedBtn,
-          sendToManagerBtn,
-          noAnswerBtn,
-          voicemailBtn,
-          wrongNumberBtn,
-          notInterestedBtn
-        ].forEach(button => setButtonDisabled(button, true));
-      }
-    }
-
     async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -755,7 +797,6 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-
         return matchesStatus && matchesSpecial && matchesSearch;
       });
     }
@@ -788,9 +829,7 @@
             <td class="p-3 align-top cell-wrap">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
             <td class="p-3 align-top cell-tight">${lead.convertedToSubmissionId || "-"}</td>
             <td class="p-3 align-top">
-              <button class="table-link" data-open-lead="${lead.id}">
-                Open Lead
-              </button>
+              <button class="table-link" data-open-lead="${lead.id}">Open Lead</button>
             </td>
           `;
           leadsBody.appendChild(tr);
@@ -801,27 +840,6 @@
 
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
-      });
-    }
-
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
-
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
-
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
       });
     }
 
@@ -858,7 +876,6 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
-
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -896,16 +913,11 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      try {
-        await updateLead({
-          leadStatus: "intake_in_progress",
-          lastAction: "interested_intake_started"
-        }, "interested_intake_started", "Lead moved to intake.");
-
-        window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
-      } catch (error) {
-        console.error(error);
-      }
+      await updateLead({
+        leadStatus: "intake_in_progress",
+        lastAction: "interested_intake_started"
+      }, "interested_intake_started", "Lead moved to intake.");
+      window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
     sendIntroEmailBtn.addEventListener("click", async () => {
@@ -955,6 +967,7 @@
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
+        introEmailNeeded: false,
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
       }, "qualified", "Lead marked as qualified.");
@@ -966,6 +979,7 @@
       await updateLead({
         leadStatus: "awaiting_manager",
         callbackRequired: false,
+        introEmailNeeded: false,
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager.");
@@ -1014,28 +1028,12 @@
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "closed",
-        lastAction: "wrong_number",
-        closed: true,
-        usable: false,
-        callbackRequired: false,
-        introEmailNeeded: false
-      }, "wrong_number", "Marked as wrong number.");
+      await archiveAndRemoveLead("wrong_number", "Marked as wrong number.");
     });
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "closed",
-        lastAction: "not_interested",
-        closed: true,
-        usable: false,
-        callbackRequired: false,
-        introEmailNeeded: false
-      }, "not_interested", "Marked as not interested.");
+      await archiveAndRemoveLead("not_interested", "Marked as not interested.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
@@ -1128,11 +1126,11 @@
     refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll('a[href]').forEach(link => {
-      const href = link.getAttribute('href');
+    document.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add('active-nav');
+        link.classList.add("active-nav");
       }
     });
   </script>
