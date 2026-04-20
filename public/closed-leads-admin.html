@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Closed Leads Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
+
+    .closed-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .closed-table th,
+    .closed-table td {
+      vertical-align: top;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .client-cell {
+      min-width: 0;
+    }
+    .client-name {
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .client-address {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.35;
+      margin-top: 0.25rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .table-link {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .table-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading closed leads archive...</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closed Leads Admin</h1>
+          <p class="text-sm text-slate-500">Manager archive for wrong number and not interested leads</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
+          <a href="/lister-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Email Queue</a>
+          <a href="/lister-callbacks.html" class="btn btn-secondary py-2 px-4">Callback Agenda</a>
+          <a href="/closed-leads-admin.html" class="btn btn-secondary py-2 px-4">Closed Leads Admin</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-5 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Archived</div>
+          <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Wrong Number</div>
+          <div id="wrongNumberStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Not Interested</div>
+          <div id="notInterestedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Closed Today</div>
+          <div id="todayStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unique Listers</div>
+          <div id="listerStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Reason</label>
+            <select id="reasonFilter" class="input">
+              <option value="all">All reasons</option>
+              <option value="wrong_number">Wrong Number</option>
+              <option value="not_interested">Not Interested</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Closed Date</label>
+            <select id="dateFilter" class="input">
+              <option value="all">All dates</option>
+              <option value="today">Today</option>
+              <option value="last_7">Last 7 days</option>
+              <option value="last_30">Last 30 days</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Handled By</label>
+            <input id="listerSearchInput" type="text" class="input" placeholder="Lister name..." />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search Lead</label>
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, email, postcode..." />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Archive</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Archived Leads</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading archive...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="closed-table text-sm min-w-full">
+            <colgroup>
+              <col style="width: 20%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 12%">
+              <col style="width: 8%">
+              <col style="width: 10%">
+              <col style="width: 12%">
+              <col style="width: 10%">
+              <col style="width: 4%">
+              <col style="width: 4%">
+            </colgroup>
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Telephone</th>
+                <th class="text-left p-3">Mobile</th>
+                <th class="text-left p-3">Email</th>
+                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Reason</th>
+                <th class="text-left p-3">Handled By</th>
+                <th class="text-left p-3">Closed At</th>
+                <th class="text-left p-3">From</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="archiveBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Archived Lead Detail</h3>
+          <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
+            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
+            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claim_type">-</span></div>
+            <div><span class="font-semibold text-blue-900">Reason Closed:</span> <span id="lead_reason">-</span></div>
+            <div><span class="font-semibold text-blue-900">Handled By:</span> <span id="lead_handled_by">-</span></div>
+            <div><span class="font-semibold text-blue-900">Handled By UID:</span> <span id="lead_handled_uid">-</span></div>
+            <div><span class="font-semibold text-blue-900">Closed At:</span> <span id="lead_closed_at">-</span></div>
+            <div><span class="font-semibold text-blue-900">Closed From Page:</span> <span id="lead_closed_from">-</span></div>
+            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_last_action">-</span></div>
+            <div><span class="font-semibold text-blue-900">Original Lead ID:</span> <span id="lead_original_id">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Closure Notes</h4>
+          <div id="closureNotes" class="text-sm text-slate-700 whitespace-pre-wrap">-</div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
+          <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection,
+      query,
+      orderBy,
+      limit,
+      setDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const reasonFilter = document.getElementById("reasonFilter");
+    const dateFilter = document.getElementById("dateFilter");
+    const listerSearchInput = document.getElementById("listerSearchInput");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const archiveBody = document.getElementById("archiveBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+    const totalStat = document.getElementById("totalStat");
+    const wrongNumberStat = document.getElementById("wrongNumberStat");
+    const notInterestedStat = document.getElementById("notInterestedStat");
+    const todayStat = document.getElementById("todayStat");
+    const listerStat = document.getElementById("listerStat");
+    const leadModal = document.getElementById("leadModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let archivedLeads = [];
+    let selectedLead = null;
+    let attendanceHeartbeatInterval = null;
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getTodayAttendanceId(uid) {
+      return `${uid}_${todayIso()}`;
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function getLeadTelephone(lead) {
+      return cleanValue(lead.telephone || lead.landline || lead.phone);
+    }
+
+    function getLeadMobile(lead) {
+      return cleanValue(lead.mobile || lead.mobileNumber || lead.cell);
+    }
+
+    function getLeadEmail(lead) {
+      return cleanValue(lead.email || lead.emailAddress);
+    }
+
+    function formatAddress(lead) {
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
+    }
+
+    function timestampToDate(value) {
+      if (!value) return null;
+      if (value?.toDate && typeof value.toDate === "function") return value.toDate();
+      if (value instanceof Date) return value;
+      if (typeof value === "string" || typeof value === "number") {
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      if (typeof value === "object" && typeof value.seconds === "number") {
+        return new Date(value.seconds * 1000);
+      }
+      return null;
+    }
+
+    function formatDateTime(value) {
+      const date = timestampToDate(value);
+      if (!date) return "-";
+      return date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function getDateOnly(value) {
+      const date = timestampToDate(value);
+      if (!date) return "";
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function isTodayDate(value) {
+      return getDateOnly(value) === todayIso();
+    }
+
+    function isWithinDays(value, days) {
+      const date = timestampToDate(value);
+      if (!date) return false;
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      return diffMs >= 0 && diffMs <= days * 24 * 60 * 60 * 1000;
+    }
+
+    function formatAction(action) {
+      const map = {
+        no_answer: "No Answer",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested",
+        no_product: "No Relevant Product",
+        voicemail: "Voicemail",
+        callback_required: "Callback Required",
+        send_intro_email: "Send Intro Email",
+        intro_email_sent: "Intro Email Sent",
+        intro_email_queue_done: "Intro Email Queue Done",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
+        intake_draft_saved: "Intake Draft Saved",
+        notes_saved: "Notes Saved",
+        callback_rescheduled: "Callback Rescheduled",
+        callback_completed: "Callback Completed",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review",
+        archived_closed_lead: "Archived Closed Lead"
+      };
+      return map[action] || action || "-";
+    }
+
+    function formatReason(reason) {
+      if (reason === "wrong_number") return "Wrong Number";
+      if (reason === "not_interested") return "Not Interested";
+      return reason || "-";
+    }
+
+    function reasonBadge(reason) {
+      if (reason === "wrong_number") return `<span class="badge badge-red">Wrong Number</span>`;
+      if (reason === "not_interested") return `<span class="badge badge-amber">Not Interested</span>`;
+      return `<span class="badge badge-slate">${formatReason(reason)}</span>`;
+    }
+
+    function formatClosedFrom(source) {
+      if (!source) return "-";
+      if (source === "lister-leads") return "Lister Leads";
+      if (source === "lister-intro-emails") return "Intro Email Queue";
+      if (source === "lister-callbacks") return "Callback Agenda";
+      return source;
+    }
+
+    function getHandledByName(lead) {
+      return cleanValue(lead.closedByName || lead.archivedByName || "");
+    }
+
+    function getHandledByUid(lead) {
+      return cleanValue(lead.closedByUid || lead.archivedByUid || "");
+    }
+
+    function getClosureNotes(lead) {
+      const history = Array.isArray(lead.actionHistory) ? lead.actionHistory : [];
+      const closureItem = [...history].reverse().find(item =>
+        item?.action === "wrong_number" || item?.action === "not_interested"
+      );
+      return closureItem?.notes || lead.archiveNotes || lead.notes || "-";
+    }
+
+    async function recordStaffLoginFromPage() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const today = todayIso();
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          currentSessionStartAt: serverTimestamp(),
+          totalLoggedInMs: 0,
+          isOnline: true
+        });
+      } else {
+        const existingData = attendanceSnap.data() || {};
+        const updateData = {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        };
+
+        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
+          updateData.currentSessionStartAt = serverTimestamp();
+        }
+
+        if (typeof existingData.totalLoggedInMs !== "number") {
+          updateData.totalLoggedInMs = 0;
+        }
+
+        await setDoc(attendanceRef, updateData, { merge: true });
+      }
+    }
+
+    async function updateStaffHeartbeat() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        name: currentUserData.name || "",
+        email: currentUser.email || "",
+        role: currentUserData.role || "staff",
+        date: todayIso(),
+        lastSeenAt: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    }
+
+    function startAttendanceHeartbeat() {
+      if (attendanceHeartbeatInterval) {
+        clearInterval(attendanceHeartbeatInterval);
+      }
+
+      attendanceHeartbeatInterval = setInterval(async () => {
+        try {
+          await updateStaffHeartbeat();
+        } catch (error) {
+          console.error("Attendance heartbeat failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    async function recordStaffLogout() {
+      if (!currentUser) return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          lastLogoutAt: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
+        return;
+      }
+
+      const data = attendanceSnap.data() || {};
+      const now = Date.now();
+      let extraMs = 0;
+
+      if (data.currentSessionStartAt?.toDate) {
+        const sessionStart = data.currentSessionStartAt.toDate().getTime();
+        extraMs = Math.max(0, now - sessionStart);
+      }
+
+      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
+      const newTotal = existingTotal + extraMs;
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        totalLoggedInMs: newTotal,
+        currentSessionStartAt: null,
+        lastLogoutAt: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
+    }
+
+    async function checkManagerAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("No user profile found for this account.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+      const allowedRoles = ["manager", "admin"];
+
+      if (!allowedRoles.includes(userData.role)) {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadArchivedLeads() {
+      try {
+        const archiveQuery = query(
+          collection(db, "closedLeadsArchive"),
+          orderBy("closedAt", "desc"),
+          limit(1000)
+        );
+
+        const snapshot = await getDocs(archiveQuery);
+        archivedLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        renderStats();
+        renderArchive();
+      } catch (error) {
+        console.error("Failed to load closed leads archive:", error);
+        resultsSummary.textContent = "Could not load closed leads archive.";
+      }
+    }
+
+    function renderStats() {
+      totalStat.textContent = String(archivedLeads.length);
+      wrongNumberStat.textContent = String(
+        archivedLeads.filter(x => x.archiveReason === "wrong_number").length
+      );
+      notInterestedStat.textContent = String(
+        archivedLeads.filter(x => x.archiveReason === "not_interested").length
+      );
+      todayStat.textContent = String(
+        archivedLeads.filter(x => isTodayDate(x.closedAt)).length
+      );
+
+      const uniqueListers = new Set(
+        archivedLeads
+          .map(x => getHandledByName(x))
+          .filter(Boolean)
+      );
+
+      listerStat.textContent = String(uniqueListers.size);
+    }
+
+    function getFilteredArchive() {
+      const reason = reasonFilter.value;
+      const dateValue = dateFilter.value;
+      const listerTerm = listerSearchInput.value.trim().toLowerCase();
+      const term = searchInput.value.trim().toLowerCase();
+
+      return archivedLeads.filter(lead => {
+        const matchesReason =
+          reason === "all" || lead.archiveReason === reason;
+
+        const matchesDate =
+          dateValue === "all" ||
+          (dateValue === "today" && isTodayDate(lead.closedAt)) ||
+          (dateValue === "last_7" && isWithinDays(lead.closedAt, 7)) ||
+          (dateValue === "last_30" && isWithinDays(lead.closedAt, 30));
+
+        const handledBy = `${getHandledByName(lead)} ${cleanValue(lead.closedByEmail)}`.toLowerCase();
+        const matchesLister = !listerTerm || handledBy.includes(listerTerm);
+
+        const haystack = `
+          ${lead.forename || ""}
+          ${lead.surname || ""}
+          ${getLeadTelephone(lead)}
+          ${getLeadMobile(lead)}
+          ${getLeadEmail(lead)}
+          ${lead.postcode || ""}
+          ${lead.address || ""}
+          ${lead.address1 || ""}
+          ${lead.address2 || ""}
+          ${lead.address3 || ""}
+          ${lead.address4 || ""}
+          ${lead.address5 || ""}
+          ${lead.archiveReason || ""}
+          ${getHandledByName(lead)}
+          ${cleanValue(lead.closedByEmail)}
+          ${lead.originalLeadId || ""}
+          ${getClosureNotes(lead)}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesReason && matchesDate && matchesLister && matchesSearch;
+      });
+    }
+
+    function renderArchive() {
+      const filtered = getFilteredArchive();
+      archiveBody.innerHTML = "";
+
+      if (!filtered.length) {
+        archiveBody.innerHTML = `
+          <tr>
+            <td colspan="10" class="p-6 text-center text-slate-500">No archived leads found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(lead => {
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+          tr.innerHTML = `
+            <td class="p-3 align-top client-cell">
+              <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="client-address">${formatAddress(lead)}</div>
+            </td>
+            <td class="p-3 align-top cell-tight">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${reasonBadge(lead.archiveReason)}</td>
+            <td class="p-3 align-top cell-wrap">${getHandledByName(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${formatDateTime(lead.closedAt)}</td>
+            <td class="p-3 align-top cell-wrap">${formatClosedFrom(lead.closedFromPage)}</td>
+            <td class="p-3 align-top">
+              <button class="table-link" data-open-lead="${lead.id}">Open</button>
+            </td>
+          `;
+          archiveBody.appendChild(tr);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} archived lead(s) shown`;
+
+      document.querySelectorAll("[data-open-lead]").forEach(btn => {
+        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+      });
+    }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history || !history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    function openLead(leadId) {
+      selectedLead = archivedLeads.find(x => x.id === leadId);
+      if (!selectedLead) return;
+
+      document.getElementById("modalLeadTitle").textContent =
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Archived Lead Detail";
+      document.getElementById("modalLeadSubtitle").textContent = `Archive ID: ${selectedLead.id}`;
+      document.getElementById("lead_name").textContent =
+        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      document.getElementById("lead_phone").textContent = getLeadTelephone(selectedLead) || "-";
+      document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
+      document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
+      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
+      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
+      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
+      document.getElementById("lead_claim_type").textContent = selectedLead.claimType || selectedLead.type || "-";
+      document.getElementById("lead_reason").textContent = formatReason(selectedLead.archiveReason);
+      document.getElementById("lead_handled_by").textContent = getHandledByName(selectedLead) || "-";
+      document.getElementById("lead_handled_uid").textContent = getHandledByUid(selectedLead) || "-";
+      document.getElementById("lead_closed_at").textContent = formatDateTime(selectedLead.closedAt);
+      document.getElementById("lead_closed_from").textContent = formatClosedFrom(selectedLead.closedFromPage);
+      document.getElementById("lead_last_action").textContent = formatAction(selectedLead.lastAction);
+      document.getElementById("lead_original_id").textContent = selectedLead.originalLeadId || "-";
+      document.getElementById("closureNotes").textContent = getClosureNotes(selectedLead);
+
+      renderHistory(selectedLead.actionHistory || []);
+      leadModal.classList.remove("hidden");
+    }
+
+    closeModalBtn.addEventListener("click", () => {
+      leadModal.classList.add("hidden");
+    });
+
+    leadModal.addEventListener("click", (e) => {
+      if (e.target === leadModal) {
+        leadModal.classList.add("hidden");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+
+        try {
+          await recordStaffLoginFromPage();
+          startAttendanceHeartbeat();
+        } catch (attendanceError) {
+          console.error("Attendance login-from-page failed:", attendanceError);
+        }
+
+        await loadArchivedLeads();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load closed leads archive.");
+        window.location.href = "/login.html";
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        try {
+          await recordStaffLogout();
+        } catch (attendanceError) {
+          console.error("Attendance logout failed:", attendanceError);
+        }
+
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", async () => {
+      try {
+        await recordStaffLogout();
+      } catch (error) {
+        console.error("Attendance beforeunload failed:", error);
+      }
+    });
+
+    reasonFilter.addEventListener("change", renderArchive);
+    dateFilter.addEventListener("change", renderArchive);
+    listerSearchInput.addEventListener("input", renderArchive);
+    searchInput.addEventListener("input", renderArchive);
+    refreshBtn.addEventListener("click", loadArchivedLeads);
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

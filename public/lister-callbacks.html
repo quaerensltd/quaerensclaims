@@ -20,8 +20,14 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav { background: #2563eb; color: white; }
-    .active-nav:hover { background: #1d4ed8; color: white; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -57,7 +63,6 @@
       <p class="text-slate-600 font-medium">Loading callback agenda...</p>
     </div>
   </div>
-
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
@@ -74,7 +79,6 @@
         </div>
       </div>
     </header>
-
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-5 gap-4">
         <div class="card p-5">
@@ -98,7 +102,6 @@
           <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
       </section>
-
       <section class="card p-6">
         <div class="grid md:grid-cols-4 gap-4">
           <div>
@@ -127,7 +130,6 @@
           </div>
         </div>
       </section>
-
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
@@ -135,7 +137,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1180px] table-fixed-clean text-sm border-collapse">
             <colgroup>
@@ -170,7 +171,6 @@
       </section>
     </main>
   </div>
-
   <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
     <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
@@ -180,7 +180,6 @@
         </div>
         <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
       </div>
-
       <div class="p-6 space-y-6">
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
@@ -199,7 +198,6 @@
             <div><span class="font-semibold text-blue-900">Intro Email Sent:</span> <span id="lead_intro_status">-</span></div>
           </div>
         </section>
-
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Quick Actions</h4>
           <div id="actionWrap" class="space-y-4">
@@ -226,7 +224,6 @@
             </div>
           </div>
         </section>
-
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
           <div id="outcomeWrap" class="space-y-4">
@@ -246,7 +243,6 @@
             </div>
           </div>
         </section>
-
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
           <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
@@ -254,7 +250,6 @@
       </div>
     </div>
   </div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
@@ -432,6 +427,42 @@
       return `${uid}_${todayIso()}`;
     }
 
+    function makeArchiveId(leadId) {
+      return `${leadId}_${Date.now()}`;
+    }
+
+    async function archiveAndDeleteLead(lead, reason, sourcePage, notes = "") {
+      const archiveRef = doc(db, "closedLeadsArchive", makeArchiveId(lead.id));
+
+      await setDoc(archiveRef, {
+        ...lead,
+        originalLeadId: lead.id,
+        archivedFromCollection: "leadAssignments",
+        archiveReason: reason,
+        closedFromPage: sourcePage,
+        closedByUid: currentUser.uid,
+        closedByName: currentUserData?.name || "",
+        closedByEmail: currentUser.email || "",
+        closedAt: serverTimestamp(),
+        archivedAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+        closed: true,
+        usable: false,
+        actionHistory: [
+          ...(lead.actionHistory || []),
+          {
+            action: reason,
+            byUid: currentUser.uid,
+            byName: currentUserData?.name || "",
+            at: new Date().toISOString(),
+            notes
+          }
+        ]
+      });
+
+      await deleteDoc(doc(db, "leadAssignments", lead.id));
+    }
+
     function setButtonDisabled(button, disabled) {
       button.disabled = !!disabled;
       if (disabled) {
@@ -477,102 +508,12 @@
       }
     }
 
-    function getLeadType(lead) {
-      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
-    }
-
-    function getScheduledText(lead) {
-      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
-    }
-
-    function sortLeadsBySchedule(leads) {
-      return [...leads].sort((a, b) => {
-        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
-        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
-        return aKey.localeCompare(bKey);
-      });
-    }
-
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
-
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
-
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
-      });
-    }
-
-    async function archiveAndRemoveLead(reason, noteText = "") {
-      if (!selectedLead) return;
-
-      try {
-        const leadRef = doc(db, "leadAssignments", selectedLead.id);
-        const archiveRef = doc(db, "closedLeadAssignments", selectedLead.id);
-
-        const existingHistory = Array.isArray(selectedLead.actionHistory)
-          ? selectedLead.actionHistory
-          : [];
-
-        const archiveEntry = {
-          action: reason,
-          byUid: currentUser.uid,
-          byName: currentUserData.name || "",
-          at: new Date().toISOString(),
-          notes: noteText
-        };
-
-        await setDoc(archiveRef, {
-          ...selectedLead,
-          leadStatus: "closed",
-          lastAction: reason,
-          closed: true,
-          usable: false,
-          callbackRequired: false,
-          introEmailNeeded: false,
-          callbackDate: "",
-          callbackTime: "",
-          archived: true,
-          archivedReason: reason,
-          archivedAt: serverTimestamp(),
-          archivedByUid: currentUser.uid,
-          archivedByName: currentUserData.name || "",
-          originalAssignedToUid: selectedLead.assignedToUid || "",
-          originalAssignedToName: selectedLead.assignedToName || "",
-          removedFromActiveLeadsAt: serverTimestamp(),
-          actionHistory: [...existingHistory, archiveEntry]
-        }, { merge: true });
-
-        await deleteDoc(leadRef);
-
-        leadModal.classList.add("hidden");
-        selectedLead = null;
-        await loadLeads();
-      } catch (error) {
-        console.error("Failed to archive lead:", error);
-        showModalMessage("Could not archive lead.", true);
-      }
-    }
-
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
-
       if (!attendanceSnap.exists()) {
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
@@ -600,25 +541,20 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
-
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
-
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -634,7 +570,6 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -646,11 +581,9 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
-
       if (!attendanceSnap.exists()) {
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
@@ -659,19 +592,15 @@
         }, { merge: true });
         return;
       }
-
       const data = attendanceSnap.data() || {};
       const now = Date.now();
       let extraMs = 0;
-
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
       }
-
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
-
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         totalLoggedInMs: newTotal,
@@ -681,24 +610,36 @@
       }, { merge: true });
     }
 
+    function getLeadType(lead) {
+      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
+    }
+
+    function getScheduledText(lead) {
+      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
+    }
+
+    function sortLeadsBySchedule(leads) {
+      return [...leads].sort((a, b) => {
+        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
+        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
+        return aKey.localeCompare(bKey);
+      });
+    }
+
     async function checkListerAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No staff profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
-
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -732,7 +673,6 @@
     function renderStats() {
       const scheduled = getScheduledLeads();
       const today = todayIso();
-
       totalScheduledStat.textContent = String(scheduled.length);
       todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
       overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
@@ -820,6 +760,25 @@
       });
     }
 
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
     function openLead(leadId) {
       selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
@@ -844,28 +803,28 @@
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
-
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
     }
 
     async function refreshSelectedLead() {
+      const currentLeadId = selectedLead?.id || null;
       await loadLeads();
-      if (selectedLead) {
-        const updated = allLeads.find(x => x.id === selectedLead.id);
+      if (currentLeadId) {
+        const updated = allLeads.find(x => x.id === currentLeadId);
         if (updated) {
           selectedLead = updated;
           openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
+          selectedLead = null;
         }
       }
     }
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -878,7 +837,6 @@
             notes
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -898,12 +856,10 @@
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose a new callback date and time.", true);
         return;
       }
-
       await updateLead({
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
@@ -915,7 +871,6 @@
 
     keepIntroBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         introEmailNeeded: true,
         callbackRequired: true,
@@ -926,7 +881,6 @@
 
     keepCallbackBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         introEmailNeeded: false,
         callbackRequired: true,
@@ -937,7 +891,6 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
@@ -949,7 +902,6 @@
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "awaiting_manager",
         callbackRequired: false,
@@ -961,7 +913,6 @@
 
     markCompletedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         callbackRequired: false,
         introEmailNeeded: false,
@@ -974,7 +925,6 @@
 
     noAnswerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         leadStatus: "no_answer",
         lastAction: "no_answer",
@@ -985,7 +935,6 @@
 
     voicemailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         lastAction: "voicemail",
         lastCallAt: serverTimestamp(),
@@ -996,17 +945,58 @@
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndRemoveLead("wrong_number", "Marked as wrong number from callback agenda.");
+      try {
+        await archiveAndDeleteLead(
+          {
+            ...selectedLead,
+            leadStatus: "closed",
+            lastAction: "wrong_number",
+            closed: true,
+            usable: false,
+            callbackRequired: false,
+            introEmailNeeded: false
+          },
+          "wrong_number",
+          "lister-callbacks",
+          "Marked as wrong number from callback agenda."
+        );
+        leadModal.classList.add("hidden");
+        selectedLead = null;
+        await loadLeads();
+      } catch (error) {
+        console.error("Archive failed:", error);
+        showModalMessage("Could not archive lead.", true);
+      }
     });
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndRemoveLead("not_interested", "Marked as not interested from callback agenda.");
+      try {
+        await archiveAndDeleteLead(
+          {
+            ...selectedLead,
+            leadStatus: "closed",
+            lastAction: "not_interested",
+            closed: true,
+            usable: false,
+            callbackRequired: false,
+            introEmailNeeded: false
+          },
+          "not_interested",
+          "lister-callbacks",
+          "Marked as not interested from callback agenda."
+        );
+        leadModal.classList.add("hidden");
+        selectedLead = null;
+        await loadLeads();
+      } catch (error) {
+        console.error("Archive failed:", error);
+        showModalMessage("Could not archive lead.", true);
+      }
     });
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
@@ -1019,7 +1009,6 @@
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -1043,18 +1032,15 @@
         window.location.href = "/login.html";
         return;
       }
-
       try {
         const allowed = await checkListerAccess(user);
         if (!allowed) return;
-
         try {
           await recordStaffLoginFromPage();
           startAttendanceHeartbeat();
         } catch (attendanceError) {
           console.error("Attendance login-from-page failed:", attendanceError);
         }
-
         await loadLeads();
         hideLoader();
       } catch (error) {
@@ -1071,7 +1057,6 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
-
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
@@ -1094,11 +1079,11 @@
     refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll("a[href]").forEach(link => {
-      const href = link.getAttribute("href");
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add("active-nav");
+        link.classList.add('active-nav');
       }
     });
   </script>

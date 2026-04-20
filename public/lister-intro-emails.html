@@ -20,8 +20,14 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .active-nav { background: #2563eb; color: white; }
-    .active-nav:hover { background: #1d4ed8; color: white; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
@@ -34,7 +40,6 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
-
     .queue-table {
       width: 100%;
       table-layout: fixed;
@@ -46,7 +51,9 @@
       overflow-wrap: anywhere;
       vertical-align: top;
     }
-    .client-cell { min-width: 0; }
+    .client-cell {
+      min-width: 0;
+    }
     .client-name {
       font-weight: 600;
       color: #1f2937;
@@ -70,7 +77,9 @@
       text-decoration: none;
       white-space: nowrap;
     }
-    .table-link:hover { text-decoration: underline; }
+    .table-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -375,6 +384,42 @@
       return cleanValue(lead.email || lead.emailAddress);
     }
 
+    function makeArchiveId(leadId) {
+      return `${leadId}_${Date.now()}`;
+    }
+
+    async function archiveAndDeleteLead(lead, reason, sourcePage, notes = "") {
+      const archiveRef = doc(db, "closedLeadsArchive", makeArchiveId(lead.id));
+
+      await setDoc(archiveRef, {
+        ...lead,
+        originalLeadId: lead.id,
+        archivedFromCollection: "leadAssignments",
+        archiveReason: reason,
+        closedFromPage: sourcePage,
+        closedByUid: currentUser.uid,
+        closedByName: currentUserData?.name || "",
+        closedByEmail: currentUser.email || "",
+        closedAt: serverTimestamp(),
+        archivedAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+        closed: true,
+        usable: false,
+        actionHistory: [
+          ...(lead.actionHistory || []),
+          {
+            action: reason,
+            byUid: currentUser.uid,
+            byName: currentUserData?.name || "",
+            at: new Date().toISOString(),
+            notes
+          }
+        ]
+      });
+
+      await deleteDoc(doc(db, "leadAssignments", lead.id));
+    }
+
     function formatAddress(lead) {
       return [
         lead.address,
@@ -507,57 +552,6 @@ Quaerens`;
         `;
         wrap.appendChild(div);
       });
-    }
-
-    async function archiveAndRemoveLead(reason, noteText = "") {
-      if (!selectedLead) return;
-
-      try {
-        const leadRef = doc(db, "leadAssignments", selectedLead.id);
-        const archiveRef = doc(db, "closedLeadAssignments", selectedLead.id);
-
-        const existingHistory = Array.isArray(selectedLead.actionHistory)
-          ? selectedLead.actionHistory
-          : [];
-
-        const archiveEntry = {
-          action: reason,
-          byUid: currentUser.uid,
-          byName: currentUserData.name || "",
-          at: new Date().toISOString(),
-          notes: noteText
-        };
-
-        await setDoc(archiveRef, {
-          ...selectedLead,
-          leadStatus: "closed",
-          lastAction: reason,
-          closed: true,
-          usable: false,
-          callbackRequired: false,
-          introEmailNeeded: false,
-          callbackDate: "",
-          callbackTime: "",
-          archived: true,
-          archivedReason: reason,
-          archivedAt: serverTimestamp(),
-          archivedByUid: currentUser.uid,
-          archivedByName: currentUserData.name || "",
-          originalAssignedToUid: selectedLead.assignedToUid || "",
-          originalAssignedToName: selectedLead.assignedToName || "",
-          removedFromActiveLeadsAt: serverTimestamp(),
-          actionHistory: [...existingHistory, archiveEntry]
-        }, { merge: true });
-
-        await deleteDoc(leadRef);
-
-        leadModal.classList.add("hidden");
-        selectedLead = null;
-        await loadLeads();
-      } catch (error) {
-        console.error("Failed to archive lead:", error);
-        showModalMessage("Could not archive lead.", true);
-      }
     }
 
     async function recordStaffLoginFromPage() {
@@ -852,6 +846,7 @@ Quaerens`;
           openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
+          selectedLead = null;
         }
       }
     }
@@ -1001,7 +996,33 @@ Quaerens`;
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndRemoveLead("not_interested", "Marked as not interested from intro email queue.");
+
+      try {
+        await archiveAndDeleteLead(
+          {
+            ...selectedLead,
+            leadStatus: "closed",
+            lastAction: "not_interested",
+            closed: true,
+            usable: false,
+            introEmailNeeded: false,
+            callbackRequired: false,
+            callbackDate: "",
+            callbackTime: "",
+            introEmailBody: emailTemplate.value || ""
+          },
+          "not_interested",
+          "lister-intro-emails",
+          "Marked as not interested from intro email queue."
+        );
+
+        leadModal.classList.add("hidden");
+        selectedLead = null;
+        await loadLeads();
+      } catch (error) {
+        console.error("Archive failed:", error);
+        showModalMessage("Could not archive lead.", true);
+      }
     });
 
     saveNotesBtn.addEventListener("click", async () => {
@@ -1095,11 +1116,11 @@ Quaerens`;
     refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll("a[href]").forEach(link => {
-      const href = link.getAttribute("href");
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add("active-nav");
+        link.classList.add('active-nav');
       }
     });
   </script>
