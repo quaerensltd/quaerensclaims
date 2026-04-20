@@ -70,6 +70,7 @@
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <a href="/closed-leads-admin.html" class="btn btn-secondary py-2 px-4">Closed Leads Admin</a>
           <div class="text-sm text-slate-500 text-right">
             <div id="staffStatus">Checking access...</div>
             <div id="staffEmail" class="text-xs text-slate-400"></div>
@@ -336,7 +337,6 @@
     const sentToCloserStat = document.getElementById("sentToCloserStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
     const overdueStat = document.getElementById("overdueStat");
-
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const closerSelect = document.getElementById("closerSelect");
@@ -345,7 +345,6 @@
     const appointmentTime = document.getElementById("appointmentTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
     const sendToCloserBtn = document.getElementById("sendToCloserBtn");
@@ -353,10 +352,8 @@
     const markClosedBtn = document.getElementById("markClosedBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
     const saveLeadChangesBtn = document.getElementById("saveLeadChangesBtn");
-
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const openAssessmentBtn = document.getElementById("openAssessmentBtn");
-
     const managerEmailTo = document.getElementById("managerEmailTo");
     const managerEmailStatus = document.getElementById("managerEmailStatus");
     const managerEmailTemplate = document.getElementById("managerEmailTemplate");
@@ -531,6 +528,7 @@ Quaerens`;
     function populateCloserFilters() {
       const currentCloserFilter = closerFilter.value || "all";
       const currentModalCloser = closerSelect.value || "";
+
       closerFilter.innerHTML = `<option value="all">All closers</option>`;
       closerSelect.innerHTML = `<option value="">Select closer</option>`;
 
@@ -558,17 +556,20 @@ Quaerens`;
       try {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
+
         if (!userSnap.exists()) {
           alert("No staff profile found for this account.");
           window.location.href = "/login.html";
           return false;
         }
+
         const userData = userSnap.data();
         if (userData.role !== "manager") {
           alert("You do not have permission to access the manager panel.");
           window.location.href = "/login.html";
           return false;
         }
+
         currentUser = user;
         currentUserData = userData;
         staffStatus.textContent = "Logged in as Manager";
@@ -692,7 +693,6 @@ Quaerens`;
           (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
           (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
           (selectedTiming === "none" && !item.appointmentDate);
-
         const matchesCloser =
           selectedCloser === "all" ||
           item.closerUid === selectedCloser;
@@ -752,6 +752,7 @@ Quaerens`;
             <td class="p-3">${userDisplay(item.closerUid)}</td>
             <td class="p-3">${actionHtml}</td>
           `;
+
           leadsBody.appendChild(tr);
         });
       }
@@ -819,6 +820,7 @@ Quaerens`;
         const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
         return bTime - aTime;
       });
+
       return docs[0];
     }
 
@@ -836,6 +838,7 @@ Quaerens`;
       } catch (error) {
         console.error("Failed loading linked submission:", error);
       }
+
       return null;
     }
 
@@ -925,6 +928,7 @@ Quaerens`;
 
     async function refreshSelectedLead() {
       await loadAllData();
+
       if (selectedLead) {
         const updated = allLeadAssignments.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -938,6 +942,7 @@ Quaerens`;
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -950,6 +955,7 @@ Quaerens`;
             notes
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -1039,6 +1045,7 @@ Quaerens`;
 
     openManagerEmailBtn.addEventListener("click", () => {
       if (!selectedLead) return;
+
       const email = getLeadEmail(selectedLead);
       if (!email) {
         showModalMessage("No client email available for this lead.", true);
@@ -1060,6 +1067,7 @@ Quaerens`;
 
     markManagerEmailSentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       const email = getLeadEmail(selectedLead);
       if (!email) {
         showModalMessage("No client email available for this lead.", true);
@@ -1097,6 +1105,7 @@ Quaerens`;
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "qualified",
         lastAction: "qualified"
@@ -1105,14 +1114,17 @@ Quaerens`;
 
     bookAppointmentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!closerSelect.value) {
         showModalMessage("Please choose a closer first.", true);
         return;
       }
+
       if (!appointmentDate.value || !appointmentTime.value) {
         showModalMessage("Please choose appointment date and time.", true);
         return;
       }
+
       try {
         await createOrUpdateCloserAssignment(selectedLead, "book");
         await updateLead({
@@ -1135,10 +1147,12 @@ Quaerens`;
 
     sendToCloserBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       if (!closerSelect.value) {
         showModalMessage("Please choose a closer first.", true);
         return;
       }
+
       try {
         await createOrUpdateCloserAssignment(selectedLead, "send");
         await updateLead({
@@ -1159,6 +1173,7 @@ Quaerens`;
 
     markConvertedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "converted",
         convertedAt: serverTimestamp(),
@@ -1168,6 +1183,7 @@ Quaerens`;
 
     markClosedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "closed",
         closed: true,
@@ -1180,6 +1196,7 @@ Quaerens`;
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           managerNotes: notesBox.value || "",
@@ -1200,6 +1217,7 @@ Quaerens`;
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -1223,8 +1241,10 @@ Quaerens`;
         window.location.href = "/login.html";
         return;
       }
+
       const allowed = await checkManagerAccess(user);
       if (!allowed) return;
+
       hideLoader();
       await loadAllData();
     });
