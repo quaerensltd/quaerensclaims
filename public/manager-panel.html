@@ -337,6 +337,7 @@
     const sentToCloserStat = document.getElementById("sentToCloserStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
     const overdueStat = document.getElementById("overdueStat");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const closerSelect = document.getElementById("closerSelect");
@@ -354,6 +355,7 @@
     const saveLeadChangesBtn = document.getElementById("saveLeadChangesBtn");
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const openAssessmentBtn = document.getElementById("openAssessmentBtn");
+
     const managerEmailTo = document.getElementById("managerEmailTo");
     const managerEmailStatus = document.getElementById("managerEmailStatus");
     const managerEmailTemplate = document.getElementById("managerEmailTemplate");
@@ -509,17 +511,11 @@
       const name = clientName(lead);
       const claimType = safe(lead.claimType || lead.type || "your claim");
       return `Subject: Quaerens follow-up regarding ${claimType}
-
 Dear ${name || "Client"},
-
 Thank you for your enquiry.
-
 I am following up regarding your potential ${claimType}. We can review the matter further and guide you on the next step in the process.
-
 If needed, we may ask for further details or documents so we can move your matter forward properly.
-
 Please reply to this email or speak with us at the arranged follow-up time.
-
 Kind regards,
 ${currentUserData?.name || "Quaerens Manager"}
 Quaerens`;
@@ -693,6 +689,7 @@ Quaerens`;
           (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
           (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
           (selectedTiming === "none" && !item.appointmentDate);
+
         const matchesCloser =
           selectedCloser === "all" ||
           item.closerUid === selectedCloser;
@@ -1020,11 +1017,25 @@ Quaerens`;
         }
       };
 
-      const existingQuery = query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id));
-      const existingSnap = await getDocs(existingQuery);
+      let existingDocId = null;
 
-      if (!existingSnap.empty) {
-        await updateDoc(doc(db, "closerAssignments", existingSnap.docs[0].id), payload);
+      const existingBySourceLead = await getDocs(
+        query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id))
+      );
+
+      if (!existingBySourceLead.empty) {
+        existingDocId = existingBySourceLead.docs[0].id;
+      } else {
+        const existingByLeadAssignment = await getDocs(
+          query(collection(db, "closerAssignments"), where("leadAssignmentId", "==", lead.id))
+        );
+        if (!existingByLeadAssignment.empty) {
+          existingDocId = existingByLeadAssignment.docs[0].id;
+        }
+      }
+
+      if (existingDocId) {
+        await updateDoc(doc(db, "closerAssignments", existingDocId), payload);
       } else {
         await addDoc(collection(db, "closerAssignments"), {
           ...payload,
