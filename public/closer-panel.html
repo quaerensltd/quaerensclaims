@@ -148,6 +148,7 @@
           </div>
           <div class="flex gap-3 flex-wrap">
             <button id="clearSelectedBtn" class="btn btn-secondary hidden" type="button">Clear Selection</button>
+            <a id="openDetailPageBtn" href="#" class="btn btn-primary hidden">Open Full File</a>
           </div>
         </div>
 
@@ -194,7 +195,6 @@
             <h3 class="text-lg font-extrabold text-blue-900 mb-4">Assessment Summary</h3>
             <div id="detailAssessmentSummary" class="readonly-box">No assessment summary available.</div>
           </section>
-
           <section class="card p-5">
             <h3 class="text-lg font-extrabold text-blue-900 mb-4">Manager / Handoff Notes</h3>
             <div id="detailManagerNotes" class="readonly-box">No notes available.</div>
@@ -334,7 +334,6 @@
     const outcomeFilter = document.getElementById("outcomeFilter");
     const processingFilter = document.getElementById("processingFilter");
     const searchInput = document.getElementById("searchInput");
-
     const assignmentsBody = document.getElementById("assignmentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
 
@@ -351,6 +350,7 @@
     const selectedTitle = document.getElementById("selectedTitle");
     const selectedSubtitle = document.getElementById("selectedSubtitle");
     const clearSelectedBtn = document.getElementById("clearSelectedBtn");
+    const openDetailPageBtn = document.getElementById("openDetailPageBtn");
 
     const detailClientName = document.getElementById("detailClientName");
     const detailClaimType = document.getElementById("detailClaimType");
@@ -493,7 +493,7 @@
     }
 
     function detailHref(item) {
-      return `/closer-panel.html?id=${item.id}`;
+      return `/closer-detail.html?id=${item.id}`;
     }
 
     function safeText(value, fallback = "-") {
@@ -512,7 +512,6 @@
     }
 
     function buildDefaultEmailBody(item) {
-      const name = clientName(item);
       const firstName = item?.client?.firstName || "Client";
       const claimType = formatClaimType(item?.claimType);
       const appt = appointmentText(item);
@@ -649,7 +648,6 @@
         }));
 
         allAssignments.sort(sortByAppointment);
-
         await loadProcessingLinks();
 
         if (selectedAssignmentIdFromUrl) {
@@ -690,6 +688,7 @@
         const matchesStatus = selectedStatus === "all" || effectiveStatus(item) === selectedStatus;
         const matchesOutcome = selectedOutcome === "all" || outcomeValue(item) === selectedOutcome;
         const isSent = processingSent(item);
+
         const matchesProcessing =
           selectedProcessing === "all" ||
           (selectedProcessing === "sent" && isSent) ||
@@ -732,9 +731,17 @@
             <td class="p-3">${outcomeBadge(outcomeValue(item))}</td>
             <td class="p-3">${processingLabel(item)}</td>
             <td class="p-3">
-              <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">
-                Open File
-              </a>
+              <div class="flex flex-col gap-1">
+                <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">
+                  Open File
+                </a>
+                <button
+                  type="button"
+                  class="text-left text-slate-600 hover:text-blue-600 hover:underline"
+                  data-select-id="${item.id}">
+                  Preview Here
+                </button>
+              </div>
             </td>
           `;
           assignmentsBody.appendChild(row);
@@ -742,17 +749,37 @@
       }
 
       resultsSummary.textContent = `${filtered.length} assignment(s) shown`;
+
+      document.querySelectorAll("[data-select-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-select-id");
+          selectedAssignment = allAssignments.find(x => x.id === id) || null;
+
+          const url = new URL(window.location.href);
+          if (selectedAssignment) {
+            url.searchParams.set("id", selectedAssignment.id);
+          } else {
+            url.searchParams.delete("id");
+          }
+          window.history.replaceState({}, "", url.toString());
+
+          renderSelectedAssignment();
+        });
+      });
     }
 
     function renderSelectedAssignment() {
       if (!selectedAssignment) {
         selectedAssignmentSection.classList.add("hidden");
         clearSelectedBtn.classList.add("hidden");
+        openDetailPageBtn.classList.add("hidden");
         return;
       }
 
       selectedAssignmentSection.classList.remove("hidden");
       clearSelectedBtn.classList.remove("hidden");
+      openDetailPageBtn.classList.remove("hidden");
+      openDetailPageBtn.href = detailHref(selectedAssignment);
 
       selectedTitle.textContent = clientName(selectedAssignment);
       selectedSubtitle.textContent = `Assignment ID: ${selectedAssignment.id}`;
@@ -770,11 +797,13 @@
       detailPaidNow.textContent = money(selectedAssignment.amountPaidNow || 0);
       detailFollowUpDue.textContent = money(selectedAssignment.followUpDue || 0);
       detailPaymentLink.textContent = safeText(selectedAssignment.paymentLink);
+
       detailAssessmentSummary.textContent =
         selectedAssignment.assessmentSummary ||
         selectedAssignment.generatedAssessmentText ||
         selectedAssignment.assessmentReportText ||
         "No assessment summary available.";
+
       detailManagerNotes.textContent =
         selectedAssignment.handoffNotes ||
         selectedAssignment.managerNotes ||
@@ -835,6 +864,7 @@
         showEmailMessage("No assignment selected.", true);
         return;
       }
+
       emailSubjectInput.value = buildDefaultEmailSubject(selectedAssignment);
       emailBodyInput.value = buildDefaultEmailBody(selectedAssignment);
       showEmailMessage("Email regenerated.");
@@ -896,7 +926,6 @@
     outcomeFilter.addEventListener("change", renderAssignments);
     processingFilter.addEventListener("change", renderAssignments);
     searchInput.addEventListener("input", renderAssignments);
-
     refreshBtn.addEventListener("click", loadAssignments);
     tableRefreshBtn.addEventListener("click", loadAssignments);
 

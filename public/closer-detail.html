@@ -19,6 +19,12 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-success { background: #dcfce7; color: #166534; }
+    .btn-success:hover { background: #bbf7d0; }
+    .btn-warning { background: #fef3c7; color: #92400e; }
+    .btn-warning:hover { background: #fde68a; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
     .readonly-box {
       width: 100%;
@@ -104,7 +110,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Detail</h1>
-          <p class="text-sm text-slate-500">Assigned client overview, deal handling, and processing handoff</p>
+          <p class="text-sm text-slate-500">Assigned client overview, closer actions, and processing handoff</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -188,6 +194,7 @@
 
       <section class="card p-6">
         <h3 class="text-lg font-extrabold text-blue-900 mb-4">Closer Actions</h3>
+
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="label" for="statusSelect">Closer Status</label>
@@ -198,6 +205,7 @@
               <option value="Closed">Closed</option>
             </select>
           </div>
+
           <div>
             <label class="label" for="outcomeSelect">Outcome</label>
             <select id="outcomeSelect" class="input">
@@ -210,9 +218,20 @@
             </select>
           </div>
         </div>
+
         <div class="mt-4">
           <label class="label" for="closerNotes">Closer Notes</label>
           <textarea id="closerNotes" class="input" rows="6" placeholder="Call notes, objections, follow-up points, outcome, next step..."></textarea>
+        </div>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button id="saveCloserBtn" class="btn btn-primary" type="button">Save Progress</button>
+          <button id="markProceedBtn" class="btn btn-success" type="button">Client Wants To Proceed</button>
+          <button id="markClosedDealBtn" class="btn btn-success" type="button">Closed Deal</button>
+          <button id="markCallbackBtn" class="btn btn-warning" type="button">Call Back</button>
+          <button id="markNotInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+          <button id="markNoAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
+          <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
         </div>
       </section>
 
@@ -248,11 +267,6 @@
           <label class="label" for="processingNotes">Processing Notes</label>
           <textarea id="processingNotes" class="input" rows="5" placeholder="Payment references, instalment notes, documents to prepare, urgent remarks..."></textarea>
         </div>
-
-        <div class="mt-6 flex flex-col md:flex-row gap-3">
-          <button id="saveCloserBtn" class="btn btn-primary" type="button">Save Progress</button>
-          <p id="saveMessage" class="text-sm text-green-700 hidden self-center"></p>
-        </div>
       </section>
 
       <section class="card p-6">
@@ -284,7 +298,8 @@
       collection,
       query,
       where,
-      serverTimestamp
+      serverTimestamp,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -307,6 +322,11 @@
     const outcomeSelect = document.getElementById("outcomeSelect");
     const closerNotes = document.getElementById("closerNotes");
     const saveCloserBtn = document.getElementById("saveCloserBtn");
+    const markProceedBtn = document.getElementById("markProceedBtn");
+    const markClosedDealBtn = document.getElementById("markClosedDealBtn");
+    const markCallbackBtn = document.getElementById("markCallbackBtn");
+    const markNotInterestedBtn = document.getElementById("markNotInterestedBtn");
+    const markNoAnswerBtn = document.getElementById("markNoAnswerBtn");
     const saveMessage = document.getElementById("saveMessage");
     const generatedAssessmentText = document.getElementById("generatedAssessmentText");
     const amountDueNow = document.getElementById("amountDueNow");
@@ -338,6 +358,14 @@
       toast.textContent = message;
       toast.classList.add("show");
       setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function showSaveMessage(text, isError = false) {
+      saveMessage.textContent = text;
+      saveMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      saveMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => saveMessage.classList.add("hidden"), 3000);
+      showToast(text);
     }
 
     function safeString(value) {
@@ -387,16 +415,13 @@
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
-
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
-
       if (!entries.length) {
         container.innerHTML = `<div class="value">No data available.</div>`;
         return;
       }
-
       entries.forEach(([key, value]) => {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = `
@@ -407,20 +432,11 @@
       });
     }
 
-    function formatDateTime(value) {
-      if (!value) return "-";
-      try {
-        const d = value?.toDate ? value.toDate() : new Date(value);
-        return isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB");
-      } catch {
-        return "-";
-      }
-    }
-
     function statusBadge(status) {
       if (status === "Closed") return `<span class="badge badge-green">Closed</span>`;
       if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
       if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
+      if (status === "Processing") return `<span class="badge badge-sky">Processing</span>`;
       return `<span class="badge badge-amber">Assigned</span>`;
     }
 
@@ -443,7 +459,6 @@
       const due = Number(dueNow || 0);
       const paid = Number(paidNow || 0);
       const follow = Number(followUp || 0);
-
       if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) return "part_paid";
       if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) return "fully_paid";
       return "awaiting_payment";
@@ -469,23 +484,38 @@
       return `${type}-${surname}-${stamp}`;
     }
 
+    function buildHistoryEntry(action, notes = "") {
+      return {
+        action,
+        byUid: currentUser.uid,
+        byName: currentUserData.name || currentUser.email || "",
+        at: new Date().toISOString(),
+        notes
+      };
+    }
+
+    function getLinkedLeadId() {
+      return firstNonEmpty(
+        assignmentData.leadAssignmentId,
+        assignmentData.sourceLeadId,
+        assignmentData.sourceLead?.id
+      );
+    }
+
     async function checkCloserAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-
       if (!userSnap.exists()) {
         alert("No user profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
-
       const userData = userSnap.data();
       if (userData.role !== "closer") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
-
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -571,7 +601,6 @@
       setValue("client_mobile", assignmentData.client?.mobile);
       setValue("client_email", assignmentData.client?.email);
       setValue("client_address", assignmentData.client?.address);
-
       setValue("claimTypeText", formatClaimType(assignmentData.claimType));
       setValue("assessmentSummaryText", assignmentData.assessmentSummary);
       setValue("managerNotesText", assignmentData.managerNotes);
@@ -616,7 +645,6 @@
       }
 
       assignmentData = { id: assignmentSnap.id, ...assignmentSnap.data() };
-      console.log("Loaded closer assignment:", assignmentData);
 
       const assignedCloserUid = firstNonEmpty(
         assignmentData.closer?.uid,
@@ -766,68 +794,229 @@
       }
     }
 
+    async function syncLeadAssignmentForCloser(actionType) {
+      const linkedLeadId = getLinkedLeadId();
+      if (!linkedLeadId) return;
+
+      const notes = closerNotes.value.trim();
+      const basePatch = {
+        closerUid: currentUser.uid,
+        closerName: currentUserData.name || currentUser.email || "",
+        closerOutcome: outcomeSelect.value || "",
+        closerStatus: statusSelect.value || "",
+        closerNotes: notes,
+        lastUpdatedAt: serverTimestamp()
+      };
+
+      if (actionType === "proceed") {
+        await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
+          ...basePatch,
+          leadStatus: "processing",
+          processingStatus: "sent_to_processing",
+          sentToProcessingAt: serverTimestamp(),
+          lastAction: "sent_to_processing",
+          actionHistory: arrayUnion(buildHistoryEntry("sent_to_processing", notes || "Closer marked client as wants to proceed."))
+        });
+      }
+
+      if (actionType === "closed_deal") {
+        await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
+          ...basePatch,
+          leadStatus: "processing",
+          processingStatus: "deposit_taken",
+          sentToProcessingAt: serverTimestamp(),
+          convertedAt: serverTimestamp(),
+          lastAction: "closed_deal",
+          actionHistory: arrayUnion(buildHistoryEntry("closed_deal", notes || "Closer marked closed deal and sent to processing."))
+        });
+      }
+
+      if (actionType === "callback") {
+        await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
+          ...basePatch,
+          callbackRequired: true,
+          lastAction: "callback_required",
+          actionHistory: arrayUnion(buildHistoryEntry("callback_required", notes || "Closer marked callback required."))
+        });
+      }
+
+      if (actionType === "not_interested") {
+        await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
+          ...basePatch,
+          leadStatus: "closed",
+          closed: true,
+          usable: false,
+          callbackRequired: false,
+          lastAction: "not_interested",
+          actionHistory: arrayUnion(buildHistoryEntry("not_interested", notes || "Closer marked not interested."))
+        });
+      }
+
+      if (actionType === "no_answer") {
+        await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
+          ...basePatch,
+          callbackRequired: true,
+          lastAction: "no_answer",
+          actionHistory: arrayUnion(buildHistoryEntry("no_answer", notes || "Closer marked no answer."))
+        });
+      }
+
+      if (actionType === "save") {
+        await updateDoc(doc(db, "leadAssignments", linkedLeadId), {
+          ...basePatch,
+          actionHistory: arrayUnion(buildHistoryEntry("closer_progress_saved", notes || "Closer saved progress."))
+        });
+      }
+    }
+
+    async function saveCloserAssignment(actionType = "save") {
+      const effectiveStatus =
+        actionType === "proceed" ? "Processing" :
+        actionType === "closed_deal" ? "Closed" :
+        actionType === "callback" ? "Contacted" :
+        actionType === "not_interested" ? "Closed" :
+        actionType === "no_answer" ? "Contacted" :
+        (outcomeSelect.value === "Closed Deal" ? "Closed" : statusSelect.value);
+
+      const effectiveOutcome =
+        actionType === "proceed" ? "Interested" :
+        actionType === "closed_deal" ? "Closed Deal" :
+        actionType === "callback" ? "Call Back" :
+        actionType === "not_interested" ? "Not Interested" :
+        actionType === "no_answer" ? "No Answer" :
+        outcomeSelect.value;
+
+      const dueNow = Number(amountDueNow.value || 0);
+      const paidNow = Number(amountPaidNow.value || 0);
+      const followUp = Number(followUpDue.value || 0);
+      const paymentStatus = derivePaymentStatus(dueNow, paidNow, followUp);
+      const caseReference = assignmentData.caseReference || existingCaseDocData?.caseReference || createCaseReference(assignmentData);
+
+      const patch = {
+        status: effectiveStatus,
+        outcome: effectiveOutcome,
+        closerNotes: closerNotes.value.trim(),
+        amountDueNow: dueNow,
+        amountPaidNow: paidNow,
+        followUpDue: followUp,
+        paymentLink: paymentLink.value.trim(),
+        paymentStatus,
+        processingNotes: processingNotes.value.trim(),
+        caseReference,
+        lastUpdatedAt: serverTimestamp(),
+        lastUpdatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        },
+        actionHistory: arrayUnion(
+          buildHistoryEntry(
+            actionType === "proceed" ? "client_wants_to_proceed" :
+            actionType === "closed_deal" ? "closed_deal" :
+            actionType === "callback" ? "callback_required" :
+            actionType === "not_interested" ? "not_interested" :
+            actionType === "no_answer" ? "no_answer" :
+            "closer_progress_saved",
+            closerNotes.value.trim()
+          )
+        )
+      };
+
+      if (actionType === "closed_deal") {
+        patch.closedAt = serverTimestamp();
+        patch.closedBy = {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        };
+      }
+
+      await updateDoc(doc(db, "closerAssignments", assignmentId), patch);
+      assignmentData = { ...assignmentData, ...patch };
+    }
+
+    async function runCloserAction(actionType) {
+      try {
+        if (actionType === "proceed") {
+          statusSelect.value = "Processing";
+          outcomeSelect.value = "Interested";
+        }
+
+        if (actionType === "closed_deal") {
+          statusSelect.value = "Closed";
+          outcomeSelect.value = "Closed Deal";
+        }
+
+        if (actionType === "callback") {
+          statusSelect.value = "Contacted";
+          outcomeSelect.value = "Call Back";
+        }
+
+        if (actionType === "not_interested") {
+          statusSelect.value = "Closed";
+          outcomeSelect.value = "Not Interested";
+        }
+
+        if (actionType === "no_answer") {
+          statusSelect.value = "Contacted";
+          outcomeSelect.value = "No Answer";
+        }
+
+        await saveCloserAssignment(actionType);
+
+        if (actionType === "proceed" || actionType === "closed_deal") {
+          await createOrUpdateProcessingFile();
+          await createOrUpdateProcessingCase();
+        }
+
+        await syncLeadAssignmentForCloser(actionType);
+        await loadAssignment();
+
+        if (actionType === "proceed") {
+          showSaveMessage("Client moved to processing successfully.");
+        } else if (actionType === "closed_deal") {
+          showSaveMessage("Closed deal saved and moved to processing.");
+        } else if (actionType === "callback") {
+          showSaveMessage("Client marked for callback.");
+        } else if (actionType === "not_interested") {
+          showSaveMessage("Client marked as not interested.");
+        } else if (actionType === "no_answer") {
+          showSaveMessage("Client marked as no answer.");
+        } else {
+          showSaveMessage("Closer progress saved successfully.");
+        }
+      } catch (error) {
+        console.error("Closer action failed:", error);
+        showSaveMessage("Could not save closer action.", true);
+      }
+    }
+
     amountDueNow.addEventListener("input", updatePaymentPreview);
     amountPaidNow.addEventListener("input", updatePaymentPreview);
     followUpDue.addEventListener("input", updatePaymentPreview);
 
     saveCloserBtn.addEventListener("click", async () => {
-      try {
-        const effectiveStatus = outcomeSelect.value === "Closed Deal" ? "Closed" : statusSelect.value;
-        const dueNow = Number(amountDueNow.value || 0);
-        const paidNow = Number(amountPaidNow.value || 0);
-        const followUp = Number(followUpDue.value || 0);
-        const paymentStatus = derivePaymentStatus(dueNow, paidNow, followUp);
-        const caseReference = assignmentData.caseReference || existingCaseDocData?.caseReference || createCaseReference(assignmentData);
+      await runCloserAction("save");
+    });
 
-        const closerPayload = {
-          status: effectiveStatus,
-          outcome: outcomeSelect.value,
-          closerNotes: closerNotes.value.trim(),
-          amountDueNow: dueNow,
-          amountPaidNow: paidNow,
-          followUpDue: followUp,
-          paymentLink: paymentLink.value.trim(),
-          paymentStatus,
-          processingNotes: processingNotes.value.trim(),
-          caseReference,
-          lastUpdatedAt: serverTimestamp(),
-          lastUpdatedBy: {
-            uid: currentUser.uid,
-            email: currentUser.email || "",
-            name: currentUserData.name || ""
-          }
-        };
+    markProceedBtn.addEventListener("click", async () => {
+      await runCloserAction("proceed");
+    });
 
-        if (outcomeSelect.value === "Closed Deal") {
-          closerPayload.closedAt = serverTimestamp();
-          closerPayload.closedBy = {
-            uid: currentUser.uid,
-            email: currentUser.email || "",
-            name: currentUserData.name || ""
-          };
-        }
+    markClosedDealBtn.addEventListener("click", async () => {
+      await runCloserAction("closed_deal");
+    });
 
-        await updateDoc(doc(db, "closerAssignments", assignmentId), closerPayload);
-        assignmentData = { ...assignmentData, ...closerPayload };
+    markCallbackBtn.addEventListener("click", async () => {
+      await runCloserAction("callback");
+    });
 
-        const shouldSyncProcessing = outcomeSelect.value === "Closed Deal" || existingProcessingDocId || existingCaseDocId;
-        if (shouldSyncProcessing) {
-          await createOrUpdateProcessingFile();
-          await createOrUpdateProcessingCase();
-          saveMessage.textContent = "Closer progress saved and processing handoff synced.";
-        } else {
-          saveMessage.textContent = "Closer progress saved successfully.";
-        }
+    markNotInterestedBtn.addEventListener("click", async () => {
+      await runCloserAction("not_interested");
+    });
 
-        saveMessage.classList.remove("hidden");
-        showToast(saveMessage.textContent);
-        setTimeout(() => saveMessage.classList.add("hidden"), 3000);
-
-        await loadAssignment();
-      } catch (error) {
-        console.error("Failed to save closer progress:", error);
-        alert("Could not save closer progress.");
-      }
+    markNoAnswerBtn.addEventListener("click", async () => {
+      await runCloserAction("no_answer");
     });
 
     refreshBtn.addEventListener("click", async () => {
