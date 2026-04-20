@@ -365,6 +365,7 @@
       doc,
       getDoc,
       getDocs,
+      addDoc,
       collection,
       query,
       where,
@@ -489,6 +490,16 @@
       return type || "-";
     }
 
+    function normalizeClaimType(value) {
+      const raw = String(value || "").trim().toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
+      return raw;
+    }
+
     function appointmentDate(item) {
       return item?.appointment?.date || "";
     }
@@ -578,6 +589,34 @@
     function safeText(value, fallback = "-") {
       const text = String(value || "").trim();
       return text || fallback;
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const text = String(value || "").trim();
+        if (text) return text;
+      }
+      return "";
+    }
+
+    function derivePaymentStatus(dueNow, paidNow, followUp) {
+      const due = Number(dueNow || 0);
+      const paid = Number(paidNow || 0);
+      const follow = Number(followUp || 0);
+      if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) return "part_paid";
+      if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) return "fully_paid";
+      return "awaiting_payment";
+    }
+
+    function createCaseReference(item) {
+      const type = (normalizeClaimType(item.claimType) || "case").toUpperCase().slice(0, 4);
+      const surname = firstNonEmpty(item?.client?.secondName, item?.client?.firstName, "CLIENT")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 6);
+      const today = new Date();
+      const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      return `${type}-${surname}-${stamp}`;
     }
 
     function buildDefaultEmailSubject(item) {
@@ -707,6 +746,148 @@
         });
       } catch (error) {
         console.error("Could not load processingFiles:", error);
+      }
+    }
+
+    async function findProcessingFileByAssignmentId(assignmentId) {
+      const q = query(collection(db, "processingFiles"), where("assignmentId", "==", assignmentId));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      return { id: snap.docs[0].id, ...snap.docs[0].data() };
+    }
+
+    async function findProcessingCaseByAssignmentId(assignmentId) {
+      const q = query(collection(db, "processingCases"), where("sourceAssignmentId", "==", assignmentId));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      return { id: snap.docs[0].id, ...snap.docs[0].data() };
+    }
+
+    async function createOrUpdateProcessingRecords(item, saveData) {
+      const existingProcessingFile = await findProcessingFileByAssignmentId(item.id);
+      const existingProcessingCase = await findProcessingCaseByAssignmentId(item.id);
+
+      const paymentStatus = derivePaymentStatus(
+        saveData.amountDueNow,
+        saveData.amountPaidNow,
+        saveData.followUpDue
+      );
+
+      const generatedAssessmentText =
+        firstNonEmpty(
+          item.generatedAssessmentText,
+          item.assessmentReportText,
+          item.assessmentSummary
+        );
+
+      const processingFilePayload = {
+        assignmentId: item.id,
+        sourceAssignmentId: item.id,
+        assessmentId: item.assessmentId || "",
+        submissionId: item.submissionId || "",
+        claimType: item.claimType || "",
+        client: item.client || {},
+        closer: item.closer || {},
+        assignedBy: item.assignedBy || {},
+        outcome: saveData.outcome || "",
+        status: saveData.status || "",
+        sourceStatus: saveData.status || "",
+        assessmentSummary: item.assessmentSummary || "",
+        managerNotes: item.managerNotes || "",
+        handoffNotes: item.handoffNotes || "",
+        generatedAssessmentText,
+        product1: item.product1 || {},
+        product2: item.product2 || {},
+        closerNotes: saveData.closerNotes || "",
+        amountDueNow: Number(saveData.amountDueNow || 0),
+        amountPaidNow: Number(saveData.amountPaidNow || 0),
+        followUpDue: Number(saveData.followUpDue || 0),
+        paymentStatus,
+        paymentLink: saveData.paymentLink || "",
+        processingNotes: saveData.processingNotes || "",
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      };
+
+      if (existingProcessingFile) {
+        await updateDoc(doc(db, "processingFiles", existingProcessingFile.id), processingFilePayload);
+      } else {
+        await addDoc(collection(db, "processingFiles"), {
+          ...processingFilePayload,
+          createdAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
+      }
+
+      const caseReference = item.caseReference || existingProcessingCase?.caseReference || createCaseReference(item);
+
+      const processingCasePayload = {
+        sourceAssignmentId: item.id,
+        assignmentId: item.id,
+        assessmentId: item.assessmentId || "",
+        submissionId: item.submissionId || "",
+        caseReference,
+        claimType: item.claimType || "",
+        client: item.client || {},
+        closer: item.closer || {},
+        assignedBy: item.assignedBy || {},
+        contractUrl: existingProcessingCase?.contractUrl || item.contractUrl || "",
+        assessmentReportUrl: existingProcessingCase?.assessmentReportUrl || item.assessmentReportUrl || "",
+        strategyReportUrl: existingProcessingCase?.strategyReportUrl || item.strategyReportUrl || "",
+        assessmentSummary: item.assessmentSummary || "",
+        strategySummary: firstNonEmpty(
+          existingProcessingCase?.strategySummary,
+          item.strategySummary,
+          item.generatedAssessmentText,
+          item.assessmentSummary
+        ),
+        generatedAssessmentText,
+        managerNotes: item.managerNotes || "",
+        handoffNotes: item.handoffNotes || "",
+        processingNotes: saveData.processingNotes || "",
+        paymentLink: saveData.paymentLink || "",
+        amountDueNow: Number(saveData.amountDueNow || 0),
+        amountPaidNow: Number(saveData.amountPaidNow || 0),
+        followUpDue: Number(saveData.followUpDue || 0),
+        paymentStatus,
+        product1: item.product1 || {},
+        product2: item.product2 || {},
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || ""
+        }
+      };
+
+      if (existingProcessingCase) {
+        await updateDoc(doc(db, "processingCases", existingProcessingCase.id), processingCasePayload);
+      } else {
+        await addDoc(collection(db, "processingCases"), {
+          ...processingCasePayload,
+          assignedToUid: "",
+          assignedToName: "",
+          assignedToEmail: "",
+          caseStage: "new_case",
+          priority: "normal",
+          waitingOn: "internal",
+          nextActionDate: null,
+          createdAt: serverTimestamp(),
+          createdBy: {
+            uid: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUserData.name || ""
+          }
+        });
       }
     }
 
@@ -880,18 +1061,24 @@
       }
 
       try {
-        const effectiveSavedStatus =
-          panelOutcomeSelect.value === "Closed Deal" ? "Closed" : (panelStatusSelect.value || "Assigned");
+        const savedStatus =
+          panelOutcomeSelect.value === "Closed Deal"
+            ? "Closed"
+            : (panelStatusSelect.value || "Assigned");
 
-        const payload = {
-          status: effectiveSavedStatus,
+        const saveData = {
+          status: savedStatus,
           outcome: panelOutcomeSelect.value || "",
           closerNotes: panelCloserNotes.value.trim(),
           processingNotes: panelProcessingNotes.value.trim(),
           amountDueNow: Number(panelAmountDueNow.value || 0),
           amountPaidNow: Number(panelAmountPaidNow.value || 0),
           followUpDue: Number(panelFollowUpDue.value || 0),
-          paymentLink: panelPaymentLink.value.trim(),
+          paymentLink: panelPaymentLink.value.trim()
+        };
+
+        const payload = {
+          ...saveData,
           lastUpdatedAt: serverTimestamp(),
           lastUpdatedBy: {
             uid: currentUser.uid,
@@ -911,8 +1098,25 @@
 
         await updateDoc(doc(db, "closerAssignments", selectedAssignment.id), payload);
 
-        showPanelSaveMessage("Closer actions saved.");
-        showToast("Closer actions saved.");
+        const shouldSendToProcessing =
+          panelOutcomeSelect.value === "Closed Deal" ||
+          processingSent(selectedAssignment);
+
+        if (shouldSendToProcessing) {
+          const mergedItem = { ...selectedAssignment, ...saveData };
+          await createOrUpdateProcessingRecords(mergedItem, saveData);
+        }
+
+        showPanelSaveMessage(
+          shouldSendToProcessing
+            ? "Closer actions saved and sent to processing."
+            : "Closer actions saved."
+        );
+        showToast(
+          shouldSendToProcessing
+            ? "Saved and sent to processing."
+            : "Closer actions saved."
+        );
 
         await loadAssignments();
 
@@ -974,8 +1178,16 @@
         return;
       }
 
-      emailSubjectInput.value = buildDefaultEmailSubject(selectedAssignment);
-      emailBodyInput.value = buildDefaultEmailBody(selectedAssignment);
+      const tempItem = {
+        ...selectedAssignment,
+        outcome: panelOutcomeSelect.value || selectedAssignment.outcome || "",
+        amountDueNow: Number(panelAmountDueNow.value || selectedAssignment.amountDueNow || 0),
+        followUpDue: Number(panelFollowUpDue.value || selectedAssignment.followUpDue || 0),
+        paymentLink: panelPaymentLink.value || selectedAssignment.paymentLink || ""
+      };
+
+      emailSubjectInput.value = buildDefaultEmailSubject(tempItem);
+      emailBodyInput.value = buildDefaultEmailBody(tempItem);
       showEmailMessage("Email regenerated.");
     });
 
