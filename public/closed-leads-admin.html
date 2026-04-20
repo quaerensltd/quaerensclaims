@@ -17,8 +17,6 @@
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
-    .btn-danger { background: #fee2e2; color: #991b1b; }
-    .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -40,7 +38,6 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
-    .badge-indigo { background: #e0e7ff; color: #4338ca; }
 
     .closed-table {
       width: 100%;
@@ -152,7 +149,6 @@
               <option value="not_interested">Not Interested</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Closed Date</label>
             <select id="dateFilter" class="input">
@@ -162,17 +158,14 @@
               <option value="last_30">Last 30 days</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Handled By</label>
             <input id="listerSearchInput" type="text" class="input" placeholder="Lister name..." />
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search Lead</label>
             <input id="searchInput" type="text" class="input" placeholder="Name, phone, email, postcode..." />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Archive</button>
           </div>
@@ -359,53 +352,6 @@
       ].filter(Boolean).join(", ") || "-";
     }
 
-    function timestampToDate(value) {
-      if (!value) return null;
-      if (value?.toDate && typeof value.toDate === "function") return value.toDate();
-      if (value instanceof Date) return value;
-      if (typeof value === "string" || typeof value === "number") {
-        const d = new Date(value);
-        return Number.isNaN(d.getTime()) ? null : d;
-      }
-      if (typeof value === "object" && typeof value.seconds === "number") {
-        return new Date(value.seconds * 1000);
-      }
-      return null;
-    }
-
-    function formatDateTime(value) {
-      const date = timestampToDate(value);
-      if (!date) return "-";
-      return date.toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-
-    function getDateOnly(value) {
-      const date = timestampToDate(value);
-      if (!date) return "";
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    function isTodayDate(value) {
-      return getDateOnly(value) === todayIso();
-    }
-
-    function isWithinDays(value, days) {
-      const date = timestampToDate(value);
-      if (!date) return false;
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      return diffMs >= 0 && diffMs <= days * 24 * 60 * 60 * 1000;
-    }
-
     function formatAction(action) {
       const map = {
         no_answer: "No Answer",
@@ -450,20 +396,17 @@
       return source;
     }
 
-    function getHandledByName(lead) {
-      return cleanValue(lead.closedByName || lead.archivedByName || "");
+    function isTodayDateString(value) {
+      return String(value || "").slice(0, 10) === todayIso();
     }
 
-    function getHandledByUid(lead) {
-      return cleanValue(lead.closedByUid || lead.archivedByUid || "");
-    }
-
-    function getClosureNotes(lead) {
-      const history = Array.isArray(lead.actionHistory) ? lead.actionHistory : [];
-      const closureItem = [...history].reverse().find(item =>
-        item?.action === "wrong_number" || item?.action === "not_interested"
-      );
-      return closureItem?.notes || lead.archiveNotes || lead.notes || "-";
+    function isWithinDays(dateString, days) {
+      if (!dateString) return false;
+      const parsed = new Date(dateString);
+      if (Number.isNaN(parsed.getTime())) return false;
+      const now = new Date();
+      const diffMs = now.getTime() - parsed.getTime();
+      return diffMs >= 0 && diffMs <= days * 24 * 60 * 60 * 1000;
     }
 
     async function recordStaffLoginFromPage() {
@@ -593,7 +536,7 @@
       }
 
       const userData = userSnap.data();
-      const allowedRoles = ["manager", "admin"];
+      const allowedRoles = ["manager", "admin", "staff"];
 
       if (!allowedRoles.includes(userData.role)) {
         alert("You do not have permission to access this page.");
@@ -628,19 +571,13 @@
 
     function renderStats() {
       totalStat.textContent = String(archivedLeads.length);
-      wrongNumberStat.textContent = String(
-        archivedLeads.filter(x => x.archiveReason === "wrong_number").length
-      );
-      notInterestedStat.textContent = String(
-        archivedLeads.filter(x => x.archiveReason === "not_interested").length
-      );
-      todayStat.textContent = String(
-        archivedLeads.filter(x => isTodayDate(x.closedAt)).length
-      );
+      wrongNumberStat.textContent = String(archivedLeads.filter(x => x.archiveReason === "wrong_number").length);
+      notInterestedStat.textContent = String(archivedLeads.filter(x => x.archiveReason === "not_interested").length);
+      todayStat.textContent = String(archivedLeads.filter(x => isTodayDateString(x.closedAt)).length);
 
       const uniqueListers = new Set(
         archivedLeads
-          .map(x => getHandledByName(x))
+          .map(x => cleanValue(x.closedByName || x.archivedByName))
           .filter(Boolean)
       );
 
@@ -659,11 +596,11 @@
 
         const matchesDate =
           dateValue === "all" ||
-          (dateValue === "today" && isTodayDate(lead.closedAt)) ||
+          (dateValue === "today" && isTodayDateString(lead.closedAt)) ||
           (dateValue === "last_7" && isWithinDays(lead.closedAt, 7)) ||
           (dateValue === "last_30" && isWithinDays(lead.closedAt, 30));
 
-        const handledBy = `${getHandledByName(lead)} ${cleanValue(lead.closedByEmail)}`.toLowerCase();
+        const handledBy = `${lead.closedByName || ""} ${lead.archivedByName || ""}`.toLowerCase();
         const matchesLister = !listerTerm || handledBy.includes(listerTerm);
 
         const haystack = `
@@ -680,10 +617,10 @@
           ${lead.address4 || ""}
           ${lead.address5 || ""}
           ${lead.archiveReason || ""}
-          ${getHandledByName(lead)}
-          ${cleanValue(lead.closedByEmail)}
+          ${lead.closedByName || ""}
+          ${lead.archivedByName || ""}
           ${lead.originalLeadId || ""}
-          ${getClosureNotes(lead)}
+          ${lead.notes || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
@@ -716,8 +653,8 @@
             <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
             <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
             <td class="p-3 align-top cell-wrap">${reasonBadge(lead.archiveReason)}</td>
-            <td class="p-3 align-top cell-wrap">${getHandledByName(lead) || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${formatDateTime(lead.closedAt)}</td>
+            <td class="p-3 align-top cell-wrap">${lead.closedByName || lead.archivedByName || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${lead.closedAt || "-"}</td>
             <td class="p-3 align-top cell-wrap">${formatClosedFrom(lead.closedFromPage)}</td>
             <td class="p-3 align-top">
               <button class="table-link" data-open-lead="${lead.id}">Open</button>
@@ -772,13 +709,13 @@
       document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
       document.getElementById("lead_claim_type").textContent = selectedLead.claimType || selectedLead.type || "-";
       document.getElementById("lead_reason").textContent = formatReason(selectedLead.archiveReason);
-      document.getElementById("lead_handled_by").textContent = getHandledByName(selectedLead) || "-";
-      document.getElementById("lead_handled_uid").textContent = getHandledByUid(selectedLead) || "-";
-      document.getElementById("lead_closed_at").textContent = formatDateTime(selectedLead.closedAt);
+      document.getElementById("lead_handled_by").textContent = selectedLead.closedByName || selectedLead.archivedByName || "-";
+      document.getElementById("lead_handled_uid").textContent = selectedLead.closedByUid || selectedLead.archivedByUid || "-";
+      document.getElementById("lead_closed_at").textContent = selectedLead.closedAt || "-";
       document.getElementById("lead_closed_from").textContent = formatClosedFrom(selectedLead.closedFromPage);
       document.getElementById("lead_last_action").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_original_id").textContent = selectedLead.originalLeadId || "-";
-      document.getElementById("closureNotes").textContent = getClosureNotes(selectedLead);
+      document.getElementById("closureNotes").textContent = selectedLead.archiveNotes || selectedLead.notes || "-";
 
       renderHistory(selectedLead.actionHistory || []);
       leadModal.classList.remove("hidden");
@@ -851,11 +788,11 @@
     refreshBtn.addEventListener("click", loadArchivedLeads);
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll('a[href]').forEach(link => {
-      const href = link.getAttribute('href');
+    document.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add('active-nav');
+        link.classList.add("active-nav");
       }
     });
   </script>

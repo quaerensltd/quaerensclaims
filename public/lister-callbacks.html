@@ -41,6 +41,16 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
+
+    .callbacks-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .callbacks-table th,
+    .callbacks-table td {
+      vertical-align: top;
+    }
     .cell-wrap {
       white-space: normal;
       word-break: break-word;
@@ -51,8 +61,34 @@
       word-break: break-all;
       overflow-wrap: anywhere;
     }
-    .table-fixed-clean {
-      table-layout: fixed;
+    .client-cell {
+      min-width: 0;
+    }
+    .client-name {
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .client-address {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.35;
+      margin-top: 0.25rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .table-link {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .table-link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -63,12 +99,13 @@
       <p class="text-slate-600 font-medium">Loading callback agenda...</p>
     </div>
   </div>
+
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Callback Agenda</h1>
-          <p class="text-sm text-slate-500">Your callback and intro-email follow-up schedule</p>
+          <p class="text-sm text-slate-500">Leads scheduled for callback follow-up</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -79,11 +116,12 @@
         </div>
       </div>
     </header>
+
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <section class="grid lg:grid-cols-5 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Scheduled</div>
-          <div id="totalScheduledStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+          <div class="text-sm text-slate-500">Total Callbacks</div>
+          <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Today</div>
@@ -94,24 +132,17 @@
           <div id="overdueStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Intro Email Follow-ups</div>
-          <div id="introStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Future</div>
+          <div id="futureStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Qualified</div>
           <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
       </section>
+
       <section class="card p-6">
         <div class="grid md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">View</label>
-            <select id="typeFilter" class="input">
-              <option value="all">All scheduled</option>
-              <option value="callback_only">Callbacks only</option>
-              <option value="intro_only">Intro email follow-ups only</option>
-            </select>
-          </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
             <select id="timingFilter" class="input">
@@ -122,55 +153,65 @@
             </select>
           </div>
           <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead State</label>
+            <select id="statusFilter" class="input">
+              <option value="all">All states</option>
+              <option value="callback_required">Callback Required</option>
+              <option value="qualified">Qualified</option>
+              <option value="awaiting_manager">Awaiting Manager</option>
+            </select>
+          </div>
+          <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" class="input" type="text" placeholder="Name, phone, mobile, email, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, mobile, email, postcode..." />
           </div>
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Agenda</button>
           </div>
         </div>
       </section>
+
       <section class="card p-6">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Scheduled Leads</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
+            <h2 class="text-xl font-extrabold text-blue-900">Scheduled Callbacks</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callback agenda...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[1180px] table-fixed-clean text-sm border-collapse">
+          <table class="callbacks-table text-sm min-w-full">
             <colgroup>
-              <col class="w-[100px]">
-              <col class="w-[90px]">
-              <col class="w-[220px]">
-              <col class="w-[120px]">
-              <col class="w-[120px]">
-              <col class="w-[190px]">
-              <col class="w-[100px]">
-              <col class="w-[130px]">
-              <col class="w-[130px]">
-              <col class="w-[90px]">
+              <col style="width: 22%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 12%">
+              <col style="width: 8%">
+              <col style="width: 12%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 6%">
             </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
-                <th class="text-left p-3">Date</th>
-                <th class="text-left p-3">Time</th>
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Telephone</th>
                 <th class="text-left p-3">Mobile</th>
                 <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Postcode</th>
-                <th class="text-left p-3">Type</th>
+                <th class="text-left p-3">Callback</th>
                 <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Last Action</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
-            <tbody id="agendaBody"></tbody>
+            <tbody id="callbacksBody"></tbody>
           </table>
         </div>
       </section>
     </main>
   </div>
+
   <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
     <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
@@ -180,6 +221,7 @@
         </div>
         <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
       </div>
+
       <div class="p-6 space-y-6">
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
@@ -190,59 +232,54 @@
             <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
-            <div><span class="font-semibold text-blue-900">Type:</span> <span id="lead_type">-</span></div>
-            <div><span class="font-semibold text-blue-900">Scheduled:</span> <span id="lead_scheduled">-</span></div>
-            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
+            <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
             <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
             <div><span class="font-semibold text-blue-900">Intro Email Sent:</span> <span id="lead_intro_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Awaiting Manager:</span> <span id="lead_manager_state">-</span></div>
           </div>
         </section>
+
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Quick Actions</h4>
-          <div id="actionWrap" class="space-y-4">
-            <div class="grid md:grid-cols-4 gap-3">
-              <button id="openIntakeBtn" class="btn btn-primary" type="button">Fill Out Intake Now</button>
-              <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
-              <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
-              <button id="markCompletedBtn" class="btn btn-secondary" type="button">Mark Callback Done</button>
-            </div>
-            <div class="grid md:grid-cols-3 gap-3">
-              <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule</button>
-              <button id="keepIntroBtn" class="btn btn-secondary" type="button">Keep as Intro Follow-up</button>
-              <button id="keepCallbackBtn" class="btn btn-secondary" type="button">Keep as Callback</button>
-            </div>
-            <div class="grid md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">New Callback Date</label>
-                <input id="callbackDate" type="date" class="input" />
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">New Callback Time</label>
-                <input id="callbackTime" type="time" class="input" />
-              </div>
-            </div>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Priority Actions</h4>
+          <div class="grid md:grid-cols-2 gap-3">
+            <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake</button>
+            <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
+            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
+            <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
           </div>
         </section>
+
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
-          <div id="outcomeWrap" class="space-y-4">
-            <div class="grid md:grid-cols-4 gap-3">
-              <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
-              <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
-              <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
-              <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Callback Scheduling</h4>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
+              <input id="callbackDate" type="date" class="input" />
             </div>
             <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="notesBox">Notes</label>
-              <textarea id="notesBox" class="input" rows="5" placeholder="Callback notes, outcome, next action..."></textarea>
-            </div>
-            <div class="flex gap-3">
-              <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
-              <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
+              <input id="callbackTime" type="time" class="input" />
             </div>
           </div>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule Callback</button>
+            <button id="markDoneBtn" class="btn btn-secondary" type="button">Mark Callback Done</button>
+            <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+            <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
+          </div>
         </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
+          <textarea id="notesBox" class="input" rows="5" placeholder="Callback notes, client updates, follow-up comments..."></textarea>
+          <div class="mt-4 flex gap-3">
+            <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
+            <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+          </div>
+        </section>
+
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
           <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
@@ -250,6 +287,7 @@
       </div>
     </div>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
@@ -284,35 +322,33 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-    const typeFilter = document.getElementById("typeFilter");
     const timingFilter = document.getElementById("timingFilter");
+    const statusFilter = document.getElementById("statusFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
-    const totalScheduledStat = document.getElementById("totalScheduledStat");
+    const callbacksBody = document.getElementById("callbacksBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+    const totalStat = document.getElementById("totalStat");
     const todayStat = document.getElementById("todayStat");
     const overdueStat = document.getElementById("overdueStat");
-    const introStat = document.getElementById("introStat");
+    const futureStat = document.getElementById("futureStat");
     const qualifiedStat = document.getElementById("qualifiedStat");
-    const agendaBody = document.getElementById("agendaBody");
-    const resultsSummary = document.getElementById("resultsSummary");
+
     const leadModal = document.getElementById("leadModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const callbackDate = document.getElementById("callbackDate");
-    const callbackTime = document.getElementById("callbackTime");
-    const notesBox = document.getElementById("notesBox");
-    const modalMessage = document.getElementById("modalMessage");
     const openIntakeBtn = document.getElementById("openIntakeBtn");
-    const rescheduleBtn = document.getElementById("rescheduleBtn");
-    const keepIntroBtn = document.getElementById("keepIntroBtn");
-    const keepCallbackBtn = document.getElementById("keepCallbackBtn");
+    const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const sendToManagerBtn = document.getElementById("sendToManagerBtn");
-    const markCompletedBtn = document.getElementById("markCompletedBtn");
-    const noAnswerBtn = document.getElementById("noAnswerBtn");
-    const voicemailBtn = document.getElementById("voicemailBtn");
-    const wrongNumberBtn = document.getElementById("wrongNumberBtn");
+    const callbackDate = document.getElementById("callbackDate");
+    const callbackTime = document.getElementById("callbackTime");
+    const rescheduleBtn = document.getElementById("rescheduleBtn");
+    const markDoneBtn = document.getElementById("markDoneBtn");
     const notInterestedBtn = document.getElementById("notInterestedBtn");
+    const wrongNumberBtn = document.getElementById("wrongNumberBtn");
+    const notesBox = document.getElementById("notesBox");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
+    const modalMessage = document.getElementById("modalMessage");
 
     let currentUser = null;
     let currentUserData = null;
@@ -329,6 +365,14 @@
       modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
       modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
       setTimeout(() => modalMessage.classList.add("hidden"), 3000);
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getTodayAttendanceId(uid) {
+      return `${uid}_${todayIso()}`;
     }
 
     function cleanValue(value) {
@@ -360,107 +404,41 @@
 
     function formatAction(action) {
       const map = {
-        no_answer: "No Answer",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        no_product: "No Relevant Product",
-        voicemail: "Voicemail",
         callback_required: "Callback Required",
-        send_intro_email: "Send Intro Email",
-        interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted",
-        intake_draft_saved: "Intake Draft Saved",
-        notes_saved: "Notes Saved",
         callback_rescheduled: "Callback Rescheduled",
         callback_completed: "Callback Completed",
+        send_intro_email: "Send Intro Email",
+        intro_email_sent: "Intro Email Sent",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
         qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager Review"
+        awaiting_manager: "Awaiting Manager Review",
+        wrong_number: "Wrong Number",
+        not_interested: "Not Interested",
+        notes_saved: "Notes Saved"
       };
       return map[action] || action || "-";
+    }
+
+    function getScheduledText(lead) {
+      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
     }
 
     function isLocked(lead) {
       return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
     }
 
-    function isIntroLead(lead) {
-      return !!lead.introEmailNeeded;
-    }
-
-    function isQualified(lead) {
-      return lead.leadStatus === "qualified";
-    }
-
     function isConverted(lead) {
       return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
     }
 
-    function formatLeadStatus(lead) {
-      if (isLocked(lead)) return "Closed";
-      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
-      if (lead.leadStatus === "qualified") return "Qualified";
-      if (lead.leadStatus === "no_answer") return "No Answer";
-      if (lead.leadStatus === "callback_required") return "Callback Booked";
-      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
-      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
-      if (lead.leadStatus === "converted") return "Converted";
-      return "New";
-    }
-
     function leadStatusBadge(lead) {
-      const status = formatLeadStatus(lead);
-      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
-      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
-      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
-      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
-      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
-      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
-      return `<span class="badge badge-slate">${status}</span>`;
-    }
-
-    function todayIso() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    function getTodayAttendanceId(uid) {
-      return `${uid}_${todayIso()}`;
-    }
-
-    function makeArchiveId(leadId) {
-      return `${leadId}_${Date.now()}`;
-    }
-
-    async function archiveAndDeleteLead(lead, reason, sourcePage, notes = "") {
-      const archiveRef = doc(db, "closedLeadsArchive", makeArchiveId(lead.id));
-
-      await setDoc(archiveRef, {
-        ...lead,
-        originalLeadId: lead.id,
-        archivedFromCollection: "leadAssignments",
-        archiveReason: reason,
-        closedFromPage: sourcePage,
-        closedByUid: currentUser.uid,
-        closedByName: currentUserData?.name || "",
-        closedByEmail: currentUser.email || "",
-        closedAt: serverTimestamp(),
-        archivedAt: serverTimestamp(),
-        lastUpdatedAt: serverTimestamp(),
-        closed: true,
-        usable: false,
-        actionHistory: [
-          ...(lead.actionHistory || []),
-          {
-            action: reason,
-            byUid: currentUser.uid,
-            byName: currentUserData?.name || "",
-            at: new Date().toISOString(),
-            notes
-          }
-        ]
-      });
-
-      await deleteDoc(doc(db, "leadAssignments", lead.id));
+      if (isLocked(lead)) return `<span class="badge badge-red">Closed</span>`;
+      if (lead.leadStatus === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (lead.leadStatus === "qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (lead.leadStatus === "converted") return `<span class="badge badge-green">Converted</span>`;
+      if (lead.leadStatus === "intake_in_progress") return `<span class="badge badge-indigo">Intake In Progress</span>`;
+      return `<span class="badge badge-amber">Callback Required</span>`;
     }
 
     function setButtonDisabled(button, disabled) {
@@ -475,45 +453,67 @@
     function updateActionAvailability(lead) {
       const locked = isLocked(lead);
       const converted = isConverted(lead);
+      const awaitingManager = lead.leadStatus === "awaiting_manager";
 
       [
         openIntakeBtn,
-        rescheduleBtn,
-        keepIntroBtn,
-        keepCallbackBtn,
+        sendIntroEmailBtn,
         markQualifiedBtn,
         sendToManagerBtn,
-        markCompletedBtn,
-        noAnswerBtn,
-        voicemailBtn,
-        wrongNumberBtn,
+        rescheduleBtn,
+        markDoneBtn,
         notInterestedBtn,
+        wrongNumberBtn,
         saveNotesBtn
       ].forEach(button => setButtonDisabled(button, false));
 
-      if (locked || converted) {
+      if (locked || converted || awaitingManager) {
         [
           openIntakeBtn,
-          rescheduleBtn,
-          keepIntroBtn,
-          keepCallbackBtn,
+          sendIntroEmailBtn,
           markQualifiedBtn,
           sendToManagerBtn,
-          markCompletedBtn,
-          noAnswerBtn,
-          voicemailBtn,
-          wrongNumberBtn,
-          notInterestedBtn
+          rescheduleBtn,
+          markDoneBtn,
+          notInterestedBtn,
+          wrongNumberBtn
         ].forEach(button => setButtonDisabled(button, true));
       }
+
+      if (!getLeadEmail(lead)) {
+        setButtonDisabled(sendIntroEmailBtn, true);
+      }
+    }
+
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
     }
 
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
+
       if (!attendanceSnap.exists()) {
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
@@ -541,20 +541,25 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
+
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
+
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
+
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -570,6 +575,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -581,9 +587,11 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
+
       if (!attendanceSnap.exists()) {
         await setDoc(attendanceRef, {
           uid: currentUser.uid,
@@ -592,15 +600,19 @@
         }, { merge: true });
         return;
       }
+
       const data = attendanceSnap.data() || {};
       const now = Date.now();
       let extraMs = 0;
+
       if (data.currentSessionStartAt?.toDate) {
         const sessionStart = data.currentSessionStartAt.toDate().getTime();
         extraMs = Math.max(0, now - sessionStart);
       }
+
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
+
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         totalLoggedInMs: newTotal,
@@ -610,36 +622,24 @@
       }, { merge: true });
     }
 
-    function getLeadType(lead) {
-      return isIntroLead(lead) ? "Intro Email Follow-up" : "Callback";
-    }
-
-    function getScheduledText(lead) {
-      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
-    }
-
-    function sortLeadsBySchedule(leads) {
-      return [...leads].sort((a, b) => {
-        const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
-        const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
-        return aKey.localeCompare(bKey);
-      });
-    }
-
     async function checkListerAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No staff profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
+
       const userData = userSnap.data();
+
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
+
       currentUser = user;
       currentUserData = userData;
       logoutBtn.classList.remove("hidden");
@@ -648,82 +648,83 @@
 
     async function loadLeads() {
       try {
-        const leadsQuery = query(
+        const callbackQuery = query(
           collection(db, "leadAssignments"),
-          where("assignedToUid", "==", currentUser.uid)
+          where("assignedToUid", "==", currentUser.uid),
+          where("callbackRequired", "==", true)
         );
-        const snapshot = await getDocs(leadsQuery);
+
+        const snapshot = await getDocs(callbackQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         renderStats();
-        renderAgenda();
+        renderCallbacks();
       } catch (error) {
         console.error("Failed to load callbacks:", error);
         resultsSummary.textContent = "Could not load callback agenda.";
       }
     }
 
-    function getScheduledLeads() {
-      return allLeads.filter(lead =>
-        !isLocked(lead) &&
-        !!lead.callbackDate &&
-        (lead.callbackRequired || lead.introEmailNeeded)
-      );
-    }
-
     function renderStats() {
-      const scheduled = getScheduledLeads();
       const today = todayIso();
-      totalScheduledStat.textContent = String(scheduled.length);
-      todayStat.textContent = String(scheduled.filter(x => x.callbackDate === today).length);
-      overdueStat.textContent = String(scheduled.filter(x => x.callbackDate < today).length);
-      introStat.textContent = String(scheduled.filter(x => x.introEmailNeeded).length);
-      qualifiedStat.textContent = String(scheduled.filter(x => isQualified(x)).length);
+      totalStat.textContent = String(allLeads.length);
+      todayStat.textContent = String(allLeads.filter(x => x.callbackDate === today).length);
+      overdueStat.textContent = String(allLeads.filter(x => x.callbackDate && x.callbackDate < today).length);
+      futureStat.textContent = String(allLeads.filter(x => x.callbackDate && x.callbackDate > today).length);
+      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
     }
 
-    function renderAgenda() {
-      const type = typeFilter.value;
+    function renderCallbacks() {
       const timing = timingFilter.value;
+      const status = statusFilter.value;
       const term = searchInput.value.trim().toLowerCase();
       const today = todayIso();
 
-      let filtered = getScheduledLeads().filter(lead => {
-        const matchesType =
-          type === "all" ||
-          (type === "callback_only" && !lead.introEmailNeeded) ||
-          (type === "intro_only" && lead.introEmailNeeded);
+      const filtered = [...allLeads]
+        .filter(lead => {
+          const matchesTiming =
+            timing === "all" ||
+            (timing === "today" && lead.callbackDate === today) ||
+            (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
+            (timing === "future" && lead.callbackDate && lead.callbackDate > today);
 
-        const matchesTiming =
-          timing === "all" ||
-          (timing === "today" && lead.callbackDate === today) ||
-          (timing === "overdue" && lead.callbackDate < today) ||
-          (timing === "future" && lead.callbackDate > today);
+          const matchesStatus =
+            status === "all" ||
+            (status === "callback_required" && lead.leadStatus === "callback_required") ||
+            (status === "qualified" && lead.leadStatus === "qualified") ||
+            (status === "awaiting_manager" && lead.leadStatus === "awaiting_manager");
 
-        const haystack = `
-          ${lead.forename || ""}
-          ${lead.surname || ""}
-          ${getLeadTelephone(lead)}
-          ${getLeadMobile(lead)}
-          ${getLeadEmail(lead)}
-          ${lead.postcode || ""}
-          ${lead.address || ""}
-          ${lead.address1 || ""}
-          ${lead.address2 || ""}
-          ${lead.address3 || ""}
-          ${lead.address4 || ""}
-          ${lead.address5 || ""}
-        `.toLowerCase();
+          const haystack = `
+            ${lead.forename || ""}
+            ${lead.surname || ""}
+            ${getLeadTelephone(lead)}
+            ${getLeadMobile(lead)}
+            ${getLeadEmail(lead)}
+            ${lead.postcode || ""}
+            ${lead.address || ""}
+            ${lead.address1 || ""}
+            ${lead.address2 || ""}
+            ${lead.address3 || ""}
+            ${lead.address4 || ""}
+            ${lead.address5 || ""}
+          `.toLowerCase();
 
-        const matchesSearch = !term || haystack.includes(term);
-        return matchesType && matchesTiming && matchesSearch;
-      });
+          const matchesSearch = !term || haystack.includes(term);
 
-      filtered = sortLeadsBySchedule(filtered);
-      agendaBody.innerHTML = "";
+          return matchesTiming && matchesStatus && matchesSearch;
+        })
+        .sort((a, b) => {
+          const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
+          const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
+          return aKey.localeCompare(bKey);
+        });
+
+      callbacksBody.innerHTML = "";
 
       if (!filtered.length) {
-        agendaBody.innerHTML = `
+        callbacksBody.innerHTML = `
           <tr>
-            <td colspan="10" class="p-6 text-center text-slate-500">No scheduled callbacks found.</td>
+            <td colspan="9" class="p-6 text-center text-slate-500">No callback leads found.</td>
           </tr>
         `;
       } else {
@@ -731,51 +732,29 @@
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
           tr.innerHTML = `
-            <td class="p-3 cell-wrap">${lead.callbackDate || "-"}</td>
-            <td class="p-3 cell-wrap">${lead.callbackTime || "-"}</td>
-            <td class="p-3 cell-wrap align-top">
-              <div class="font-semibold text-slate-800 cell-wrap">${lead.forename || ""} ${lead.surname || ""}</div>
-              <div class="text-xs text-slate-500 cell-wrap mt-1">${formatAddress(lead)}</div>
+            <td class="p-3 align-top client-cell">
+              <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="client-address">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3 cell-tight">${getLeadTelephone(lead) || "-"}</td>
-            <td class="p-3 cell-tight">${getLeadMobile(lead) || "-"}</td>
-            <td class="p-3 cell-tight">${getLeadEmail(lead) || "-"}</td>
-            <td class="p-3 cell-wrap">${lead.postcode || "-"}</td>
-            <td class="p-3 cell-wrap">${getLeadType(lead)}</td>
-            <td class="p-3 cell-wrap">${leadStatusBadge(lead)}</td>
-            <td class="p-3 cell-wrap">
-              <button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">
-                Open
-              </button>
+            <td class="p-3 align-top cell-tight">${getLeadTelephone(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadMobile(lead) || "-"}</td>
+            <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${getScheduledText(lead)}</td>
+            <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
+            <td class="p-3 align-top cell-wrap">${formatAction(lead.lastAction)}</td>
+            <td class="p-3 align-top">
+              <button class="table-link" data-open-lead="${lead.id}">Open</button>
             </td>
           `;
-          agendaBody.appendChild(tr);
+          callbacksBody.appendChild(tr);
         });
       }
 
-      resultsSummary.textContent = `${filtered.length} scheduled lead(s) shown`;
+      resultsSummary.textContent = `${filtered.length} callback lead(s) shown`;
 
       document.querySelectorAll("[data-open-lead]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
-      });
-    }
-
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
       });
     }
 
@@ -793,16 +772,17 @@
       document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
-      document.getElementById("lead_type").textContent = getLeadType(selectedLead);
-      document.getElementById("lead_scheduled").textContent = getScheduledText(selectedLead);
+      document.getElementById("lead_callback").textContent = getScheduledText(selectedLead);
       document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
       document.getElementById("lead_intro_status").textContent = selectedLead.introEmailSent ? "Yes" : "No";
+      document.getElementById("lead_manager_state").textContent = selectedLead.leadStatus === "awaiting_manager" ? "Yes" : "No";
 
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
+
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
       leadModal.classList.remove("hidden");
@@ -811,6 +791,7 @@
     async function refreshSelectedLead() {
       const currentLeadId = selectedLead?.id || null;
       await loadLeads();
+
       if (currentLeadId) {
         const updated = allLeads.find(x => x.id === currentLeadId);
         if (updated) {
@@ -818,13 +799,13 @@
           openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
-          selectedLead = null;
         }
       }
     }
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -837,6 +818,7 @@
             notes
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -845,56 +827,93 @@
       }
     }
 
+    async function archiveAndDeleteLead(reason, noteText) {
+      if (!selectedLead) return;
+
+      try {
+        const historyEntry = {
+          action: reason,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString(),
+          notes: noteText || ""
+        };
+
+        await setDoc(doc(db, "closedLeadsArchive", selectedLead.id), {
+          ...selectedLead,
+          originalLeadId: selectedLead.id,
+          archiveReason: reason,
+          archiveNotes: noteText || "",
+          closedByUid: currentUser.uid,
+          closedByName: currentUserData.name || "",
+          archivedByUid: currentUser.uid,
+          archivedByName: currentUserData.name || "",
+          closedFromPage: "lister-callbacks",
+          closedAt: new Date().toISOString(),
+          closed: true,
+          usable: false,
+          leadStatus: "closed",
+          lastAction: reason,
+          introEmailNeeded: false,
+          callbackRequired: false,
+          callbackDate: "",
+          callbackTime: "",
+          lastUpdatedAt: new Date().toISOString(),
+          actionHistory: [...(selectedLead.actionHistory || []), historyEntry]
+        });
+
+        await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
+
+        selectedLead = null;
+        leadModal.classList.add("hidden");
+        await loadLeads();
+        showModalMessage("Lead archived and removed from callback agenda.");
+      } catch (error) {
+        console.error("Archive/delete failed:", error);
+        showModalMessage("Could not archive lead.", true);
+      }
+    }
+
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "intake_in_progress",
         lastAction: "interested_intake_started"
       }, "interested_intake_started", "Lead moved to intake from callback agenda.");
+
       window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
     });
 
-    rescheduleBtn.addEventListener("click", async () => {
+    sendIntroEmailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      if (!callbackDate.value || !callbackTime.value) {
-        showModalMessage("Please choose a new callback date and time.", true);
+
+      if (!getLeadEmail(selectedLead)) {
+        showModalMessage("This lead has no email address saved.", true);
         return;
       }
-      await updateLead({
-        callbackDate: callbackDate.value,
-        callbackTime: callbackTime.value,
-        callbackRequired: true,
-        leadStatus: selectedLead.introEmailNeeded ? "intro_email_needed" : "callback_required",
-        lastAction: "callback_rescheduled"
-      }, "callback_rescheduled", `Rescheduled for ${callbackDate.value} ${callbackTime.value}`);
-    });
 
-    keepIntroBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
+      if (!callbackDate.value || !callbackTime.value) {
+        showModalMessage("Please choose callback date and time first.", true);
+        return;
+      }
+
       await updateLead({
+        leadStatus: "intro_email_needed",
         introEmailNeeded: true,
         callbackRequired: true,
-        leadStatus: "intro_email_needed",
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value,
         lastAction: "send_intro_email"
-      }, "send_intro_email", "Kept as intro email follow-up.");
-    });
-
-    keepCallbackBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-      await updateLead({
-        introEmailNeeded: false,
-        callbackRequired: true,
-        leadStatus: "callback_required",
-        lastAction: "callback_required"
-      }, "callback_required", "Kept as normal callback.");
+      }, "send_intro_email", `Lead moved to intro email queue. Follow-up set for ${callbackDate.value} ${callbackTime.value}`);
     });
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "qualified",
         callbackRequired: false,
-        introEmailNeeded: false,
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
       }, "qualified", "Lead marked as qualified from callback agenda.");
@@ -902,104 +921,60 @@
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       await updateLead({
         leadStatus: "awaiting_manager",
         callbackRequired: false,
-        introEmailNeeded: false,
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager from callback agenda.");
     });
 
-    markCompletedBtn.addEventListener("click", async () => {
+    rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
+      if (!callbackDate.value || !callbackTime.value) {
+        showModalMessage("Please choose callback date and time.", true);
+        return;
+      }
+
+      await updateLead({
+        callbackRequired: true,
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value,
+        lastAction: "callback_rescheduled"
+      }, "callback_rescheduled", `Callback rescheduled for ${callbackDate.value} ${callbackTime.value}`);
+    });
+
+    markDoneBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
       await updateLead({
         callbackRequired: false,
-        introEmailNeeded: false,
         callbackDate: "",
         callbackTime: "",
-        lastAction: "callback_completed",
-        leadStatus: "new"
-      }, "callback_completed", "Callback marked as completed.");
-    });
-
-    noAnswerBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-      await updateLead({
-        leadStatus: "no_answer",
-        lastAction: "no_answer",
-        lastCallAt: serverTimestamp(),
-        attemptCount: (selectedLead.attemptCount || 0) + 1
-      }, "no_answer", "No answer recorded from callback agenda.");
-    });
-
-    voicemailBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-      await updateLead({
-        lastAction: "voicemail",
-        lastCallAt: serverTimestamp(),
-        voicemailLeft: true,
-        voicemailAt: serverTimestamp()
-      }, "voicemail", "Voicemail left from callback agenda.");
-    });
-
-    wrongNumberBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-      try {
-        await archiveAndDeleteLead(
-          {
-            ...selectedLead,
-            leadStatus: "closed",
-            lastAction: "wrong_number",
-            closed: true,
-            usable: false,
-            callbackRequired: false,
-            introEmailNeeded: false
-          },
-          "wrong_number",
-          "lister-callbacks",
-          "Marked as wrong number from callback agenda."
-        );
-        leadModal.classList.add("hidden");
-        selectedLead = null;
-        await loadLeads();
-      } catch (error) {
-        console.error("Archive failed:", error);
-        showModalMessage("Could not archive lead.", true);
-      }
+        lastAction: "callback_completed"
+      }, "callback_completed", "Callback item marked as done.");
     });
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      try {
-        await archiveAndDeleteLead(
-          {
-            ...selectedLead,
-            leadStatus: "closed",
-            lastAction: "not_interested",
-            closed: true,
-            usable: false,
-            callbackRequired: false,
-            introEmailNeeded: false
-          },
-          "not_interested",
-          "lister-callbacks",
-          "Marked as not interested from callback agenda."
-        );
-        leadModal.classList.add("hidden");
-        selectedLead = null;
-        await loadLeads();
-      } catch (error) {
-        console.error("Archive failed:", error);
-        showModalMessage("Could not archive lead.", true);
-      }
+      await archiveAndDeleteLead("not_interested", notesBox.value || "Marked as not interested from callback agenda.");
+    });
+
+    wrongNumberBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await archiveAndDeleteLead("wrong_number", notesBox.value || "Marked as wrong number from callback agenda.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
             action: "notes_saved",
@@ -1009,6 +984,7 @@
             notes: notesBox.value || ""
           })
         });
+
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -1032,15 +1008,18 @@
         window.location.href = "/login.html";
         return;
       }
+
       try {
         const allowed = await checkListerAccess(user);
         if (!allowed) return;
+
         try {
           await recordStaffLoginFromPage();
           startAttendanceHeartbeat();
         } catch (attendanceError) {
           console.error("Attendance login-from-page failed:", attendanceError);
         }
+
         await loadLeads();
         hideLoader();
       } catch (error) {
@@ -1057,10 +1036,11 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
-        console.error("Logout failed:", error);
+        console.error(error);
         alert("Could not log out.");
       }
     });
@@ -1073,9 +1053,9 @@
       }
     });
 
-    typeFilter.addEventListener("change", renderAgenda);
-    timingFilter.addEventListener("change", renderAgenda);
-    searchInput.addEventListener("input", renderAgenda);
+    timingFilter.addEventListener("change", renderCallbacks);
+    statusFilter.addEventListener("change", renderCallbacks);
+    searchInput.addEventListener("input", renderCallbacks);
     refreshBtn.addEventListener("click", loadLeads);
 
     const currentPath = window.location.pathname.split("/").pop();

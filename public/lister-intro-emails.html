@@ -40,6 +40,7 @@
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+
     .queue-table {
       width: 100%;
       table-layout: fixed;
@@ -259,6 +260,7 @@
             <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule Follow-up</button>
             <button id="markDoneBtn" class="btn btn-secondary" type="button">Mark Queue Done</button>
             <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+            <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
           </div>
         </section>
 
@@ -339,6 +341,7 @@
     const rescheduleBtn = document.getElementById("rescheduleBtn");
     const markDoneBtn = document.getElementById("markDoneBtn");
     const notInterestedBtn = document.getElementById("notInterestedBtn");
+    const wrongNumberBtn = document.getElementById("wrongNumberBtn");
     const notesBox = document.getElementById("notesBox");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
     const modalMessage = document.getElementById("modalMessage");
@@ -384,42 +387,6 @@
       return cleanValue(lead.email || lead.emailAddress);
     }
 
-    function makeArchiveId(leadId) {
-      return `${leadId}_${Date.now()}`;
-    }
-
-    async function archiveAndDeleteLead(lead, reason, sourcePage, notes = "") {
-      const archiveRef = doc(db, "closedLeadsArchive", makeArchiveId(lead.id));
-
-      await setDoc(archiveRef, {
-        ...lead,
-        originalLeadId: lead.id,
-        archivedFromCollection: "leadAssignments",
-        archiveReason: reason,
-        closedFromPage: sourcePage,
-        closedByUid: currentUser.uid,
-        closedByName: currentUserData?.name || "",
-        closedByEmail: currentUser.email || "",
-        closedAt: serverTimestamp(),
-        archivedAt: serverTimestamp(),
-        lastUpdatedAt: serverTimestamp(),
-        closed: true,
-        usable: false,
-        actionHistory: [
-          ...(lead.actionHistory || []),
-          {
-            action: reason,
-            byUid: currentUser.uid,
-            byName: currentUserData?.name || "",
-            at: new Date().toISOString(),
-            notes
-          }
-        ]
-      });
-
-      await deleteDoc(doc(db, "leadAssignments", lead.id));
-    }
-
     function formatAddress(lead) {
       return [
         lead.address,
@@ -437,6 +404,7 @@
         intro_email_sent: "Intro Email Sent",
         intro_email_queue_done: "Intro Email Queue Done",
         callback_rescheduled: "Callback Rescheduled",
+        wrong_number: "Wrong Number",
         not_interested: "Not Interested",
         notes_saved: "Notes Saved",
         interested_intake_started: "Intake Started",
@@ -517,6 +485,7 @@ Quaerens`;
         rescheduleBtn,
         markDoneBtn,
         notInterestedBtn,
+        wrongNumberBtn,
         saveNotesBtn
       ].forEach(button => setButtonDisabled(button, false));
 
@@ -528,7 +497,8 @@ Quaerens`;
           openIntakeBtn,
           rescheduleBtn,
           markDoneBtn,
-          notInterestedBtn
+          notInterestedBtn,
+          wrongNumberBtn
         ].forEach(button => setButtonDisabled(button, true));
       }
     }
@@ -846,7 +816,6 @@ Quaerens`;
           openLead(updated.id);
         } else {
           leadModal.classList.add("hidden");
-          selectedLead = null;
         }
       }
     }
@@ -872,6 +841,51 @@ Quaerens`;
       } catch (error) {
         console.error("Lead update failed:", error);
         showModalMessage("Could not update lead.", true);
+      }
+    }
+
+    async function archiveAndDeleteLead(reason, noteText) {
+      if (!selectedLead) return;
+
+      try {
+        const historyEntry = {
+          action: reason,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString(),
+          notes: noteText || ""
+        };
+
+        await setDoc(doc(db, "closedLeadsArchive", selectedLead.id), {
+          ...selectedLead,
+          originalLeadId: selectedLead.id,
+          archiveReason: reason,
+          archiveNotes: noteText || "",
+          closedByUid: currentUser.uid,
+          closedByName: currentUserData.name || "",
+          archivedByUid: currentUser.uid,
+          archivedByName: currentUserData.name || "",
+          closedFromPage: "lister-intro-emails",
+          closedAt: new Date().toISOString(),
+          closed: true,
+          usable: false,
+          leadStatus: "closed",
+          lastAction: reason,
+          introEmailNeeded: false,
+          callbackRequired: false,
+          lastUpdatedAt: new Date().toISOString(),
+          actionHistory: [...(selectedLead.actionHistory || []), historyEntry]
+        });
+
+        await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
+
+        selectedLead = null;
+        leadModal.classList.add("hidden");
+        await loadLeads();
+        showModalMessage("Lead archived and removed from intro queue.");
+      } catch (error) {
+        console.error("Archive/delete failed:", error);
+        showModalMessage("Could not archive lead.", true);
       }
     }
 
@@ -996,33 +1010,12 @@ Quaerens`;
 
     notInterestedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+      await archiveAndDeleteLead("not_interested", notesBox.value || "Marked as not interested from intro email queue.");
+    });
 
-      try {
-        await archiveAndDeleteLead(
-          {
-            ...selectedLead,
-            leadStatus: "closed",
-            lastAction: "not_interested",
-            closed: true,
-            usable: false,
-            introEmailNeeded: false,
-            callbackRequired: false,
-            callbackDate: "",
-            callbackTime: "",
-            introEmailBody: emailTemplate.value || ""
-          },
-          "not_interested",
-          "lister-intro-emails",
-          "Marked as not interested from intro email queue."
-        );
-
-        leadModal.classList.add("hidden");
-        selectedLead = null;
-        await loadLeads();
-      } catch (error) {
-        console.error("Archive failed:", error);
-        showModalMessage("Could not archive lead.", true);
-      }
+    wrongNumberBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await archiveAndDeleteLead("wrong_number", notesBox.value || "Marked as wrong number from intro email queue.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
