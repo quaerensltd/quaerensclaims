@@ -103,62 +103,37 @@
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign Type</label>
-            <select id="campaignSelect" class="input">
-              <option value="">Select campaign type</option>
-              <option value="solar">Solar</option>
-              <option value="caravan_park">Caravan Park</option>
-              <option value="spray_foam">Spray Foam</option>
-              <option value="medical_negligence">Medical Negligence</option>
-              <option value="housing_disrepair">Housing Disrepair</option>
-              <option value="pcp">PCP</option>
-              <option value="mis_sold_timeshare">Mis-sold Timeshare</option>
-              <option value="pension">Pension</option>
-              <option value="cavity_wall">Cavity Wall</option>
-              <option value="diesel">Diesel</option>
-              <option value="holiday_sickness">Holiday Sickness</option>
-            </select>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign Name</label>
+            <input
+              id="campaignNameInput"
+              type="text"
+              class="input"
+              placeholder="Enter campaign name"
+            />
           </div>
 
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeSelect" class="input">
               <option value="">Select claim type</option>
-              <option value="airbnb_refunds">AIRBNB Refunds</option>
-              <option value="car_finance">Car Finance</option>
-              <option value="caravan_holiday_park">Caravan/Holiday Park</option>
-              <option value="complaint_letters">Complaint Letters</option>
-              <option value="contact_me">Contact Me</option>
-              <option value="credit_card_fees">Credit Card Fees</option>
-              <option value="cross_border">Cross Border</option>
-              <option value="cruise_compensation">Cruise Compensation</option>
-              <option value="crypto_scam_recovery">Crypto Scam Recovery</option>
-              <option value="cyber_data_breach">Cyber Data Breach</option>
-              <option value="debt_recovery">Debt Recovery</option>
-              <option value="flight_delay">Flight Delay</option>
-              <option value="foam_insulation">Foam Insulation</option>
-              <option value="formal_escalation">Formal Escalation</option>
-              <option value="frozen_accounts">Frozen Accounts</option>
-              <option value="holiday_compensation">Holiday Compensation</option>
-              <option value="housing_disrepair">Housing Disrepair</option>
-              <option value="investment_platforms">Investment Platforms</option>
-              <option value="loans_and_mortgages">Loans and Mortgages</option>
-              <option value="medical_negligence">Medical Negligence</option>
-              <option value="mis_sold_bank_accounts">Mis-sold Bank Accounts</option>
-              <option value="mortgage_review">Mortgage Review</option>
-              <option value="new_build_issues">New Build Issues</option>
-              <option value="other_claims">Other Claims</option>
-              <option value="pension_administration">Pension Administration</option>
-              <option value="pension_issues">Pension Issues</option>
-              <option value="platform_failure">Platform Failure</option>
-              <option value="refund_issues">Refund Issues</option>
-              <option value="return_issues">Return Issues</option>
-              <option value="section_75_support">Section 75 Support</option>
-              <option value="solar_support">Solar Support</option>
-              <option value="spanish_mortgage">Spanish Mortgage</option>
-              <option value="survey_review">Survey Review</option>
-              <option value="timeshare">Timeshare</option>
-              <option value="train_delay">Train Delay</option>
+              <option value="Solar">Solar</option>
+              <option value="Caravan Park">Caravan Park</option>
+              <option value="Spray Foam">Spray Foam</option>
+              <option value="Medical Negligence">Medical Negligence</option>
+              <option value="Housing Disrepair">Housing Disrepair</option>
+              <option value="Personal Injury">Personal Injury</option>
+              <option value="Plevin">Plevin</option>
+              <option value="Packaged Bank Account">Packaged Bank Account</option>
+              <option value="Unaffordable Lending">Unaffordable Lending</option>
+              <option value="PCP">PCP</option>
+              <option value="Diesel Emissions">Diesel Emissions</option>
+              <option value="Train Delay">Train Delay</option>
+              <option value="Data Breach">Data Breach</option>
+              <option value="Business Energy">Business Energy</option>
+              <option value="Mortgage">Mortgage</option>
+              <option value="Survey">Survey</option>
+              <option value="New Build">New Build</option>
+              <option value="Other">Other</option>
             </select>
           </div>
         </div>
@@ -185,7 +160,6 @@
             <p id="previewSummary" class="text-sm text-slate-500 mt-1">No file loaded.</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -246,7 +220,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const csvFile = document.getElementById("csvFile");
     const listerSelect = document.getElementById("listerSelect");
-    const campaignSelect = document.getElementById("campaignSelect");
+    const campaignNameInput = document.getElementById("campaignNameInput");
     const claimTypeSelect = document.getElementById("claimTypeSelect");
     const previewBtn = document.getElementById("previewBtn");
     const importBtn = document.getElementById("importBtn");
@@ -346,7 +320,6 @@
 
     function normalizeLeadRow(row, index) {
       const addressParts = buildAddressParts(row);
-
       const normalized = {
         rowNumber: index + 2,
         title: getRowValue(row, ["Title"]),
@@ -385,7 +358,6 @@
         if (seenKeys.has(row.contactKey)) {
           row.isDuplicate = true;
           row.validationMessage = "Duplicate contact";
-
           const first = seenKeys.get(row.contactKey);
           if (!first.validationMessage) {
             first.isDuplicate = true;
@@ -542,8 +514,8 @@
     importBtn.addEventListener("click", async () => {
       const listerUid = listerSelect.value;
       const lister = listers.find(x => x.uid === listerUid);
-      const campaign = campaignSelect.value || "";
-      const claimType = claimTypeSelect.value || "";
+      const campaign = campaignNameInput.value.trim();
+      const claimType = claimTypeSelect.value.trim();
 
       if (!normalizedRows.length) {
         showMessage("Please preview a CSV first.", true);
@@ -556,7 +528,7 @@
       }
 
       if (!campaign) {
-        showMessage("Please select a campaign type.", true);
+        showMessage("Please enter a campaign name.", true);
         return;
       }
 
@@ -609,8 +581,8 @@
             homeOwner: row.homeOwner,
             hasSolar: row.hasSolar,
 
-            campaign,
-            claimType,
+            campaign: campaign,
+            claimType: claimType,
 
             leadStatus: "new",
             usable: true,
@@ -628,14 +600,13 @@
             closerAppointmentDate: "",
             closerAppointmentTime: "",
             convertedToSubmissionId: "",
-
             actionHistory: [
               {
                 action: "lead_uploaded",
                 byUid: currentUser.uid,
                 byName: currentUserData.name || "",
                 at: new Date().toISOString(),
-                notes: `Lead uploaded and assigned to ${lister.name || lister.email || lister.uid}.`
+                notes: `Lead uploaded and assigned to ${lister.name || lister.email || lister.uid}. Campaign: ${campaign}. Claim Type: ${claimType}.`
               }
             ]
           });
@@ -684,11 +655,11 @@
     });
 
     const currentPath = window.location.pathname.split("/").pop();
-    document.querySelectorAll("a[href]").forEach(link => {
-      const href = link.getAttribute("href");
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
       const fileName = href.split("/").pop();
       if (fileName && fileName === currentPath) {
-        link.classList.add("active-nav");
+        link.classList.add('active-nav');
       }
     });
   </script>
