@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quaerens Processing Cases Dashboard</title>
+  <title>Quaerens Processing Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,22 +11,21 @@
   <style>
     body { font-family: 'Inter', sans-serif; }
     .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
-    .input {
-      width: 100%;
-      border: 1px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 0.75rem 0.9rem;
-      background: white;
-    }
-    .btn {
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
-      font-weight: 700;
-    }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
     .hidden { display: none; }
     .active-nav {
       background: #2563eb;
@@ -38,7 +37,7 @@
     }
     .badge {
       display: inline-block;
-      padding: 0.28rem 0.6rem;
+      padding: 0.25rem 0.55rem;
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
@@ -53,66 +52,101 @@
     .badge-indigo { background: #e0e7ff; color: #3730a3; }
     .badge-rose { background: #ffe4e6; color: #be123c; }
     .badge-sky { background: #e0f2fe; color: #0369a1; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-slate-600 font-medium">Loading case management dashboard...</p>
+      <p class="text-slate-600 font-medium">Loading processing dashboard...</p>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Cases Dashboard</h1>
-          <p class="text-sm text-slate-500">Case management, workflow stages, follow-ups, and client file control</p>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
+          <p class="text-sm text-slate-500">Processing workload, case ownership, payment tracking, report pack visibility, and next actions</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
           <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
           <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <a href="/processing-daily-attendance.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
+          <a href="/processing-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <a href="/processing-monthly-attendance.html" class="btn btn-secondary py-2 px-4">Monthly Attendance</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-8 gap-4">
+      <section class="grid lg:grid-cols-9 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Cases</div>
-          <div id="totalCasesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+          <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Review</div>
-          <div id="awaitingReviewStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">My Cases</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Documents</div>
-          <div id="awaitingDocsStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Response</div>
-          <div id="awaitingResponseStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Awaiting Payment</div>
+          <div id="awaitingPaymentStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Part Paid</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Fully Paid</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">Urgent</div>
-          <div id="urgentStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+          <div id="followUpStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Overdue Tasks</div>
-          <div id="overdueStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Closed This Month</div>
-          <div id="closedThisMonthStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">With Payment Link</div>
+          <div id="paymentLinkStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
         <div class="card p-5">
           <div class="text-sm text-slate-500">With Report Pack</div>
-          <div id="packReadyStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
         </div>
       </section>
 
@@ -120,148 +154,131 @@
         <section class="card p-6">
           <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
           <div class="grid md:grid-cols-2 gap-4">
-            <a href="/processing-dashboard.html" class="btn btn-primary text-center">Back to Dashboard</a>
-            <a href="/processing-panel.html" class="btn btn-secondary text-center">Open Processing Panel</a>
-            <a href="/processing-payments.html" class="btn btn-secondary text-center">Open Payments</a>
-            <button id="refreshBtnTop" class="btn btn-secondary text-center" type="button">Refresh Cases</button>
+            <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Panel</a>
+            <a href="/processing-payments.html" class="btn btn-primary text-center">Open Payments</a>
+            <a href="/processing-cases-dashboard.html" class="btn btn-primary text-center">Open Case Management</a>
+            <a href="/processing-daily-attendance.html" class="btn btn-secondary text-center">Daily Staff Attendance</a>
+            <a href="/processing-weekly-attendance.html" class="btn btn-secondary text-center">Weekly Staff Attendance</a>
+            <a href="/processing-monthly-attendance.html" class="btn btn-secondary text-center">Monthly Staff Attendance</a>
           </div>
         </section>
 
         <section class="card p-6">
-          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Case Snapshot</h2>
-          <div class="space-y-4 text-sm">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Cases shown</span>
-              <span id="snapshotCases" class="font-extrabold text-blue-900">0</span>
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Money Snapshot</h2>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <div class="text-sm text-slate-500">Due Now</div>
+              <div id="dueNowTotal" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
             </div>
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Awaiting client documents</span>
-              <span id="snapshotDocs" class="font-extrabold text-indigo-600">0</span>
+            <div>
+              <div class="text-sm text-slate-500">Paid Now</div>
+              <div id="paidNowTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
             </div>
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Awaiting outside response</span>
-              <span id="snapshotResponse" class="font-extrabold text-sky-600">0</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Urgent priority</span>
-              <span id="snapshotUrgent" class="font-extrabold text-rose-600">0</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span class="text-slate-600">Overdue next action</span>
-              <span id="snapshotOverdue" class="font-extrabold text-red-600">0</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-slate-600">With report pack</span>
-              <span id="snapshotPackReady" class="font-extrabold text-violet-600">0</span>
+            <div>
+              <div class="text-sm text-slate-500">Follow-Up Due</div>
+              <div id="followUpTotal" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
             </div>
           </div>
         </section>
       </section>
 
-      <section class="card p-6">
-        <div class="grid md:grid-cols-6 gap-4">
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Stage</label>
-            <select id="stageFilter" class="input">
-              <option value="all">All stages</option>
-              <option value="new_case">New Case</option>
-              <option value="under_review">Under Review</option>
-              <option value="awaiting_documents">Awaiting Documents</option>
-              <option value="documents_complete">Documents Complete</option>
-              <option value="complaint_preparing">Complaint Preparing</option>
-              <option value="complaint_sent">Complaint Sent</option>
-              <option value="awaiting_response">Awaiting Response</option>
-              <option value="follow_up_sent">Follow-Up Sent</option>
-              <option value="ombudsman_stage">Ombudsman Stage</option>
-              <option value="settled">Settled</option>
-              <option value="rejected">Rejected</option>
-              <option value="closed">Closed</option>
-            </select>
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">My Cases</h2>
+              <p class="text-sm text-slate-500 mt-1">Cases currently assigned to you</p>
+            </div>
           </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Priority</label>
-            <select id="priorityFilter" class="input">
-              <option value="all">All priorities</option>
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="myFilesBody"></tbody>
+            </table>
           </div>
+        </section>
 
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Waiting On</label>
-            <select id="waitingOnFilter" class="input">
-              <option value="all">All</option>
-              <option value="client">Client</option>
-              <option value="bank">Bank</option>
-              <option value="finance_company">Finance Company</option>
-              <option value="ombudsman">Ombudsman</option>
-              <option value="internal">Internal</option>
-              <option value="none">Nothing</option>
-            </select>
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Unassigned Queue</h2>
+              <p class="text-sm text-slate-500 mt-1">Available cases that can be claimed</p>
+            </div>
           </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Assignment</label>
-            <select id="assignmentFilter" class="input">
-              <option value="all">All cases</option>
-              <option value="mine">My cases</option>
-              <option value="unassigned">Unassigned</option>
-              <option value="others">Assigned to others</option>
-            </select>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="unassignedFilesBody"></tbody>
+            </table>
           </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
-            <select id="claimTypeFilter" class="input">
-              <option value="all">All claim types</option>
-              <option value="solar">Solar Panel Claims</option>
-              <option value="mortgage">Mortgage Review</option>
-              <option value="survey">Survey Review</option>
-              <option value="newbuild">New Build Issues</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, email, reference, report text..." />
-          </div>
-        </div>
-
-        <div class="mt-4 flex justify-end">
-          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh Cases</button>
-        </div>
+        </section>
       </section>
 
-      <section class="card p-6">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Client Case Files</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading case files...</p>
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Recent Cases</h2>
+              <p class="text-sm text-slate-500 mt-1">Latest created or updated processing cases</p>
+            </div>
           </div>
-        </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Owner</th>
+                  <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="recentFilesBody"></tbody>
+            </table>
+          </div>
+        </section>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-blue-50 text-blue-900">
-                <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Claim Type</th>
-                <th class="text-left p-3">Stage</th>
-                <th class="text-left p-3">Priority</th>
-                <th class="text-left p-3">Assigned To</th>
-                <th class="text-left p-3">Waiting On</th>
-                <th class="text-left p-3">Report Pack</th>
-                <th class="text-left p-3">Next Action</th>
-                <th class="text-left p-3">Last Activity</th>
-                <th class="text-left p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody id="casesBody"></tbody>
-          </table>
-        </div>
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Payment Priority</h2>
+              <p class="text-sm text-slate-500 mt-1">Cases needing payment attention</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Owner</th>
+                  <th class="text-left p-3">Due Now</th>
+                  <th class="text-left p-3">Paid</th>
+                  <th class="text-left p-3">Follow-Up</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="priorityPaymentsBody"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </main>
   </div>
@@ -278,7 +295,9 @@
       doc,
       getDoc,
       getDocs,
-      collection
+      updateDoc,
+      collection,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -293,201 +312,156 @@
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-    const stageFilter = document.getElementById("stageFilter");
-    const priorityFilter = document.getElementById("priorityFilter");
-    const waitingOnFilter = document.getElementById("waitingOnFilter");
-    const assignmentFilter = document.getElementById("assignmentFilter");
-    const claimTypeFilter = document.getElementById("claimTypeFilter");
-    const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
-    const refreshBtnTop = document.getElementById("refreshBtnTop");
-    const resultsSummary = document.getElementById("resultsSummary");
-    const casesBody = document.getElementById("casesBody");
 
     let currentUser = null;
     let currentUserData = null;
     let allCases = [];
-    let filteredCases = [];
+
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
 
     function hideLoader() {
       authLoader.style.display = "none";
     }
 
-    function safeString(value) {
-      if (value === undefined || value === null) return "";
-      return String(value).trim();
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
-    function firstNonEmpty(...values) {
-      for (const value of values) {
-        const s = safeString(value);
-        if (s) return s;
-      }
-      return "";
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
     }
 
     function normalizeClaimType(value) {
-      const raw = safeString(value).toLowerCase();
-      if (!raw) return "";
-      if (raw.includes("solar")) return "solar";
-      if (raw.includes("mortgage")) return "mortgage";
-      if (raw.includes("survey")) return "survey";
-      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
-      return raw;
-    }
-
-    function normalizeStage(item) {
-      return firstNonEmpty(item.caseStage, item.stage, item.processingStage, "new_case");
-    }
-
-    function normalizePriority(item) {
-      return firstNonEmpty(item.priority, "normal");
-    }
-
-    function normalizeWaitingOn(item) {
-      return firstNonEmpty(item.waitingOn, "none");
-    }
-
-    function clientName(item) {
-      const first = firstNonEmpty(item.client?.firstName, item.firstName, item.clientFirstName);
-      const second = firstNonEmpty(item.client?.secondName, item.secondName, item.clientSecondName);
-      const full = `${first} ${second}`.trim();
-      return full || firstNonEmpty(item.client?.name, item.clientName, item.caseReference, "Unnamed Client");
-    }
-
-    function clientEmail(item) {
-      return firstNonEmpty(item.client?.email, item.email, item.clientEmail, "-");
-    }
-
-    function clientMobile(item) {
-      return firstNonEmpty(item.client?.mobile, item.mobile, item.clientMobile, item.client?.landline, "");
+      return cleanValue(value).toLowerCase();
     }
 
     function formatClaimType(type) {
-      switch (normalizeClaimType(type)) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return safeString(type) || "-";
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(item) {
+      return cleanValue(
+        item?.campaign ||
+        item?.campaignName ||
+        item?.campaignLabel ||
+        item?.sourceCampaign ||
+        item?.leadCampaign
+      ) || "-";
+    }
+
+    function clientName(item) {
+      const first = item?.client?.firstName || item?.forename || "";
+      const second = item?.client?.secondName || item?.surname || "";
+      return `${first} ${second}`.trim() || item.caseReference || "-";
+    }
+
+    function clientEmail(item) {
+      return item?.client?.email || item?.email || "-";
+    }
+
+    function ownerName(item) {
+      return item.assignedToName || item.assignedToEmail || "-";
+    }
+
+    function ownerBadge(item) {
+      if (!item.assignedToUid) {
+        return `<span class="badge badge-amber">Unassigned</span>`;
       }
-    }
-
-    function assignedToText(item) {
-      return firstNonEmpty(item.assignedToName, item.assignedToEmail, item.processingAssignedToName, item.processingAssignedToEmail, "-");
-    }
-
-    function getTimestampAsDate(value) {
-      if (!value) return null;
-      try {
-        if (typeof value?.toDate === "function") return value.toDate();
-        const d = new Date(value);
-        if (isNaN(d.getTime())) return null;
-        return d;
-      } catch {
-        return null;
+      if (item.assignedToUid === currentUser.uid) {
+        return `<span class="badge badge-green">Mine</span>`;
       }
+      return `<span class="badge badge-slate">${ownerName(item)}</span>`;
     }
 
-    function formatDate(value) {
-      const d = getTimestampAsDate(value);
-      return d ? d.toLocaleDateString("en-GB") : "-";
-    }
+    function getEffectivePaymentStatus(item) {
+      if (item.paymentStatus) return item.paymentStatus;
 
-    function formatDateTime(value) {
-      const d = getTimestampAsDate(value);
-      return d ? d.toLocaleString("en-GB") : "-";
-    }
+      const dueNow = Number(item.amountDueNow || 0);
+      const paidNow = Number(item.amountPaidNow || 0);
+      const followUpDue = Number(item.followUpDue || 0);
 
-    function isOverdue(dateValue) {
-      const d = getTimestampAsDate(dateValue);
-      if (!d) return false;
-      const compare = new Date(d);
-      compare.setHours(0, 0, 0, 0);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return compare.getTime() < today.getTime();
-    }
-
-    function stageLabel(stage) {
-      switch (stage) {
-        case "new_case": return `<span class="badge badge-blue">New Case</span>`;
-        case "under_review": return `<span class="badge badge-amber">Under Review</span>`;
-        case "awaiting_documents": return `<span class="badge badge-indigo">Awaiting Documents</span>`;
-        case "documents_complete": return `<span class="badge badge-green">Documents Complete</span>`;
-        case "complaint_preparing": return `<span class="badge badge-violet">Complaint Preparing</span>`;
-        case "complaint_sent": return `<span class="badge badge-blue">Complaint Sent</span>`;
-        case "awaiting_response": return `<span class="badge badge-blue">Awaiting Response</span>`;
-        case "follow_up_sent": return `<span class="badge badge-indigo">Follow-Up Sent</span>`;
-        case "ombudsman_stage": return `<span class="badge badge-violet">Ombudsman Stage</span>`;
-        case "settled": return `<span class="badge badge-green">Settled</span>`;
-        case "rejected": return `<span class="badge badge-red">Rejected</span>`;
-        case "closed": return `<span class="badge badge-slate">Closed</span>`;
-        default: return `<span class="badge badge-slate">-</span>`;
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
       }
-    }
 
-    function priorityLabel(priority) {
-      switch (priority) {
-        case "urgent": return `<span class="badge badge-red">Urgent</span>`;
-        case "high": return `<span class="badge badge-rose">High</span>`;
-        case "normal": return `<span class="badge badge-blue">Normal</span>`;
-        case "low": return `<span class="badge badge-slate">Low</span>`;
-        default: return `<span class="badge badge-slate">Normal</span>`;
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
       }
+
+      return "awaiting_payment";
     }
 
-    function waitingOnLabel(waitingOn) {
-      switch (waitingOn) {
-        case "client": return `<span class="badge badge-indigo">Client</span>`;
-        case "bank": return `<span class="badge badge-blue">Bank</span>`;
-        case "finance_company": return `<span class="badge badge-violet">Finance Company</span>`;
-        case "ombudsman": return `<span class="badge badge-amber">Ombudsman</span>`;
-        case "internal": return `<span class="badge badge-slate">Internal</span>`;
-        case "none": return `<span class="badge badge-green">Nothing</span>`;
-        default: return `<span class="badge badge-slate">-</span>`;
-      }
-    }
-
-    function getNextActionValue(item) {
-      return item.nextActionDate || item.nextActionAt || null;
-    }
-
-    function getLastActivityValue(item) {
-      return item.lastActivityAt || item.updatedAt || item.createdAt || null;
+    function paymentStatusLabel(status) {
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
     }
 
     function hasAssessmentReport(item) {
-      return !!firstNonEmpty(
-        item.assessmentReportText,
-        item.generatedAssessmentText,
-        item.fullAssessmentReportText,
-        item.assessmentSummary,
-        item.summaryText
-      );
+      return !!String(item.assessmentReportText || item.generatedAssessmentText || item.assessmentSummary || "").trim();
     }
 
     function hasStrategyPack(item) {
-      return !!firstNonEmpty(
-        item.processingPackText,
-        item.strategicAnalysisText,
-        item.recommendedNextStepsText,
-        item.strategySummary,
-        item.processingSummaryText,
-        item.nextStepsText
-      );
+      return !!String(item.processingPackText || item.strategicAnalysisText || item.recommendedNextStepsText || item.strategySummary || "").trim();
     }
 
     function hasComplaintDocs(item) {
-      return !!firstNonEmpty(
-        item.complaintLetterText,
-        item.statementOfTruthText,
-        item.lossSummaryText,
-        item.evidenceChecklistText,
-        item.escalationLetterText,
-        item.internalFileNoteText,
-        item.complaintDraftText
-      );
+      return !!String(
+        item.complaintLetterText ||
+        item.statementOfTruthText ||
+        item.lossSummaryText ||
+        item.evidenceChecklistText ||
+        item.escalationLetterText ||
+        item.internalFileNoteText ||
+        ""
+      ).trim();
     }
 
     function hasRichAssessmentPack(item) {
@@ -501,6 +475,21 @@
       if (hasComplaintDocs(item)) parts.push(`<span class="badge badge-green">Docs</span>`);
       if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
       return parts.join(" ");
+    }
+
+    function getOpenLink(item) {
+      return `/processing-case-detail.html?id=${item.id}`;
+    }
+
+    function getTimestampTime(value) {
+      if (!value) return 0;
+      try {
+        if (typeof value?.toDate === "function") return value.toDate().getTime();
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      } catch {
+        return 0;
+      }
     }
 
     async function checkProcessingAccess(user) {
@@ -527,179 +516,232 @@
     }
 
     async function loadCases() {
-      try {
-        const snapshot = await getDocs(collection(db, "processingCases"));
-        allCases = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderAll();
-      } catch (error) {
-        console.error("Failed to load processing cases:", error);
-        resultsSummary.textContent = "Could not load case files.";
-        casesBody.innerHTML = `
-          <tr>
-            <td colspan="10" class="p-6 text-center text-red-600">Error loading case files.</td>
-          </tr>
-        `;
-      }
+      const casesSnap = await getDocs(collection(db, "processingCases"));
+      allCases = casesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderStats();
+      renderMyFiles();
+      renderUnassignedFiles();
+      renderRecentFiles();
+      renderPriorityPayments();
     }
 
-    function getFilteredCases() {
-      const selectedStage = stageFilter.value;
-      const selectedPriority = priorityFilter.value;
-      const selectedWaitingOn = waitingOnFilter.value;
-      const selectedAssignment = assignmentFilter.value;
-      const selectedClaimType = claimTypeFilter.value;
-      const term = searchInput.value.trim().toLowerCase();
+    async function claimCase(caseId) {
+      try {
+        await updateDoc(doc(db, "processingCases", caseId), {
+          assignedToUid: currentUser.uid,
+          assignedToName: currentUserData.name || "",
+          assignedToEmail: currentUser.email || "",
+          lastActivityAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
 
-      return allCases.filter(item => {
-        const normalizedStage = normalizeStage(item);
-        const normalizedPriority = normalizePriority(item);
-        const normalizedWaitingOn = normalizeWaitingOn(item);
-        const normalizedClaimType = normalizeClaimType(item.claimType);
-
-        const itemAssignedUid = firstNonEmpty(
-          item.assignedToUid,
-          item.processingAssignedToUid,
-          ""
-        );
-
-        const matchesStage = selectedStage === "all" || normalizedStage === selectedStage;
-        const matchesPriority = selectedPriority === "all" || normalizedPriority === selectedPriority;
-        const matchesWaiting = selectedWaitingOn === "all" || normalizedWaitingOn === selectedWaitingOn;
-        const matchesAssignment =
-          selectedAssignment === "all" ||
-          (selectedAssignment === "mine" && itemAssignedUid === currentUser.uid) ||
-          (selectedAssignment === "unassigned" && !itemAssignedUid) ||
-          (selectedAssignment === "others" && itemAssignedUid && itemAssignedUid !== currentUser.uid);
-
-        const matchesClaimType =
-          selectedClaimType === "all" || normalizedClaimType === selectedClaimType;
-
-        const haystack = `
-          ${clientName(item)}
-          ${clientEmail(item)}
-          ${clientMobile(item)}
-          ${safeString(item.claimType)}
-          ${normalizeClaimType(item.claimType)}
-          ${firstNonEmpty(item.caseReference, item.reference, item.sourceAssignmentId)}
-          ${assignedToText(item)}
-          ${firstNonEmpty(item.processingNotes, item.assessmentSummary, item.strategySummary, item.summaryText, item.processingSummaryText)}
-          ${firstNonEmpty(item.assessmentReportText, item.generatedAssessmentText, item.fullAssessmentReportText)}
-          ${firstNonEmpty(item.processingPackText, item.strategicAnalysisText, item.recommendedNextStepsText, item.nextStepsText)}
-          ${firstNonEmpty(item.complaintLetterText, item.statementOfTruthText, item.complaintDraftText)}
-          ${firstNonEmpty(item.lossSummaryText, item.evidenceChecklistText)}
-          ${firstNonEmpty(item.escalationLetterText, item.internalFileNoteText)}
-          ${firstNonEmpty(item.clientEmailPreviewText)}
-        `.toLowerCase();
-
-        const matchesSearch = !term || haystack.includes(term);
-
-        return matchesStage && matchesPriority && matchesWaiting && matchesAssignment && matchesClaimType && matchesSearch;
-      }).sort((a, b) => {
-        const aPriority = normalizePriority(a);
-        const bPriority = normalizePriority(b);
-
-        const aUrgentOrder = aPriority === "urgent" ? 0 : aPriority === "high" ? 1 : aPriority === "normal" ? 2 : 3;
-        const bUrgentOrder = bPriority === "urgent" ? 0 : bPriority === "high" ? 1 : bPriority === "normal" ? 2 : 3;
-        if (aUrgentOrder !== bUrgentOrder) return aUrgentOrder - bUrgentOrder;
-
-        const aOverdue = isOverdue(getNextActionValue(a)) ? 0 : 1;
-        const bOverdue = isOverdue(getNextActionValue(b)) ? 0 : 1;
-        if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-
-        const aPack = hasRichAssessmentPack(a) ? 0 : 1;
-        const bPack = hasRichAssessmentPack(b) ? 0 : 1;
-        if (aPack !== bPack) return aPack - bPack;
-
-        const aTime = getTimestampAsDate(getLastActivityValue(a))?.getTime() || 0;
-        const bTime = getTimestampAsDate(getLastActivityValue(b))?.getTime() || 0;
-        return bTime - aTime;
-      });
+        showToast("Case claimed.");
+        await loadCases();
+      } catch (error) {
+        console.error("Claim failed:", error);
+        showToast("Could not claim case.");
+      }
     }
 
     function renderStats() {
-      const now = new Date();
-      const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const awaiting = allCases.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length;
+      const partPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "part_paid").length;
+      const fullyPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length;
+      const urgentCases = allCases.filter(f => String(f.priority || "").toLowerCase() === "urgent").length;
+      const withLinks = allCases.filter(f => String(f.paymentLink || "").trim()).length;
+      const withReportPack = allCases.filter(f => hasRichAssessmentPack(f)).length;
+      const dueNow = allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
+      const paidNow = allCases.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
+      const followUp = allCases.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
+      const myFiles = allCases.filter(f => f.assignedToUid === currentUser.uid).length;
+      const unassigned = allCases.filter(f => !f.assignedToUid).length;
 
-      document.getElementById("totalCasesStat").textContent = String(allCases.length);
-      document.getElementById("awaitingReviewStat").textContent = String(allCases.filter(x => normalizeStage(x) === "under_review").length);
-      document.getElementById("awaitingDocsStat").textContent = String(allCases.filter(x => normalizeStage(x) === "awaiting_documents").length);
-      document.getElementById("awaitingResponseStat").textContent = String(allCases.filter(x => normalizeStage(x) === "awaiting_response").length);
-      document.getElementById("urgentStat").textContent = String(allCases.filter(x => normalizePriority(x) === "urgent").length);
-      document.getElementById("overdueStat").textContent = String(allCases.filter(x => isOverdue(getNextActionValue(x))).length);
-      document.getElementById("packReadyStat").textContent = String(allCases.filter(x => hasRichAssessmentPack(x)).length);
-
-      document.getElementById("closedThisMonthStat").textContent = String(
-        allCases.filter(x => {
-          if (normalizeStage(x) !== "closed") return false;
-          const value = getTimestampAsDate(getLastActivityValue(x));
-          if (!value) return false;
-          const ym = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
-          return ym === thisMonth;
-        }).length
-      );
+      document.getElementById("totalFilesStat").textContent = String(allCases.length);
+      document.getElementById("myFilesStat").textContent = String(myFiles);
+      document.getElementById("unassignedStat").textContent = String(unassigned);
+      document.getElementById("awaitingPaymentStat").textContent = String(awaiting);
+      document.getElementById("partPaidStat").textContent = String(partPaid);
+      document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
+      document.getElementById("followUpStat").textContent = String(urgentCases);
+      document.getElementById("paymentLinkStat").textContent = String(withLinks);
+      document.getElementById("reportPackStat").textContent = String(withReportPack);
+      document.getElementById("dueNowTotal").textContent = money(dueNow);
+      document.getElementById("paidNowTotal").textContent = money(paidNow);
+      document.getElementById("followUpTotal").textContent = money(followUp);
     }
 
-    function renderTable() {
-      casesBody.innerHTML = "";
+    function renderMyFiles() {
+      const body = document.getElementById("myFilesBody");
+      body.innerHTML = "";
 
-      if (!filteredCases.length) {
-        casesBody.innerHTML = `
+      const mine = [...allCases]
+        .filter(f => f.assignedToUid === currentUser.uid)
+        .sort((a, b) => Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0))
+        .slice(0, 8);
+
+      if (!mine.length) {
+        body.innerHTML = `
           <tr>
-            <td colspan="10" class="p-6 text-center text-slate-500">No case files found.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No cases assigned to you.</td>
           </tr>
         `;
-        resultsSummary.textContent = "No case files found for this filter.";
         return;
       }
 
-      filteredCases.forEach(item => {
-        const nextActionValue = getNextActionValue(item);
-        const nextActionText = formatDate(nextActionValue);
-        const nextActionDisplay = isOverdue(nextActionValue)
-          ? `<span class="text-red-600 font-bold">${nextActionText}</span>`
-          : nextActionText;
-
+      mine.forEach(file => {
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
-            <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${clientEmail(item)}</div>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
-          <td class="p-3">${formatClaimType(item.claimType)}</td>
-          <td class="p-3">${stageLabel(normalizeStage(item))}</td>
-          <td class="p-3">${priorityLabel(normalizePriority(item))}</td>
-          <td class="p-3">${assignedToText(item)}</td>
-          <td class="p-3">${waitingOnLabel(normalizeWaitingOn(item))}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
-            <div class="flex flex-wrap gap-1">${reportPackLabel(item)}</div>
-          </td>
-          <td class="p-3">${nextActionDisplay}</td>
-          <td class="p-3">${formatDateTime(getLastActivityValue(item))}</td>
-          <td class="p-3">
-            <a href="/processing-case-detail.html?id=${item.id}" class="text-blue-600 font-semibold hover:underline">Open Case</a>
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
         `;
-        casesBody.appendChild(row);
+        body.appendChild(row);
+      });
+    }
+
+    function renderUnassignedFiles() {
+      const body = document.getElementById("unassignedFilesBody");
+      body.innerHTML = "";
+
+      const unassigned = [...allCases]
+        .filter(f => !f.assignedToUid)
+        .sort((a, b) => {
+          const aPack = hasRichAssessmentPack(a) ? 0 : 1;
+          const bPack = hasRichAssessmentPack(b) ? 0 : 1;
+          if (aPack !== bPack) return aPack - bPack;
+          return Number(b.amountDueNow || 0) - Number(a.amountDueNow || 0);
+        })
+        .slice(0, 8);
+
+      if (!unassigned.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No unassigned cases.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      unassigned.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">
+            <button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>
+          </td>
+        `;
+        body.appendChild(row);
       });
 
-      resultsSummary.textContent = `${filteredCases.length} case file(s) shown`;
+      document.querySelectorAll("[data-claim-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await claimCase(btn.getAttribute("data-claim-id"));
+        });
+      });
     }
 
-    function renderSnapshot() {
-      document.getElementById("snapshotCases").textContent = String(filteredCases.length);
-      document.getElementById("snapshotDocs").textContent = String(filteredCases.filter(x => normalizeStage(x) === "awaiting_documents").length);
-      document.getElementById("snapshotResponse").textContent = String(filteredCases.filter(x => normalizeStage(x) === "awaiting_response").length);
-      document.getElementById("snapshotUrgent").textContent = String(filteredCases.filter(x => normalizePriority(x) === "urgent").length);
-      document.getElementById("snapshotOverdue").textContent = String(filteredCases.filter(x => isOverdue(getNextActionValue(x))).length);
-      document.getElementById("snapshotPackReady").textContent = String(filteredCases.filter(x => hasRichAssessmentPack(x)).length);
+    function renderRecentFiles() {
+      const body = document.getElementById("recentFilesBody");
+      body.innerHTML = "";
+
+      const recent = [...allCases]
+        .sort((a, b) => {
+          const aTime = getTimestampTime(a.updatedAt || a.lastActivityAt || a.createdAt);
+          const bTime = getTimestampTime(b.updatedAt || b.lastActivityAt || b.createdAt);
+          return bTime - aTime;
+        })
+        .slice(0, 8);
+
+      if (!recent.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-slate-500">No processing cases found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      recent.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
     }
 
-    function renderAll() {
-      filteredCases = getFilteredCases();
-      renderStats();
-      renderSnapshot();
-      renderTable();
+    function renderPriorityPayments() {
+      const body = document.getElementById("priorityPaymentsBody");
+      body.innerHTML = "";
+
+      const priority = [...allCases]
+        .filter(f => getEffectivePaymentStatus(f) !== "fully_paid" || Number(f.followUpDue || 0) > 0)
+        .sort((a, b) => {
+          const aPriority = Number(a.amountDueNow || 0) + Number(a.followUpDue || 0);
+          const bPriority = Number(b.amountDueNow || 0) + Number(b.followUpDue || 0);
+          return bPriority - aPriority;
+        })
+        .slice(0, 8);
+
+      if (!priority.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-slate-500">No payment priority cases found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      priority.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
+          <td class="p-3 cell-wrap">${money(file.amountDueNow)}</td>
+          <td class="p-3 cell-wrap">${money(file.amountPaidNow)}</td>
+          <td class="p-3 cell-wrap">${money(file.followUpDue)}</td>
+          <td class="p-3">
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -715,19 +757,20 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load case management dashboard.");
+        alert("Could not load processing dashboard.");
         window.location.href = "/login.html";
       }
     });
 
-    stageFilter.addEventListener("change", renderAll);
-    priorityFilter.addEventListener("change", renderAll);
-    waitingOnFilter.addEventListener("change", renderAll);
-    assignmentFilter.addEventListener("change", renderAll);
-    claimTypeFilter.addEventListener("change", renderAll);
-    searchInput.addEventListener("input", renderAll);
-    refreshBtn.addEventListener("click", loadCases);
-    refreshBtnTop.addEventListener("click", loadCases);
+    refreshBtn.addEventListener("click", async () => {
+      try {
+        await loadCases();
+        showToast("Dashboard refreshed.");
+      } catch (error) {
+        console.error(error);
+        showToast("Could not refresh dashboard.");
+      }
+    });
 
     logoutBtn.addEventListener("click", async () => {
       try {

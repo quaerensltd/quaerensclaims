@@ -72,6 +72,11 @@
       opacity: 1;
       pointer-events: auto;
     }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -156,6 +161,7 @@
             <h3 class="text-lg font-extrabold text-blue-900 mb-4">Client & Appointment</h3>
             <div class="grid md:grid-cols-2 gap-4 text-sm">
               <div><span class="font-semibold text-blue-900">Client:</span> <span id="detailClientName">-</span></div>
+              <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="detailCampaign">-</span></div>
               <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="detailClaimType">-</span></div>
               <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="detailAppointment">-</span></div>
               <div><span class="font-semibold text-blue-900">Status:</span> <span id="detailStatus">-</span></div>
@@ -202,7 +208,6 @@
 
         <section class="card p-5 mt-6">
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Closer Actions</h3>
-
           <div class="grid md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelStatusSelect">Closer Status</label>
@@ -213,7 +218,6 @@
                 <option value="Closed">Closed</option>
               </select>
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelOutcomeSelect">Outcome</label>
               <select id="panelOutcomeSelect" class="input">
@@ -225,38 +229,31 @@
                 <option value="Closed Deal">Closed Deal</option>
               </select>
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelAmountDueNow">Amount Due Now (£)</label>
               <input id="panelAmountDueNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelAmountPaidNow">Amount Paid Now (£)</label>
               <input id="panelAmountPaidNow" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelFollowUpDue">Follow-Up Due (£)</label>
               <input id="panelFollowUpDue" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelPaymentLink">Payment Link</label>
               <input id="panelPaymentLink" class="input" type="text" placeholder="https://..." />
             </div>
-
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelCloserNotes">Closer Notes</label>
               <textarea id="panelCloserNotes" class="input" rows="6" placeholder="Call notes, objections, follow-up points, outcome, next step..."></textarea>
             </div>
-
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="panelProcessingNotes">Processing Notes</label>
               <textarea id="panelProcessingNotes" class="input" rows="5" placeholder="Payment references, instalment notes, documents to prepare, urgent remarks..."></textarea>
             </div>
           </div>
-
           <div class="mt-4 flex gap-3 flex-wrap">
             <button id="savePanelCloserBtn" class="btn btn-primary" type="button">Save Closer Actions</button>
             <p id="panelSaveMessage" class="text-sm text-green-700 hidden self-center"></p>
@@ -318,7 +315,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Search client, email, phone..." />
+            <input id="searchInput" type="text" class="input" placeholder="Search client, email, phone, campaign..." />
           </div>
           <div class="flex items-end">
             <button id="tableRefreshBtn" class="btn btn-secondary w-full" type="button">Refresh</button>
@@ -339,6 +336,7 @@
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Appointment</th>
                 <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Campaign</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Outcome</th>
@@ -392,15 +390,12 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const tableRefreshBtn = document.getElementById("tableRefreshBtn");
-
     const statusFilter = document.getElementById("statusFilter");
     const outcomeFilter = document.getElementById("outcomeFilter");
     const processingFilter = document.getElementById("processingFilter");
     const searchInput = document.getElementById("searchInput");
-
     const assignmentsBody = document.getElementById("assignmentsBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const totalAssignmentsStat = document.getElementById("totalAssignmentsStat");
     const assignedStat = document.getElementById("assignedStat");
     const contactedStat = document.getElementById("contactedStat");
@@ -409,13 +404,12 @@
     const callbacksStat = document.getElementById("callbacksStat");
     const noAnswerStat = document.getElementById("noAnswerStat");
     const sentToProcessingStat = document.getElementById("sentToProcessingStat");
-
     const selectedAssignmentSection = document.getElementById("selectedAssignmentSection");
     const selectedTitle = document.getElementById("selectedTitle");
     const selectedSubtitle = document.getElementById("selectedSubtitle");
     const clearSelectedBtn = document.getElementById("clearSelectedBtn");
-
     const detailClientName = document.getElementById("detailClientName");
+    const detailCampaign = document.getElementById("detailCampaign");
     const detailClaimType = document.getElementById("detailClaimType");
     const detailAppointment = document.getElementById("detailAppointment");
     const detailStatus = document.getElementById("detailStatus");
@@ -430,7 +424,6 @@
     const detailPaymentLink = document.getElementById("detailPaymentLink");
     const detailAssessmentSummary = document.getElementById("detailAssessmentSummary");
     const detailManagerNotes = document.getElementById("detailManagerNotes");
-
     const panelStatusSelect = document.getElementById("panelStatusSelect");
     const panelOutcomeSelect = document.getElementById("panelOutcomeSelect");
     const panelAmountDueNow = document.getElementById("panelAmountDueNow");
@@ -441,7 +434,6 @@
     const panelProcessingNotes = document.getElementById("panelProcessingNotes");
     const savePanelCloserBtn = document.getElementById("savePanelCloserBtn");
     const panelSaveMessage = document.getElementById("panelSaveMessage");
-
     const emailSubjectInput = document.getElementById("emailSubjectInput");
     const emailBodyInput = document.getElementById("emailBodyInput");
     const generateEmailBtn = document.getElementById("generateEmailBtn");
@@ -455,6 +447,44 @@
     let allAssignments = [];
     let processingAssignmentIds = new Set();
     let selectedAssignment = null;
+
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -481,55 +511,60 @@
       setTimeout(() => panelSaveMessage.classList.add("hidden"), 3500);
     }
 
-    function formatClaimType(type) {
-      const normalized = String(type || "").toLowerCase();
-      if (normalized.includes("solar")) return "Solar Panel Claims";
-      if (normalized.includes("mortgage")) return "Mortgage Review";
-      if (normalized.includes("survey")) return "Survey Review";
-      if (normalized.includes("newbuild") || normalized.includes("new build")) return "New Build Issues";
-      return type || "-";
+    function cleanValue(value) {
+      return String(value || "").trim();
     }
 
     function normalizeClaimType(value) {
-      const raw = String(value || "").trim().toLowerCase();
-      if (!raw) return "";
-      if (raw.includes("solar")) return "solar";
-      if (raw.includes("mortgage")) return "mortgage";
-      if (raw.includes("survey")) return "survey";
-      if (raw.includes("new build") || raw.includes("newbuild")) return "newbuild";
-      return raw;
+      return cleanValue(value).toLowerCase();
+    }
+
+    function formatClaimType(type) {
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(item) {
+      return cleanValue(
+        item?.campaign ||
+        item?.campaignName ||
+        item?.campaignLabel ||
+        item?.sourceCampaign ||
+        item?.leadCampaign
+      ) || "-";
     }
 
     function appointmentDate(item) {
-      return item?.appointment?.date || "";
+      return cleanValue(item?.appointment?.date || item?.closerAppointmentDate || item?.appointmentDate);
     }
 
     function appointmentTime(item) {
-      return item?.appointment?.time || "";
+      return cleanValue(item?.appointment?.time || item?.closerAppointmentTime || item?.appointmentTime);
     }
 
     function appointmentText(item) {
       const date = appointmentDate(item) || "-";
-      const time = appointmentTime(item) || "-";
+      const time = appointmentTime(item) || "";
       return `${date} ${time}`.trim();
     }
 
     function clientName(item) {
-      const first = item?.client?.firstName || "";
-      const second = item?.client?.secondName || "";
+      const first = item?.client?.firstName || item?.forename || "";
+      const second = item?.client?.secondName || item?.surname || "";
       return `${first} ${second}`.trim() || "-";
     }
 
     function clientEmail(item) {
-      return item?.client?.email || "";
+      return item?.client?.email || item?.email || "";
     }
 
     function clientMobile(item) {
-      return item?.client?.mobile || item?.client?.landline || "";
+      return item?.client?.mobile || item?.client?.landline || item?.mobile || item?.telephone || "";
     }
 
     function clientAddress(item) {
-      return item?.client?.address || "-";
+      return item?.client?.address || item?.address || "-";
     }
 
     function money(n) {
@@ -705,17 +740,20 @@
     async function checkCloserAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (!userSnap.exists()) {
         alert("No user profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
+
       const userData = userSnap.data();
       if (userData.role !== "closer") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
+
       currentUser = user;
       currentUserData = userData;
       staffStatus.textContent = "Logged in as Closer";
@@ -743,6 +781,7 @@
         processingFilesSnap.docs.forEach(d => {
           const data = d.data() || {};
           if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+          if (data.sourceAssignmentId) processingAssignmentIds.add(data.sourceAssignmentId);
         });
       } catch (error) {
         console.error("Could not load processingFiles:", error);
@@ -785,6 +824,7 @@
         sourceAssignmentId: item.id,
         assessmentId: item.assessmentId || "",
         submissionId: item.submissionId || "",
+        campaign: item.campaign || item.campaignName || "",
         claimType: item.claimType || "",
         client: item.client || {},
         closer: item.closer || {},
@@ -835,6 +875,7 @@
         assessmentId: item.assessmentId || "",
         submissionId: item.submissionId || "",
         caseReference,
+        campaign: item.campaign || item.campaignName || "",
         claimType: item.claimType || "",
         client: item.client || {},
         closer: item.closer || {},
@@ -905,6 +946,7 @@
         }));
 
         allAssignments.sort(sortByAppointment);
+
         await loadProcessingLinks();
 
         if (selectedAssignmentIdFromUrl) {
@@ -944,8 +986,8 @@
       const filtered = allAssignments.filter(item => {
         const matchesStatus = selectedStatus === "all" || effectiveStatus(item) === selectedStatus;
         const matchesOutcome = selectedOutcome === "all" || outcomeValue(item) === selectedOutcome;
-
         const isSent = processingSent(item);
+
         const matchesProcessing =
           selectedProcessing === "all" ||
           (selectedProcessing === "sent" && isSent) ||
@@ -957,6 +999,7 @@
           ${item.client?.mobile || ""}
           ${item.client?.landline || ""}
           ${item.claimType || ""}
+          ${getCampaignName(item)}
           ${outcomeValue(item)}
           ${effectiveStatus(item)}
         `.toLowerCase();
@@ -970,7 +1013,7 @@
       if (!filtered.length) {
         assignmentsBody.innerHTML = `
           <tr>
-            <td colspan="7" class="p-6 text-center text-slate-500">No assignments found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No assignments found.</td>
           </tr>
         `;
       } else {
@@ -978,15 +1021,16 @@
           const row = document.createElement("tr");
           row.className = "border-t border-slate-200";
           row.innerHTML = `
-            <td class="p-3">${appointmentText(item)}</td>
-            <td class="p-3">
+            <td class="p-3 cell-wrap">${appointmentText(item)}</td>
+            <td class="p-3 cell-wrap">
               <div class="font-semibold text-slate-800">${clientName(item)}</div>
               <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
             </td>
-            <td class="p-3">${formatClaimType(item.claimType)}</td>
-            <td class="p-3">${statusBadge(effectiveStatus(item))}</td>
-            <td class="p-3">${outcomeBadge(outcomeValue(item))}</td>
-            <td class="p-3">${processingLabel(item)}</td>
+            <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+            <td class="p-3 cell-wrap">${formatClaimType(item.claimType)}</td>
+            <td class="p-3 cell-wrap">${statusBadge(effectiveStatus(item))}</td>
+            <td class="p-3 cell-wrap">${outcomeBadge(outcomeValue(item))}</td>
+            <td class="p-3 cell-wrap">${processingLabel(item)}</td>
             <td class="p-3">
               <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">
                 Open File
@@ -1012,8 +1056,8 @@
 
       selectedTitle.textContent = clientName(selectedAssignment);
       selectedSubtitle.textContent = `Assignment ID: ${selectedAssignment.id}`;
-
       detailClientName.textContent = clientName(selectedAssignment);
+      detailCampaign.textContent = getCampaignName(selectedAssignment);
       detailClaimType.textContent = formatClaimType(selectedAssignment.claimType);
       detailAppointment.textContent = appointmentText(selectedAssignment);
       detailStatus.innerHTML = statusBadge(effectiveStatus(selectedAssignment));
@@ -1026,11 +1070,13 @@
       detailPaidNow.textContent = money(selectedAssignment.amountPaidNow || 0);
       detailFollowUpDue.textContent = money(selectedAssignment.followUpDue || 0);
       detailPaymentLink.textContent = safeText(selectedAssignment.paymentLink);
+
       detailAssessmentSummary.textContent =
         selectedAssignment.assessmentSummary ||
         selectedAssignment.generatedAssessmentText ||
         selectedAssignment.assessmentReportText ||
         "No assessment summary available.";
+
       detailManagerNotes.textContent =
         selectedAssignment.handoffNotes ||
         selectedAssignment.managerNotes ||
@@ -1112,6 +1158,7 @@
             ? "Closer actions saved and sent to processing."
             : "Closer actions saved."
         );
+
         showToast(
           shouldSendToProcessing
             ? "Saved and sent to processing."

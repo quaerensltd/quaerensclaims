@@ -77,6 +77,11 @@
       opacity: 1;
       pointer-events: auto;
     }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -140,7 +145,7 @@
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-6 gap-4">
+        <div class="grid md:grid-cols-7 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership View</label>
             <select id="ownershipFilter" class="input">
@@ -162,13 +167,16 @@
           </div>
 
           <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+
+          <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeFilter" class="input">
               <option value="all">All claim types</option>
-              <option value="solar">Solar Panel Claims</option>
-              <option value="mortgage">Mortgage Review</option>
-              <option value="survey">Survey Review</option>
-              <option value="newbuild">New Build Issues</option>
             </select>
           </div>
 
@@ -186,7 +194,7 @@
 
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, email, owner..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, owner, campaign..." />
           </div>
 
           <div class="flex items-end">
@@ -208,6 +216,7 @@
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Campaign</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Report Pack</th>
                 <th class="text-left p-3">Owner</th>
@@ -256,6 +265,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const ownershipFilter = document.getElementById("ownershipFilter");
     const paymentStatusFilter = document.getElementById("paymentStatusFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
     const claimTypeFilter = document.getElementById("claimTypeFilter");
     const reportPackFilter = document.getElementById("reportPackFilter");
     const searchInput = document.getElementById("searchInput");
@@ -267,6 +277,44 @@
     let currentUser = null;
     let currentUserData = null;
     let allFiles = [];
+
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -284,31 +332,38 @@
       return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
     function normalizeClaimType(value) {
-      const raw = String(value || "").trim().toLowerCase();
-      if (!raw) return "";
-      if (raw.includes("solar")) return "solar";
-      if (raw.includes("mortgage")) return "mortgage";
-      if (raw.includes("survey")) return "survey";
-      if (raw.includes("newbuild") || raw.includes("new build")) return "newbuild";
-      return raw;
+      return cleanValue(value).toLowerCase();
     }
 
     function formatClaimType(type) {
-      const normalized = normalizeClaimType(type);
-      switch (normalized) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(file) {
+      return cleanValue(
+        file?.campaign ||
+        file?.campaignName ||
+        file?.campaignLabel ||
+        file?.sourceCampaign ||
+        file?.leadCampaign
+      ) || "-";
     }
 
     function clientName(file) {
-      const first = file.client?.firstName || "";
-      const second = file.client?.secondName || "";
+      const first = file?.client?.firstName || file?.forename || "";
+      const second = file?.client?.secondName || file?.surname || "";
       return `${first} ${second}`.trim() || file.caseReference || "-";
+    }
+
+    function clientEmail(file) {
+      return file?.client?.email || file?.email || "-";
     }
 
     function ownerName(file) {
@@ -404,6 +459,44 @@
       return true;
     }
 
+    function populateCampaignFilterOptions() {
+      const currentValue = campaignFilter.value || "all";
+      const campaigns = [...new Set(
+        allFiles
+          .map(file => getCampaignName(file))
+          .filter(value => value && value !== "-")
+      )].sort((a, b) => a.localeCompare(b));
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+
+      campaignFilter.value = campaigns.includes(currentValue) ? currentValue : "all";
+    }
+
+    function populateClaimTypeFilterOptions() {
+      const currentValue = claimTypeFilter.value || "all";
+      const claimTypes = [...new Set(
+        allFiles
+          .map(file => normalizeClaimType(file.claimType))
+          .filter(Boolean)
+      )].sort((a, b) => formatClaimType(a).localeCompare(formatClaimType(b)));
+
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+      claimTypes.forEach(typeValue => {
+        const option = document.createElement("option");
+        option.value = typeValue;
+        option.textContent = formatClaimType(typeValue);
+        claimTypeFilter.appendChild(option);
+      });
+
+      claimTypeFilter.value = claimTypes.includes(currentValue) ? currentValue : "all";
+    }
+
     async function checkProcessingAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -431,6 +524,8 @@
       try {
         const snapshot = await getDocs(collection(db, "processingCases"));
         allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        populateCampaignFilterOptions();
+        populateClaimTypeFilterOptions();
         renderStats();
         renderFiles();
       } catch (error) {
@@ -464,11 +559,14 @@
     function getFilteredFiles() {
       const ownership = ownershipFilter.value;
       const paymentFilter = paymentStatusFilter.value;
+      const campaignValue = campaignFilter.value;
       const claimFilter = claimTypeFilter.value;
       const term = searchInput.value.trim().toLowerCase();
 
       return allFiles.filter(file => {
         const effectiveStatus = getEffectivePaymentStatus(file);
+        const normalizedClaim = normalizeClaimType(file.claimType);
+        const campaignName = getCampaignName(file);
 
         const matchesOwnership =
           ownership === "all" ||
@@ -479,16 +577,20 @@
         const matchesPayment =
           paymentFilter === "all" || effectiveStatus === paymentFilter;
 
+        const matchesCampaign =
+          campaignValue === "all" || campaignName === campaignValue;
+
         const matchesClaim =
-          claimFilter === "all" || normalizeClaimType(file.claimType) === claimFilter;
+          claimFilter === "all" || normalizedClaim === claimFilter;
 
         const matchesPack = matchesReportPackFilter(file);
 
         const haystack = `
           ${clientName(file)}
-          ${file.client?.email || ""}
+          ${clientEmail(file)}
           ${ownerName(file)}
           ${file.claimType || ""}
+          ${campaignName}
           ${file.processingNotes || ""}
           ${file.caseReference || ""}
           ${file.assessmentReportText || ""}
@@ -508,7 +610,7 @@
 
         const matchesSearch = !term || haystack.includes(term);
 
-        return matchesOwnership && matchesPayment && matchesClaim && matchesPack && matchesSearch;
+        return matchesOwnership && matchesPayment && matchesCampaign && matchesClaim && matchesPack && matchesSearch;
       }).sort((a, b) => {
         const aMine = a.assignedToUid === currentUser.uid ? 0 : 1;
         const bMine = b.assignedToUid === currentUser.uid ? 0 : 1;
@@ -542,6 +644,7 @@
             email: currentUser.email || ""
           }
         });
+
         showToast("Case claimed.");
         await loadFiles();
       } catch (error) {
@@ -564,6 +667,7 @@
             email: currentUser.email || ""
           }
         });
+
         showToast("Case released.");
         await loadFiles();
       } catch (error) {
@@ -579,7 +683,7 @@
       if (!filtered.length) {
         filesBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No processing cases found.</td>
+            <td colspan="10" class="p-6 text-center text-slate-500">No processing cases found.</td>
           </tr>
         `;
       } else {
@@ -603,11 +707,12 @@
           const effectiveStatus = getEffectivePaymentStatus(file);
 
           row.innerHTML = `
-            <td class="p-3">
+            <td class="p-3 cell-wrap">
               <div class="font-semibold text-slate-800">${clientName(file)}</div>
-              <div class="text-xs text-slate-500">${file.client?.email || "-"}</div>
+              <div class="text-xs text-slate-500">${clientEmail(file)}</div>
             </td>
-            <td class="p-3">${formatClaimType(file.claimType)}</td>
+            <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+            <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
             <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
             <td class="p-3"><div>${ownerBadge(file)}</div></td>
             <td class="p-3">${money(file.amountDueNow)}</td>
@@ -670,6 +775,7 @@
 
     ownershipFilter.addEventListener("change", renderFiles);
     paymentStatusFilter.addEventListener("change", renderFiles);
+    campaignFilter.addEventListener("change", renderFiles);
     claimTypeFilter.addEventListener("change", renderFiles);
     reportPackFilter.addEventListener("change", renderFiles);
     searchInput.addEventListener("input", renderFiles);
