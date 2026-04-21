@@ -39,6 +39,20 @@
       background: #1d4ed8;
       color: white;
     }
+    .table-link {
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .table-link:hover {
+      text-decoration: underline;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -143,6 +157,8 @@
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Appointment</th>
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Status</th>
                   <th class="text-left p-3">Outcome</th>
                   <th class="text-left p-3">Action</th>
@@ -165,6 +181,7 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Processing</th>
                   <th class="text-left p-3">Action</th>
@@ -189,6 +206,8 @@
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Appointment</th>
                 <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Campaign</th>
+                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Outcome</th>
                 <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Action</th>
@@ -236,8 +255,50 @@
     let allAssignments = [];
     let processingAssignmentIds = new Set();
 
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
+
     function hideLoader() {
       authLoader.style.display = "none";
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
     }
 
     function todayIso() {
@@ -245,23 +306,56 @@
     }
 
     function appointmentDate(item) {
-      return item.appointment?.date || "";
+      return cleanValue(item.appointment?.date || item.closerAppointmentDate || item.appointmentDate);
     }
 
     function appointmentTime(item) {
-      return item.appointment?.time || "";
+      return cleanValue(item.appointment?.time || item.closerAppointmentTime || item.appointmentTime);
     }
 
     function appointmentText(item) {
       const date = appointmentDate(item) || "-";
-      const time = appointmentTime(item) || "-";
+      const time = appointmentTime(item) || "";
       return `${date} ${time}`.trim();
     }
 
     function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
+      const first = cleanValue(item.client?.firstName || item.forename);
+      const second = cleanValue(item.client?.secondName || item.surname);
       return `${first} ${second}`.trim() || "-";
+    }
+
+    function getClientEmail(item) {
+      return cleanValue(item.client?.email || item.email) || "-";
+    }
+
+    function getCampaignName(item) {
+      return cleanValue(
+        item.campaign ||
+        item.campaignName ||
+        item.campaignLabel ||
+        item.sourceCampaign ||
+        item.leadCampaign
+      ) || "-";
+    }
+
+    function normalizeClaimType(type) {
+      return cleanValue(type).toLowerCase();
+    }
+
+    function formatClaimType(type) {
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getClaimType(item) {
+      return formatClaimType(
+        item.claimType ||
+        item.type ||
+        item.claim ||
+        item.claim_type
+      );
     }
 
     function money(n) {
@@ -269,22 +363,12 @@
       return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     }
 
-    function formatClaimType(type) {
-      switch (type) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
-    }
-
     function getEffectiveStatus(item) {
-      return item.status || "Assigned";
+      return cleanValue(item.status || item.leadStatus) || "Assigned";
     }
 
     function getOutcome(item) {
-      return item.outcome || "";
+      return cleanValue(item.outcome || item.lastOutcome || item.result);
     }
 
     function isClosedDeal(item) {
@@ -292,7 +376,8 @@
     }
 
     function isCallbackOutcome(item) {
-      return getOutcome(item) === "Call Back" || getOutcome(item) === "No Answer";
+      const outcome = getOutcome(item);
+      return outcome === "Call Back" || outcome === "No Answer";
     }
 
     function isOverdueAppointment(item) {
@@ -306,6 +391,7 @@
       if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
       if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
       if (status === "Assigned") return `<span class="badge badge-amber">Assigned</span>`;
+      if (status === "Sent to Processing") return `<span class="badge badge-violet">Sent to Processing</span>`;
       return `<span class="badge badge-slate">${status || "-"}</span>`;
     }
 
@@ -375,6 +461,7 @@
         processingFilesSnap.docs.forEach(d => {
           const data = d.data() || {};
           if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+          if (data.sourceAssignmentId) processingAssignmentIds.add(data.sourceAssignmentId);
         });
       } catch (error) {
         console.error("Could not load processingFiles:", error);
@@ -392,7 +479,6 @@
       allAssignments.sort(sortByAppointment);
 
       await loadProcessingLinks();
-
       renderStats();
       renderAppointments();
       renderClosedDeals();
@@ -402,11 +488,9 @@
     function renderStats() {
       const today = todayIso();
       const closedDeals = allAssignments.filter(isClosedDeal);
-
       const dueNow = closedDeals.reduce((sum, x) => sum + Number(x.amountDueNow || 0), 0);
       const paidNow = closedDeals.reduce((sum, x) => sum + Number(x.amountPaidNow || 0), 0);
       const followUp = closedDeals.reduce((sum, x) => sum + Number(x.followUpDue || 0), 0);
-
       const upcoming = allAssignments.filter(x => appointmentDate(x) && appointmentDate(x) > today && !isClosedDeal(x)).length;
       const overdue = allAssignments.filter(isOverdueAppointment).length;
       const callbacks = allAssignments.filter(x => getOutcome(x) === "Call Back").length;
@@ -421,7 +505,6 @@
       document.getElementById("closedDealsStat").textContent = String(closedDeals.length);
       document.getElementById("sentToProcessingStat").textContent = String(sentToProcessing);
       document.getElementById("inactiveOutcomesStat").textContent = String(inactiveOutcomes);
-
       document.getElementById("dueNowTotal").textContent = money(dueNow);
       document.getElementById("paidNowTotal").textContent = money(paidNow);
       document.getElementById("followUpTotal").textContent = money(followUp);
@@ -442,7 +525,7 @@
       if (!rows.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No appointments found.</td>
+            <td colspan="7" class="p-6 text-center text-slate-500">No appointments found.</td>
           </tr>
         `;
         return;
@@ -452,15 +535,17 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${appointmentText(item)}</td>
-          <td class="p-3">
+          <td class="p-3 cell-wrap">${appointmentText(item)}</td>
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${getClientEmail(item)}</div>
           </td>
-          <td class="p-3">${statusBadge(getEffectiveStatus(item))}</td>
-          <td class="p-3">${outcomeBadge(getOutcome(item))}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+          <td class="p-3 cell-wrap">${getClaimType(item)}</td>
+          <td class="p-3 cell-wrap">${statusBadge(getEffectiveStatus(item))}</td>
+          <td class="p-3 cell-wrap">${outcomeBadge(getOutcome(item))}</td>
           <td class="p-3">
-            <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${detailHref(item)}" class="table-link">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -483,7 +568,7 @@
       if (!deals.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="4" class="p-6 text-center text-slate-500">No closed deals found.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No closed deals found.</td>
           </tr>
         `;
         return;
@@ -494,14 +579,15 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${getClientEmail(item)}</div>
           </td>
-          <td class="p-3">${formatClaimType(item.claimType)}</td>
-          <td class="p-3">${processingBadge(sent)}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+          <td class="p-3 cell-wrap">${getClaimType(item)}</td>
+          <td class="p-3 cell-wrap">${processingBadge(sent)}</td>
           <td class="p-3">
-            <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${detailHref(item)}" class="table-link">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -520,7 +606,7 @@
       if (!callbacks.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No callback or follow-up files found.</td>
+            <td colspan="7" class="p-6 text-center text-slate-500">No callback or follow-up files found.</td>
           </tr>
         `;
         return;
@@ -530,15 +616,17 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">${appointmentText(item)}</td>
-          <td class="p-3">
+          <td class="p-3 cell-wrap">${appointmentText(item)}</td>
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(item)}</div>
-            <div class="text-xs text-slate-500">${item.client?.email || "-"}</div>
+            <div class="text-xs text-slate-500">${getClientEmail(item)}</div>
           </td>
-          <td class="p-3">${outcomeBadge(getOutcome(item))}</td>
-          <td class="p-3">${statusBadge(getEffectiveStatus(item))}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+          <td class="p-3 cell-wrap">${getClaimType(item)}</td>
+          <td class="p-3 cell-wrap">${outcomeBadge(getOutcome(item))}</td>
+          <td class="p-3 cell-wrap">${statusBadge(getEffectiveStatus(item))}</td>
           <td class="p-3">
-            <a href="${detailHref(item)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+            <a href="${detailHref(item)}" class="table-link">Open</a>
           </td>
         `;
         body.appendChild(row);
@@ -592,3 +680,4 @@
     });
   </script>
 </body>
+</html>
