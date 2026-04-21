@@ -19,7 +19,26 @@
     .btn-secondary:hover { background: #dbeafe; }
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .btn-red { background: #fee2e2; color: #991b1b; }
+    .btn-red:hover { background: #fecaca; }
+    .btn-amber { background: #fef3c7; color: #92400e; }
+    .btn-amber:hover { background: #fde68a; }
+    .btn-green { background: #dcfce7; color: #166534; }
+    .btn-green:hover { background: #bbf7d0; }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
     .hidden { display: none; }
+    .disabled-actions { opacity: 0.55; pointer-events: none; }
     .active-nav {
       background: #2563eb;
       color: white;
@@ -85,6 +104,8 @@
       font-weight: 600;
       text-decoration: none;
       white-space: nowrap;
+      display: inline-block;
+      min-width: 72px;
     }
     .table-link:hover {
       text-decoration: underline;
@@ -145,7 +166,7 @@
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-6 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
             <select id="statusFilter" class="input">
@@ -160,6 +181,7 @@
               <option value="closed">Closed / Unusable</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Special View</label>
             <select id="specialFilter" class="input">
@@ -172,10 +194,26 @@
               <option value="locked_only">Locked Only</option>
             </select>
           </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Name, phone, email, postcode, campaign, claim..." />
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, mobile, email, postcode..." />
           </div>
+
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Leads</button>
           </div>
@@ -189,19 +227,20 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="leads-table text-sm min-w-full">
             <colgroup>
-              <col style="width: 24%">
+              <col style="width: 21%">
               <col style="width: 10%">
               <col style="width: 10%">
-              <col style="width: 12%">
+              <col style="width: 11%">
               <col style="width: 8%">
-              <col style="width: 12%">
               <col style="width: 10%">
               <col style="width: 10%">
-              <col style="width: 9%">
-              <col style="width: 5%">
+              <col style="width: 8%">
+              <col style="width: 6%">
+              <col style="width: 6%">
             </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
@@ -214,7 +253,7 @@
                 <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Last Action</th>
                 <th class="text-left p-3">Callback</th>
-                <th class="text-left p-3">Action</th>
+                <th class="text-left p-3 whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody id="leadsBody"></tbody>
@@ -245,56 +284,12 @@
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
             <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
-            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claim_type">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
             <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
             <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
             <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
             <div><span class="font-semibold text-blue-900">Intro Email Sent:</span> <span id="lead_intro_status">-</span></div>
-          </div>
-        </section>
-
-        <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Campaign & Claim Type</h4>
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="campaignSelect">Campaign</label>
-              <select id="campaignSelect" class="input">
-                <option value="">Select campaign</option>
-                <option value="Solar Campaign A">Solar Campaign A</option>
-                <option value="Solar Campaign B">Solar Campaign B</option>
-                <option value="Spray Foam Batch 1">Spray Foam Batch 1</option>
-                <option value="Spray Foam Batch 2">Spray Foam Batch 2</option>
-                <option value="Caravan Park July">Caravan Park July</option>
-                <option value="Caravan Park August">Caravan Park August</option>
-                <option value="Medical Negligence Batch 1">Medical Negligence Batch 1</option>
-                <option value="Medical Negligence Batch 2">Medical Negligence Batch 2</option>
-                <option value="Housing Disrepair Batch 1">Housing Disrepair Batch 1</option>
-                <option value="PCP Campaign">PCP Campaign</option>
-                <option value="Pension Review">Pension Review</option>
-                <option value="Timeshare Claims">Timeshare Claims</option>
-                <option value="Cavity Wall Claims">Cavity Wall Claims</option>
-                <option value="Diesel Emissions">Diesel Emissions</option>
-                <option value="Holiday Sickness">Holiday Sickness</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="claimTypeSelect">Claim Type</label>
-              <select id="claimTypeSelect" class="input">
-                <option value="">Select claim type</option>
-                <option value="Solar">Solar</option>
-                <option value="Caravan Park">Caravan Park</option>
-                <option value="Spray Foam">Spray Foam</option>
-                <option value="Medical Negligence">Medical Negligence</option>
-                <option value="Housing Disrepair">Housing Disrepair</option>
-                <option value="PCP">PCP</option>
-                <option value="Mis-sold Timeshare">Mis-sold Timeshare</option>
-                <option value="Pension">Pension</option>
-                <option value="Cavity Wall">Cavity Wall</option>
-                <option value="Diesel">Diesel</option>
-                <option value="Holiday Sickness">Holiday Sickness</option>
-              </select>
-            </div>
           </div>
         </section>
 
@@ -387,10 +382,13 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const statusFilter = document.getElementById("statusFilter");
     const specialFilter = document.getElementById("specialFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const callbacksStat = document.getElementById("callbacksStat");
     const introEmailStat = document.getElementById("introEmailStat");
@@ -404,8 +402,6 @@
     const callbackTime = document.getElementById("callbackTime");
     const notesBox = document.getElementById("notesBox");
     const modalMessage = document.getElementById("modalMessage");
-    const campaignSelect = document.getElementById("campaignSelect");
-    const claimTypeSelect = document.getElementById("claimTypeSelect");
 
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
@@ -458,6 +454,14 @@
 
     function getLeadEmail(lead) {
       return cleanValue(lead.email || lead.emailAddress);
+    }
+
+    function getLeadCampaign(lead) {
+      return cleanValue(lead.campaign);
+    }
+
+    function getLeadClaimType(lead) {
+      return cleanValue(lead.claimType || lead.type);
     }
 
     async function recordStaffLoginFromPage() {
@@ -527,6 +531,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -538,6 +543,7 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
+
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -599,7 +605,8 @@
         callback_rescheduled: "Callback Rescheduled",
         qualified: "Qualified",
         awaiting_manager: "Awaiting Manager Review",
-        archived_closed_lead: "Archived Closed Lead"
+        archived_closed_lead: "Archived Closed Lead",
+        lead_uploaded: "Lead Uploaded"
       };
       return map[action] || action || "-";
     }
@@ -683,6 +690,54 @@
       }
     }
 
+    function populateCampaignFilter() {
+      const existingValue = campaignFilter.value || "all";
+      const campaigns = [...new Set(
+        allLeads
+          .map(lead => getLeadCampaign(lead))
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+
+      if ([...campaignFilter.options].some(option => option.value === existingValue)) {
+        campaignFilter.value = existingValue;
+      } else {
+        campaignFilter.value = "all";
+      }
+    }
+
+    function populateClaimTypeFilter() {
+      const existingValue = claimTypeFilter.value || "all";
+      const claimTypes = [...new Set(
+        allLeads
+          .map(lead => getLeadClaimType(lead))
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+
+      claimTypes.forEach(claimType => {
+        const option = document.createElement("option");
+        option.value = claimType;
+        option.textContent = claimType;
+        claimTypeFilter.appendChild(option);
+      });
+
+      if ([...claimTypeFilter.options].some(option => option.value === existingValue)) {
+        claimTypeFilter.value = existingValue;
+      } else {
+        claimTypeFilter.value = "all";
+      }
+    }
+
     async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
@@ -694,6 +749,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -712,8 +768,12 @@
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid)
         );
+
         const snapshot = await getDocs(leadsQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        populateCampaignFilter();
+        populateClaimTypeFilter();
         renderStats();
         renderLeads();
       } catch (error) {
@@ -736,6 +796,8 @@
     function getFilteredLeads() {
       const status = statusFilter.value;
       const special = specialFilter.value;
+      const selectedCampaign = campaignFilter.value;
+      const selectedClaimType = claimTypeFilter.value;
       const term = searchInput.value.trim().toLowerCase();
 
       return allLeads.filter(lead => {
@@ -761,6 +823,12 @@
           (special === "converted_only" && isConverted(lead)) ||
           (special === "locked_only" && isLocked(lead));
 
+        const leadCampaign = getLeadCampaign(lead);
+        const leadClaimType = getLeadClaimType(lead);
+
+        const matchesCampaign = selectedCampaign === "all" || leadCampaign === selectedCampaign;
+        const matchesClaimType = selectedClaimType === "all" || leadClaimType === selectedClaimType;
+
         const haystack = `
           ${lead.forename || ""}
           ${lead.surname || ""}
@@ -780,7 +848,8 @@
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-        return matchesStatus && matchesSpecial && matchesSearch;
+
+        return matchesStatus && matchesSpecial && matchesCampaign && matchesClaimType && matchesSearch;
       });
     }
 
@@ -798,6 +867,7 @@
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
+
           tr.innerHTML = `
             <td class="p-3 align-top client-cell">
               <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
@@ -807,16 +877,15 @@
             <td class="p-3 align-top cell-tight">${getLeadMobile(lead) || "-"}</td>
             <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
             <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${lead.claimType || lead.type || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${getLeadClaimType(lead) || "-"}</td>
             <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
             <td class="p-3 align-top cell-wrap">${formatAction(lead.lastAction)}</td>
             <td class="p-3 align-top cell-wrap">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
-            <td class="p-3 align-top">
-              <button class="table-link" data-open-lead="${lead.id}">
-                Open Lead
-              </button>
+            <td class="p-3 align-top whitespace-nowrap">
+              <button class="table-link" data-open-lead="${lead.id}">Open Lead</button>
             </td>
           `;
+
           leadsBody.appendChild(tr);
         });
       }
@@ -856,6 +925,7 @@
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
+
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
       document.getElementById("lead_phone").textContent = getLeadTelephone(selectedLead) || "-";
@@ -863,8 +933,8 @@
       document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
-      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
-      document.getElementById("lead_claim_type").textContent = selectedLead.claimType || selectedLead.type || "-";
+      document.getElementById("lead_campaign").textContent = getLeadCampaign(selectedLead) || "-";
+      document.getElementById("lead_claimType").textContent = getLeadClaimType(selectedLead) || "-";
       document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_callback").textContent =
@@ -875,8 +945,6 @@
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
-      campaignSelect.value = selectedLead.campaign || "";
-      claimTypeSelect.value = selectedLead.claimType || selectedLead.type || "";
 
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
@@ -885,6 +953,7 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
+
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -926,6 +995,7 @@
 
       try {
         const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
+
         await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
           originalLeadId: selectedLead.id,
@@ -968,13 +1038,13 @@
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
       try {
         await updateLead({
           leadStatus: "intake_in_progress",
-          campaign: campaignSelect.value || "",
-          claimType: claimTypeSelect.value || "",
           lastAction: "interested_intake_started"
         }, "interested_intake_started", "Lead moved to intake.");
+
         window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
       } catch (error) {
         console.error(error);
@@ -1000,8 +1070,6 @@
         callbackRequired: true,
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
-        campaign: campaignSelect.value || "",
-        claimType: claimTypeSelect.value || "",
         lastAction: "send_intro_email"
       }, "send_intro_email", `Intro email needed. Follow-up set for ${callbackDate.value} ${callbackTime.value}`);
     });
@@ -1020,8 +1088,6 @@
         introEmailNeeded: false,
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
-        campaign: campaignSelect.value || "",
-        claimType: claimTypeSelect.value || "",
         lastAction: "callback_required"
       }, "callback_required", `Callback set for ${callbackDate.value} ${callbackTime.value}`);
     });
@@ -1033,8 +1099,6 @@
         leadStatus: "qualified",
         callbackRequired: false,
         introEmailNeeded: false,
-        campaign: campaignSelect.value || "",
-        claimType: claimTypeSelect.value || "",
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
       }, "qualified", "Lead marked as qualified.");
@@ -1047,8 +1111,6 @@
         leadStatus: "awaiting_manager",
         callbackRequired: false,
         introEmailNeeded: false,
-        campaign: campaignSelect.value || "",
-        claimType: claimTypeSelect.value || "",
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
       }, "awaiting_manager", "Lead sent to manager.");
@@ -1062,8 +1124,6 @@
           notes: notesBox.value || "",
           callbackDate: callbackDate.value || "",
           callbackTime: callbackTime.value || "",
-          campaign: campaignSelect.value || "",
-          claimType: claimTypeSelect.value || "",
           lastUpdatedAt: serverTimestamp()
         });
 
@@ -1080,8 +1140,6 @@
 
       await updateLead({
         leadStatus: "no_answer",
-        campaign: campaignSelect.value || "",
-        claimType: claimTypeSelect.value || "",
         lastAction: "no_answer",
         lastCallAt: serverTimestamp(),
         attemptCount: (selectedLead.attemptCount || 0) + 1
@@ -1092,8 +1150,6 @@
       if (!selectedLead) return;
 
       await updateLead({
-        campaign: campaignSelect.value || "",
-        claimType: claimTypeSelect.value || "",
         lastAction: "voicemail",
         lastCallAt: serverTimestamp(),
         voicemailLeft: true,
@@ -1117,8 +1173,6 @@
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           notes: notesBox.value || "",
-          campaign: campaignSelect.value || "",
-          claimType: claimTypeSelect.value || "",
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
             action: "notes_saved",
@@ -1199,6 +1253,8 @@
 
     statusFilter.addEventListener("change", renderLeads);
     specialFilter.addEventListener("change", renderLeads);
+    campaignFilter.addEventListener("change", renderLeads);
+    claimTypeFilter.addEventListener("change", renderLeads);
     searchInput.addEventListener("input", renderLeads);
     refreshBtn.addEventListener("click", loadLeads);
 
