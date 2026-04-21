@@ -52,6 +52,7 @@
     .badge-indigo { background: #e0e7ff; color: #3730a3; }
     .badge-rose { background: #ffe4e6; color: #be123c; }
     .badge-sky { background: #e0f2fe; color: #0369a1; }
+
     #toast {
       position: fixed;
       top: 20px;
@@ -68,9 +69,16 @@
       font-size: 0.9rem;
       font-weight: 600;
     }
+
     #toast.show {
       opacity: 1;
       pointer-events: auto;
+    }
+
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
   </style>
 </head>
@@ -91,6 +99,7 @@
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
           <p class="text-sm text-slate-500">Processing workload, case ownership, payment tracking, report pack visibility, and next actions</p>
         </div>
+
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
@@ -190,6 +199,7 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Report Pack</th>
                   <th class="text-left p-3">Action</th>
@@ -212,6 +222,7 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Report Pack</th>
                   <th class="text-left p-3">Action</th>
@@ -236,6 +247,7 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Owner</th>
                   <th class="text-left p-3">Report Pack</th>
@@ -259,6 +271,7 @@
               <thead>
                 <tr class="bg-blue-50 text-blue-900">
                   <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Owner</th>
                   <th class="text-left p-3">Due Now</th>
                   <th class="text-left p-3">Paid</th>
@@ -309,6 +322,44 @@
     let currentUserData = null;
     let allCases = [];
 
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
+
     function hideLoader() {
       authLoader.style.display = "none";
     }
@@ -322,38 +373,44 @@
 
     function money(n) {
       const num = Number(n || 0);
-      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `£${num.toLocaleString("en-GB", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      })}`;
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
     }
 
     function normalizeClaimType(value) {
-      const raw = String(value || "").trim().toLowerCase();
-      if (!raw) return "";
-      if (raw.includes("solar")) return "solar";
-      if (raw.includes("mortgage")) return "mortgage";
-      if (raw.includes("survey")) return "survey";
-      if (raw.includes("newbuild") || raw.includes("new build")) return "newbuild";
-      return raw;
+      return cleanValue(value).toLowerCase();
     }
 
     function formatClaimType(type) {
-      const normalized = normalizeClaimType(type);
-      switch (normalized) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(item) {
+      return cleanValue(
+        item?.campaign ||
+        item?.campaignName ||
+        item?.campaignLabel ||
+        item?.sourceCampaign ||
+        item?.leadCampaign
+      ) || "-";
     }
 
     function clientName(item) {
-      const first = item.client?.firstName || "";
-      const second = item.client?.secondName || "";
+      const first = item?.client?.firstName || item?.forename || "";
+      const second = item?.client?.secondName || item?.surname || "";
       return `${first} ${second}`.trim() || item.caseReference || "-";
     }
 
     function clientEmail(item) {
-      return item.client?.email || "-";
+      return item?.client?.email || item?.email || "-";
     }
 
     function ownerName(item) {
@@ -372,6 +429,7 @@
 
     function getEffectivePaymentStatus(item) {
       if (item.paymentStatus) return item.paymentStatus;
+
       const dueNow = Number(item.amountDueNow || 0);
       const paidNow = Number(item.amountPaidNow || 0);
       const followUpDue = Number(item.followUpDue || 0);
@@ -379,24 +437,34 @@
       if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
         return "part_paid";
       }
-      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+
+      if (
+        (dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) ||
+        (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)
+      ) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
-    function paymentStatusLabel(status) {
-      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
-      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
-      return `<span class="badge badge-amber">Awaiting Payment</span>`;
-    }
-
     function hasAssessmentReport(item) {
-      return !!String(item.assessmentReportText || item.generatedAssessmentText || item.assessmentSummary || "").trim();
+      return !!String(
+        item.assessmentReportText ||
+        item.generatedAssessmentText ||
+        item.assessmentSummary ||
+        ""
+      ).trim();
     }
 
     function hasStrategyPack(item) {
-      return !!String(item.processingPackText || item.strategicAnalysisText || item.recommendedNextStepsText || item.strategySummary || "").trim();
+      return !!String(
+        item.processingPackText ||
+        item.strategicAnalysisText ||
+        item.recommendedNextStepsText ||
+        item.strategySummary ||
+        ""
+      ).trim();
     }
 
     function hasComplaintDocs(item) {
@@ -450,6 +518,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -465,6 +534,7 @@
     async function loadCases() {
       const casesSnap = await getDocs(collection(db, "processingCases"));
       allCases = casesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
       renderStats();
       renderMyFiles();
       renderUnassignedFiles();
@@ -486,6 +556,7 @@
             email: currentUser.email || ""
           }
         });
+
         showToast("Case claimed.");
         await loadCases();
       } catch (error) {
@@ -501,7 +572,6 @@
       const urgentCases = allCases.filter(f => String(f.priority || "").toLowerCase() === "urgent").length;
       const withLinks = allCases.filter(f => String(f.paymentLink || "").trim()).length;
       const withReportPack = allCases.filter(f => hasRichAssessmentPack(f)).length;
-
       const dueNow = allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
       const paidNow = allCases.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0);
       const followUp = allCases.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0);
@@ -534,7 +604,7 @@
       if (!mine.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="4" class="p-6 text-center text-slate-500">No cases assigned to you.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No cases assigned to you.</td>
           </tr>
         `;
         return;
@@ -544,11 +614,12 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
             <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
-          <td class="p-3">${formatClaimType(file.claimType)}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
           <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
@@ -575,7 +646,7 @@
       if (!unassigned.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="4" class="p-6 text-center text-slate-500">No unassigned cases.</td>
+            <td colspan="5" class="p-6 text-center text-slate-500">No unassigned cases.</td>
           </tr>
         `;
         return;
@@ -585,11 +656,12 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
             <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
-          <td class="p-3">${formatClaimType(file.claimType)}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
           <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
             <button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>
@@ -620,7 +692,7 @@
       if (!recent.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No processing cases found.</td>
+            <td colspan="6" class="p-6 text-center text-slate-500">No processing cases found.</td>
           </tr>
         `;
         return;
@@ -630,12 +702,13 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
             <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
-          <td class="p-3">${formatClaimType(file.claimType)}</td>
-          <td class="p-3">${ownerBadge(file)}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
           <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
@@ -661,7 +734,7 @@
       if (!priority.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="6" class="p-6 text-center text-slate-500">No payment priority cases found.</td>
+            <td colspan="7" class="p-6 text-center text-slate-500">No payment priority cases found.</td>
           </tr>
         `;
         return;
@@ -671,14 +744,15 @@
         const row = document.createElement("tr");
         row.className = "border-t border-slate-200";
         row.innerHTML = `
-          <td class="p-3">
+          <td class="p-3 cell-wrap">
             <div class="font-semibold text-slate-800">${clientName(file)}</div>
             <div class="text-xs text-slate-500">${clientEmail(file)}</div>
           </td>
-          <td class="p-3">${ownerBadge(file)}</td>
-          <td class="p-3">${money(file.amountDueNow)}</td>
-          <td class="p-3">${money(file.amountPaidNow)}</td>
-          <td class="p-3">${money(file.followUpDue)}</td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
+          <td class="p-3 cell-wrap">${money(file.amountDueNow)}</td>
+          <td class="p-3 cell-wrap">${money(file.amountPaidNow)}</td>
+          <td class="p-3 cell-wrap">${money(file.followUpDue)}</td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>

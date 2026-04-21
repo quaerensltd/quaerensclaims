@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quaerens Processing Dashboard</title>
+  <title>Quaerens Processing Cases Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,7 +83,7 @@
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-slate-600 font-medium">Loading processing dashboard...</p>
+      <p class="text-slate-600 font-medium">Loading processing cases dashboard...</p>
     </div>
   </div>
 
@@ -93,9 +93,10 @@
     <header class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Cases Dashboard</h1>
           <p class="text-sm text-slate-500">Processing workload, case ownership, payment tracking, report pack visibility, and next actions</p>
         </div>
+
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
@@ -438,12 +439,6 @@
       return "awaiting_payment";
     }
 
-    function paymentStatusLabel(status) {
-      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
-      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
-      return `<span class="badge badge-amber">Awaiting Payment</span>`;
-    }
-
     function hasAssessmentReport(item) {
       return !!String(item.assessmentReportText || item.generatedAssessmentText || item.assessmentSummary || "").trim();
     }
@@ -503,6 +498,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -518,6 +514,7 @@
     async function loadCases() {
       const casesSnap = await getDocs(collection(db, "processingCases"));
       allCases = casesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
       renderStats();
       renderMyFiles();
       renderUnassignedFiles();
@@ -753,11 +750,12 @@
       try {
         const allowed = await checkProcessingAccess(user);
         if (!allowed) return;
+
         await loadCases();
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load processing dashboard.");
+        alert("Could not load processing cases dashboard.");
         window.location.href = "/login.html";
       }
     });
