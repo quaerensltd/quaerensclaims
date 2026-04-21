@@ -48,12 +48,16 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+
     #toast {
       position: fixed;
       top: 20px;
@@ -80,7 +84,7 @@
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-slate-600 font-medium">Loading processing file...</p>
+      <p class="text-slate-600 font-medium">Loading processing case...</p>
     </div>
   </div>
 
@@ -91,7 +95,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Detail</h1>
-          <p class="text-sm text-slate-500">Client file, payment tracking, ownership, and processing notes</p>
+          <p class="text-sm text-slate-500">Client file, campaign origin, ownership, payment tracking, and processing notes</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -106,7 +110,7 @@
       <section class="card p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Processing File</h2>
+            <h2 class="text-xl font-extrabold text-blue-900" id="detailTitle">Processing Case</h2>
             <p class="text-slate-500 mt-1" id="detailSubtitle">Loading...</p>
           </div>
           <div class="text-sm text-slate-500">
@@ -123,12 +127,12 @@
             <h3 class="text-lg font-extrabold text-blue-900 mb-2">Ownership</h3>
             <div class="text-sm text-slate-700 space-y-1">
               <div><span class="font-semibold text-blue-900">Current Owner:</span> <span id="ownerText">-</span></div>
-              <div><span class="font-semibold text-blue-900">Assigned At:</span> <span id="ownerAssignedAtText">-</span></div>
+              <div><span class="font-semibold text-blue-900">Last Activity:</span> <span id="ownerAssignedAtText">-</span></div>
             </div>
           </div>
           <div class="flex flex-wrap gap-3">
-            <button id="claimFileBtn" class="btn btn-primary hidden" type="button">Claim File</button>
-            <button id="releaseFileBtn" class="btn btn-danger hidden" type="button">Release File</button>
+            <button id="claimFileBtn" class="btn btn-primary hidden" type="button">Claim Case</button>
+            <button id="releaseFileBtn" class="btn btn-danger hidden" type="button">Release Case</button>
             <p id="ownershipMessage" class="text-sm text-green-700 hidden self-center"></p>
           </div>
         </div>
@@ -153,8 +157,16 @@
           <h3 class="text-lg font-extrabold text-blue-900 mb-4">Deal Overview</h3>
           <div class="space-y-4">
             <div>
+              <span class="label">Campaign</span>
+              <div class="value" id="campaignText">-</div>
+            </div>
+            <div>
               <span class="label">Claim Type</span>
               <div class="value" id="claimTypeText">-</div>
+            </div>
+            <div>
+              <span class="label">Case Reference</span>
+              <div class="value" id="caseReferenceText">-</div>
             </div>
             <div>
               <span class="label">Closer</span>
@@ -247,6 +259,17 @@
           <div id="generatedAssessmentBox" class="readonly-box">No generated assessment report available.</div>
         </section>
       </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Strategy / Processing Pack</h3>
+          <div id="strategySummaryBox" class="readonly-box">No strategy or processing pack available.</div>
+        </section>
+        <section class="card p-6">
+          <h3 class="text-lg font-extrabold text-blue-900 mb-4">Complaint / Supporting Documents</h3>
+          <div id="complaintDocsBox" class="readonly-box">No complaint or supporting documents available.</div>
+        </section>
+      </section>
     </main>
   </div>
 
@@ -297,6 +320,44 @@
     let currentUserData = null;
     let fileData = null;
 
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
+
     function hideLoader() {
       authLoader.style.display = "none";
     }
@@ -308,21 +369,35 @@
       setTimeout(() => toast.classList.remove("show"), 2800);
     }
 
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeClaimType(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
     function formatClaimType(type) {
-      switch (type) {
-        case "solar": return "Solar Panel Claims";
-        case "mortgage": return "Mortgage Review";
-        case "survey": return "Survey Review";
-        case "newbuild": return "New Build Issues";
-        default: return type || "-";
-      }
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(file) {
+      return cleanValue(
+        file?.campaign ||
+        file?.campaignName ||
+        file?.campaignLabel ||
+        file?.sourceCampaign ||
+        file?.leadCampaign
+      ) || "-";
     }
 
     function formatTimestamp(ts) {
       if (!ts) return "-";
       try {
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
-        return d.toLocaleString("en-GB");
+        const d = typeof ts?.toDate === "function" ? ts.toDate() : new Date(ts);
+        return isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB");
       } catch {
         return "-";
       }
@@ -330,12 +405,13 @@
 
     function setValue(id, value) {
       const el = document.getElementById(id);
-      if (el) el.textContent = value || "-";
+      if (el) el.textContent = cleanValue(value) || "-";
     }
 
     function renderFieldGrid(containerId, data) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
+
       const entries = Object.entries(data || {}).filter(([_, value]) => {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
@@ -348,15 +424,15 @@
       entries.forEach(([key, value]) => {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = `
-          <span class="label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}</span>
-          <div class="value">${value || "-"}</div>
+          <span class="label">${key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase())}</span>
+          <div class="value">${String(value)}</div>
         `;
         container.appendChild(wrapper);
       });
     }
 
     function updatePaymentLinkButton() {
-      const link = (paymentLink.value || "").trim();
+      const link = cleanValue(paymentLink.value);
       if (link) {
         openPaymentLinkBtn.href = link;
         openPaymentLinkBtn.classList.remove("hidden");
@@ -374,9 +450,11 @@
       if (paid > 0 && (follow > 0 || (due > 0 && paid < due))) {
         return "part_paid";
       }
+
       if ((due > 0 && paid >= due && follow <= 0) || (due <= 0 && follow <= 0 && paid > 0)) {
         return "fully_paid";
       }
+
       return "awaiting_payment";
     }
 
@@ -386,21 +464,46 @@
       return `<span class="badge badge-amber">Awaiting Payment</span>`;
     }
 
+    function buildComplaintDocsText(file) {
+      const parts = [];
+
+      if (cleanValue(file.complaintLetterText)) {
+        parts.push("Complaint Letter\n" + file.complaintLetterText);
+      }
+      if (cleanValue(file.statementOfTruthText)) {
+        parts.push("Statement of Truth\n" + file.statementOfTruthText);
+      }
+      if (cleanValue(file.lossSummaryText)) {
+        parts.push("Loss Summary\n" + file.lossSummaryText);
+      }
+      if (cleanValue(file.evidenceChecklistText)) {
+        parts.push("Evidence Checklist\n" + file.evidenceChecklistText);
+      }
+      if (cleanValue(file.escalationLetterText)) {
+        parts.push("Escalation Letter\n" + file.escalationLetterText);
+      }
+      if (cleanValue(file.internalFileNoteText)) {
+        parts.push("Internal File Note\n" + file.internalFileNoteText);
+      }
+
+      return parts.join("\n\n") || "No complaint or supporting documents available.";
+    }
+
     function updateOwnershipUi() {
       const ownerText = document.getElementById("ownerText");
       const ownerAssignedAtText = document.getElementById("ownerAssignedAtText");
 
-      const ownerName = fileData.processingAssignedToName || fileData.processingAssignedToEmail || "Unassigned";
+      const ownerName = fileData.assignedToName || fileData.assignedToEmail || "Unassigned";
       ownerText.textContent = ownerName;
-      ownerAssignedAtText.textContent = formatTimestamp(fileData.processingAssignedAt);
+      ownerAssignedAtText.textContent = formatTimestamp(fileData.lastActivityAt || fileData.updatedAt || fileData.createdAt);
 
       ownershipMessage.classList.add("hidden");
       claimFileBtn.classList.add("hidden");
       releaseFileBtn.classList.add("hidden");
 
-      if (!fileData.processingAssignedToUid) {
+      if (!fileData.assignedToUid) {
         claimFileBtn.classList.remove("hidden");
-      } else if (fileData.processingAssignedToUid === currentUser.uid) {
+      } else if (fileData.assignedToUid === currentUser.uid) {
         releaseFileBtn.classList.remove("hidden");
       }
     }
@@ -423,7 +526,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "processing") {
+      if (userData.role !== "processing" && userData.role !== "manager") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -437,16 +540,16 @@
 
     async function loadFile() {
       if (!fileId) {
-        alert("Missing processing file ID.");
+        alert("Missing processing case ID.");
         window.location.href = "/processing-panel.html";
         return;
       }
 
-      const fileRef = doc(db, "processingFiles", fileId);
+      const fileRef = doc(db, "processingCases", fileId);
       const fileSnap = await getDoc(fileRef);
 
       if (!fileSnap.exists()) {
-        alert("Processing file not found.");
+        alert("Processing case not found.");
         window.location.href = "/processing-panel.html";
         return;
       }
@@ -454,9 +557,9 @@
       fileData = { id: fileSnap.id, ...fileSnap.data() };
 
       document.getElementById("detailTitle").textContent = formatClaimType(fileData.claimType);
-      document.getElementById("detailSubtitle").textContent = `Processing File ID: ${fileId}`;
-      document.getElementById("assignmentText").textContent = `Assignment ID: ${fileData.assignmentId || "-"}`;
-      document.getElementById("sourceStatusText").textContent = `Source Status: ${fileData.sourceStatus || "-"}`;
+      document.getElementById("detailSubtitle").textContent = `Processing Case ID: ${fileId}`;
+      document.getElementById("assignmentText").textContent = `Assignment ID: ${fileData.assignmentId || fileData.sourceAssignmentId || "-"}`;
+      document.getElementById("sourceStatusText").textContent = `Source Status: ${fileData.status || fileData.sourceStatus || "-"}`;
       document.getElementById("paymentStatusText").innerHTML = `Payment Status: ${paymentStatusBadge(fileData.paymentStatus || "awaiting_payment")}`;
 
       setValue("client_firstName", fileData.client?.firstName);
@@ -468,7 +571,9 @@
       setValue("client_email", fileData.client?.email);
       setValue("client_address", fileData.client?.address);
 
+      setValue("campaignText", getCampaignName(fileData));
       setValue("claimTypeText", formatClaimType(fileData.claimType));
+      setValue("caseReferenceText", fileData.caseReference);
       setValue("closerText", fileData.closer?.name || fileData.closer?.email);
       setValue("assignedByText", fileData.assignedBy?.name || fileData.assignedBy?.email);
       setValue("outcomeText", fileData.outcome);
@@ -476,10 +581,10 @@
       setValue("managerNotesText", fileData.managerNotes);
       setValue("handoffNotesText", fileData.handoffNotes);
 
-      amountDueNow.value = fileData.amountDueNow || "";
-      amountPaidNow.value = fileData.amountPaidNow || "";
-      followUpDue.value = fileData.followUpDue || "";
-      paymentStatus.value = fileData.paymentStatus || "awaiting_payment";
+      amountDueNow.value = fileData.amountDueNow ?? "";
+      amountPaidNow.value = fileData.amountPaidNow ?? "";
+      followUpDue.value = fileData.followUpDue ?? "";
+      paymentStatus.value = fileData.paymentStatus || derivePaymentStatus(fileData.amountDueNow, fileData.amountPaidNow, fileData.followUpDue);
       paymentLink.value = fileData.paymentLink || "";
       processingNotes.value = fileData.processingNotes || "";
 
@@ -487,10 +592,23 @@
       renderFieldGrid("product2Fields", fileData.product2 || {});
 
       document.getElementById("assessmentSummaryBox").textContent =
-        fileData.assessmentSummary || "No assessment summary available.";
+        fileData.assessmentSummary ||
+        "No assessment summary available.";
 
       document.getElementById("generatedAssessmentBox").textContent =
-        fileData.generatedAssessmentText || "No generated assessment report available.";
+        fileData.generatedAssessmentText ||
+        fileData.assessmentReportText ||
+        "No generated assessment report available.";
+
+      document.getElementById("strategySummaryBox").textContent =
+        fileData.processingPackText ||
+        fileData.strategicAnalysisText ||
+        fileData.recommendedNextStepsText ||
+        fileData.strategySummary ||
+        "No strategy or processing pack available.";
+
+      document.getElementById("complaintDocsBox").textContent =
+        buildComplaintDocsText(fileData);
 
       updatePaymentLinkButton();
       updateOwnershipUi();
@@ -498,21 +616,20 @@
     }
 
     function syncPaymentStatusFromAmounts() {
-      const derived = derivePaymentStatus(
+      paymentStatus.value = derivePaymentStatus(
         amountDueNow.value,
         amountPaidNow.value,
         followUpDue.value
       );
-      paymentStatus.value = derived;
     }
 
     async function claimFile() {
       try {
-        await updateDoc(doc(db, "processingFiles", fileId), {
-          processingAssignedToUid: currentUser.uid,
-          processingAssignedToName: currentUserData.name || "",
-          processingAssignedToEmail: currentUser.email || "",
-          processingAssignedAt: serverTimestamp(),
+        await updateDoc(doc(db, "processingCases", fileId), {
+          assignedToUid: currentUser.uid,
+          assignedToName: currentUserData.name || "",
+          assignedToEmail: currentUser.email || "",
+          lastActivityAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
@@ -521,22 +638,22 @@
           }
         });
 
-        showToast("File claimed.");
-        showOwnershipMessage("File claimed successfully.");
+        showToast("Case claimed.");
+        showOwnershipMessage("Case claimed successfully.");
         await loadFile();
       } catch (error) {
-        console.error("Failed to claim file:", error);
-        showOwnershipMessage("Could not claim file.", true);
+        console.error("Failed to claim case:", error);
+        showOwnershipMessage("Could not claim case.", true);
       }
     }
 
     async function releaseFile() {
       try {
-        await updateDoc(doc(db, "processingFiles", fileId), {
-          processingAssignedToUid: "",
-          processingAssignedToName: "",
-          processingAssignedToEmail: "",
-          processingAssignedAt: null,
+        await updateDoc(doc(db, "processingCases", fileId), {
+          assignedToUid: "",
+          assignedToName: "",
+          assignedToEmail: "",
+          lastActivityAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
@@ -545,12 +662,12 @@
           }
         });
 
-        showToast("File released.");
-        showOwnershipMessage("File released successfully.");
+        showToast("Case released.");
+        showOwnershipMessage("Case released successfully.");
         await loadFile();
       } catch (error) {
-        console.error("Failed to release file:", error);
-        showOwnershipMessage("Could not release file.", true);
+        console.error("Failed to release case:", error);
+        showOwnershipMessage("Could not release case.", true);
       }
     }
 
@@ -558,7 +675,6 @@
     amountPaidNow.addEventListener("input", syncPaymentStatusFromAmounts);
     followUpDue.addEventListener("input", syncPaymentStatusFromAmounts);
     paymentLink.addEventListener("input", updatePaymentLinkButton);
-
     claimFileBtn.addEventListener("click", claimFile);
     releaseFileBtn.addEventListener("click", releaseFile);
 
@@ -571,6 +687,7 @@
           paymentStatus: paymentStatus.value,
           paymentLink: paymentLink.value.trim(),
           processingNotes: processingNotes.value.trim(),
+          lastActivityAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           updatedBy: {
             uid: currentUser.uid,
@@ -579,17 +696,17 @@
           }
         };
 
-        await updateDoc(doc(db, "processingFiles", fileId), payload);
+        await updateDoc(doc(db, "processingCases", fileId), payload);
 
-        saveMessage.textContent = "Processing file updated successfully.";
+        saveMessage.textContent = "Processing case updated successfully.";
         saveMessage.classList.remove("hidden");
         setTimeout(() => saveMessage.classList.add("hidden"), 3000);
 
         showToast("Processing update saved.");
         await loadFile();
       } catch (error) {
-        console.error("Failed to update processing file:", error);
-        alert("Could not update processing file.");
+        console.error("Failed to update processing case:", error);
+        alert("Could not update processing case.");
       }
     });
 
@@ -605,7 +722,7 @@
         await loadFile();
       } catch (error) {
         console.error(error);
-        alert("Could not load processing file.");
+        alert("Could not load processing case.");
         window.location.href = "/processing-panel.html";
       }
     });
