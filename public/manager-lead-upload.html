@@ -89,34 +89,62 @@
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Select CSV file</label>
             <input id="csvFile" type="file" accept=".csv" class="input" />
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Assign to lister</label>
             <select id="listerSelect" class="input">
               <option value="">Select lister</option>
             </select>
           </div>
+
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
-            <select id="campaignSelect" class="input">
-              <option value="solar">Solar</option>
-              <option value="mortgage">Mortgage</option>
-              <option value="survey">Survey</option>
-              <option value="newbuild">New Build</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign Name</label>
+            <input id="campaignNameInput" type="text" class="input" placeholder="e.g. Solar Batch August / Caravan Park North" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign Type</label>
+            <select id="campaignTypeSelect" class="input">
+              <option value="">Select campaign type</option>
+              <option value="Solar">Solar</option>
+              <option value="Caravan Park">Caravan Park</option>
+              <option value="Spray Foam">Spray Foam</option>
+              <option value="Medical Negligence">Medical Negligence</option>
+              <option value="Housing Disrepair">Housing Disrepair</option>
+              <option value="PCP">PCP</option>
+              <option value="Mis-sold Timeshare">Mis-sold Timeshare</option>
+              <option value="Pension">Pension</option>
+              <option value="Cavity Wall">Cavity Wall</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Holiday Sickness">Holiday Sickness</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeSelect" class="input">
-              <option value="solar">Solar</option>
-              <option value="mortgage">Mortgage</option>
-              <option value="survey">Survey</option>
-              <option value="newbuild">New Build</option>
+              <option value="">Select claim type</option>
+              <option value="Solar">Solar</option>
+              <option value="Caravan Park">Caravan Park</option>
+              <option value="Spray Foam">Spray Foam</option>
+              <option value="Medical Negligence">Medical Negligence</option>
+              <option value="Housing Disrepair">Housing Disrepair</option>
+              <option value="PCP">PCP</option>
+              <option value="Mis-sold Timeshare">Mis-sold Timeshare</option>
+              <option value="Pension">Pension</option>
+              <option value="Cavity Wall">Cavity Wall</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Holiday Sickness">Holiday Sickness</option>
             </select>
+          </div>
+
+          <div class="flex items-end">
+            <button id="copyCampaignToClaimBtn" class="btn btn-secondary w-full" type="button">Use Campaign Type as Claim Type</button>
           </div>
         </div>
 
@@ -142,6 +170,7 @@
             <p id="previewSummary" class="text-sm text-slate-500 mt-1">No file loaded.</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -153,8 +182,8 @@
                 <th class="text-left p-3">Mobile</th>
                 <th class="text-left p-3">Email</th>
                 <th class="text-left p-3">Postcode</th>
-                <th class="text-left p-3">HomeOwner</th>
-                <th class="text-left p-3">Has Solar</th>
+                <th class="text-left p-3">Campaign</th>
+                <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Validation</th>
               </tr>
             </thead>
@@ -202,8 +231,10 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const csvFile = document.getElementById("csvFile");
     const listerSelect = document.getElementById("listerSelect");
-    const campaignSelect = document.getElementById("campaignSelect");
+    const campaignNameInput = document.getElementById("campaignNameInput");
+    const campaignTypeSelect = document.getElementById("campaignTypeSelect");
     const claimTypeSelect = document.getElementById("claimTypeSelect");
+    const copyCampaignToClaimBtn = document.getElementById("copyCampaignToClaimBtn");
     const previewBtn = document.getElementById("previewBtn");
     const importBtn = document.getElementById("importBtn");
     const previewBody = document.getElementById("previewBody");
@@ -323,7 +354,6 @@
       normalized.contactKey = buildContactKey(normalized);
       normalized.isDuplicate = false;
       normalized.validationMessage = "";
-
       return normalized;
     }
 
@@ -363,7 +393,6 @@
 
     function updateStats() {
       const readyRows = normalizedRows.filter(row => row.hasContact && !row.isDuplicate);
-
       rowsLoadedStat.textContent = String(parsedRows.length);
       rowsReadyStat.textContent = String(readyRows.length);
       missingContactStat.textContent = String(normalizedRows.filter(row => !row.hasContact).length);
@@ -423,6 +452,18 @@
       updateStats();
     }
 
+    function currentCampaignName() {
+      return cleanValue(campaignNameInput.value);
+    }
+
+    function currentCampaignType() {
+      return cleanValue(campaignTypeSelect.value);
+    }
+
+    function currentClaimType() {
+      return cleanValue(claimTypeSelect.value);
+    }
+
     function renderPreview() {
       previewBody.innerHTML = "";
 
@@ -456,8 +497,8 @@
           <td class="p-3">${row.mobile || ""}</td>
           <td class="p-3">${row.email || ""}</td>
           <td class="p-3">${row.postcode || ""}</td>
-          <td class="p-3">${row.homeOwner || ""}</td>
-          <td class="p-3">${row.hasSolar || ""}</td>
+          <td class="p-3">${currentCampaignName() || currentCampaignType() || "-"}</td>
+          <td class="p-3">${currentClaimType() || "-"}</td>
           <td class="p-3">${validationBadge}</td>
         `;
         previewBody.appendChild(tr);
@@ -466,6 +507,15 @@
       previewSummary.textContent = `${normalizedRows.length} row(s) loaded. Showing first ${Math.min(normalizedRows.length, 20)}.`;
       updateStats();
     }
+
+    copyCampaignToClaimBtn.addEventListener("click", () => {
+      claimTypeSelect.value = campaignTypeSelect.value || "";
+      renderPreview();
+    });
+
+    campaignNameInput.addEventListener("input", renderPreview);
+    campaignTypeSelect.addEventListener("change", renderPreview);
+    claimTypeSelect.addEventListener("change", renderPreview);
 
     previewBtn.addEventListener("click", () => {
       const file = csvFile.files[0];
@@ -498,8 +548,9 @@
     importBtn.addEventListener("click", async () => {
       const listerUid = listerSelect.value;
       const lister = listers.find(x => x.uid === listerUid);
-      const campaign = campaignSelect.value || "solar";
-      const claimType = claimTypeSelect.value || "solar";
+      const campaign = currentCampaignName() || currentCampaignType();
+      const campaignType = currentCampaignType();
+      const claimType = currentClaimType();
 
       if (!normalizedRows.length) {
         showMessage("Please preview a CSV first.", true);
@@ -511,8 +562,22 @@
         return;
       }
 
-      const rowsToImport = normalizedRows.filter(row => row.hasContact && !row.isDuplicate);
+      if (!campaign) {
+        showMessage("Please enter a campaign name or choose a campaign type.", true);
+        return;
+      }
 
+      if (!campaignType) {
+        showMessage("Please choose a campaign type.", true);
+        return;
+      }
+
+      if (!claimType) {
+        showMessage("Please choose a claim type.", true);
+        return;
+      }
+
+      const rowsToImport = normalizedRows.filter(row => row.hasContact && !row.isDuplicate);
       if (!rowsToImport.length) {
         showMessage("There are no valid non-duplicate rows with contact details to import.", true);
         return;
@@ -534,6 +599,7 @@
             uploadedAt: serverTimestamp(),
             createdAt: serverTimestamp(),
             lastUpdatedAt: serverTimestamp(),
+
             title: row.title,
             forename: row.forename,
             surname: row.surname,
@@ -553,8 +619,11 @@
             emailAddress: row.email,
             homeOwner: row.homeOwner,
             hasSolar: row.hasSolar,
+
             campaign,
+            campaignType,
             claimType,
+
             leadStatus: "new",
             usable: true,
             closed: false,
@@ -571,13 +640,14 @@
             closerAppointmentDate: "",
             closerAppointmentTime: "",
             convertedToSubmissionId: "",
+
             actionHistory: [
               {
                 action: "lead_uploaded",
                 byUid: currentUser.uid,
                 byName: currentUserData.name || "",
                 at: new Date().toISOString(),
-                notes: `Lead uploaded and assigned to ${lister.name || lister.email || lister.uid}.`
+                notes: `Lead uploaded and assigned to ${lister.name || lister.email || lister.uid}. Campaign: ${campaign}. Claim type: ${claimType}.`
               }
             ]
           });
