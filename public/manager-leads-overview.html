@@ -47,6 +47,26 @@
       line-height: 1.6;
       font-size: 0.95rem;
     }
+    .overview-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .overview-table th,
+    .overview-table td {
+      vertical-align: top;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .table-link {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .table-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -67,6 +87,7 @@
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
@@ -112,7 +133,7 @@
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-5 gap-4">
+        <div class="grid md:grid-cols-3 lg:grid-cols-7 gap-4">
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
             <select id="statusFilter" class="input">
@@ -128,6 +149,7 @@
               <option value="closed">Closed</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Appointment Timing</label>
             <select id="timingFilter" class="input">
@@ -138,18 +160,35 @@
               <option value="none">No appointment set</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Lister</label>
             <select id="listerFilter" class="input">
               <option value="all">All listers</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Closer</label>
             <select id="closerFilter" class="input">
               <option value="all">All closers</option>
             </select>
           </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Client, telephone, mobile, email, postcode..." />
@@ -165,14 +204,29 @@
           </div>
           <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
+          <table class="overview-table text-sm min-w-full">
+            <colgroup>
+              <col style="width: 16%">
+              <col style="width: 8%">
+              <col style="width: 8%">
+              <col style="width: 12%">
+              <col style="width: 12%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 9%">
+              <col style="width: 8%">
+              <col style="width: 4%">
+              <col style="width: 3%">
+            </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
                 <th class="text-left p-3">Telephone</th>
                 <th class="text-left p-3">Mobile</th>
                 <th class="text-left p-3">Email</th>
+                <th class="text-left p-3">Campaign</th>
                 <th class="text-left p-3">Claim Type</th>
                 <th class="text-left p-3">Lister</th>
                 <th class="text-left p-3">Status</th>
@@ -365,10 +419,13 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+
     const statusFilter = document.getElementById("statusFilter");
     const timingFilter = document.getElementById("timingFilter");
     const listerFilter = document.getElementById("listerFilter");
     const closerFilter = document.getElementById("closerFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
@@ -446,6 +503,10 @@
       return String(value || "").trim();
     }
 
+    function normalizeFilterValue(value) {
+      return safe(value).toLowerCase();
+    }
+
     function formatAddress(lead) {
       return [
         lead?.address,
@@ -491,7 +552,8 @@
         voicemail: "Voicemail",
         wrong_number: "Wrong Number",
         not_interested: "Not Interested",
-        assessment_complete: "Assessment Complete"
+        assessment_complete: "Assessment Complete",
+        lead_uploaded: "Lead Uploaded"
       };
       return map[action] || action || "-";
     }
@@ -560,6 +622,48 @@
       if ([...listerFilter.options].some(o => o.value === currentLister)) listerFilter.value = currentLister;
       if ([...closerFilter.options].some(o => o.value === currentCloser)) closerFilter.value = currentCloser;
       if ([...closerSelect.options].some(o => o.value === currentModalCloser)) closerSelect.value = currentModalCloser;
+    }
+
+    function populateCampaignAndClaimFilters() {
+      const currentCampaign = campaignFilter.value || "all";
+      const currentClaimType = claimTypeFilter.value || "all";
+
+      const campaigns = [...new Set(
+        allLeads
+          .map(lead => safe(lead.campaign || lead.campaignName))
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      const claimTypes = [...new Set(
+        allLeads
+          .map(lead => safe(lead.claimType || lead.type))
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+
+      campaigns.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        campaignFilter.appendChild(option);
+      });
+
+      claimTypes.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        claimTypeFilter.appendChild(option);
+      });
+
+      if ([...campaignFilter.options].some(o => o.value === currentCampaign)) {
+        campaignFilter.value = currentCampaign;
+      }
+
+      if ([...claimTypeFilter.options].some(o => o.value === currentClaimType)) {
+        claimTypeFilter.value = currentClaimType;
+      }
     }
 
     function labelFromKey(key) {
@@ -647,7 +751,6 @@
 
       const productOneText = objectLines(product1);
       const productTwoText = Object.keys(product2 || {}).length ? objectLines(product2) : "";
-
       const supplierOverview = [
         "Based on the information currently available, the supplier and transaction background should be reviewed carefully to identify the correct complaint route, the parties involved, and the strongest recovery position.",
         productOneText !== "No information currently available." ? productOneText : "",
@@ -944,12 +1047,13 @@
         closerUsers = allUsers.filter(user => user.role === "closer");
 
         populateUserFilters();
+        populateCampaignAndClaimFilters();
         renderStats();
         renderLeads();
       } catch (error) {
         console.error("Failed to load leads:", error);
         resultsSummary.textContent = "Could not load leads.";
-        leadsBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-red-600">Error loading leads.</td></tr>`;
+        leadsBody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-red-600">Error loading leads.</td></tr>`;
       }
     }
 
@@ -969,14 +1073,19 @@
       const selectedTiming = timingFilter.value;
       const selectedLister = listerFilter.value;
       const selectedCloser = closerFilter.value;
+      const selectedCampaign = campaignFilter.value;
+      const selectedClaimType = claimTypeFilter.value;
       const term = searchInput.value.trim().toLowerCase();
       const today = todayIso();
 
       return allLeads.filter(lead => {
         const leadStatus = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
         const appointmentDateValue = lead.closerAppointmentDate || "";
+        const leadCampaign = safe(lead.campaign || lead.campaignName);
+        const leadClaimType = safe(lead.claimType || lead.type);
 
         const matchesStatus = selectedStatus === "all" || leadStatus === selectedStatus;
+
         const matchesTiming =
           selectedTiming === "all" ||
           (selectedTiming === "today" && appointmentDateValue === today) ||
@@ -986,6 +1095,8 @@
 
         const matchesLister = selectedLister === "all" || (lead.assignedToUid || "") === selectedLister;
         const matchesCloser = selectedCloser === "all" || (lead.closerUid || "") === selectedCloser;
+        const matchesCampaign = selectedCampaign === "all" || normalizeFilterValue(leadCampaign) === normalizeFilterValue(selectedCampaign);
+        const matchesClaimType = selectedClaimType === "all" || normalizeFilterValue(leadClaimType) === normalizeFilterValue(selectedClaimType);
 
         const haystack = `
           ${lead.forename || ""}
@@ -1002,10 +1113,13 @@
           ${lead.address5 || ""}
           ${lead.claimType || ""}
           ${lead.type || ""}
+          ${lead.campaign || ""}
+          ${lead.campaignName || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
-        return matchesStatus && matchesTiming && matchesLister && matchesCloser && matchesSearch;
+
+        return matchesStatus && matchesTiming && matchesLister && matchesCloser && matchesCampaign && matchesClaimType && matchesSearch;
       });
     }
 
@@ -1019,7 +1133,7 @@
       leadsBody.innerHTML = "";
 
       if (!filtered.length) {
-        leadsBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-500">No leads found.</td></tr>`;
+        leadsBody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-500">No leads found.</td></tr>`;
       } else {
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
@@ -1032,12 +1146,13 @@
             <td class="p-3">${leadTelephone(lead)}</td>
             <td class="p-3">${leadMobile(lead)}</td>
             <td class="p-3">${leadEmail(lead)}</td>
-            <td class="p-3">${lead.claimType || lead.type || "-"}</td>
+            <td class="p-3">${safe(lead.campaign || lead.campaignName) || "-"}</td>
+            <td class="p-3">${safe(lead.claimType || lead.type) || "-"}</td>
             <td class="p-3">${userDisplay(lead.assignedToUid)}</td>
             <td class="p-3">${statusBadge(lead)}</td>
             <td class="p-3">${getAppointmentText(lead)}</td>
             <td class="p-3">${userDisplay(lead.closerUid)}</td>
-            <td class="p-3"><button class="text-blue-600 font-semibold hover:underline" data-open-lead="${lead.id}">Open</button></td>
+            <td class="p-3"><button class="table-link" data-open-lead="${lead.id}">Open</button></td>
           `;
           leadsBody.appendChild(tr);
         });
@@ -1076,13 +1191,11 @@
       const snap = await getDocs(q);
       if (snap.empty) return null;
 
-      const docs = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => {
-          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-          return bTime - aTime;
-        });
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
+        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+        return bTime - aTime;
+      });
 
       return docs[0];
     }
@@ -1146,7 +1259,7 @@
       document.getElementById("lead_email").textContent = getLeadEmailAddress(selectedLead) || "-";
       document.getElementById("lead_address").textContent = getLeadAddress(selectedLead) || "-";
       document.getElementById("lead_postcode").textContent = getLeadPostcode(selectedLead) || "-";
-      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
+      document.getElementById("lead_campaign").textContent = safe(selectedLead.campaign || selectedLead.campaignName) || "-";
       document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || selectedSubmissionData?.claimType || "-";
       document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
       document.getElementById("lead_status").innerHTML = statusBadge(selectedLead);
@@ -1183,7 +1296,6 @@
       document.getElementById("lead_assessmentId").textContent = assessment?.id || selectedLead.assessmentId || "-";
 
       const submissionId = getLeadSubmissionId(selectedLead);
-
       if (submissionId) {
         openIntakeBtn.href = `/intake-detail.html?id=${submissionId}`;
         openIntakeBtn.classList.remove("hidden");
@@ -1272,6 +1384,7 @@
           address: client.address || formatAddress(lead)
         },
         claimType: leadClaimType,
+        campaign: safe(lead.campaign || lead.campaignName),
         status: statusValue,
         outcome: lead.outcome || "",
         appointment: {
@@ -1365,6 +1478,7 @@
           address: selectedSubmissionData?.client?.address || formatAddress(selectedLead)
         },
         claimType: selectedLead.claimType || selectedLead.type || "",
+        campaign: safe(selectedLead.campaign || selectedLead.campaignName),
         assessmentOutcome: assessmentOutcomeSelect.value || "",
         recommendedCloser: recommendedCloserText.value.trim(),
         assessmentSummary: quaerensPack.assessmentSummaryText,
@@ -1414,7 +1528,6 @@
 
     async function savePipelineChanges() {
       if (!selectedLead) return;
-
       const patch = {
         closerUid: closerSelect.value || "",
         closerAppointmentDate: appointmentDate.value || "",
@@ -1428,19 +1541,16 @@
         managerNotes: notesBox.value || "",
         lastAction: "notes_saved"
       };
-
       await updateLead(patch, "notes_saved", "Manager saved pipeline changes.");
     }
 
     function openEmailDraft() {
       if (!selectedLead) return;
-
       const email = getLeadEmailAddress(selectedLead);
       if (!email) {
         showModalMessage("No email address found for this lead.", true);
         return;
       }
-
       const subject = encodeURIComponent(emailSubjectInput.value.trim() || buildManagerEmailSubject(selectedLead));
       const body = encodeURIComponent(emailBodyBox.value.trim() || buildManagerEmailBody(selectedLead));
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
@@ -1488,7 +1598,6 @@
 
     createAssessmentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         const assessmentId = await createOrUpdateAssessment();
         selectedAssessmentId = assessmentId;
@@ -1746,6 +1855,8 @@
     timingFilter.addEventListener("change", renderLeads);
     listerFilter.addEventListener("change", renderLeads);
     closerFilter.addEventListener("change", renderLeads);
+    campaignFilter.addEventListener("change", renderLeads);
+    claimTypeFilter.addEventListener("change", renderLeads);
     searchInput.addEventListener("input", renderLeads);
     refreshBtn.addEventListener("click", loadLeads);
 
