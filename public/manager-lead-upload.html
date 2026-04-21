@@ -104,36 +104,45 @@
 
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign Name</label>
-            <input
-              id="campaignNameInput"
-              type="text"
-              class="input"
-              placeholder="Enter campaign name"
-            />
+            <input id="campaignNameInput" type="text" class="input" placeholder="Type campaign name" />
           </div>
 
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeSelect" class="input">
               <option value="">Select claim type</option>
-              <option value="Solar">Solar</option>
-              <option value="Caravan Park">Caravan Park</option>
-              <option value="Spray Foam">Spray Foam</option>
-              <option value="Medical Negligence">Medical Negligence</option>
-              <option value="Housing Disrepair">Housing Disrepair</option>
-              <option value="Personal Injury">Personal Injury</option>
-              <option value="Plevin">Plevin</option>
-              <option value="Packaged Bank Account">Packaged Bank Account</option>
-              <option value="Unaffordable Lending">Unaffordable Lending</option>
-              <option value="PCP">PCP</option>
-              <option value="Diesel Emissions">Diesel Emissions</option>
-              <option value="Train Delay">Train Delay</option>
-              <option value="Data Breach">Data Breach</option>
-              <option value="Business Energy">Business Energy</option>
-              <option value="Mortgage">Mortgage</option>
-              <option value="Survey">Survey</option>
-              <option value="New Build">New Build</option>
-              <option value="Other">Other</option>
+              <option value="airbnb refunds">AIRBNB Refunds</option>
+              <option value="car finance">Car Finance</option>
+              <option value="caravan/holiday park">Caravan/Holiday Park</option>
+              <option value="complaint letters">Complaint Letters</option>
+              <option value="contact me">Contact Me</option>
+              <option value="credit card fees">Credit Card Fees</option>
+              <option value="cruise compensation">Cruise Compensation</option>
+              <option value="crypto scam recovery">Crypto Scam Recovery</option>
+              <option value="cyber data breach">Cyber Data Breach</option>
+              <option value="debt recovery">Debt Recovery</option>
+              <option value="foam insulation">Foam Insulation</option>
+              <option value="formal escalation">Formal Escalation</option>
+              <option value="frozen accounts">Frozen Accounts</option>
+              <option value="holiday compensation">Holiday Compensation</option>
+              <option value="housing disrepair">Housing Disrepair</option>
+              <option value="investment platforms">Investment Platforms</option>
+              <option value="loans and mortgages">Loans and Mortgages</option>
+              <option value="medical negligence">Medical Negligence</option>
+              <option value="mis sold bank accounts">Mis-sold Bank Accounts</option>
+              <option value="mortgage review">Mortgage Review</option>
+              <option value="new build issues">New Build Issues</option>
+              <option value="pension administration">Pension Administration</option>
+              <option value="pension issues">Pension Issues</option>
+              <option value="platform failure">Platform Failure</option>
+              <option value="refund issues">Refund Issues</option>
+              <option value="return issues">Return Issues</option>
+              <option value="section 75 support">Section 75 Support</option>
+              <option value="solar support">Solar Support</option>
+              <option value="spanish mortgage">Spanish Mortgage</option>
+              <option value="survey review">Survey Review</option>
+              <option value="timeshare">Timeshare</option>
+              <option value="train delay">Train Delay</option>
             </select>
           </div>
         </div>
@@ -160,6 +169,7 @@
             <p id="previewSummary" class="text-sm text-slate-500 mt-1">No file loaded.</p>
           </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -279,6 +289,7 @@
           return cleanValue(value);
         }
       }
+
       return "";
     }
 
@@ -340,7 +351,6 @@
       normalized.contactKey = buildContactKey(normalized);
       normalized.isDuplicate = false;
       normalized.validationMessage = "";
-
       return normalized;
     }
 
@@ -418,7 +428,6 @@
       }));
 
       listerSelect.innerHTML = `<option value="">Select lister</option>`;
-
       listers.forEach(lister => {
         const option = document.createElement("option");
         option.value = lister.uid;
@@ -515,7 +524,7 @@
       const listerUid = listerSelect.value;
       const lister = listers.find(x => x.uid === listerUid);
       const campaign = campaignNameInput.value.trim();
-      const claimType = claimTypeSelect.value.trim();
+      const claimType = claimTypeSelect.value || "";
 
       if (!normalizedRows.length) {
         showMessage("Please preview a CSV first.", true);
@@ -528,7 +537,7 @@
       }
 
       if (!campaign) {
-        showMessage("Please enter a campaign name.", true);
+        showMessage("Please type a campaign name.", true);
         return;
       }
 
@@ -538,7 +547,6 @@
       }
 
       const rowsToImport = normalizedRows.filter(row => row.hasContact && !row.isDuplicate);
-
       if (!rowsToImport.length) {
         showMessage("There are no valid non-duplicate rows with contact details to import.", true);
         return;
@@ -581,8 +589,9 @@
             homeOwner: row.homeOwner,
             hasSolar: row.hasSolar,
 
-            campaign: campaign,
-            claimType: claimType,
+            campaign,
+            campaignName: campaign,
+            claimType,
 
             leadStatus: "new",
             usable: true,
@@ -600,13 +609,14 @@
             closerAppointmentDate: "",
             closerAppointmentTime: "",
             convertedToSubmissionId: "",
+
             actionHistory: [
               {
                 action: "lead_uploaded",
                 byUid: currentUser.uid,
                 byName: currentUserData.name || "",
                 at: new Date().toISOString(),
-                notes: `Lead uploaded and assigned to ${lister.name || lister.email || lister.uid}. Campaign: ${campaign}. Claim Type: ${claimType}.`
+                notes: `Lead uploaded and assigned to ${lister.name || lister.email || lister.uid}. Campaign: ${campaign}. Claim type: ${claimType}.`
               }
             ]
           });
