@@ -20,7 +20,6 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
     .hidden { display: none; }
-    .disabled-actions { opacity: 0.55; pointer-events: none; }
     .active-nav {
       background: #2563eb;
       color: white;
@@ -42,7 +41,6 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
-
     .leads-table {
       width: 100%;
       table-layout: fixed;
@@ -92,6 +90,12 @@
     }
     .table-link:hover {
       text-decoration: underline;
+    }
+    .help-note {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 0.45rem;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -291,13 +295,16 @@
               <select id="leadClaimTypeSelect" class="input">
                 <option value="">Select claim type</option>
               </select>
+              <div class="help-note">
+                Intake forms currently route by claim type. Supported intake forms: Solar, Mortgage, Survey, and New Build.
+              </div>
             </div>
           </div>
         </section>
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Priority Actions</h4>
-          <div id="priorityActionsWrap" class="grid md:grid-cols-2 gap-3">
+          <div class="grid md:grid-cols-2 gap-3">
             <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake</button>
             <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
             <button id="callbackRequiredBtn" class="btn btn-secondary" type="button">Interested — Call Back</button>
@@ -309,7 +316,7 @@
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
-          <div id="outcomeWrap" class="grid md:grid-cols-4 gap-3">
+          <div class="grid md:grid-cols-4 gap-3">
             <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
             <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
             <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
@@ -415,6 +422,13 @@
       { value: "train delay", label: "Train Delay" }
     ];
 
+    const LIVE_INTAKE_FORMS = [
+      { value: "solar", label: "Solar Panel Claims" },
+      { value: "mortgage", label: "Mortgage Review" },
+      { value: "survey", label: "Survey Review" },
+      { value: "newbuild", label: "New Build Issues" }
+    ];
+
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
     const statusFilter = document.getElementById("statusFilter");
@@ -425,6 +439,7 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const leadsBody = document.getElementById("leadsBody");
     const resultsSummary = document.getElementById("resultsSummary");
+
     const totalLeadsStat = document.getElementById("totalLeadsStat");
     const callbacksStat = document.getElementById("callbacksStat");
     const introEmailStat = document.getElementById("introEmailStat");
@@ -508,9 +523,50 @@
 
     function formatClaimType(value) {
       const normalized = normalizeText(value);
+      const liveIntake = LIVE_INTAKE_FORMS.find(item => item.value === normalized);
+      if (liveIntake) return liveIntake.label;
+
       const found = CLAIM_TYPE_OPTIONS.find(item => item.value === normalized);
       if (found) return found.label;
+
       return cleanValue(value) || "-";
+    }
+
+    function normalizeIntakeClaimType(value) {
+      const raw = normalizeText(value);
+      if (!raw) return "";
+
+      if (
+        raw.includes("solar") ||
+        raw === "solar support" ||
+        raw === "solar panel claims"
+      ) return "solar";
+
+      if (
+        raw.includes("mortgage") ||
+        raw === "loans and mortgages" ||
+        raw === "spanish mortgage" ||
+        raw === "mortgage review"
+      ) return "mortgage";
+
+      if (
+        raw.includes("survey") ||
+        raw === "survey review"
+      ) return "survey";
+
+      if (
+        raw.includes("new build") ||
+        raw.includes("newbuild") ||
+        raw === "new build issues"
+      ) return "newbuild";
+
+      return "";
+    }
+
+    function getIntakeFormLabel(value) {
+      const normalized = normalizeIntakeClaimType(value) || normalizeText(value);
+      const found = LIVE_INTAKE_FORMS.find(item => item.value === normalized);
+      return found ? found.label : "";
     }
 
     function populateClaimTypeDropdowns() {
@@ -528,10 +584,29 @@
         modalOption.textContent = item.label;
         leadClaimTypeSelect.appendChild(modalOption);
       });
+
+      LIVE_INTAKE_FORMS.forEach(item => {
+        const existsInFilter = [...claimTypeFilter.options].some(option => option.value === item.value);
+        if (!existsInFilter) {
+          const filterOption = document.createElement("option");
+          filterOption.value = item.value;
+          filterOption.textContent = item.label;
+          claimTypeFilter.appendChild(filterOption);
+        }
+
+        const existsInModal = [...leadClaimTypeSelect.options].some(option => option.value === item.value);
+        if (!existsInModal) {
+          const modalOption = document.createElement("option");
+          modalOption.value = item.value;
+          modalOption.textContent = item.label;
+          leadClaimTypeSelect.appendChild(modalOption);
+        }
+      });
     }
 
     function populateCampaignFilter() {
       const currentValue = campaignFilter.value || "all";
+
       const campaigns = [...new Set(
         allLeads
           .map(lead => getLeadCampaign(lead))
@@ -540,6 +615,7 @@
       )];
 
       campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+
       campaigns.forEach(campaign => {
         const option = document.createElement("option");
         option.value = campaign;
@@ -621,6 +697,7 @@
       if (attendanceHeartbeatInterval) {
         clearInterval(attendanceHeartbeatInterval);
       }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -809,8 +886,10 @@
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid)
         );
+
         const snapshot = await getDocs(leadsQuery);
         allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         populateCampaignFilter();
         renderStats();
         renderLeads();
@@ -861,11 +940,16 @@
           (special === "converted_only" && isConverted(lead)) ||
           (special === "locked_only" && isLocked(lead));
 
-        const matchesCampaign =
-          campaign === "all" || getLeadCampaign(lead) === campaign;
+        const leadClaimTypeNormalized = normalizeText(getLeadClaimType(lead));
+        const leadIntakeClaimTypeNormalized = normalizeText(lead.intakeClaimType || "");
 
         const matchesClaimType =
-          claimType === "all" || normalizeText(getLeadClaimType(lead)) === normalizeText(claimType);
+          claimType === "all" ||
+          leadClaimTypeNormalized === normalizeText(claimType) ||
+          leadIntakeClaimTypeNormalized === normalizeText(claimType);
+
+        const matchesCampaign =
+          campaign === "all" || getLeadCampaign(lead) === campaign;
 
         const haystack = `
           ${lead.forename || ""}
@@ -882,6 +966,7 @@
           ${lead.address5 || ""}
           ${getLeadCampaign(lead)}
           ${getLeadClaimType(lead)}
+          ${lead.intakeClaimType || ""}
         `.toLowerCase();
 
         const matchesSearch = !term || haystack.includes(term);
@@ -902,6 +987,8 @@
         `;
       } else {
         filtered.forEach(lead => {
+          const displayClaimType = getIntakeFormLabel(lead.intakeClaimType) || formatClaimType(getLeadClaimType(lead));
+
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
           tr.innerHTML = `
@@ -913,7 +1000,7 @@
             <td class="p-3 align-top cell-tight">${getLeadMobile(lead) || "-"}</td>
             <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
             <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${formatClaimType(getLeadClaimType(lead))}</td>
+            <td class="p-3 align-top cell-wrap">${displayClaimType}</td>
             <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
             <td class="p-3 align-top cell-wrap">${formatAction(lead.lastAction)}</td>
             <td class="p-3 align-top cell-wrap">${lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}` : "-"}</td>
@@ -958,6 +1045,8 @@
       selectedLead = allLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
+      const modalClaimTypeValue = normalizeText(getLeadClaimType(selectedLead)) || normalizeText(selectedLead.intakeClaimType || "");
+
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
@@ -969,7 +1058,7 @@
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
       document.getElementById("lead_campaign").textContent = getLeadCampaign(selectedLead) || "-";
-      document.getElementById("lead_claimType").textContent = formatClaimType(getLeadClaimType(selectedLead));
+      document.getElementById("lead_claimType").textContent = getIntakeFormLabel(selectedLead.intakeClaimType) || formatClaimType(getLeadClaimType(selectedLead));
       document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
       document.getElementById("lead_callback").textContent =
@@ -981,7 +1070,7 @@
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
       campaignNameInput.value = getLeadCampaign(selectedLead) || "";
-      leadClaimTypeSelect.value = normalizeText(getLeadClaimType(selectedLead)) || "";
+      leadClaimTypeSelect.value = modalClaimTypeValue || "";
 
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
@@ -990,6 +1079,7 @@
 
     async function refreshSelectedLead() {
       await loadLeads();
+
       if (selectedLead) {
         const updated = allLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -1031,6 +1121,7 @@
 
       try {
         const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
+
         await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
           originalLeadId: selectedLead.id,
@@ -1071,18 +1162,72 @@
       }
     }
 
+    async function saveLeadCoreFields(extraPatch = {}) {
+      if (!selectedLead) return false;
+
+      const selectedClaimType = leadClaimTypeSelect.value || "";
+      const normalizedIntakeClaimType = normalizeIntakeClaimType(selectedClaimType);
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          campaign: campaignNameInput.value.trim() || "",
+          claimType: selectedClaimType,
+          intakeClaimType: normalizedIntakeClaimType || "",
+          notes: notesBox.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
+          lastUpdatedAt: serverTimestamp(),
+          ...extraPatch
+        });
+        return true;
+      } catch (error) {
+        console.error("Failed to save core lead fields:", error);
+        return false;
+      }
+    }
+
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
+
+      const chosenClaimType = leadClaimTypeSelect.value || getLeadClaimType(selectedLead);
+      const normalizedIntakeType = normalizeIntakeClaimType(chosenClaimType);
+
+      if (!chosenClaimType) {
+        showModalMessage("Please select a claim type before opening intake.", true);
+        return;
+      }
+
+      if (!normalizedIntakeType) {
+        showModalMessage("This selected claim type does not have a live intake form yet. Use Solar, Mortgage, Survey, or New Build.", true);
+        return;
+      }
+
       try {
-        await updateLead({
+        const nowIso = new Date().toISOString();
+
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
-          claimType: leadClaimTypeSelect.value || "",
+          claimType: chosenClaimType,
+          intakeClaimType: normalizedIntakeType,
+          notes: notesBox.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
           leadStatus: "intake_in_progress",
-          lastAction: "interested_intake_started"
-        }, "interested_intake_started", "Lead moved to intake.");
-        window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
+          lastAction: "interested_intake_started",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "interested_intake_started",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: nowIso,
+            notes: `Lead moved to ${getIntakeFormLabel(normalizedIntakeType) || normalizedIntakeType} intake.`
+          })
+        });
+
+        window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}&claimType=${encodeURIComponent(normalizedIntakeType)}`;
       } catch (error) {
         console.error(error);
+        showModalMessage("Could not open intake.", true);
       }
     });
 
@@ -1102,6 +1247,7 @@
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
         leadStatus: "intro_email_needed",
         introEmailNeeded: true,
         callbackRequired: true,
@@ -1122,6 +1268,7 @@
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
         leadStatus: "callback_required",
         callbackRequired: true,
         introEmailNeeded: false,
@@ -1137,6 +1284,7 @@
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
         leadStatus: "qualified",
         callbackRequired: false,
         introEmailNeeded: false,
@@ -1151,6 +1299,7 @@
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
         leadStatus: "awaiting_manager",
         callbackRequired: false,
         introEmailNeeded: false,
@@ -1166,6 +1315,7 @@
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: leadClaimTypeSelect.value || "",
+          intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
           notes: notesBox.value || "",
           callbackDate: callbackDate.value || "",
           callbackTime: callbackTime.value || "",
@@ -1186,6 +1336,7 @@
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
         leadStatus: "no_answer",
         lastAction: "no_answer",
         lastCallAt: serverTimestamp(),
@@ -1199,6 +1350,7 @@
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
         lastAction: "voicemail",
         lastCallAt: serverTimestamp(),
         voicemailLeft: true,
@@ -1223,6 +1375,7 @@
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: leadClaimTypeSelect.value || "",
+          intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
           notes: notesBox.value || "",
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
@@ -1260,6 +1413,7 @@
 
       try {
         populateClaimTypeDropdowns();
+
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
 
@@ -1286,6 +1440,7 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
+
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
