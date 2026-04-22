@@ -34,6 +34,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      line-height: 1.2;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -41,14 +42,14 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
-
-    .callbacks-table {
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+    .agenda-table {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
     }
-    .callbacks-table th,
-    .callbacks-table td {
+    .agenda-table th,
+    .agenda-table td {
       vertical-align: top;
     }
     .cell-wrap {
@@ -61,16 +62,10 @@
       word-break: break-all;
       overflow-wrap: anywhere;
     }
-    .client-cell {
-      min-width: 0;
-    }
     .client-name {
-      font-weight: 600;
+      font-weight: 700;
       color: #1f2937;
       line-height: 1.35;
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
     }
     .client-address {
       font-size: 0.75rem;
@@ -81,14 +76,11 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-    .table-link {
-      color: #2563eb;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .table-link:hover {
-      text-decoration: underline;
+    .help-note {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 0.45rem;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -105,7 +97,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Callback Agenda</h1>
-          <p class="text-sm text-slate-500">Leads scheduled for callback follow-up</p>
+          <p class="text-sm text-slate-500">Manage scheduled callbacks and next actions</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -118,53 +110,66 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid md:grid-cols-2 xl:grid-cols-5 gap-4">
         <div class="card p-5">
           <div class="text-sm text-slate-500">Total Callbacks</div>
-          <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+          <div id="totalCallbacksStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Today</div>
-          <div id="todayStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Due Today</div>
+          <div id="dueTodayStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Overdue</div>
-          <div id="overdueStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Upcoming</div>
+          <div id="upcomingStat" class="text-3xl font-extrabold text-blue-700 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Future</div>
-          <div id="futureStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Missing Time</div>
+          <div id="missingTimeStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Qualified</div>
-          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Qualified / Manager</div>
+          <div id="progressedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
-            <select id="timingFilter" class="input">
-              <option value="all">All timings</option>
-              <option value="today">Today</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">View</label>
+            <select id="dateViewFilter" class="input">
+              <option value="all">All callbacks</option>
+              <option value="today">Due today</option>
               <option value="overdue">Overdue</option>
-              <option value="future">Future</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="no_date">No callback date</option>
             </select>
           </div>
+
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead State</label>
-            <select id="statusFilter" class="input">
-              <option value="all">All states</option>
-              <option value="callback_required">Callback Required</option>
-              <option value="qualified">Qualified</option>
-              <option value="awaiting_manager">Awaiting Manager</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
             </select>
           </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Name, phone, mobile, email, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Name, phone, email, postcode..." />
           </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Date</label>
+            <input id="specificDateFilter" type="date" class="input" />
+          </div>
+
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Agenda</button>
           </div>
@@ -172,25 +177,24 @@
       </section>
 
       <section class="card p-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
           <div>
             <h2 class="text-xl font-extrabold text-blue-900">Scheduled Callbacks</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callback agenda...</p>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="callbacks-table text-sm min-w-full">
+          <table class="agenda-table text-sm min-w-full">
             <colgroup>
-              <col style="width: 22%">
-              <col style="width: 10%">
+              <col style="width: 20%">
+              <col style="width: 11%">
+              <col style="width: 11%">
+              <col style="width: 12%">
+              <col style="width: 11%">
               <col style="width: 10%">
               <col style="width: 12%">
-              <col style="width: 8%">
-              <col style="width: 12%">
-              <col style="width: 10%">
-              <col style="width: 10%">
-              <col style="width: 6%">
+              <col style="width: 13%">
             </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
@@ -198,10 +202,9 @@
                 <th class="text-left p-3">Telephone</th>
                 <th class="text-left p-3">Mobile</th>
                 <th class="text-left p-3">Email</th>
-                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Campaign</th>
                 <th class="text-left p-3">Callback</th>
-                <th class="text-left p-3">Status</th>
-                <th class="text-left p-3">Last Action</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -212,11 +215,11 @@
     </main>
   </div>
 
-  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
+  <div id="callbackModal" class="fixed inset-0 bg-black/40 hidden z-50">
     <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
         <div>
-          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Callback Detail</h3>
+          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Callback Lead</h3>
           <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
         </div>
         <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
@@ -232,49 +235,71 @@
             <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
-            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
-            <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
+            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
             <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
-            <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
-            <div><span class="font-semibold text-blue-900">Intro Email Sent:</span> <span id="lead_intro_status">-</span></div>
-            <div><span class="font-semibold text-blue-900">Awaiting Manager:</span> <span id="lead_manager_state">-</span></div>
+            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
+            <div><span class="font-semibold text-blue-900">Submission:</span> <span id="lead_submission">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Callback Details</h4>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="campaignNameInput">Campaign Name</label>
+              <input id="campaignNameInput" type="text" class="input" placeholder="Enter campaign name" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="leadClaimTypeSelect">Claim Type</label>
+              <select id="leadClaimTypeSelect" class="input">
+                <option value="">Select claim type</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
+              <input id="callbackDate" type="date" class="input" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
+              <input id="callbackTime" type="time" class="input" />
+            </div>
+          </div>
+          <div class="help-note">
+            Supported live intake routes currently include Solar, Mortgage, Survey, and New Build. All other claim types still work in lead flow and manager review.
           </div>
         </section>
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Priority Actions</h4>
           <div class="grid md:grid-cols-2 gap-3">
-            <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake</button>
+            <button id="rescheduleBtn" class="btn btn-primary" type="button">Save / Reschedule Callback</button>
+            <button id="openIntakeBtn" class="btn btn-secondary" type="button">Interested — Fill Out Intake</button>
             <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
+            <button id="saveLeadBtn" class="btn btn-secondary" type="button">Save Lead</button>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Callback Scheduling</h4>
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
-              <input id="callbackDate" type="date" class="input" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
-              <input id="callbackTime" type="time" class="input" />
-            </div>
-          </div>
-          <div class="mt-4 flex flex-wrap gap-3">
-            <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule Callback</button>
-            <button id="markDoneBtn" class="btn btn-secondary" type="button">Mark Callback Done</button>
-            <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Outcome Actions</h4>
+          <div class="grid md:grid-cols-4 gap-3">
+            <button id="noAnswerBtn" class="btn btn-secondary" type="button">No Answer</button>
+            <button id="voicemailBtn" class="btn btn-secondary" type="button">Voicemail</button>
             <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
+            <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
           </div>
         </section>
 
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
-          <textarea id="notesBox" class="input" rows="5" placeholder="Callback notes, client updates, follow-up comments..."></textarea>
-          <div class="mt-4 flex gap-3">
+          <textarea id="notesBox" class="input" rows="6" placeholder="Callback notes, outcome, follow-up details..."></textarea>
+          <div class="mt-4 flex gap-3 flex-wrap">
             <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
             <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
           </div>
@@ -320,39 +345,133 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const CLAIM_TYPES = [
+      { value: "airbnb_refunds", label: "Airbnb Refunds" },
+      { value: "car_finance", label: "Car Finance" },
+      { value: "caravan_holiday_park", label: "Caravan / Holiday Park" },
+      { value: "complaint_letters", label: "Complaint Letters" },
+      { value: "contact_me", label: "Contact Me" },
+      { value: "credit_card_fees", label: "Credit Card Fees" },
+      { value: "cruise_compensation", label: "Cruise Compensation" },
+      { value: "crypto_scam_recovery", label: "Crypto Scam Recovery" },
+      { value: "cyber_data_breach", label: "Cyber Data Breach" },
+      { value: "debt_recovery", label: "Debt Recovery" },
+      { value: "foam_insulation", label: "Foam Insulation" },
+      { value: "formal_escalation", label: "Formal Escalation" },
+      { value: "frozen_accounts", label: "Frozen Accounts" },
+      { value: "holiday_compensation", label: "Holiday Compensation" },
+      { value: "housing_disrepair", label: "Housing Disrepair" },
+      { value: "investment_platforms", label: "Investment Platforms" },
+      { value: "loans_and_mortgages", label: "Loans and Mortgages" },
+      { value: "medical_negligence", label: "Medical Negligence" },
+      { value: "mis_sold_bank_accounts", label: "Mis-sold Bank Accounts" },
+      { value: "mortgage_review", label: "Mortgage Review" },
+      { value: "new_build_issues", label: "New Build Issues" },
+      { value: "pension_administration", label: "Pension Administration" },
+      { value: "pension_issues", label: "Pension Issues" },
+      { value: "platform_failure", label: "Platform Failure" },
+      { value: "refund_issues", label: "Refund Issues" },
+      { value: "return_issues", label: "Return Issues" },
+      { value: "section_75_support", label: "Section 75 Support" },
+      { value: "solar_support", label: "Solar Support" },
+      { value: "spanish_mortgage", label: "Spanish Mortgage" },
+      { value: "survey_review", label: "Survey Review" },
+      { value: "timeshare", label: "Timeshare" },
+      { value: "train_delay", label: "Train Delay" }
+    ];
+
+    const CLAIM_TYPE_ALIASES = {
+      "airbnb refunds": "airbnb_refunds",
+      "car finance": "car_finance",
+      "caravan holiday park": "caravan_holiday_park",
+      "caravan/holiday park": "caravan_holiday_park",
+      "complaint letters": "complaint_letters",
+      "contact me": "contact_me",
+      "credit card fees": "credit_card_fees",
+      "cruise compensation": "cruise_compensation",
+      "crypto scam recovery": "crypto_scam_recovery",
+      "cyber data breach": "cyber_data_breach",
+      "debt recovery": "debt_recovery",
+      "foam insulation": "foam_insulation",
+      "formal escalation": "formal_escalation",
+      "frozen accounts": "frozen_accounts",
+      "holiday compensation": "holiday_compensation",
+      "housing disrepair": "housing_disrepair",
+      "investment platforms": "investment_platforms",
+      "loans and mortgages": "loans_and_mortgages",
+      "medical negligence": "medical_negligence",
+      "mis sold bank accounts": "mis_sold_bank_accounts",
+      "mis-sold bank accounts": "mis_sold_bank_accounts",
+      "mortgage review": "mortgage_review",
+      "new build issues": "new_build_issues",
+      "newbuild": "new_build_issues",
+      "pension administration": "pension_administration",
+      "pension issues": "pension_issues",
+      "platform failure": "platform_failure",
+      "refund issues": "refund_issues",
+      "return issues": "return_issues",
+      "section 75 support": "section_75_support",
+      "solar": "solar_support",
+      "solar support": "solar_support",
+      "spanish mortgage": "spanish_mortgage",
+      "survey": "survey_review",
+      "survey review": "survey_review",
+      "timeshare": "timeshare",
+      "train delay": "train_delay"
+    };
+
+    const LIVE_INTAKE_MAP = {
+      solar_support: "solar",
+      mortgage_review: "mortgage",
+      loans_and_mortgages: "mortgage",
+      spanish_mortgage: "mortgage",
+      survey_review: "survey",
+      new_build_issues: "newbuild"
+    };
+
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-    const timingFilter = document.getElementById("timingFilter");
-    const statusFilter = document.getElementById("statusFilter");
+
+    const dateViewFilter = document.getElementById("dateViewFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
     const searchInput = document.getElementById("searchInput");
+    const specificDateFilter = document.getElementById("specificDateFilter");
     const refreshBtn = document.getElementById("refreshBtn");
+
     const callbacksBody = document.getElementById("callbacksBody");
     const resultsSummary = document.getElementById("resultsSummary");
-    const totalStat = document.getElementById("totalStat");
-    const todayStat = document.getElementById("todayStat");
-    const overdueStat = document.getElementById("overdueStat");
-    const futureStat = document.getElementById("futureStat");
-    const qualifiedStat = document.getElementById("qualifiedStat");
 
-    const leadModal = document.getElementById("leadModal");
+    const totalCallbacksStat = document.getElementById("totalCallbacksStat");
+    const dueTodayStat = document.getElementById("dueTodayStat");
+    const upcomingStat = document.getElementById("upcomingStat");
+    const missingTimeStat = document.getElementById("missingTimeStat");
+    const progressedStat = document.getElementById("progressedStat");
+
+    const callbackModal = document.getElementById("callbackModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
+    const callbackDate = document.getElementById("callbackDate");
+    const callbackTime = document.getElementById("callbackTime");
+    const notesBox = document.getElementById("notesBox");
+    const modalMessage = document.getElementById("modalMessage");
+    const campaignNameInput = document.getElementById("campaignNameInput");
+    const leadClaimTypeSelect = document.getElementById("leadClaimTypeSelect");
+
+    const rescheduleBtn = document.getElementById("rescheduleBtn");
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
     const markQualifiedBtn = document.getElementById("markQualifiedBtn");
     const sendToManagerBtn = document.getElementById("sendToManagerBtn");
-    const callbackDate = document.getElementById("callbackDate");
-    const callbackTime = document.getElementById("callbackTime");
-    const rescheduleBtn = document.getElementById("rescheduleBtn");
-    const markDoneBtn = document.getElementById("markDoneBtn");
-    const notInterestedBtn = document.getElementById("notInterestedBtn");
+    const saveLeadBtn = document.getElementById("saveLeadBtn");
+    const noAnswerBtn = document.getElementById("noAnswerBtn");
+    const voicemailBtn = document.getElementById("voicemailBtn");
     const wrongNumberBtn = document.getElementById("wrongNumberBtn");
-    const notesBox = document.getElementById("notesBox");
+    const notInterestedBtn = document.getElementById("notInterestedBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
-    const modalMessage = document.getElementById("modalMessage");
 
     let currentUser = null;
     let currentUserData = null;
-    let allLeads = [];
+    let callbackLeads = [];
     let selectedLead = null;
     let attendanceHeartbeatInterval = null;
 
@@ -379,6 +498,30 @@
       return String(value || "").trim();
     }
 
+    function normalizeText(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function normalizeClaimType(value) {
+      const raw = normalizeText(value);
+      if (!raw) return "";
+      const underscored = raw.replace(/\s+/g, "_");
+      if (CLAIM_TYPES.some(item => item.value === underscored)) return underscored;
+      if (CLAIM_TYPE_ALIASES[raw]) return CLAIM_TYPE_ALIASES[raw];
+      return underscored;
+    }
+
+    function getClaimTypeLabel(value) {
+      const normalized = normalizeClaimType(value);
+      const found = CLAIM_TYPES.find(item => item.value === normalized);
+      return found ? found.label : cleanValue(value) || "-";
+    }
+
+    function normalizeIntakeClaimType(value) {
+      const normalized = normalizeClaimType(value);
+      return LIVE_INTAKE_MAP[normalized] || "";
+    }
+
     function getLeadTelephone(lead) {
       return cleanValue(lead.telephone || lead.landline || lead.phone);
     }
@@ -389,6 +532,14 @@
 
     function getLeadEmail(lead) {
       return cleanValue(lead.email || lead.emailAddress);
+    }
+
+    function getLeadCampaign(lead) {
+      return cleanValue(lead.campaign || lead.campaignName);
+    }
+
+    function getLeadClaimType(lead) {
+      return cleanValue(lead.claimType || lead.type || lead.intakeClaimType);
     }
 
     function formatAddress(lead) {
@@ -404,106 +555,106 @@
 
     function formatAction(action) {
       const map = {
-        callback_required: "Callback Required",
-        callback_rescheduled: "Callback Rescheduled",
-        callback_completed: "Callback Completed",
-        send_intro_email: "Send Intro Email",
-        intro_email_sent: "Intro Email Sent",
-        interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted",
-        qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager Review",
+        lead_uploaded: "Lead Uploaded",
+        no_answer: "No Answer",
         wrong_number: "Wrong Number",
         not_interested: "Not Interested",
-        notes_saved: "Notes Saved"
+        voicemail: "Voicemail",
+        callback_required: "Callback Required",
+        callback_rescheduled: "Callback Rescheduled",
+        send_intro_email: "Send Intro Email",
+        interested_intake_started: "Intake Started",
+        intake_submitted: "Intake Submitted",
+        intake_draft_saved: "Intake Draft Saved",
+        notes_saved: "Notes Saved",
+        qualified: "Qualified",
+        awaiting_manager: "Awaiting Manager Review",
+        archived_closed_lead: "Archived Closed Lead"
       };
       return map[action] || action || "-";
     }
 
-    function getScheduledText(lead) {
-      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
-    }
-
     function isLocked(lead) {
-      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
+      return lead.closed === true || lead.usable === false;
     }
 
     function isConverted(lead) {
       return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
     }
 
+    function formatLeadStatus(lead) {
+      if (isLocked(lead)) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      return "New";
+    }
+
     function leadStatusBadge(lead) {
-      if (isLocked(lead)) return `<span class="badge badge-red">Closed</span>`;
-      if (lead.leadStatus === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
-      if (lead.leadStatus === "qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (lead.leadStatus === "converted") return `<span class="badge badge-green">Converted</span>`;
-      if (lead.leadStatus === "intake_in_progress") return `<span class="badge badge-indigo">Intake In Progress</span>`;
-      return `<span class="badge badge-amber">Callback Required</span>`;
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
+      if (status === "Intake In Progress") return `<span class="badge badge-purple">Intake In Progress</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
     }
 
-    function setButtonDisabled(button, disabled) {
-      button.disabled = !!disabled;
-      if (disabled) {
-        button.classList.add("opacity-60", "cursor-not-allowed");
-      } else {
-        button.classList.remove("opacity-60", "cursor-not-allowed");
-      }
+    function callbackDisplay(lead) {
+      if (!lead.callbackDate) return "-";
+      return `${lead.callbackDate}${lead.callbackTime ? ` ${lead.callbackTime}` : ""}`;
     }
 
-    function updateActionAvailability(lead) {
-      const locked = isLocked(lead);
-      const converted = isConverted(lead);
-      const awaitingManager = lead.leadStatus === "awaiting_manager";
-
-      [
-        openIntakeBtn,
-        sendIntroEmailBtn,
-        markQualifiedBtn,
-        sendToManagerBtn,
-        rescheduleBtn,
-        markDoneBtn,
-        notInterestedBtn,
-        wrongNumberBtn,
-        saveNotesBtn
-      ].forEach(button => setButtonDisabled(button, false));
-
-      if (locked || converted || awaitingManager) {
-        [
-          openIntakeBtn,
-          sendIntroEmailBtn,
-          markQualifiedBtn,
-          sendToManagerBtn,
-          rescheduleBtn,
-          markDoneBtn,
-          notInterestedBtn,
-          wrongNumberBtn
-        ].forEach(button => setButtonDisabled(button, true));
-      }
-
-      if (!getLeadEmail(lead)) {
-        setButtonDisabled(sendIntroEmailBtn, true);
-      }
+    function compareDateOnly(dateA, dateB) {
+      if (dateA === dateB) return 0;
+      return dateA < dateB ? -1 : 1;
     }
 
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
+    function populateClaimTypeDropdowns() {
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+      leadClaimTypeSelect.innerHTML = `<option value="">Select claim type</option>`;
 
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
+      CLAIM_TYPES.forEach(item => {
+        const option1 = document.createElement("option");
+        option1.value = item.value;
+        option1.textContent = item.label;
+        claimTypeFilter.appendChild(option1);
 
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
+        const option2 = document.createElement("option");
+        option2.value = item.value;
+        option2.textContent = item.label;
+        leadClaimTypeSelect.appendChild(option2);
       });
+    }
+
+    function populateCampaignFilter() {
+      const currentValue = campaignFilter.value || "all";
+      const campaigns = [...new Set(
+        callbackLeads
+          .map(lead => getLeadCampaign(lead))
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b))
+      )];
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+
+      if ([...campaignFilter.options].some(option => option.value === currentValue)) {
+        campaignFilter.value = currentValue;
+      }
     }
 
     async function recordStaffLoginFromPage() {
@@ -572,9 +723,7 @@
     }
 
     function startAttendanceHeartbeat() {
-      if (attendanceHeartbeatInterval) {
-        clearInterval(attendanceHeartbeatInterval);
-      }
+      if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
 
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
@@ -622,7 +771,7 @@
       }, { merge: true });
     }
 
-    async function checkListerAccess(user) {
+    async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
@@ -646,17 +795,18 @@
       return true;
     }
 
-    async function loadLeads() {
+    async function loadCallbacks() {
       try {
-        const callbackQuery = query(
+        const callbacksQuery = query(
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid),
           where("callbackRequired", "==", true)
         );
 
-        const snapshot = await getDocs(callbackQuery);
-        allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const snapshot = await getDocs(callbacksQuery);
+        callbackLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
+        populateCampaignFilter();
         renderStats();
         renderCallbacks();
       } catch (error) {
@@ -667,32 +817,39 @@
 
     function renderStats() {
       const today = todayIso();
-      totalStat.textContent = String(allLeads.length);
-      todayStat.textContent = String(allLeads.filter(x => x.callbackDate === today).length);
-      overdueStat.textContent = String(allLeads.filter(x => x.callbackDate && x.callbackDate < today).length);
-      futureStat.textContent = String(allLeads.filter(x => x.callbackDate && x.callbackDate > today).length);
-      qualifiedStat.textContent = String(allLeads.filter(x => x.leadStatus === "qualified").length);
+
+      totalCallbacksStat.textContent = String(callbackLeads.length);
+      dueTodayStat.textContent = String(callbackLeads.filter(lead => lead.callbackDate === today).length);
+      upcomingStat.textContent = String(callbackLeads.filter(lead => lead.callbackDate && compareDateOnly(lead.callbackDate, today) === 1).length);
+      missingTimeStat.textContent = String(callbackLeads.filter(lead => lead.callbackDate && !lead.callbackTime).length);
+      progressedStat.textContent = String(callbackLeads.filter(lead =>
+        lead.leadStatus === "qualified" || lead.leadStatus === "awaiting_manager"
+      ).length);
     }
 
-    function renderCallbacks() {
-      const timing = timingFilter.value;
-      const status = statusFilter.value;
+    function getFilteredCallbacks() {
+      const dateView = dateViewFilter.value;
+      const claimType = claimTypeFilter.value;
+      const campaign = campaignFilter.value;
+      const specificDate = specificDateFilter.value;
       const term = searchInput.value.trim().toLowerCase();
       const today = todayIso();
 
-      const filtered = [...allLeads]
+      return callbackLeads
         .filter(lead => {
-          const matchesTiming =
-            timing === "all" ||
-            (timing === "today" && lead.callbackDate === today) ||
-            (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
-            (timing === "future" && lead.callbackDate && lead.callbackDate > today);
+          const callbackDateValue = cleanValue(lead.callbackDate);
+          const normalizedLeadClaimType = normalizeClaimType(getLeadClaimType(lead));
 
-          const matchesStatus =
-            status === "all" ||
-            (status === "callback_required" && lead.leadStatus === "callback_required") ||
-            (status === "qualified" && lead.leadStatus === "qualified") ||
-            (status === "awaiting_manager" && lead.leadStatus === "awaiting_manager");
+          const matchesDateView =
+            dateView === "all" ||
+            (dateView === "today" && callbackDateValue === today) ||
+            (dateView === "overdue" && callbackDateValue && compareDateOnly(callbackDateValue, today) === -1) ||
+            (dateView === "upcoming" && callbackDateValue && compareDateOnly(callbackDateValue, today) === 1) ||
+            (dateView === "no_date" && !callbackDateValue);
+
+          const matchesSpecificDate = !specificDate || callbackDateValue === specificDate;
+          const matchesClaimType = claimType === "all" || normalizedLeadClaimType === normalizeClaimType(claimType);
+          const matchesCampaign = campaign === "all" || getLeadCampaign(lead) === campaign;
 
           const haystack = `
             ${lead.forename || ""}
@@ -707,63 +864,147 @@
             ${lead.address3 || ""}
             ${lead.address4 || ""}
             ${lead.address5 || ""}
+            ${getLeadCampaign(lead)}
+            ${getLeadClaimType(lead)}
           `.toLowerCase();
 
           const matchesSearch = !term || haystack.includes(term);
 
-          return matchesTiming && matchesStatus && matchesSearch;
+          return matchesDateView && matchesSpecificDate && matchesClaimType && matchesCampaign && matchesSearch;
         })
         .sort((a, b) => {
-          const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
-          const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
-          return aKey.localeCompare(bKey);
-        });
+          const aDate = cleanValue(a.callbackDate) || "9999-12-31";
+          const bDate = cleanValue(b.callbackDate) || "9999-12-31";
+          if (aDate !== bDate) return aDate.localeCompare(bDate);
 
+          const aTime = cleanValue(a.callbackTime) || "99:99";
+          const bTime = cleanValue(b.callbackTime) || "99:99";
+          return aTime.localeCompare(bTime);
+        });
+    }
+
+    function renderCallbacks() {
+      const filtered = getFilteredCallbacks();
       callbacksBody.innerHTML = "";
 
       if (!filtered.length) {
         callbacksBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No callback leads found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No callback leads found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
+
           tr.innerHTML = `
-            <td class="p-3 align-top client-cell">
+            <td class="p-3 align-top">
               <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
               <div class="client-address">${formatAddress(lead)}</div>
             </td>
             <td class="p-3 align-top cell-tight">${getLeadTelephone(lead) || "-"}</td>
             <td class="p-3 align-top cell-tight">${getLeadMobile(lead) || "-"}</td>
             <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${lead.postcode || "-"}</td>
-            <td class="p-3 align-top cell-wrap">${getScheduledText(lead)}</td>
-            <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
-            <td class="p-3 align-top cell-wrap">${formatAction(lead.lastAction)}</td>
+            <td class="p-3 align-top cell-wrap">${getClaimTypeLabel(getLeadClaimType(lead))}</td>
+            <td class="p-3 align-top cell-wrap">${getLeadCampaign(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">
+              <div>${lead.callbackDate || "-"}</div>
+              <div class="text-slate-500 mt-1">${lead.callbackTime || "No time set"}</div>
+            </td>
             <td class="p-3 align-top">
-              <button class="table-link" data-open-lead="${lead.id}">Open</button>
+              <button class="text-blue-600 font-bold hover:underline" type="button" data-open-callback="${lead.id}">
+                Open
+              </button>
             </td>
           `;
+
           callbacksBody.appendChild(tr);
         });
       }
 
       resultsSummary.textContent = `${filtered.length} callback lead(s) shown`;
 
-      document.querySelectorAll("[data-open-lead]").forEach(btn => {
-        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+      document.querySelectorAll("[data-open-callback]").forEach(btn => {
+        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-callback")));
       });
     }
 
+    function renderHistory(history) {
+      const wrap = document.getElementById("historyWrap");
+      wrap.innerHTML = "";
+
+      if (!history || !history.length) {
+        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        return;
+      }
+
+      [...history].reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-xl p-3";
+        div.innerHTML = `
+          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+    function setButtonDisabled(button, disabled) {
+      button.disabled = !!disabled;
+      if (disabled) {
+        button.classList.add("opacity-60", "cursor-not-allowed");
+      } else {
+        button.classList.remove("opacity-60", "cursor-not-allowed");
+      }
+    }
+
+    function updateActionAvailability(lead) {
+      const locked = isLocked(lead);
+      const converted = isConverted(lead);
+      const introNeedsEmail = !getLeadEmail(lead);
+
+      [
+        rescheduleBtn,
+        openIntakeBtn,
+        sendIntroEmailBtn,
+        markQualifiedBtn,
+        sendToManagerBtn,
+        saveLeadBtn,
+        noAnswerBtn,
+        voicemailBtn,
+        wrongNumberBtn,
+        notInterestedBtn,
+        saveNotesBtn
+      ].forEach(button => setButtonDisabled(button, false));
+
+      if (locked || converted) {
+        [
+          rescheduleBtn,
+          openIntakeBtn,
+          sendIntroEmailBtn,
+          markQualifiedBtn,
+          sendToManagerBtn,
+          noAnswerBtn,
+          voicemailBtn,
+          wrongNumberBtn,
+          notInterestedBtn
+        ].forEach(button => setButtonDisabled(button, true));
+      }
+
+      if (introNeedsEmail) {
+        setButtonDisabled(sendIntroEmailBtn, true);
+      }
+    }
+
     function openLead(leadId) {
-      selectedLead = allLeads.find(x => x.id === leadId);
+      selectedLead = callbackLeads.find(x => x.id === leadId);
       if (!selectedLead) return;
 
       document.getElementById("modalLeadTitle").textContent =
-        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Detail";
+        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Lead";
+
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
@@ -772,33 +1013,37 @@
       document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
       document.getElementById("lead_address").textContent = formatAddress(selectedLead);
       document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
-      document.getElementById("lead_callback").textContent = getScheduledText(selectedLead);
+      document.getElementById("lead_campaign").textContent = getLeadCampaign(selectedLead) || "-";
+      document.getElementById("lead_claimType").textContent = getClaimTypeLabel(getLeadClaimType(selectedLead));
       document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
       document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
-      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
-      document.getElementById("lead_intro_status").textContent = selectedLead.introEmailSent ? "Yes" : "No";
-      document.getElementById("lead_manager_state").textContent = selectedLead.leadStatus === "awaiting_manager" ? "Yes" : "No";
+      document.getElementById("lead_callback").textContent = callbackDisplay(selectedLead);
+      document.getElementById("lead_submission").textContent =
+        selectedLead.convertedToSubmissionId || selectedLead.submissionId || selectedLead.claimSubmissionId || "-";
 
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
+      campaignNameInput.value = getLeadCampaign(selectedLead) || "";
+      leadClaimTypeSelect.value = normalizeClaimType(getLeadClaimType(selectedLead)) || "";
 
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
-      leadModal.classList.remove("hidden");
+
+      callbackModal.classList.remove("hidden");
     }
 
     async function refreshSelectedLead() {
-      const currentLeadId = selectedLead?.id || null;
-      await loadLeads();
+      await loadCallbacks();
 
-      if (currentLeadId) {
-        const updated = allLeads.find(x => x.id === currentLeadId);
+      if (selectedLead) {
+        const updated = callbackLeads.find(x => x.id === selectedLead.id);
         if (updated) {
           selectedLead = updated;
           openLead(updated.id);
         } else {
-          leadModal.classList.add("hidden");
+          callbackModal.classList.add("hidden");
+          selectedLead = null;
         }
       }
     }
@@ -827,62 +1072,145 @@
       }
     }
 
-    async function archiveAndDeleteLead(reason, noteText) {
+    async function archiveAndRemoveLead(reason, notes = "") {
       if (!selectedLead) return;
 
       try {
-        const historyEntry = {
-          action: reason,
-          byUid: currentUser.uid,
-          byName: currentUserData.name || "",
-          at: new Date().toISOString(),
-          notes: noteText || ""
-        };
+        const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
 
-        await setDoc(doc(db, "closedLeadsArchive", selectedLead.id), {
+        await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
           originalLeadId: selectedLead.id,
           archiveReason: reason,
-          archiveNotes: noteText || "",
+          archiveNotes: notes || "",
           closedByUid: currentUser.uid,
-          closedByName: currentUserData.name || "",
+          closedByName: currentUserData.name || currentUser.email || "",
           archivedByUid: currentUser.uid,
-          archivedByName: currentUserData.name || "",
+          archivedByName: currentUserData.name || currentUser.email || "",
           closedFromPage: "lister-callbacks",
           closedAt: new Date().toISOString(),
+          archivedAt: new Date().toISOString(),
+          lastAction: reason,
+          leadStatus: "closed",
           closed: true,
           usable: false,
-          leadStatus: "closed",
-          lastAction: reason,
-          introEmailNeeded: false,
           callbackRequired: false,
-          callbackDate: "",
-          callbackTime: "",
-          lastUpdatedAt: new Date().toISOString(),
-          actionHistory: [...(selectedLead.actionHistory || []), historyEntry]
+          introEmailNeeded: false,
+          actionHistory: [
+            ...(selectedLead.actionHistory || []),
+            {
+              action: "archived_closed_lead",
+              byUid: currentUser.uid,
+              byName: currentUserData.name || "",
+              at: new Date().toISOString(),
+              notes: notes || `Lead archived as ${reason}.`
+            }
+          ]
         });
 
         await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
 
+        callbackModal.classList.add("hidden");
         selectedLead = null;
-        leadModal.classList.add("hidden");
-        await loadLeads();
-        showModalMessage("Lead archived and removed from callback agenda.");
+        await loadCallbacks();
       } catch (error) {
-        console.error("Archive/delete failed:", error);
-        showModalMessage("Could not archive lead.", true);
+        console.error("Archive/remove failed:", error);
+        showModalMessage("Could not archive this lead.", true);
       }
     }
+
+    async function saveLeadCoreFields(extraPatch = {}) {
+      if (!selectedLead) return false;
+
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          campaign: campaignNameInput.value.trim() || "",
+          claimType: leadClaimTypeSelect.value || "",
+          intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+          notes: notesBox.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
+          lastUpdatedAt: serverTimestamp(),
+          ...extraPatch
+        });
+        return true;
+      } catch (error) {
+        console.error("Failed to save core lead fields:", error);
+        return false;
+      }
+    }
+
+    rescheduleBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!callbackDate.value) {
+        showModalMessage("Please choose a callback date first.", true);
+        return;
+      }
+
+      await updateLead({
+        campaign: campaignNameInput.value.trim() || "",
+        claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+        notes: notesBox.value || "",
+        leadStatus: "callback_required",
+        callbackRequired: true,
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value || "",
+        lastAction: "callback_rescheduled"
+      }, "callback_rescheduled", `Callback set for ${callbackDate.value}${callbackTime.value ? ` ${callbackTime.value}` : ""}`);
+    });
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
-      await updateLead({
-        leadStatus: "intake_in_progress",
-        lastAction: "interested_intake_started"
-      }, "interested_intake_started", "Lead moved to intake from callback agenda.");
+      const chosenClaimType = leadClaimTypeSelect.value || getLeadClaimType(selectedLead);
+      const normalizedIntakeType = normalizeIntakeClaimType(chosenClaimType);
 
-      window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
+      if (!chosenClaimType) {
+        showModalMessage("Please select a claim type before opening intake.", true);
+        return;
+      }
+
+      if (!normalizedIntakeType) {
+        showModalMessage("This selected claim type does not have a live intake form yet. Use Solar, Mortgage, Survey, or New Build.", true);
+        return;
+      }
+
+      try {
+        const saved = await saveLeadCoreFields({
+          claimType: chosenClaimType,
+          intakeClaimType: normalizedIntakeType,
+          leadStatus: "intake_in_progress",
+          callbackRequired: false,
+          lastAction: "interested_intake_started"
+        });
+
+        if (!saved) {
+          showModalMessage("Could not save claim type before opening intake.", true);
+          return;
+        }
+
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          leadStatus: "intake_in_progress",
+          callbackRequired: false,
+          intakeClaimType: normalizedIntakeType,
+          lastAction: "interested_intake_started",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "interested_intake_started",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: `Lead moved to ${normalizedIntakeType} intake.`
+          })
+        });
+
+        window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}&claimType=${encodeURIComponent(normalizedIntakeType)}`;
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not open intake.", true);
+      }
     });
 
     sendIntroEmailBtn.addEventListener("click", async () => {
@@ -899,72 +1227,113 @@
       }
 
       await updateLead({
+        campaign: campaignNameInput.value.trim() || "",
+        claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+        notes: notesBox.value || "",
         leadStatus: "intro_email_needed",
         introEmailNeeded: true,
         callbackRequired: true,
         callbackDate: callbackDate.value,
         callbackTime: callbackTime.value,
         lastAction: "send_intro_email"
-      }, "send_intro_email", `Lead moved to intro email queue. Follow-up set for ${callbackDate.value} ${callbackTime.value}`);
+      }, "send_intro_email", `Intro email needed. Follow-up set for ${callbackDate.value} ${callbackTime.value}`);
     });
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
       await updateLead({
+        campaign: campaignNameInput.value.trim() || "",
+        claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+        notes: notesBox.value || "",
         leadStatus: "qualified",
         callbackRequired: false,
+        introEmailNeeded: false,
         qualifiedAt: serverTimestamp(),
         lastAction: "qualified"
-      }, "qualified", "Lead marked as qualified from callback agenda.");
+      }, "qualified", "Lead marked as qualified.");
     });
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
       await updateLead({
+        campaign: campaignNameInput.value.trim() || "",
+        claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+        notes: notesBox.value || "",
         leadStatus: "awaiting_manager",
         callbackRequired: false,
+        introEmailNeeded: false,
         sentToManagerAt: serverTimestamp(),
         lastAction: "awaiting_manager"
-      }, "awaiting_manager", "Lead sent to manager from callback agenda.");
+      }, "awaiting_manager", "Lead sent to manager.");
     });
 
-    rescheduleBtn.addEventListener("click", async () => {
+    saveLeadBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
-      if (!callbackDate.value || !callbackTime.value) {
-        showModalMessage("Please choose callback date and time.", true);
-        return;
+      try {
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          campaign: campaignNameInput.value.trim() || "",
+          claimType: leadClaimTypeSelect.value || "",
+          intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+          notes: notesBox.value || "",
+          callbackDate: callbackDate.value || "",
+          callbackTime: callbackTime.value || "",
+          lastUpdatedAt: serverTimestamp()
+        });
+
+        await refreshSelectedLead();
+        showModalMessage("Lead saved.");
+      } catch (error) {
+        console.error(error);
+        showModalMessage("Could not save lead.", true);
       }
-
-      await updateLead({
-        callbackRequired: true,
-        callbackDate: callbackDate.value,
-        callbackTime: callbackTime.value,
-        lastAction: "callback_rescheduled"
-      }, "callback_rescheduled", `Callback rescheduled for ${callbackDate.value} ${callbackTime.value}`);
     });
 
-    markDoneBtn.addEventListener("click", async () => {
+    noAnswerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
       await updateLead({
+        campaign: campaignNameInput.value.trim() || "",
+        claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+        notes: notesBox.value || "",
+        leadStatus: "no_answer",
         callbackRequired: false,
-        callbackDate: "",
-        callbackTime: "",
-        lastAction: "callback_completed"
-      }, "callback_completed", "Callback item marked as done.");
+        lastAction: "no_answer",
+        lastCallAt: serverTimestamp(),
+        attemptCount: (selectedLead.attemptCount || 0) + 1
+      }, "no_answer", "No answer recorded.");
     });
 
-    notInterestedBtn.addEventListener("click", async () => {
+    voicemailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndDeleteLead("not_interested", notesBox.value || "Marked as not interested from callback agenda.");
+
+      await updateLead({
+        campaign: campaignNameInput.value.trim() || "",
+        claimType: leadClaimTypeSelect.value || "",
+        intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
+        notes: notesBox.value || "",
+        callbackRequired: false,
+        lastAction: "voicemail",
+        lastCallAt: serverTimestamp(),
+        voicemailLeft: true,
+        voicemailAt: serverTimestamp()
+      }, "voicemail", "Voicemail left.");
     });
 
     wrongNumberBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-      await archiveAndDeleteLead("wrong_number", notesBox.value || "Marked as wrong number from callback agenda.");
+      await archiveAndRemoveLead("wrong_number", "Marked as wrong number.");
+    });
+
+    notInterestedBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+      await archiveAndRemoveLead("not_interested", "Marked as not interested.");
     });
 
     saveNotesBtn.addEventListener("click", async () => {
@@ -972,6 +1341,9 @@
 
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          campaign: campaignNameInput.value.trim() || "",
+          claimType: leadClaimTypeSelect.value || "",
+          intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
           notes: notesBox.value || "",
           callbackDate: callbackDate.value || "",
           callbackTime: callbackTime.value || "",
@@ -994,12 +1366,12 @@
     });
 
     closeModalBtn.addEventListener("click", () => {
-      leadModal.classList.add("hidden");
+      callbackModal.classList.add("hidden");
     });
 
-    leadModal.addEventListener("click", (e) => {
-      if (e.target === leadModal) {
-        leadModal.classList.add("hidden");
+    callbackModal.addEventListener("click", (e) => {
+      if (e.target === callbackModal) {
+        callbackModal.classList.add("hidden");
       }
     });
 
@@ -1010,7 +1382,9 @@
       }
 
       try {
-        const allowed = await checkListerAccess(user);
+        populateClaimTypeDropdowns();
+
+        const allowed = await checkStaffAccess(user);
         if (!allowed) return;
 
         try {
@@ -1020,7 +1394,7 @@
           console.error("Attendance login-from-page failed:", attendanceError);
         }
 
-        await loadLeads();
+        await loadCallbacks();
         hideLoader();
       } catch (error) {
         console.error(error);
@@ -1040,7 +1414,7 @@
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
-        console.error(error);
+        console.error("Logout failed:", error);
         alert("Could not log out.");
       }
     });
@@ -1053,10 +1427,12 @@
       }
     });
 
-    timingFilter.addEventListener("change", renderCallbacks);
-    statusFilter.addEventListener("change", renderCallbacks);
+    dateViewFilter.addEventListener("change", renderCallbacks);
+    claimTypeFilter.addEventListener("change", renderCallbacks);
+    campaignFilter.addEventListener("change", renderCallbacks);
     searchInput.addEventListener("input", renderCallbacks);
-    refreshBtn.addEventListener("click", loadLeads);
+    specificDateFilter.addEventListener("change", renderCallbacks);
+    refreshBtn.addEventListener("click", loadCallbacks);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {

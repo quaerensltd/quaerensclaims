@@ -28,15 +28,20 @@
       background: #1d4ed8;
       color: white;
     }
+    .mini-note {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+      line-height: 1.45;
+    }
     .claim-chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.35rem 0.7rem;
+      display: inline-block;
+      padding: 0.3rem 0.7rem;
       border-radius: 999px;
       background: #eff6ff;
       color: #1d4ed8;
+      font-size: 0.78rem;
       font-weight: 700;
-      font-size: 0.8rem;
     }
   </style>
 </head>
@@ -53,7 +58,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Client Intake Portal</h1>
-          <p class="text-sm text-slate-500">Secure staff intake, manager review, and claim assessment workflow</p>
+          <p class="text-sm text-slate-500">Universal claim intake for all active claim types</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Staff Dashboard</a>
@@ -73,24 +78,22 @@
       <aside class="card p-5 h-fit">
         <h2 class="section-title mb-4">Portal Flow</h2>
         <ol class="space-y-3 text-sm text-slate-700 list-decimal pl-4">
-          <li>Staff member logs in</li>
-          <li>Opens a linked lead or selects a claim type</li>
-          <li>Completes the claim-specific intake</li>
-          <li>Saves draft or submits to review</li>
-          <li>Manager reviews and continues assessment</li>
+          <li>Staff logs in and opens claim intake</li>
+          <li>Selects the correct claim type</li>
+          <li>Completes personal + claim-specific details</li>
+          <li>Saves draft or submits to manager review</li>
+          <li>Manager reviews and decides next step</li>
         </ol>
 
         <div id="leadNotice" class="mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 hidden">
           <h3 class="font-bold text-emerald-900 mb-2">Lead linked</h3>
-          <p class="text-sm text-slate-700" id="leadNoticeText">
-            This intake is linked to a lister lead and some fields were prefilled automatically.
-          </p>
+          <p class="text-sm text-slate-700" id="leadNoticeText">This intake is linked to a lister lead and some fields were prefilled automatically.</p>
         </div>
 
         <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
-          <h3 class="font-bold text-blue-900 mb-2">All forms live</h3>
+          <h3 class="font-bold text-blue-900 mb-2">Universal intake</h3>
           <p class="text-sm text-slate-700">
-            Every claim type now has its own custom intake section in this portal.
+            Every claim type now has its own dedicated intake section. Select a claim type to show the matching form.
           </p>
         </div>
 
@@ -110,7 +113,7 @@
           <div class="flex flex-col md:flex-row md:items-end gap-4 justify-between">
             <div>
               <h2 class="text-xl font-extrabold text-blue-900">New Intake</h2>
-              <p class="text-slate-600 mt-1">Claim-specific intake form for staff and manager use</p>
+              <p class="text-slate-600 mt-1">One intake page for all claims</p>
             </div>
             <div class="w-full md:w-80">
               <label class="label" for="claimType">Claim type</label>
@@ -121,10 +124,7 @@
 
         <form class="card p-6 space-y-8" id="intakeForm">
           <div>
-            <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-              <h3 class="section-title">Personal Details</h3>
-              <span id="claimTypeBadge" class="claim-chip">Claim</span>
-            </div>
+            <h3 class="section-title mb-4">Personal Details</h3>
             <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label class="label">First Name</label>
@@ -165,32 +165,657 @@
             </div>
           </div>
 
-          <div id="dynamicClaimSection" class="space-y-8"></div>
-
-          <div>
-            <h3 class="section-title mb-4">General Notes</h3>
+          <!-- AIRBNB REFUNDS -->
+          <div id="wrap_airbnb_refunds" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Airbnb Refunds</h3>
+              <span class="claim-chip">Airbnb refunds</span>
+            </div>
             <div class="grid md:grid-cols-2 gap-4">
-              <div class="md:col-span-2">
-                <label class="label">General issue summary</label>
-                <textarea class="input" name="general_issueSummary" rows="4"></textarea>
+              <div><label class="label">Booking Platform</label><input class="input" name="airbnb_platform" /></div>
+              <div><label class="label">Booking Reference</label><input class="input" name="airbnb_bookingReference" /></div>
+              <div><label class="label">Travel Date</label><input class="input" type="date" name="airbnb_travelDate" /></div>
+              <div><label class="label">Booking Value</label><input class="input" name="airbnb_bookingValue" /></div>
+              <div><label class="label">Reason for Refund</label><input class="input" name="airbnb_refundReason" /></div>
+              <div><label class="label">Refund Refused?</label><select class="input" name="airbnb_refundRefused"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Chargeback attempted?</label><select class="input" name="airbnb_chargebackAttempted"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents available?</label><select class="input" name="airbnb_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="airbnb_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CAR FINANCE -->
+          <div id="wrap_car_finance" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Car Finance</h3>
+              <span class="claim-chip">Car finance</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Dealer Name</label><input class="input" name="carfinance_dealerName" /></div>
+              <div><label class="label">Lender Name</label><input class="input" name="carfinance_lenderName" /></div>
+              <div><label class="label">Vehicle</label><input class="input" name="carfinance_vehicle" /></div>
+              <div><label class="label">Agreement Date</label><input class="input" type="date" name="carfinance_agreementDate" /></div>
+              <div><label class="label">Agreement Type</label><input class="input" name="carfinance_agreementType" placeholder="HP, PCP, lease..." /></div>
+              <div><label class="label">Commission disclosed?</label><select class="input" name="carfinance_commissionDisclosed"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Deposit Paid</label><input class="input" name="carfinance_deposit" /></div>
+              <div><label class="label">Monthly Payment</label><input class="input" name="carfinance_monthlyPayment" /></div>
+              <div><label class="label">Still Active?</label><select class="input" name="carfinance_active"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Have agreement docs?</label><select class="input" name="carfinance_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">What went wrong?</label><textarea class="input" name="carfinance_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CARAVAN HOLIDAY PARK -->
+          <div id="wrap_caravan_holiday_park" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Caravan / Holiday Park</h3>
+              <span class="claim-chip">Caravan / holiday park</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Site / Park Name</label><input class="input" name="caravan_parkName" /></div>
+              <div><label class="label">Sales Company</label><input class="input" name="caravan_salesCompany" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="caravan_purchaseDate" /></div>
+              <div><label class="label">Purchase Price</label><input class="input" name="caravan_purchasePrice" /></div>
+              <div><label class="label">Finance Used?</label><select class="input" name="caravan_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Annual Fees Explained Clearly?</label><select class="input" name="caravan_feesExplained"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Misleading Sales Promises?</label><select class="input" name="caravan_salesPromises"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents available?</label><select class="input" name="caravan_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="caravan_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- COMPLAINT LETTERS -->
+          <div id="wrap_complaint_letters" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Complaint Letters</h3>
+              <span class="claim-chip">Complaint letters</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Company Complained About</label><input class="input" name="complaint_companyName" /></div>
+              <div><label class="label">Complaint Date</label><input class="input" type="date" name="complaint_date" /></div>
+              <div><label class="label">Issue Category</label><input class="input" name="complaint_category" /></div>
+              <div><label class="label">Response Received?</label><select class="input" name="complaint_responseReceived"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Desired Outcome</label><input class="input" name="complaint_desiredOutcome" /></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="complaint_evidence"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Complaint Summary</label><textarea class="input" name="complaint_summary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CONTACT ME -->
+          <div id="wrap_contact_me" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Contact Me</h3>
+              <span class="claim-chip">General enquiry</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Reason For Contact</label><input class="input" name="contactme_reason" /></div>
+              <div><label class="label">Best Time To Call</label><input class="input" name="contactme_bestTime" /></div>
+              <div><label class="label">Preferred Contact Method</label><input class="input" name="contactme_contactMethod" /></div>
+              <div><label class="label">Urgent?</label><select class="input" name="contactme_urgent"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Enquiry Notes</label><textarea class="input" name="contactme_notes" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CREDIT CARD FEES -->
+          <div id="wrap_credit_card_fees" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Credit Card Fees</h3>
+              <span class="claim-chip">Credit card fees</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Card Provider</label><input class="input" name="ccfees_provider" /></div>
+              <div><label class="label">Card Type</label><input class="input" name="ccfees_cardType" /></div>
+              <div><label class="label">Fee Type</label><input class="input" name="ccfees_feeType" /></div>
+              <div><label class="label">Fee Amount</label><input class="input" name="ccfees_feeAmount" /></div>
+              <div><label class="label">Date Fees Applied</label><input class="input" type="date" name="ccfees_feeDate" /></div>
+              <div><label class="label">Complaint Raised?</label><select class="input" name="ccfees_complaintRaised"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Statements Available?</label><select class="input" name="ccfees_statements"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="ccfees_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CRUISE COMPENSATION -->
+          <div id="wrap_cruise_compensation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Cruise Compensation</h3>
+              <span class="claim-chip">Cruise compensation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Cruise Operator</label><input class="input" name="cruise_operator" /></div>
+              <div><label class="label">Booking Reference</label><input class="input" name="cruise_bookingReference" /></div>
+              <div><label class="label">Cruise Date</label><input class="input" type="date" name="cruise_date" /></div>
+              <div><label class="label">Issue Type</label><input class="input" name="cruise_issueType" /></div>
+              <div><label class="label">Holiday Value</label><input class="input" name="cruise_value" /></div>
+              <div><label class="label">Compensation Offered?</label><select class="input" name="cruise_compensationOffered"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="cruise_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="cruise_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CRYPTO SCAM RECOVERY -->
+          <div id="wrap_crypto_scam_recovery" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Crypto Scam Recovery</h3>
+              <span class="claim-chip">Crypto scam recovery</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Platform / Website</label><input class="input" name="crypto_platform" /></div>
+              <div><label class="label">Approx Loss</label><input class="input" name="crypto_lossAmount" /></div>
+              <div><label class="label">Date of First Payment</label><input class="input" type="date" name="crypto_firstPaymentDate" /></div>
+              <div><label class="label">Payment Method</label><input class="input" name="crypto_paymentMethod" /></div>
+              <div><label class="label">Police / Action Fraud Reported?</label><select class="input" name="crypto_reported"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Wallet / Transaction Info Available?</label><select class="input" name="crypto_transactionInfo"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Bank Involved?</label><input class="input" name="crypto_bankName" /></div>
+              <div><label class="label">Still Contacted By Scammers?</label><select class="input" name="crypto_stillContacted"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Fraud Summary</label><textarea class="input" name="crypto_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CYBER DATA BREACH -->
+          <div id="wrap_cyber_data_breach" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Cyber Data Breach</h3>
+              <span class="claim-chip">Cyber data breach</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Company / Organisation</label><input class="input" name="databreach_company" /></div>
+              <div><label class="label">Date Notified</label><input class="input" type="date" name="databreach_notifiedDate" /></div>
+              <div><label class="label">Type of Data Exposed</label><input class="input" name="databreach_dataType" /></div>
+              <div><label class="label">Financial Loss?</label><select class="input" name="databreach_financialLoss"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Emotional Distress?</label><select class="input" name="databreach_distress"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">ICO Complaint Made?</label><select class="input" name="databreach_icoComplaint"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Notification Email / Letter Available?</label><select class="input" name="databreach_notificationDocs"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Impact Summary</label><textarea class="input" name="databreach_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- DEBT RECOVERY -->
+          <div id="wrap_debt_recovery" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Debt Recovery</h3>
+              <span class="claim-chip">Debt recovery</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Debtor Name</label><input class="input" name="debt_debtorName" /></div>
+              <div><label class="label">Debt Amount</label><input class="input" name="debt_amount" /></div>
+              <div><label class="label">Debt Date</label><input class="input" type="date" name="debt_date" /></div>
+              <div><label class="label">Written Agreement?</label><select class="input" name="debt_agreement"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Invoices / Evidence Available?</label><select class="input" name="debt_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Debtor Contactable?</label><select class="input" name="debt_contactable"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div class="md:col-span-2"><label class="label">Recovery Background</label><textarea class="input" name="debt_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- FOAM INSULATION -->
+          <div id="wrap_foam_insulation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Foam Insulation</h3>
+              <span class="claim-chip">Foam insulation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Installer / Company</label><input class="input" name="foam_company" /></div>
+              <div><label class="label">Installation Date</label><input class="input" type="date" name="foam_installDate" /></div>
+              <div><label class="label">Property Type</label><input class="input" name="foam_propertyType" /></div>
+              <div><label class="label">Mortgage Affected?</label><select class="input" name="foam_mortgageAffected"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Survey / Valuation Problem?</label><select class="input" name="foam_surveyProblem"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="foam_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="foam_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- FORMAL ESCALATION -->
+          <div id="wrap_formal_escalation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Formal Escalation</h3>
+              <span class="claim-chip">Formal escalation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Organisation</label><input class="input" name="escalation_company" /></div>
+              <div><label class="label">Complaint Stage</label><input class="input" name="escalation_stage" /></div>
+              <div><label class="label">Reference Number</label><input class="input" name="escalation_reference" /></div>
+              <div><label class="label">Deadline / Time Limit</label><input class="input" name="escalation_deadline" /></div>
+              <div><label class="label">Desired Resolution</label><input class="input" name="escalation_resolution" /></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="escalation_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Escalation Notes</label><textarea class="input" name="escalation_notes" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- FROZEN ACCOUNTS -->
+          <div id="wrap_frozen_accounts" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Frozen Accounts</h3>
+              <span class="claim-chip">Frozen accounts</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Bank / Provider</label><input class="input" name="frozen_bank" /></div>
+              <div><label class="label">Account Type</label><input class="input" name="frozen_accountType" /></div>
+              <div><label class="label">Date Frozen</label><input class="input" type="date" name="frozen_date" /></div>
+              <div><label class="label">Balance Affected</label><input class="input" name="frozen_balance" /></div>
+              <div><label class="label">Reason Given?</label><select class="input" name="frozen_reasonGiven"><option value=""></option><option>Yes</option><option>No</option><option>Unclear</option></select></div>
+              <div><label class="label">Access Restored?</label><select class="input" name="frozen_restored"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Complaint Made?</label><select class="input" name="frozen_complaintMade"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Account Freeze Summary</label><textarea class="input" name="frozen_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- HOLIDAY COMPENSATION -->
+          <div id="wrap_holiday_compensation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Holiday Compensation</h3>
+              <span class="claim-chip">Holiday compensation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Travel Company</label><input class="input" name="holiday_company" /></div>
+              <div><label class="label">Booking Reference</label><input class="input" name="holiday_bookingReference" /></div>
+              <div><label class="label">Travel Date</label><input class="input" type="date" name="holiday_travelDate" /></div>
+              <div><label class="label">Holiday Value</label><input class="input" name="holiday_value" /></div>
+              <div><label class="label">Issue Type</label><input class="input" name="holiday_issueType" /></div>
+              <div><label class="label">Compensation Offered?</label><select class="input" name="holiday_compOffered"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="holiday_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="holiday_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- HOUSING DISREPAIR -->
+          <div id="wrap_housing_disrepair" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Housing Disrepair</h3>
+              <span class="claim-chip">Housing disrepair</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Landlord / Housing Association</label><input class="input" name="disrepair_landlord" /></div>
+              <div><label class="label">Tenancy Start Date</label><input class="input" type="date" name="disrepair_tenancyStart" /></div>
+              <div><label class="label">Main Issue</label><input class="input" name="disrepair_mainIssue" /></div>
+              <div><label class="label">Issue Ongoing?</label><select class="input" name="disrepair_ongoing"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Reported To Landlord?</label><select class="input" name="disrepair_reported"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Photos / Evidence?</label><select class="input" name="disrepair_evidence"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Health Impact?</label><select class="input" name="disrepair_healthImpact"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Rent Arrears?</label><select class="input" name="disrepair_rentArrears"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Disrepair Summary</label><textarea class="input" name="disrepair_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- INVESTMENT PLATFORMS -->
+          <div id="wrap_investment_platforms" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Investment Platforms</h3>
+              <span class="claim-chip">Investment platforms</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Platform Name</label><input class="input" name="investment_platform" /></div>
+              <div><label class="label">Approx Loss</label><input class="input" name="investment_lossAmount" /></div>
+              <div><label class="label">Date Opened / Invested</label><input class="input" type="date" name="investment_startDate" /></div>
+              <div><label class="label">Advisor / Broker</label><input class="input" name="investment_advisor" /></div>
+              <div><label class="label">Access Restricted?</label><select class="input" name="investment_accessRestricted"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Withdrawals Blocked?</label><select class="input" name="investment_withdrawalsBlocked"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Complaint Made?</label><select class="input" name="investment_complaintMade"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Statements / Emails Available?</label><select class="input" name="investment_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Investment Issue Summary</label><textarea class="input" name="investment_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- LOANS AND MORTGAGES -->
+          <div id="wrap_loans_and_mortgages" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Loans and Mortgages</h3>
+              <span class="claim-chip">Loans and mortgages</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Lender Name</label><input class="input" name="loanmortgage_lenderName" /></div>
+              <div><label class="label">Agreement Type</label><input class="input" name="loanmortgage_agreementType" /></div>
+              <div><label class="label">Start Date</label><input class="input" type="date" name="loanmortgage_startDate" /></div>
+              <div><label class="label">Amount Borrowed</label><input class="input" name="loanmortgage_amount" /></div>
+              <div><label class="label">Affordability Checks Questionable?</label><select class="input" name="loanmortgage_affordability"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Pressure / Mis-sale?</label><select class="input" name="loanmortgage_pressure"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="loanmortgage_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="loanmortgage_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- MEDICAL NEGLIGENCE -->
+          <div id="wrap_medical_negligence" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Medical Negligence</h3>
+              <span class="claim-chip">Medical negligence</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Hospital / Clinic / GP</label><input class="input" name="medical_provider" /></div>
+              <div><label class="label">Treatment Date</label><input class="input" type="date" name="medical_treatmentDate" /></div>
+              <div><label class="label">Type of Treatment</label><input class="input" name="medical_treatmentType" /></div>
+              <div><label class="label">Injury / Harm Suffered</label><input class="input" name="medical_harm" /></div>
+              <div><label class="label">Complaint Made?</label><select class="input" name="medical_complaintMade"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Medical Records Available?</label><select class="input" name="medical_records"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Financial Loss?</label><select class="input" name="medical_financialLoss"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Still Receiving Treatment?</label><select class="input" name="medical_ongoingTreatment"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Negligence Summary</label><textarea class="input" name="medical_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- MIS SOLD BANK ACCOUNTS -->
+          <div id="wrap_mis_sold_bank_accounts" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Mis-sold Bank Accounts</h3>
+              <span class="claim-chip">Mis-sold bank accounts</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Bank Name</label><input class="input" name="bankaccount_bankName" /></div>
+              <div><label class="label">Account Type</label><input class="input" name="bankaccount_accountType" /></div>
+              <div><label class="label">When Opened</label><input class="input" type="date" name="bankaccount_openedDate" /></div>
+              <div><label class="label">Monthly Fee</label><input class="input" name="bankaccount_monthlyFee" /></div>
+              <div><label class="label">Benefits Used?</label><select class="input" name="bankaccount_benefitsUsed"><option value=""></option><option>Yes</option><option>No</option><option>Not Sure</option></select></div>
+              <div><label class="label">Eligibility Checked?</label><select class="input" name="bankaccount_eligibilityChecked"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Statements Available?</label><select class="input" name="bankaccount_statements"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Mis-sale Summary</label><textarea class="input" name="bankaccount_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- MORTGAGE REVIEW -->
+          <div id="wrap_mortgage_review" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Mortgage Review</h3>
+              <span class="claim-chip">Mortgage review</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Lender Name</label><input class="input" name="mortgage_lenderName" /></div>
+              <div><label class="label">Broker Name</label><input class="input" name="mortgage_brokerName" /></div>
+              <div><label class="label">Mortgage Start Date</label><input class="input" type="date" name="mortgage_startDate" /></div>
+              <div><label class="label">Mortgage End Date / Current</label><input class="input" name="mortgage_endDate" /></div>
+              <div><label class="label">Mortgage Amount</label><input class="input" name="mortgage_amount" /></div>
+              <div><label class="label">Monthly Payment</label><input class="input" name="mortgage_monthlyPayment" /></div>
+              <div><label class="label">Fixed / Variable / Tracker</label><input class="input" name="mortgage_type" /></div>
+              <div><label class="label">Interest Rate</label><input class="input" name="mortgage_interestRate" /></div>
+              <div><label class="label">Was advice given?</label><select class="input" name="mortgage_adviceGiven"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Any fees charged?</label><select class="input" name="mortgage_feesCharged"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Fee details</label><input class="input" name="mortgage_feeDetails" /></div>
+              <div><label class="label">Were risks explained clearly?</label><select class="input" name="mortgage_risksExplained"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Affordability concerns?</label><select class="input" name="mortgage_affordability"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Pressure to proceed?</label><select class="input" name="mortgage_pressure"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Arrears or defaults?</label><select class="input" name="mortgage_arrears"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Have documents?</label><select class="input" name="mortgage_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">What went wrong?</label><textarea class="input" name="mortgage_issueSummary" rows="3"></textarea></div>
+              <div class="md:col-span-2"><label class="label">Additional comments</label><textarea class="input" name="mortgage_comments" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- NEW BUILD ISSUES -->
+          <div id="wrap_new_build_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">New Build Issues</h3>
+              <span class="claim-chip">New build issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Developer Name</label><input class="input" name="newbuild_developerName" /></div>
+              <div><label class="label">Builder / Site Name</label><input class="input" name="newbuild_builderName" /></div>
+              <div><label class="label">Completion Date</label><input class="input" type="date" name="newbuild_completionDate" /></div>
+              <div><label class="label">Reservation / Purchase Date</label><input class="input" type="date" name="newbuild_purchaseDate" /></div>
+              <div><label class="label">Purchase Price</label><input class="input" name="newbuild_purchasePrice" /></div>
+              <div><label class="label">Warranty Provider</label><input class="input" name="newbuild_warrantyProvider" /></div>
+              <div><label class="label">Snagging issues identified?</label><select class="input" name="newbuild_snaggingIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Structural issues?</label><select class="input" name="newbuild_structuralIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Leaks / damp / mould?</label><select class="input" name="newbuild_dampIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Heating / plumbing / electrics issues?</label><select class="input" name="newbuild_servicesIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Issues reported to developer?</label><select class="input" name="newbuild_reportedToDeveloper"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Developer responded?</label><select class="input" name="newbuild_developerResponded"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Have photos / evidence?</label><select class="input" name="newbuild_evidenceAvailable"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Estimated financial loss / repair cost</label><input class="input" name="newbuild_lossEstimate" /></div>
+              <div class="md:col-span-2"><label class="label">Main defects / issues</label><textarea class="input" name="newbuild_issueSummary" rows="3"></textarea></div>
+              <div class="md:col-span-2"><label class="label">Additional comments</label><textarea class="input" name="newbuild_comments" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- PENSION ADMINISTRATION -->
+          <div id="wrap_pension_administration" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Pension Administration</h3>
+              <span class="claim-chip">Pension administration</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Provider / Scheme</label><input class="input" name="pensionadmin_provider" /></div>
+              <div><label class="label">Policy / Reference Number</label><input class="input" name="pensionadmin_reference" /></div>
+              <div><label class="label">Administration Error Type</label><input class="input" name="pensionadmin_errorType" /></div>
+              <div><label class="label">When Did Issue Start?</label><input class="input" type="date" name="pensionadmin_issueStart" /></div>
+              <div><label class="label">Financial Loss?</label><select class="input" name="pensionadmin_financialLoss"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Complaint Raised?</label><select class="input" name="pensionadmin_complaintRaised"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="pensionadmin_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Administration Issue Summary</label><textarea class="input" name="pensionadmin_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- PENSION ISSUES -->
+          <div id="wrap_pension_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Pension Issues</h3>
+              <span class="claim-chip">Pension issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Provider / Scheme</label><input class="input" name="pension_provider" /></div>
+              <div><label class="label">Policy Number</label><input class="input" name="pension_policyNumber" /></div>
+              <div><label class="label">Issue Type</label><input class="input" name="pension_issueType" /></div>
+              <div><label class="label">Approx Value Affected</label><input class="input" name="pension_valueAffected" /></div>
+              <div><label class="label">Transfer involved?</label><select class="input" name="pension_transfer"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Advice received?</label><select class="input" name="pension_advice"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Documents available?</label><select class="input" name="pension_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Pension Issue Summary</label><textarea class="input" name="pension_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- PLATFORM FAILURE -->
+          <div id="wrap_platform_failure" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Platform Failure</h3>
+              <span class="claim-chip">Platform failure</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Platform Name</label><input class="input" name="platformfailure_platform" /></div>
+              <div><label class="label">Service Type</label><input class="input" name="platformfailure_serviceType" /></div>
+              <div><label class="label">Failure Date</label><input class="input" type="date" name="platformfailure_date" /></div>
+              <div><label class="label">Financial Loss</label><input class="input" name="platformfailure_loss" /></div>
+              <div><label class="label">Access Restored?</label><select class="input" name="platformfailure_restored"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Complaint Raised?</label><select class="input" name="platformfailure_complaint"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Screenshots / Evidence?</label><select class="input" name="platformfailure_evidence"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Failure Summary</label><textarea class="input" name="platformfailure_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- REFUND ISSUES -->
+          <div id="wrap_refund_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Refund Issues</h3>
+              <span class="claim-chip">Refund issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Merchant / Company</label><input class="input" name="refund_company" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="refund_purchaseDate" /></div>
+              <div><label class="label">Purchase Amount</label><input class="input" name="refund_amount" /></div>
+              <div><label class="label">Refund Requested Date</label><input class="input" type="date" name="refund_requestedDate" /></div>
+              <div><label class="label">Refund Refused?</label><select class="input" name="refund_refused"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Chargeback Attempted?</label><select class="input" name="refund_chargeback"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="refund_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Refund Issue Summary</label><textarea class="input" name="refund_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- RETURN ISSUES -->
+          <div id="wrap_return_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Return Issues</h3>
+              <span class="claim-chip">Return issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Retailer</label><input class="input" name="return_retailer" /></div>
+              <div><label class="label">Item</label><input class="input" name="return_item" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="return_purchaseDate" /></div>
+              <div><label class="label">Return Date</label><input class="input" type="date" name="return_returnDate" /></div>
+              <div><label class="label">Return Refused?</label><select class="input" name="return_refused"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Value</label><input class="input" name="return_value" /></div>
+              <div><label class="label">Proof of Return?</label><select class="input" name="return_proof"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Return Issue Summary</label><textarea class="input" name="return_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- SECTION 75 SUPPORT -->
+          <div id="wrap_section_75_support" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Section 75 Support</h3>
+              <span class="claim-chip">Section 75 support</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Credit Card Provider</label><input class="input" name="s75_provider" /></div>
+              <div><label class="label">Merchant</label><input class="input" name="s75_merchant" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="s75_purchaseDate" /></div>
+              <div><label class="label">Purchase Amount</label><input class="input" name="s75_amount" /></div>
+              <div><label class="label">Goods / Service Problem</label><input class="input" name="s75_problemType" /></div>
+              <div><label class="label">Card Used Directly?</label><select class="input" name="s75_directCardUse"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Claim Already Raised?</label><select class="input" name="s75_claimRaised"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="s75_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Section 75 Summary</label><textarea class="input" name="s75_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- SOLAR SUPPORT -->
+          <div id="wrap_solar_support" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Solar Support</h3>
+              <span class="claim-chip">Solar support</span>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-blue-900 mb-3">Product One</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="label">Product</label><input class="input" name="product1_product" /></div>
+                <div><label class="label">Vendor (Companies House reg.)</label><input class="input" name="product1_vendor" /></div>
+                <div><label class="label">Vendor still trading?</label><select class="input" name="product1_vendorTrading"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Got Docs?</label><select class="input" name="product1_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Purchase Price</label><input class="input" name="product1_purchasePrice" /></div>
+                <div><label class="label">Payment Method</label><input class="input" name="product1_paymentMethod" /></div>
+                <div><label class="label">Finance?</label><select class="input" name="product1_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">If finance, who with?</label><input class="input" name="product1_financeWho" /></div>
+                <div><label class="label">Purchase Date</label><input class="input" name="product1_purchaseDate" type="date" /></div>
+                <div><label class="label">Sold as Investment?</label><select class="input" name="product1_investment"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Have you been receiving returns?</label><select class="input" name="product1_returns"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Feed-in tariff would change with inflation?</label><select class="input" name="product1_fitInflation"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Provided an MCS certificate?</label><select class="input" name="product1_mcs"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Any additional costs incurred?</label><select class="input" name="product1_extraCosts"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Info about extra costs</label><input class="input" name="product1_extraCostsInfo" /></div>
+                <div><label class="label">Sold as way to decrease energy bills and consumption?</label><select class="input" name="product1_energySavings"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Told that 30% went toward insurance backed warranty?</label><select class="input" name="product1_warranty30"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Attempted to address issues directly with vendor?</label><select class="input" name="product1_contactVendor"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Attempted a 3rd-party claim against vendor, bank or lender?</label><select class="input" name="product1_thirdPartyClaim"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Rushed into a decision?</label><select class="input" name="product1_rushed"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Contact from 3rd parties?</label><select class="input" name="product1_thirdPartyContact"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Damage to property?</label><select class="input" name="product1_damage"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div class="md:col-span-2"><label class="label">Additional comments product one</label><textarea class="input" name="product1_comments" rows="3"></textarea></div>
               </div>
-              <div>
-                <label class="label">Documents available</label>
-                <select class="input" name="general_docsAvailable">
-                  <option value=""></option>
-                  <option>Yes</option>
-                  <option>No</option>
-                  <option>Partly</option>
-                </select>
+            </div>
+
+            <div class="mt-8">
+              <h4 class="font-bold text-blue-900 mb-3">Product Two</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="label">Product</label><input class="input" name="product2_product" /></div>
+                <div><label class="label">Vendor (Companies House reg.)</label><input class="input" name="product2_vendor" /></div>
+                <div><label class="label">Vendor still trading?</label><select class="input" name="product2_vendorTrading"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Got Docs?</label><select class="input" name="product2_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Purchase Price</label><input class="input" name="product2_purchasePrice" /></div>
+                <div><label class="label">Payment Method</label><input class="input" name="product2_paymentMethod" /></div>
+                <div><label class="label">Finance?</label><select class="input" name="product2_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">If finance, who with?</label><input class="input" name="product2_financeWho" /></div>
+                <div><label class="label">Purchase Date</label><input class="input" name="product2_purchaseDate" type="date" /></div>
+                <div><label class="label">Sold as Investment?</label><select class="input" name="product2_investment"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Have you been receiving returns?</label><select class="input" name="product2_returns"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Feed-in tariff would change with inflation?</label><select class="input" name="product2_fitInflation"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Provided an MCS certificate?</label><select class="input" name="product2_mcs"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Any additional costs incurred?</label><select class="input" name="product2_extraCosts"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Info about extra costs</label><input class="input" name="product2_extraCostsInfo" /></div>
+                <div><label class="label">Sold as way to decrease energy bills and consumption?</label><select class="input" name="product2_energySavings"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Told that 30% went toward insurance backed warranty?</label><select class="input" name="product2_warranty30"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Attempted to address issues directly with vendor?</label><select class="input" name="product2_contactVendor"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Attempted a 3rd-party claim against vendor, bank or lender?</label><select class="input" name="product2_thirdPartyClaim"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Rushed into a decision?</label><select class="input" name="product2_rushed"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Contact from 3rd parties?</label><select class="input" name="product2_thirdPartyContact"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Damage to property?</label><select class="input" name="product2_damage"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div class="md:col-span-2"><label class="label">Additional comments product two</label><textarea class="input" name="product2_comments" rows="3"></textarea></div>
               </div>
-              <div>
-                <label class="label">Estimated value / loss</label>
-                <input class="input" name="general_estimatedLoss" />
-              </div>
-              <div class="md:col-span-2">
-                <label class="label">Additional notes</label>
-                <textarea class="input" name="general_additionalNotes" rows="4"></textarea>
-              </div>
+            </div>
+          </div>
+
+          <!-- SPANISH MORTGAGE -->
+          <div id="wrap_spanish_mortgage" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Spanish Mortgage</h3>
+              <span class="claim-chip">Spanish mortgage</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Bank / Lender</label><input class="input" name="spanishmortgage_lender" /></div>
+              <div><label class="label">Property Location</label><input class="input" name="spanishmortgage_propertyLocation" /></div>
+              <div><label class="label">Mortgage Start Date</label><input class="input" type="date" name="spanishmortgage_startDate" /></div>
+              <div><label class="label">Mortgage Amount</label><input class="input" name="spanishmortgage_amount" /></div>
+              <div><label class="label">Clause / Product Issue</label><input class="input" name="spanishmortgage_issueType" /></div>
+              <div><label class="label">Broker Used?</label><select class="input" name="spanishmortgage_broker"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="spanishmortgage_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Spanish Mortgage Summary</label><textarea class="input" name="spanishmortgage_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- SURVEY REVIEW -->
+          <div id="wrap_survey_review" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Survey Review</h3>
+              <span class="claim-chip">Survey review</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Surveyor / Company Name</label><input class="input" name="survey_surveyorName" /></div>
+              <div><label class="label">Survey Date</label><input class="input" type="date" name="survey_date" /></div>
+              <div><label class="label">Property Purchase Date</label><input class="input" type="date" name="survey_purchaseDate" /></div>
+              <div><label class="label">Property Price</label><input class="input" name="survey_propertyPrice" /></div>
+              <div><label class="label">Survey Type</label><input class="input" name="survey_type" placeholder="Homebuyer, building survey, valuation..." /></div>
+              <div><label class="label">Survey Fee</label><input class="input" name="survey_fee" /></div>
+              <div><label class="label">Were major defects later found?</label><select class="input" name="survey_majorDefects"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Structural issues found later?</label><select class="input" name="survey_structuralIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Damp / leaks / water ingress?</label><select class="input" name="survey_dampIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Roof / foundation issues?</label><select class="input" name="survey_roofFoundationIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Electrical / plumbing issues?</label><select class="input" name="survey_servicesIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Estimated repair costs</label><input class="input" name="survey_repairCosts" /></div>
+              <div><label class="label">Have repair quotes?</label><select class="input" name="survey_quotesAvailable"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Have survey documents?</label><select class="input" name="survey_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">What was missed in the survey?</label><textarea class="input" name="survey_missedIssues" rows="3"></textarea></div>
+              <div class="md:col-span-2"><label class="label">Additional comments</label><textarea class="input" name="survey_comments" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- TIMESHARE -->
+          <div id="wrap_timeshare" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Timeshare</h3>
+              <span class="claim-chip">Timeshare</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Resort / Company</label><input class="input" name="timeshare_company" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="timeshare_purchaseDate" /></div>
+              <div><label class="label">Purchase Price</label><input class="input" name="timeshare_purchasePrice" /></div>
+              <div><label class="label">Finance Used?</label><select class="input" name="timeshare_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Cooling Off Explained?</label><select class="input" name="timeshare_coolingOff"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Pressure Selling?</label><select class="input" name="timeshare_pressure"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Contracts Available?</label><select class="input" name="timeshare_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Timeshare Summary</label><textarea class="input" name="timeshare_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- TRAIN DELAY -->
+          <div id="wrap_train_delay" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Train Delay</h3>
+              <span class="claim-chip">Train delay</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Train Operator</label><input class="input" name="train_operator" /></div>
+              <div><label class="label">Journey Date</label><input class="input" type="date" name="train_date" /></div>
+              <div><label class="label">Departure Station</label><input class="input" name="train_departure" /></div>
+              <div><label class="label">Arrival Station</label><input class="input" name="train_arrival" /></div>
+              <div><label class="label">Delay Length</label><input class="input" name="train_delayLength" /></div>
+              <div><label class="label">Ticket Value</label><input class="input" name="train_ticketValue" /></div>
+              <div><label class="label">Delay Repay Claimed?</label><select class="input" name="train_claimed"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Ticket / Evidence Available?</label><select class="input" name="train_docs"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Journey Issue Summary</label><textarea class="input" name="train_issueSummary" rows="3"></textarea></div>
             </div>
           </div>
 
@@ -275,8 +900,8 @@
     const CLAIM_TYPE_ALIASES = {
       "airbnb refunds": "airbnb_refunds",
       "car finance": "car_finance",
-      "caravan/holiday park": "caravan_holiday_park",
       "caravan holiday park": "caravan_holiday_park",
+      "caravan/holiday park": "caravan_holiday_park",
       "complaint letters": "complaint_letters",
       "contact me": "contact_me",
       "credit card fees": "credit_card_fees",
@@ -303,759 +928,14 @@
       "refund issues": "refund_issues",
       "return issues": "return_issues",
       "section 75 support": "section_75_support",
-      "solar support": "solar_support",
       "solar": "solar_support",
+      "solar support": "solar_support",
       "spanish mortgage": "spanish_mortgage",
-      "survey review": "survey_review",
       "survey": "survey_review",
+      "survey review": "survey_review",
       "timeshare": "timeshare",
-      "train delay": "train_delay"
-    };
-
-    function textField(name, label, placeholder = "") {
-      return { name, label, type: "text", placeholder };
-    }
-
-    function dateField(name, label) {
-      return { name, label, type: "date" };
-    }
-
-    function textareaField(name, label, rows = 3, placeholder = "") {
-      return { name, label, type: "textarea", rows, placeholder, fullWidth: true };
-    }
-
-    function selectField(name, label, options) {
-      return { name, label, type: "select", options };
-    }
-
-    const CLAIM_FIELD_CONFIG = {
-      airbnb_refunds: {
-        title: "Airbnb Refund Details",
-        groups: [
-          {
-            title: "Booking Details",
-            fields: [
-              textField("airbnb_bookingReference", "Booking Reference"),
-              textField("airbnb_propertyName", "Property / Listing Name"),
-              textField("airbnb_hostName", "Host Name"),
-              textField("airbnb_bookingAmount", "Booking Amount"),
-              dateField("airbnb_bookingDate", "Booking Date"),
-              dateField("airbnb_stayDate", "Stay / Check-in Date"),
-              selectField("airbnb_issueType", "Issue Type", ["Cancelled", "Property not as described", "Cleanliness", "Access problem", "Safety concern", "Host issue", "Other"]),
-              selectField("airbnb_contactedHost", "Contacted host?", ["Yes", "No"]),
-              selectField("airbnb_contactedAirbnb", "Contacted Airbnb?", ["Yes", "No"]),
-              selectField("airbnb_refundOffered", "Refund offered?", ["Yes", "No", "Partly"]),
-              textareaField("airbnb_issueSummary", "Issue summary"),
-              textareaField("airbnb_resolutionWanted", "Requested resolution")
-            ]
-          }
-        ]
-      },
-
-      car_finance: {
-        title: "Car Finance Details",
-        groups: [
-          {
-            title: "Agreement Details",
-            fields: [
-              textField("carfinance_dealerName", "Dealer Name"),
-              textField("carfinance_lenderName", "Lender Name"),
-              textField("carfinance_vehicle", "Vehicle Make / Model"),
-              textField("carfinance_registration", "Registration"),
-              dateField("carfinance_agreementDate", "Agreement Date"),
-              textField("carfinance_amountBorrowed", "Amount Borrowed"),
-              textField("carfinance_monthlyPayment", "Monthly Payment"),
-              selectField("carfinance_type", "Finance Type", ["HP", "PCP", "Lease", "Unknown"]),
-              selectField("carfinance_commissionDiscussed", "Commission explained?", ["Yes", "No", "Unknown"]),
-              selectField("carfinance_affordabilityIssues", "Affordability issues?", ["Yes", "No"]),
-              selectField("carfinance_pressureSale", "Pressure sale?", ["Yes", "No"]),
-              selectField("carfinance_docsHeld", "Documents held?", ["Yes", "No", "Partly"]),
-              textareaField("carfinance_issueSummary", "What went wrong?"),
-              textareaField("carfinance_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      caravan_holiday_park: {
-        title: "Caravan / Holiday Park Details",
-        groups: [
-          {
-            title: "Purchase Details",
-            fields: [
-              textField("caravan_parkName", "Park Name"),
-              textField("caravan_sellerName", "Seller / Company"),
-              dateField("caravan_purchaseDate", "Purchase Date"),
-              textField("caravan_purchasePrice", "Purchase Price"),
-              textField("caravan_pitchFees", "Pitch / Site Fees"),
-              selectField("caravan_financeUsed", "Finance used?", ["Yes", "No"]),
-              textField("caravan_financeProvider", "Finance Provider"),
-              selectField("caravan_promisesMade", "Promises made about income / resale?", ["Yes", "No"]),
-              selectField("caravan_misledOnCosts", "Misled on ongoing costs?", ["Yes", "No"]),
-              selectField("caravan_contactedSeller", "Contacted seller?", ["Yes", "No"]),
-              selectField("caravan_documentsHeld", "Documents held?", ["Yes", "No", "Partly"]),
-              textareaField("caravan_issueSummary", "Main issue"),
-              textareaField("caravan_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      complaint_letters: {
-        title: "Complaint Letter Details",
-        groups: [
-          {
-            title: "Complaint Details",
-            fields: [
-              textField("complaint_targetCompany", "Company / Organisation"),
-              textField("complaint_productService", "Product / Service"),
-              dateField("complaint_issueDate", "Issue Date"),
-              textField("complaint_reference", "Reference Number"),
-              selectField("complaint_previousComplaint", "Previous complaint made?", ["Yes", "No"]),
-              selectField("complaint_responseReceived", "Response received?", ["Yes", "No", "Partly"]),
-              textField("complaint_desiredOutcome", "Desired Outcome"),
-              textareaField("complaint_issueSummary", "Issue summary"),
-              textareaField("complaint_keyPoints", "Key points to include in letter")
-            ]
-          }
-        ]
-      },
-
-      contact_me: {
-        title: "Contact Request Details",
-        groups: [
-          {
-            title: "Contact Request",
-            fields: [
-              textField("contact_topic", "Reason for contact"),
-              textField("contact_preferredTime", "Preferred callback time"),
-              textField("contact_preferredMethod", "Preferred contact method"),
-              selectField("contact_urgent", "Urgent?", ["Yes", "No"]),
-              textareaField("contact_message", "Client message"),
-              textareaField("contact_notes", "Internal notes")
-            ]
-          }
-        ]
-      },
-
-      credit_card_fees: {
-        title: "Credit Card Fee Details",
-        groups: [
-          {
-            title: "Fee Details",
-            fields: [
-              textField("ccfees_cardProvider", "Card Provider"),
-              textField("ccfees_merchant", "Merchant / Company"),
-              dateField("ccfees_chargeDate", "Charge Date"),
-              textField("ccfees_feeAmount", "Fee Amount"),
-              textField("ccfees_transactionAmount", "Transaction Amount"),
-              selectField("ccfees_feeDisclosed", "Fee disclosed clearly?", ["Yes", "No", "Unknown"]),
-              selectField("ccfees_refundRequested", "Refund requested?", ["Yes", "No"]),
-              selectField("ccfees_refundReceived", "Refund received?", ["Yes", "No", "Partly"]),
-              textareaField("ccfees_issueSummary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      cruise_compensation: {
-        title: "Cruise Compensation Details",
-        groups: [
-          {
-            title: "Cruise Details",
-            fields: [
-              textField("cruise_operator", "Cruise Operator"),
-              textField("cruise_bookingReference", "Booking Reference"),
-              dateField("cruise_departureDate", "Departure Date"),
-              textField("cruise_bookingAmount", "Booking Amount"),
-              selectField("cruise_issueType", "Issue Type", ["Cancellation", "Delay", "Missed stop", "Cabin issue", "Illness outbreak", "Other"]),
-              selectField("cruise_contactedOperator", "Contacted operator?", ["Yes", "No"]),
-              selectField("cruise_refundOrCredit", "Refund / credit offered?", ["Yes", "No", "Partly"]),
-              textareaField("cruise_issueSummary", "Issue summary"),
-              textareaField("cruise_lossDetails", "Loss / inconvenience details")
-            ]
-          }
-        ]
-      },
-
-      crypto_scam_recovery: {
-        title: "Crypto Scam Recovery Details",
-        groups: [
-          {
-            title: "Scam Details",
-            fields: [
-              textField("crypto_platformName", "Platform / Website Name"),
-              textField("crypto_walletAddress", "Wallet Address"),
-              dateField("crypto_firstPaymentDate", "First Payment Date"),
-              textField("crypto_totalLost", "Total Lost"),
-              selectField("crypto_contactedPlatform", "Contacted platform?", ["Yes", "No"]),
-              selectField("crypto_reportedToPolice", "Reported to police / Action Fraud?", ["Yes", "No"]),
-              selectField("crypto_reportedToBank", "Reported to bank?", ["Yes", "No"]),
-              selectField("crypto_recoveryCompanyUsed", "Used recovery company already?", ["Yes", "No"]),
-              textareaField("crypto_howApproached", "How was the client approached?"),
-              textareaField("crypto_issueSummary", "Scam summary")
-            ]
-          }
-        ]
-      },
-
-      cyber_data_breach: {
-        title: "Cyber Data Breach Details",
-        groups: [
-          {
-            title: "Breach Details",
-            fields: [
-              textField("breach_companyName", "Company / Organisation"),
-              dateField("breach_notificationDate", "Date Notified"),
-              selectField("breach_dataType", "Type of data involved", ["Personal", "Financial", "Medical", "Login data", "Unknown", "Other"]),
-              selectField("breach_fraudOccurred", "Fraud / misuse occurred?", ["Yes", "No", "Unknown"]),
-              selectField("breach_distress", "Distress / anxiety caused?", ["Yes", "No"]),
-              selectField("breach_contactedCompany", "Contacted company?", ["Yes", "No"]),
-              selectField("breach_icoComplaint", "ICO complaint made?", ["Yes", "No"]),
-              textareaField("breach_impact", "Impact on client"),
-              textareaField("breach_summary", "Breach summary")
-            ]
-          }
-        ]
-      },
-
-      debt_recovery: {
-        title: "Debt Recovery Details",
-        groups: [
-          {
-            title: "Debt Details",
-            fields: [
-              textField("debt_debtorName", "Debtor Name"),
-              textField("debt_relationship", "Relationship to debtor"),
-              textField("debt_amountOwed", "Amount Owed"),
-              dateField("debt_dueDate", "Debt Due Date"),
-              selectField("debt_writtenAgreement", "Written agreement?", ["Yes", "No"]),
-              selectField("debt_partialPayments", "Any partial payments?", ["Yes", "No"]),
-              selectField("debt_contactedDebtor", "Contacted debtor?", ["Yes", "No"]),
-              selectField("debt_disputed", "Debt disputed?", ["Yes", "No", "Unknown"]),
-              textareaField("debt_background", "Background of debt"),
-              textareaField("debt_evidenceHeld", "Evidence held")
-            ]
-          }
-        ]
-      },
-
-      foam_insulation: {
-        title: "Foam Insulation Details",
-        groups: [
-          {
-            title: "Installation Details",
-            fields: [
-              textField("foam_companyName", "Installer / Company"),
-              dateField("foam_installDate", "Installation Date"),
-              textField("foam_propertyType", "Property Type"),
-              textField("foam_amountPaid", "Amount Paid"),
-              selectField("foam_financeUsed", "Finance used?", ["Yes", "No"]),
-              selectField("foam_problemsAfter", "Problems after installation?", ["Yes", "No"]),
-              selectField("foam_lenderOrSurveyIssue", "Mortgage / lender / survey issue caused?", ["Yes", "No"]),
-              selectField("foam_contactedInstaller", "Contacted installer?", ["Yes", "No"]),
-              selectField("foam_docsHeld", "Documents held?", ["Yes", "No", "Partly"]),
-              textareaField("foam_issueSummary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      formal_escalation: {
-        title: "Formal Escalation Details",
-        groups: [
-          {
-            title: "Escalation Details",
-            fields: [
-              textField("escalation_company", "Company / Organisation"),
-              textField("escalation_reference", "Reference Number"),
-              dateField("escalation_originalComplaintDate", "Original Complaint Date"),
-              selectField("escalation_deadlockReached", "Deadlock reached?", ["Yes", "No"]),
-              selectField("escalation_finalResponseReceived", "Final response received?", ["Yes", "No"]),
-              textField("escalation_desiredOutcome", "Desired Outcome"),
-              textareaField("escalation_history", "Complaint history"),
-              textareaField("escalation_summary", "Reason for escalation")
-            ]
-          }
-        ]
-      },
-
-      frozen_accounts: {
-        title: "Frozen Account Details",
-        groups: [
-          {
-            title: "Account Details",
-            fields: [
-              textField("frozen_bankName", "Bank / Provider"),
-              textField("frozen_accountType", "Account Type"),
-              dateField("frozen_dateFrozen", "Date Frozen"),
-              textField("frozen_balanceAffected", "Balance Affected"),
-              selectField("frozen_reasonGiven", "Reason given?", ["Yes", "No"]),
-              selectField("frozen_contactedBank", "Contacted bank?", ["Yes", "No"]),
-              selectField("frozen_accessRestored", "Access restored?", ["Yes", "No", "Partly"]),
-              textareaField("frozen_impact", "Impact on client"),
-              textareaField("frozen_summary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      holiday_compensation: {
-        title: "Holiday Compensation Details",
-        groups: [
-          {
-            title: "Holiday Details",
-            fields: [
-              textField("holiday_operator", "Operator / Airline / Travel Company"),
-              textField("holiday_bookingReference", "Booking Reference"),
-              dateField("holiday_departureDate", "Departure Date"),
-              textField("holiday_bookingAmount", "Booking Amount"),
-              selectField("holiday_issueType", "Issue Type", ["Delay", "Cancellation", "Hotel issue", "Overbooking", "Luggage", "Other"]),
-              selectField("holiday_contactedOperator", "Contacted operator?", ["Yes", "No"]),
-              selectField("holiday_refundOffered", "Refund / compensation offered?", ["Yes", "No", "Partly"]),
-              textareaField("holiday_issueSummary", "Issue summary"),
-              textareaField("holiday_lossDetails", "Loss / inconvenience details")
-            ]
-          }
-        ]
-      },
-
-      housing_disrepair: {
-        title: "Housing Disrepair Details",
-        groups: [
-          {
-            title: "Property Details",
-            fields: [
-              textField("disrepair_landlordName", "Landlord / Housing Association"),
-              textField("disrepair_tenancyType", "Tenancy Type"),
-              dateField("disrepair_issueStartDate", "Issue Start Date"),
-              selectField("disrepair_dampMould", "Damp / mould?", ["Yes", "No"]),
-              selectField("disrepair_leaks", "Leaks / water ingress?", ["Yes", "No"]),
-              selectField("disrepair_heating", "Heating / hot water problem?", ["Yes", "No"]),
-              selectField("disrepair_electrics", "Electrical issue?", ["Yes", "No"]),
-              selectField("disrepair_reported", "Reported to landlord?", ["Yes", "No"]),
-              selectField("disrepair_response", "Landlord responded?", ["Yes", "No", "Partly"]),
-              textareaField("disrepair_conditions", "Conditions in property"),
-              textareaField("disrepair_healthImpact", "Health / living impact")
-            ]
-          }
-        ]
-      },
-
-      investment_platforms: {
-        title: "Investment Platform Details",
-        groups: [
-          {
-            title: "Platform Details",
-            fields: [
-              textField("investment_platformName", "Platform Name"),
-              textField("investment_accountReference", "Account / Reference"),
-              dateField("investment_startDate", "Start Date"),
-              textField("investment_amountInvested", "Amount Invested"),
-              selectField("investment_accessProblem", "Unable to access funds?", ["Yes", "No"]),
-              selectField("investment_promisesMade", "Misleading promises made?", ["Yes", "No"]),
-              selectField("investment_reported", "Reported to platform?", ["Yes", "No"]),
-              selectField("investment_withdrawalIssue", "Withdrawal issue?", ["Yes", "No"]),
-              textareaField("investment_summary", "Issue summary"),
-              textareaField("investment_notes", "Additional notes")
-            ]
-          }
-        ]
-      },
-
-      loans_and_mortgages: {
-        title: "Loans and Mortgages Details",
-        groups: [
-          {
-            title: "Agreement Details",
-            fields: [
-              textField("loan_lenderName", "Lender Name"),
-              textField("loan_brokerName", "Broker Name"),
-              dateField("loan_startDate", "Start Date"),
-              textField("loan_amount", "Amount"),
-              textField("loan_monthlyPayment", "Monthly Payment"),
-              selectField("loan_adviceGiven", "Advice given?", ["Yes", "No", "Unknown"]),
-              selectField("loan_affordabilityIssue", "Affordability issue?", ["Yes", "No"]),
-              selectField("loan_feesCharged", "Fees charged?", ["Yes", "No"]),
-              selectField("loan_docsHeld", "Documents held?", ["Yes", "No", "Partly"]),
-              textareaField("loan_issueSummary", "Issue summary"),
-              textareaField("loan_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      medical_negligence: {
-        title: "Medical Negligence Details",
-        groups: [
-          {
-            title: "Treatment Details",
-            fields: [
-              textField("medical_providerName", "Hospital / Clinic / Provider"),
-              textField("medical_practitioner", "Doctor / Practitioner"),
-              dateField("medical_treatmentDate", "Treatment Date"),
-              selectField("medical_injuryOccurred", "Injury / worsening occurred?", ["Yes", "No"]),
-              selectField("medical_complaintMade", "Complaint made?", ["Yes", "No"]),
-              selectField("medical_recordsHeld", "Medical records held?", ["Yes", "No", "Partly"]),
-              textField("medical_treatmentType", "Treatment Type"),
-              textareaField("medical_whatWentWrong", "What went wrong?"),
-              textareaField("medical_currentImpact", "Current impact on client")
-            ]
-          }
-        ]
-      },
-
-      mis_sold_bank_accounts: {
-        title: "Mis-sold Bank Account Details",
-        groups: [
-          {
-            title: "Account Details",
-            fields: [
-              textField("bankaccount_bankName", "Bank Name"),
-              textField("bankaccount_accountType", "Account Type"),
-              dateField("bankaccount_startDate", "Account Start Date"),
-              textField("bankaccount_monthlyFee", "Monthly Fee"),
-              selectField("bankaccount_benefitsUsed", "Benefits used?", ["Yes", "No", "Unknown"]),
-              selectField("bankaccount_eligibilityChecked", "Eligibility checked?", ["Yes", "No", "Unknown"]),
-              selectField("bankaccount_complaintMade", "Complaint made?", ["Yes", "No"]),
-              selectField("bankaccount_refundOffered", "Refund offered?", ["Yes", "No", "Partly"]),
-              textareaField("bankaccount_issueSummary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      mortgage_review: {
-        title: "Mortgage Review Details",
-        groups: [
-          {
-            title: "Mortgage Details",
-            fields: [
-              textField("mortgage_lenderName", "Lender Name"),
-              textField("mortgage_brokerName", "Broker Name"),
-              dateField("mortgage_startDate", "Mortgage Start Date"),
-              textField("mortgage_endDate", "Mortgage End Date / Current"),
-              textField("mortgage_amount", "Mortgage Amount"),
-              textField("mortgage_monthlyPayment", "Monthly Payment"),
-              textField("mortgage_type", "Fixed / Variable / Tracker"),
-              textField("mortgage_interestRate", "Interest Rate"),
-              selectField("mortgage_adviceGiven", "Was advice given?", ["Yes", "No", "Unknown"]),
-              selectField("mortgage_feesCharged", "Any fees charged?", ["Yes", "No"]),
-              textField("mortgage_feeDetails", "Fee details"),
-              selectField("mortgage_risksExplained", "Were risks explained clearly?", ["Yes", "No", "Partly"]),
-              selectField("mortgage_affordability", "Affordability concerns?", ["Yes", "No"]),
-              selectField("mortgage_pressure", "Pressure to proceed?", ["Yes", "No"]),
-              selectField("mortgage_arrears", "Arrears or defaults?", ["Yes", "No"]),
-              selectField("mortgage_docs", "Have documents?", ["Yes", "No", "Partly"]),
-              textareaField("mortgage_issueSummary", "What went wrong?"),
-              textareaField("mortgage_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      new_build_issues: {
-        title: "New Build Issues Details",
-        groups: [
-          {
-            title: "New Build Details",
-            fields: [
-              textField("newbuild_developerName", "Developer Name"),
-              textField("newbuild_builderName", "Builder / Site Name"),
-              dateField("newbuild_completionDate", "Completion Date"),
-              dateField("newbuild_purchaseDate", "Reservation / Purchase Date"),
-              textField("newbuild_purchasePrice", "Purchase Price"),
-              textField("newbuild_warrantyProvider", "Warranty Provider"),
-              selectField("newbuild_snaggingIssues", "Snagging issues identified?", ["Yes", "No"]),
-              selectField("newbuild_structuralIssues", "Structural issues?", ["Yes", "No"]),
-              selectField("newbuild_dampIssues", "Leaks / damp / mould?", ["Yes", "No"]),
-              selectField("newbuild_servicesIssues", "Heating / plumbing / electrics issues?", ["Yes", "No"]),
-              selectField("newbuild_reportedToDeveloper", "Issues reported to developer?", ["Yes", "No"]),
-              selectField("newbuild_developerResponded", "Developer responded?", ["Yes", "No", "Partly"]),
-              selectField("newbuild_evidenceAvailable", "Have photos / evidence?", ["Yes", "No", "Partly"]),
-              textField("newbuild_lossEstimate", "Estimated financial loss / repair cost"),
-              textareaField("newbuild_issueSummary", "Main defects / issues"),
-              textareaField("newbuild_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      pension_administration: {
-        title: "Pension Administration Details",
-        groups: [
-          {
-            title: "Pension Details",
-            fields: [
-              textField("pensionadmin_providerName", "Provider Name"),
-              textField("pensionadmin_policyNumber", "Policy / Reference Number"),
-              dateField("pensionadmin_issueDate", "Issue Start Date"),
-              selectField("pensionadmin_delayIssue", "Delay issue?", ["Yes", "No"]),
-              selectField("pensionadmin_transferIssue", "Transfer issue?", ["Yes", "No"]),
-              selectField("pensionadmin_valuationIssue", "Valuation / statement issue?", ["Yes", "No"]),
-              selectField("pensionadmin_contactedProvider", "Contacted provider?", ["Yes", "No"]),
-              selectField("pensionadmin_responseReceived", "Response received?", ["Yes", "No", "Partly"]),
-              textareaField("pensionadmin_summary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      pension_issues: {
-        title: "Pension Issues Details",
-        groups: [
-          {
-            title: "Pension Issue Details",
-            fields: [
-              textField("pension_providerName", "Provider Name"),
-              textField("pension_policyNumber", "Policy / Reference"),
-              dateField("pension_issueDate", "Issue Date"),
-              textField("pension_fundValue", "Fund Value"),
-              selectField("pension_transferIssue", "Transfer issue?", ["Yes", "No"]),
-              selectField("pension_withdrawalIssue", "Withdrawal issue?", ["Yes", "No"]),
-              selectField("pension_adviceIssue", "Advice issue?", ["Yes", "No"]),
-              selectField("pension_contactedProvider", "Contacted provider?", ["Yes", "No"]),
-              textareaField("pension_issueSummary", "Issue summary"),
-              textareaField("pension_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      platform_failure: {
-        title: "Platform Failure Details",
-        groups: [
-          {
-            title: "Failure Details",
-            fields: [
-              textField("platform_name", "Platform Name"),
-              textField("platform_accountReference", "Account / Reference"),
-              dateField("platform_failureDate", "Failure Date"),
-              selectField("platform_accessLost", "Access lost?", ["Yes", "No"]),
-              selectField("platform_moneyAffected", "Money / assets affected?", ["Yes", "No"]),
-              textField("platform_lossAmount", "Estimated Loss"),
-              selectField("platform_contacted", "Contacted platform?", ["Yes", "No"]),
-              selectField("platform_response", "Response received?", ["Yes", "No", "Partly"]),
-              textareaField("platform_summary", "Failure summary")
-            ]
-          }
-        ]
-      },
-
-      refund_issues: {
-        title: "Refund Issue Details",
-        groups: [
-          {
-            title: "Refund Details",
-            fields: [
-              textField("refund_companyName", "Company Name"),
-              textField("refund_productService", "Product / Service"),
-              dateField("refund_purchaseDate", "Purchase Date"),
-              textField("refund_amount", "Amount"),
-              selectField("refund_requested", "Refund requested?", ["Yes", "No"]),
-              selectField("refund_denied", "Refund denied?", ["Yes", "No", "Partly"]),
-              selectField("refund_partialOffered", "Partial refund offered?", ["Yes", "No"]),
-              selectField("refund_chargebackTried", "Chargeback / bank claim tried?", ["Yes", "No"]),
-              textareaField("refund_reason", "Why refund is sought"),
-              textareaField("refund_summary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      return_issues: {
-        title: "Return Issue Details",
-        groups: [
-          {
-            title: "Return Details",
-            fields: [
-              textField("return_companyName", "Company Name"),
-              textField("return_itemName", "Item / Product"),
-              dateField("return_purchaseDate", "Purchase Date"),
-              dateField("return_attemptDate", "Return Attempt Date"),
-              textField("return_amount", "Amount"),
-              selectField("return_accepted", "Return accepted?", ["Yes", "No", "Partly"]),
-              selectField("return_refundReceived", "Refund received?", ["Yes", "No", "Partly"]),
-              selectField("return_trackingAvailable", "Tracking / proof available?", ["Yes", "No"]),
-              textareaField("return_issueSummary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      section_75_support: {
-        title: "Section 75 Support Details",
-        groups: [
-          {
-            title: "Card Purchase Details",
-            fields: [
-              textField("s75_cardProvider", "Card Provider"),
-              textField("s75_supplierName", "Supplier / Merchant"),
-              dateField("s75_purchaseDate", "Purchase Date"),
-              textField("s75_purchaseAmount", "Purchase Amount"),
-              selectField("s75_creditCardUsed", "Credit card used?", ["Yes", "No"]),
-              selectField("s75_supplierBreach", "Supplier breach / misrepresentation?", ["Yes", "No"]),
-              selectField("s75_contactedSupplier", "Contacted supplier?", ["Yes", "No"]),
-              selectField("s75_contactedCardProvider", "Contacted card provider?", ["Yes", "No"]),
-              textareaField("s75_issueSummary", "Issue summary"),
-              textareaField("s75_desiredOutcome", "Desired outcome")
-            ]
-          }
-        ]
-      },
-
-      solar_support: {
-        title: "Solar Support Details",
-        groups: [
-          {
-            title: "Product One",
-            fields: [
-              textField("product1_product", "Product"),
-              textField("product1_vendor", "Vendor"),
-              selectField("product1_vendorTrading", "Vendor still trading?", ["Yes", "No", "Unknown"]),
-              selectField("product1_docs", "Got Docs?", ["Yes", "No", "Partly"]),
-              textField("product1_purchasePrice", "Purchase Price"),
-              textField("product1_paymentMethod", "Payment Method"),
-              selectField("product1_finance", "Finance?", ["Yes", "No"]),
-              textField("product1_financeWho", "If finance, who with?"),
-              dateField("product1_purchaseDate", "Purchase Date"),
-              selectField("product1_investment", "Sold as Investment?", ["Yes", "No"]),
-              selectField("product1_returns", "Receiving returns?", ["Yes", "No", "Partly"]),
-              selectField("product1_fitInflation", "Feed-in tariff linked to inflation?", ["Yes", "No", "Unknown"]),
-              selectField("product1_mcs", "Provided an MCS certificate?", ["Yes", "No", "Unknown"]),
-              selectField("product1_extraCosts", "Additional costs incurred?", ["Yes", "No"]),
-              textField("product1_extraCostsInfo", "Extra costs info"),
-              selectField("product1_energySavings", "Promised energy savings?", ["Yes", "No", "Unknown"]),
-              selectField("product1_warranty30", "Told 30% went to warranty?", ["Yes", "No", "Unknown"]),
-              selectField("product1_contactVendor", "Attempted to address with vendor?", ["Yes", "No"]),
-              selectField("product1_thirdPartyClaim", "Third-party claim attempted?", ["Yes", "No"]),
-              selectField("product1_rushed", "Rushed into decision?", ["Yes", "No"]),
-              selectField("product1_thirdPartyContact", "Contact from third parties?", ["Yes", "No"]),
-              selectField("product1_damage", "Damage to property?", ["Yes", "No"]),
-              textareaField("product1_comments", "Additional comments product one")
-            ]
-          },
-          {
-            title: "Product Two",
-            fields: [
-              textField("product2_product", "Product"),
-              textField("product2_vendor", "Vendor"),
-              selectField("product2_vendorTrading", "Vendor still trading?", ["Yes", "No", "Unknown"]),
-              selectField("product2_docs", "Got Docs?", ["Yes", "No", "Partly"]),
-              textField("product2_purchasePrice", "Purchase Price"),
-              textField("product2_paymentMethod", "Payment Method"),
-              selectField("product2_finance", "Finance?", ["Yes", "No"]),
-              textField("product2_financeWho", "If finance, who with?"),
-              dateField("product2_purchaseDate", "Purchase Date"),
-              selectField("product2_investment", "Sold as Investment?", ["Yes", "No"]),
-              selectField("product2_returns", "Receiving returns?", ["Yes", "No", "Partly"]),
-              selectField("product2_fitInflation", "Feed-in tariff linked to inflation?", ["Yes", "No", "Unknown"]),
-              selectField("product2_mcs", "Provided an MCS certificate?", ["Yes", "No", "Unknown"]),
-              selectField("product2_extraCosts", "Additional costs incurred?", ["Yes", "No"]),
-              textField("product2_extraCostsInfo", "Extra costs info"),
-              selectField("product2_energySavings", "Promised energy savings?", ["Yes", "No", "Unknown"]),
-              selectField("product2_warranty30", "Told 30% went to warranty?", ["Yes", "No", "Unknown"]),
-              selectField("product2_contactVendor", "Attempted to address with vendor?", ["Yes", "No"]),
-              selectField("product2_thirdPartyClaim", "Third-party claim attempted?", ["Yes", "No"]),
-              selectField("product2_rushed", "Rushed into decision?", ["Yes", "No"]),
-              selectField("product2_thirdPartyContact", "Contact from third parties?", ["Yes", "No"]),
-              selectField("product2_damage", "Damage to property?", ["Yes", "No"]),
-              textareaField("product2_comments", "Additional comments product two")
-            ]
-          }
-        ]
-      },
-
-      spanish_mortgage: {
-        title: "Spanish Mortgage Details",
-        groups: [
-          {
-            title: "Mortgage Details",
-            fields: [
-              textField("spanishmortgage_lenderName", "Lender Name"),
-              textField("spanishmortgage_brokerName", "Broker / Intermediary"),
-              textField("spanishmortgage_propertyLocation", "Property Location"),
-              dateField("spanishmortgage_startDate", "Start Date"),
-              textField("spanishmortgage_amount", "Mortgage Amount"),
-              selectField("spanishmortgage_foreignCurrencyIssue", "Foreign currency / exchange issue?", ["Yes", "No"]),
-              selectField("spanishmortgage_feesIssue", "Unexpected fees / charges?", ["Yes", "No"]),
-              selectField("spanishmortgage_adviceIssue", "Advice issue?", ["Yes", "No"]),
-              selectField("spanishmortgage_docsHeld", "Documents held?", ["Yes", "No", "Partly"]),
-              textareaField("spanishmortgage_issueSummary", "Issue summary")
-            ]
-          }
-        ]
-      },
-
-      survey_review: {
-        title: "Survey Review Details",
-        groups: [
-          {
-            title: "Survey Details",
-            fields: [
-              textField("survey_surveyorName", "Surveyor / Company Name"),
-              dateField("survey_date", "Survey Date"),
-              dateField("survey_purchaseDate", "Property Purchase Date"),
-              textField("survey_propertyPrice", "Property Price"),
-              textField("survey_type", "Survey Type"),
-              textField("survey_fee", "Survey Fee"),
-              selectField("survey_majorDefects", "Were major defects later found?", ["Yes", "No"]),
-              selectField("survey_structuralIssues", "Structural issues found later?", ["Yes", "No"]),
-              selectField("survey_dampIssues", "Damp / leaks / water ingress?", ["Yes", "No"]),
-              selectField("survey_roofFoundationIssues", "Roof / foundation issues?", ["Yes", "No"]),
-              selectField("survey_servicesIssues", "Electrical / plumbing issues?", ["Yes", "No"]),
-              textField("survey_repairCosts", "Estimated repair costs"),
-              selectField("survey_quotesAvailable", "Have repair quotes?", ["Yes", "No"]),
-              selectField("survey_docs", "Have survey documents?", ["Yes", "No", "Partly"]),
-              textareaField("survey_missedIssues", "What was missed in the survey?"),
-              textareaField("survey_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      timeshare: {
-        title: "Timeshare Details",
-        groups: [
-          {
-            title: "Timeshare Purchase Details",
-            fields: [
-              textField("timeshare_companyName", "Company / Resort"),
-              dateField("timeshare_purchaseDate", "Purchase Date"),
-              textField("timeshare_purchasePrice", "Purchase Price"),
-              textField("timeshare_maintenanceFees", "Maintenance Fees"),
-              selectField("timeshare_financeUsed", "Finance used?", ["Yes", "No"]),
-              selectField("timeshare_pressureSale", "Pressure sale?", ["Yes", "No"]),
-              selectField("timeshare_promisesMade", "Misleading promises made?", ["Yes", "No"]),
-              selectField("timeshare_cancellationIssue", "Cancellation problem?", ["Yes", "No"]),
-              selectField("timeshare_docsHeld", "Documents held?", ["Yes", "No", "Partly"]),
-              textareaField("timeshare_issueSummary", "Issue summary"),
-              textareaField("timeshare_comments", "Additional comments")
-            ]
-          }
-        ]
-      },
-
-      train_delay: {
-        title: "Train Delay Details",
-        groups: [
-          {
-            title: "Journey Details",
-            fields: [
-              textField("train_operator", "Train Operator"),
-              textField("train_ticketReference", "Ticket Reference"),
-              dateField("train_journeyDate", "Journey Date"),
-              textField("train_route", "Route"),
-              textField("train_delayLength", "Delay Length"),
-              selectField("train_cancelled", "Cancelled?", ["Yes", "No"]),
-              selectField("train_claimMade", "Compensation claim made?", ["Yes", "No"]),
-              selectField("train_responseReceived", "Response received?", ["Yes", "No", "Partly"]),
-              textField("train_ticketCost", "Ticket Cost"),
-              textareaField("train_issueSummary", "Issue summary")
-            ]
-          }
-        ]
-      }
+      "train delay": "train_delay",
+      "mortgage": "mortgage_review"
     };
 
     const authLoader = document.getElementById("authLoader");
@@ -1063,7 +943,6 @@
     const staffStatus = document.getElementById("staffStatus");
     const staffEmail = document.getElementById("staffEmail");
     const claimType = document.getElementById("claimType");
-    const claimTypeBadge = document.getElementById("claimTypeBadge");
     const intakeForm = document.getElementById("intakeForm");
     const saveDraftBtn = document.getElementById("saveDraftBtn");
     const submitIntakeBtn = document.getElementById("submitIntakeBtn");
@@ -1072,12 +951,10 @@
     const leadNoticeText = document.getElementById("leadNoticeText");
     const submissionInfoBox = document.getElementById("submissionInfoBox");
     const linkedLeadBox = document.getElementById("linkedLeadBox");
-    const dynamicClaimSection = document.getElementById("dynamicClaimSection");
 
     const params = new URLSearchParams(window.location.search);
     const leadId = params.get("leadId");
     const submissionIdParam = params.get("submissionId");
-    const claimTypeParam = params.get("claimType");
 
     let currentUser = null;
     let currentUserData = null;
@@ -1111,20 +988,19 @@
 
     function normalizeClaimType(value) {
       const raw = cleanValue(value).toLowerCase();
-      if (!raw) return "contact_me";
-      const underscored = raw.replace(/\s+/g, "_");
-      if (CLAIM_TYPES.some(item => item.value === underscored)) return underscored;
+      if (!raw) return "solar_support";
       if (CLAIM_TYPE_ALIASES[raw]) return CLAIM_TYPE_ALIASES[raw];
-      return underscored;
+      const underscored = raw.replace(/\s+/g, "_");
+      return CLAIM_TYPES.some(item => item.value === underscored) ? underscored : "solar_support";
     }
 
     function getClaimTypeLabel(value) {
       const normalized = normalizeClaimType(value);
       const found = CLAIM_TYPES.find(item => item.value === normalized);
-      return found ? found.label : cleanValue(value) || "Claim";
+      return found ? found.label : value;
     }
 
-    function populateClaimTypeDropdown() {
+    function populateClaimTypes() {
       claimType.innerHTML = "";
       CLAIM_TYPES.forEach(item => {
         const option = document.createElement("option");
@@ -1132,70 +1008,6 @@
         option.textContent = item.label;
         claimType.appendChild(option);
       });
-    }
-
-    function renderField(field) {
-      const wrapClass = field.fullWidth ? "md:col-span-2" : "";
-      if (field.type === "textarea") {
-        return `
-          <div class="${wrapClass}">
-            <label class="label">${field.label}</label>
-            <textarea class="input" name="${field.name}" rows="${field.rows || 3}" placeholder="${field.placeholder || ""}"></textarea>
-          </div>
-        `;
-      }
-      if (field.type === "select") {
-        const options = (field.options || []).map(option => `<option>${option}</option>`).join("");
-        return `
-          <div class="${wrapClass}">
-            <label class="label">${field.label}</label>
-            <select class="input" name="${field.name}">
-              <option value=""></option>
-              ${options}
-            </select>
-          </div>
-        `;
-      }
-      return `
-        <div class="${wrapClass}">
-          <label class="label">${field.label}</label>
-          <input class="input" name="${field.name}" type="${field.type || "text"}" placeholder="${field.placeholder || ""}" />
-        </div>
-      `;
-    }
-
-    function getClaimConfig(selectedClaimType) {
-      return CLAIM_FIELD_CONFIG[selectedClaimType] || {
-        title: `${getClaimTypeLabel(selectedClaimType)} Details`,
-        groups: []
-      };
-    }
-
-    function renderDynamicClaimSection() {
-      const selectedClaimType = normalizeClaimType(claimType.value);
-      const config = getClaimConfig(selectedClaimType);
-      claimTypeBadge.textContent = getClaimTypeLabel(selectedClaimType);
-
-      dynamicClaimSection.innerHTML = `
-        <div>
-          <h3 class="section-title mb-4">${config.title}</h3>
-          <div class="space-y-8">
-            ${config.groups.map(group => `
-              <div>
-                <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-                  <h4 class="font-extrabold text-blue-900">${group.title}</h4>
-                  <span class="text-xs font-semibold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-                    ${getClaimTypeLabel(selectedClaimType)}
-                  </span>
-                </div>
-                <div class="grid md:grid-cols-2 gap-4">
-                  ${group.fields.map(renderField).join("")}
-                </div>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-      `;
     }
 
     async function recordStaffLoginFromPage() {
@@ -1237,6 +1049,7 @@
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
+
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
@@ -1262,7 +1075,10 @@
     }
 
     function startAttendanceHeartbeat() {
-      if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
+      if (attendanceHeartbeatInterval) {
+        clearInterval(attendanceHeartbeatInterval);
+      }
+
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -1274,7 +1090,6 @@
 
     async function recordStaffLogout() {
       if (!currentUser || currentUserData?.role !== "staff") return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -1329,69 +1144,15 @@
 
     function getInputValue(name) {
       const el = intakeForm.querySelector(`[name="${name}"]`);
-      return el ? (el.value || "") : "";
+      return el ? el.value || "" : "";
     }
 
-    function getClientData() {
-      return {
-        firstName: getInputValue("firstName"),
-        secondName: getInputValue("secondName"),
-        firstName2: getInputValue("firstName2"),
-        secondName2: getInputValue("secondName2"),
-        landline: getInputValue("landline"),
-        mobile: getInputValue("mobile"),
-        email: getInputValue("email"),
-        postcode: getInputValue("postcode"),
-        address: getInputValue("address")
-      };
-    }
-
-    function collectDynamicClaimData() {
-      const selectedClaimType = normalizeClaimType(claimType.value);
-      const config = getClaimConfig(selectedClaimType);
-      const details = {};
-
-      config.groups.forEach(group => {
-        group.fields.forEach(field => {
-          details[field.name] = getInputValue(field.name);
-        });
+    function collectFields(fieldNames) {
+      const obj = {};
+      fieldNames.forEach(name => {
+        obj[name] = getInputValue(name);
       });
-
-      details.general_issueSummary = getInputValue("general_issueSummary");
-      details.general_docsAvailable = getInputValue("general_docsAvailable");
-      details.general_estimatedLoss = getInputValue("general_estimatedLoss");
-      details.general_additionalNotes = getInputValue("general_additionalNotes");
-
-      return details;
-    }
-
-    function getFormData() {
-      return {
-        claimType: normalizeClaimType(claimType.value),
-        client: getClientData(),
-        claimDetails: collectDynamicClaimData()
-      };
-    }
-
-    function fillFormFromSubmission(submission) {
-      const client = submission.client || {};
-      const selectedType = normalizeClaimType(submission.claimType || claimTypeParam || "contact_me");
-
-      claimType.value = selectedType;
-      renderDynamicClaimSection();
-
-      setInputValue("firstName", client.firstName);
-      setInputValue("secondName", client.secondName);
-      setInputValue("firstName2", client.firstName2);
-      setInputValue("secondName2", client.secondName2);
-      setInputValue("landline", client.landline);
-      setInputValue("mobile", client.mobile);
-      setInputValue("email", client.email);
-      setInputValue("postcode", client.postcode);
-      setInputValue("address", client.address);
-
-      const details = submission.claimDetails || {};
-      Object.keys(details).forEach(key => setInputValue(key, details[key]));
+      return obj;
     }
 
     function setSubmissionInfo() {
@@ -1417,8 +1178,113 @@
         <div><span class="font-semibold text-slate-800">Client:</span> ${(currentLeadData.forename || "")} ${(currentLeadData.surname || "")}</div>
         <div><span class="font-semibold text-slate-800">Phone:</span> ${currentLeadData.mobile || currentLeadData.telephone || "-"}</div>
         <div><span class="font-semibold text-slate-800">Status:</span> ${currentLeadData.leadStatus || "-"}</div>
-        <div><span class="font-semibold text-slate-800">Claim Type:</span> ${getClaimTypeLabel(currentLeadData.claimType || currentLeadData.type || currentLeadData.intakeClaimType || "")}</div>
       `;
+    }
+
+    function getClientData() {
+      return {
+        firstName: getInputValue("firstName"),
+        secondName: getInputValue("secondName"),
+        firstName2: getInputValue("firstName2"),
+        secondName2: getInputValue("secondName2"),
+        landline: getInputValue("landline"),
+        mobile: getInputValue("mobile"),
+        email: getInputValue("email"),
+        postcode: getInputValue("postcode"),
+        address: getInputValue("address")
+      };
+    }
+
+    function getFormData() {
+      const selectedClaimType = normalizeClaimType(claimType.value);
+
+      const payload = {
+        claimType: selectedClaimType,
+        client: getClientData(),
+        claimDetails: {}
+      };
+
+      const currentWrap = document.getElementById(`wrap_${selectedClaimType}`);
+      if (currentWrap) {
+        const namedInputs = currentWrap.querySelectorAll("[name]");
+        namedInputs.forEach(el => {
+          payload.claimDetails[el.name] = el.value || "";
+        });
+      }
+
+      if (selectedClaimType === "solar_support") {
+        payload.product1 = collectFields([
+          "product1_product","product1_vendor","product1_vendorTrading","product1_docs","product1_purchasePrice",
+          "product1_paymentMethod","product1_finance","product1_financeWho","product1_purchaseDate","product1_investment",
+          "product1_returns","product1_fitInflation","product1_mcs","product1_extraCosts","product1_extraCostsInfo",
+          "product1_energySavings","product1_warranty30","product1_contactVendor","product1_thirdPartyClaim",
+          "product1_rushed","product1_thirdPartyContact","product1_damage","product1_comments"
+        ]);
+
+        payload.product2 = collectFields([
+          "product2_product","product2_vendor","product2_vendorTrading","product2_docs","product2_purchasePrice",
+          "product2_paymentMethod","product2_finance","product2_financeWho","product2_purchaseDate","product2_investment",
+          "product2_returns","product2_fitInflation","product2_mcs","product2_extraCosts","product2_extraCostsInfo",
+          "product2_energySavings","product2_warranty30","product2_contactVendor","product2_thirdPartyClaim",
+          "product2_rushed","product2_thirdPartyContact","product2_damage","product2_comments"
+        ]);
+      }
+
+      if (selectedClaimType === "mortgage_review") {
+        payload.mortgageDetails = collectFields([
+          "mortgage_lenderName","mortgage_brokerName","mortgage_startDate","mortgage_endDate","mortgage_amount",
+          "mortgage_monthlyPayment","mortgage_type","mortgage_interestRate","mortgage_adviceGiven",
+          "mortgage_feesCharged","mortgage_feeDetails","mortgage_risksExplained","mortgage_affordability",
+          "mortgage_pressure","mortgage_arrears","mortgage_docs","mortgage_issueSummary","mortgage_comments"
+        ]);
+      }
+
+      if (selectedClaimType === "survey_review") {
+        payload.surveyDetails = collectFields([
+          "survey_surveyorName","survey_date","survey_purchaseDate","survey_propertyPrice","survey_type","survey_fee",
+          "survey_majorDefects","survey_structuralIssues","survey_dampIssues","survey_roofFoundationIssues",
+          "survey_servicesIssues","survey_repairCosts","survey_quotesAvailable","survey_docs",
+          "survey_missedIssues","survey_comments"
+        ]);
+      }
+
+      if (selectedClaimType === "new_build_issues") {
+        payload.newbuildDetails = collectFields([
+          "newbuild_developerName","newbuild_builderName","newbuild_completionDate","newbuild_purchaseDate",
+          "newbuild_purchasePrice","newbuild_warrantyProvider","newbuild_snaggingIssues","newbuild_structuralIssues",
+          "newbuild_dampIssues","newbuild_servicesIssues","newbuild_reportedToDeveloper","newbuild_developerResponded",
+          "newbuild_evidenceAvailable","newbuild_lossEstimate","newbuild_issueSummary","newbuild_comments"
+        ]);
+      }
+
+      return payload;
+    }
+
+    function fillFormFromSubmission(submission) {
+      const client = submission.client || {};
+      claimType.value = normalizeClaimType(submission.claimType || "solar_support");
+
+      setInputValue("firstName", client.firstName);
+      setInputValue("secondName", client.secondName);
+      setInputValue("firstName2", client.firstName2);
+      setInputValue("secondName2", client.secondName2);
+      setInputValue("landline", client.landline);
+      setInputValue("mobile", client.mobile);
+      setInputValue("email", client.email);
+      setInputValue("postcode", client.postcode);
+      setInputValue("address", client.address);
+
+      const claimDetails = submission.claimDetails || {};
+      Object.entries(claimDetails).forEach(([key, value]) => setInputValue(key, value));
+
+      Object.entries(submission.product1 || {}).forEach(([key, value]) => setInputValue(`product1_${key.replace(/^product1_/, "")}`, value));
+      Object.entries(submission.product2 || {}).forEach(([key, value]) => setInputValue(`product2_${key.replace(/^product2_/, "")}`, value));
+
+      Object.entries(submission.mortgageDetails || {}).forEach(([key, value]) => setInputValue(`mortgage_${key}`, value));
+      Object.entries(submission.surveyDetails || {}).forEach(([key, value]) => setInputValue(`survey_${key}`, value));
+      Object.entries(submission.newbuildDetails || {}).forEach(([key, value]) => setInputValue(`newbuild_${key}`, value));
+
+      updateClaimTypeView();
     }
 
     async function checkStaffAccess(user) {
@@ -1432,6 +1298,7 @@
       }
 
       const userData = userSnap.data();
+
       if (userData.role !== "staff" && userData.role !== "manager") {
         alert("Could not verify access. Role found: " + (userData.role || "none"));
         window.location.href = "/login.html";
@@ -1448,7 +1315,6 @@
 
     async function loadExistingSubmissionForLead() {
       if (!leadId) return;
-
       const q = query(collection(db, "claimSubmissions"), where("sourceLeadId", "==", leadId));
       const snap = await getDocs(q);
       if (snap.empty) return;
@@ -1468,7 +1334,6 @@
 
     async function loadExistingSubmissionById() {
       if (!submissionIdParam) return;
-
       const snap = await getDoc(doc(db, "claimSubmissions", submissionIdParam));
       if (!snap.exists()) return;
 
@@ -1480,10 +1345,6 @@
 
     async function loadLeadForPrefill() {
       if (!leadId) {
-        if (claimTypeParam) {
-          claimType.value = normalizeClaimType(claimTypeParam);
-          renderDynamicClaimSection();
-        }
         setSubmissionInfo();
         setLinkedLeadInfo();
         return;
@@ -1505,18 +1366,6 @@
         await loadExistingSubmissionForLead();
       }
 
-      const normalizedLeadType = normalizeClaimType(
-        claimTypeParam ||
-        currentLeadData.claimType ||
-        currentLeadData.type ||
-        currentLeadData.intakeClaimType ||
-        currentLeadData.campaign ||
-        "contact_me"
-      );
-
-      claimType.value = normalizedLeadType;
-      renderDynamicClaimSection();
-
       if (!existingSubmissionId) {
         setInputValue("firstName", currentLeadData.forename || "");
         setInputValue("secondName", currentLeadData.surname || "");
@@ -1526,17 +1375,19 @@
         setInputValue("postcode", currentLeadData.postcode || "");
         setInputValue("address", buildAddressFromLead(currentLeadData));
 
-        if (normalizedLeadType === "solar_support" && !getInputValue("product1_product")) {
+        if ((currentLeadData.hasSolar === "Y" || currentLeadData.hasSolar === "Yes") && !getInputValue("product1_product")) {
           setInputValue("product1_product", "Solar Panel System");
         }
       }
+
+      claimType.value = normalizeClaimType(currentLeadData.claimType || currentLeadData.campaign || "solar_support");
+      updateClaimTypeView();
 
       leadNotice.classList.remove("hidden");
       leadNoticeText.textContent = `Lead ${leadId} loaded and prefilled for ${currentLeadData.forename || ""} ${currentLeadData.surname || ""}.`;
 
       const startPatch = {
-        claimType: normalizedLeadType,
-        intakeClaimType: normalizedLeadType,
+        claimType: normalizeClaimType(claimType.value),
         leadStatus: currentLeadData.leadStatus === "awaiting_manager" ? "awaiting_manager" : "intake_in_progress",
         lastAction: currentLeadData.leadStatus === "awaiting_manager" ? (currentLeadData.lastAction || "awaiting_manager") : "interested_intake_started",
         lastUpdatedAt: serverTimestamp(),
@@ -1553,6 +1404,13 @@
       setLinkedLeadInfo();
     }
 
+    function updateClaimTypeView() {
+      document.querySelectorAll(".claim-form-wrap").forEach(wrap => wrap.classList.add("hidden"));
+      const selected = normalizeClaimType(claimType.value);
+      const currentWrap = document.getElementById(`wrap_${selected}`);
+      if (currentWrap) currentWrap.classList.remove("hidden");
+    }
+
     async function saveIntake(status = "draft") {
       const formData = getFormData();
 
@@ -1566,7 +1424,7 @@
       const payload = {
         claimType: formData.claimType,
         client: formData.client,
-        claimDetails: formData.claimDetails,
+        claimDetails: formData.claimDetails || {},
         status,
         submittedBy: {
           uid: currentUser.uid,
@@ -1578,6 +1436,12 @@
         sourceCampaign: currentLeadData?.campaign || currentLeadData?.claimType || "",
         updatedAt: serverTimestamp()
       };
+
+      if (formData.product1) payload.product1 = formData.product1;
+      if (formData.product2) payload.product2 = formData.product2;
+      if (formData.mortgageDetails) payload.mortgageDetails = formData.mortgageDetails;
+      if (formData.surveyDetails) payload.surveyDetails = formData.surveyDetails;
+      if (formData.newbuildDetails) payload.newbuildDetails = formData.newbuildDetails;
 
       try {
         if (existingSubmissionId) {
@@ -1601,7 +1465,6 @@
             intakeSubmissionId: existingSubmissionId,
             convertedToIntake: true,
             claimType: formData.claimType,
-            intakeClaimType: formData.claimType,
             leadStatus: status === "submitted" ? "awaiting_manager" : "intake_in_progress",
             callbackRequired: status === "submitted" ? false : (currentLeadData?.callbackRequired || false),
             introEmailNeeded: status === "submitted" ? false : (currentLeadData?.introEmailNeeded || false),
@@ -1657,18 +1520,7 @@
       }
     });
 
-    claimType.addEventListener("change", () => {
-      const currentValues = {};
-      intakeForm.querySelectorAll("[name]").forEach(el => {
-        currentValues[el.name] = el.value;
-      });
-
-      renderDynamicClaimSection();
-
-      Object.keys(currentValues).forEach(name => {
-        setInputValue(name, currentValues[name]);
-      });
-    });
+    claimType.addEventListener("change", updateClaimTypeView);
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -1677,11 +1529,7 @@
       }
 
       try {
-        populateClaimTypeDropdown();
-
-        const initialType = normalizeClaimType(claimTypeParam || "contact_me");
-        claimType.value = initialType;
-        renderDynamicClaimSection();
+        populateClaimTypes();
 
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
@@ -1697,8 +1545,7 @@
 
         await loadExistingSubmissionById();
         await loadLeadForPrefill();
-        setSubmissionInfo();
-        setLinkedLeadInfo();
+        updateClaimTypeView();
         hideLoader();
       } catch (error) {
         console.error(error);

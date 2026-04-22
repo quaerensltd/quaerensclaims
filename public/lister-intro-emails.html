@@ -34,34 +34,38 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      line-height: 1.2;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
-
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
     .queue-table {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
     }
+    .queue-table th,
+    .queue-table td {
+      vertical-align: top;
+    }
     .cell-wrap {
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
-      vertical-align: top;
     }
-    .client-cell {
-      min-width: 0;
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
     }
     .client-name {
-      font-weight: 600;
+      font-weight: 700;
       color: #1f2937;
       line-height: 1.35;
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
     }
     .client-address {
       font-size: 0.75rem;
@@ -72,14 +76,14 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
-    .table-link {
-      color: #2563eb;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .table-link:hover {
-      text-decoration: underline;
+    .email-preview-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 1rem;
+      min-height: 300px;
+      white-space: pre-wrap;
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -96,7 +100,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Intro Email Queue</h1>
-          <p class="text-sm text-slate-500">Leads waiting for an introduction email and follow-up</p>
+          <p class="text-sm text-slate-500">Manage leads that need an intro email and follow-up</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
           <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
@@ -109,52 +113,55 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Total Intro Emails</div>
-          <div id="totalStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+          <div class="text-sm text-slate-500">Needs Intro Email</div>
+          <div id="needsIntroStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Sent</div>
-          <div id="sentStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">With Email Address</div>
+          <div id="withEmailStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Not Sent</div>
-          <div id="notSentStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Missing Email</div>
+          <div id="missingEmailStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">With Callback</div>
-          <div id="callbackStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Qualified</div>
-          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Due Callback</div>
+          <div id="dueCallbackStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Email Status</label>
-            <select id="statusFilter" class="input">
+            <select id="emailStatusFilter" class="input">
               <option value="all">All</option>
-              <option value="not_sent">Not Sent</option>
-              <option value="sent">Sent</option>
+              <option value="has_email">Has email</option>
+              <option value="missing_email">Missing email</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Timing</label>
-            <select id="timingFilter" class="input">
-              <option value="all">All timings</option>
-              <option value="today">Today</option>
-              <option value="overdue">Overdue</option>
-              <option value="future">Future</option>
-            </select>
-          </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Name, phone, mobile, email, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Name, email, phone, postcode..." />
           </div>
+
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Queue</button>
           </div>
@@ -162,7 +169,7 @@
       </section>
 
       <section class="card p-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
           <div>
             <h2 class="text-xl font-extrabold text-blue-900">Intro Email Leads</h2>
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading queue...</p>
@@ -170,28 +177,26 @@
         </div>
 
         <div class="overflow-x-auto">
-          <table class="queue-table text-sm">
+          <table class="queue-table text-sm min-w-full">
             <colgroup>
-              <col style="width: 24%">
+              <col style="width: 20%">
+              <col style="width: 13%">
+              <col style="width: 13%">
+              <col style="width: 12%">
               <col style="width: 10%">
-              <col style="width: 8%">
+              <col style="width: 11%">
               <col style="width: 10%">
-              <col style="width: 8%">
               <col style="width: 11%">
-              <col style="width: 9%">
-              <col style="width: 11%">
-              <col style="width: 9%">
             </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Telephone</th>
-                <th class="text-left p-3">Mobile</th>
                 <th class="text-left p-3">Email</th>
-                <th class="text-left p-3">Postcode</th>
+                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Campaign</th>
                 <th class="text-left p-3">Callback</th>
-                <th class="text-left p-3">Email Status</th>
-                <th class="text-left p-3">Lead Status</th>
+                <th class="text-left p-3">Status</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
@@ -202,12 +207,12 @@
     </main>
   </div>
 
-  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
+  <div id="emailModal" class="fixed inset-0 bg-black/40 hidden z-50">
     <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between gap-4">
         <div>
-          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Intro Email Detail</h3>
-          <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
+          <h3 id="modalTitle" class="text-2xl font-extrabold text-blue-900">Intro Email</h3>
+          <p id="modalSubtitle" class="text-sm text-slate-500 mt-1"></p>
         </div>
         <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
       </div>
@@ -217,65 +222,63 @@
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
             <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
             <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
-            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
-            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
             <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
             <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
-            <div><span class="font-semibold text-blue-900">Email Sent:</span> <span id="lead_emailSent">-</span></div>
-            <div><span class="font-semibold text-blue-900">Lead Status:</span> <span id="lead_status">-</span></div>
-            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
-            <div><span class="font-semibold text-blue-900">Converted Submission:</span> <span id="lead_converted">-</span></div>
-            <div><span class="font-semibold text-blue-900">Awaiting Manager:</span> <span id="lead_manager_state">-</span></div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Intro Email Template</h4>
-          <textarea id="emailTemplate" class="input" rows="14"></textarea>
-          <div class="mt-4 flex flex-wrap gap-3">
-            <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
-            <button id="openMailAppBtn" class="btn btn-secondary" type="button">Open Email App</button>
-            <button id="markSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
-            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
-            <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
-            <button id="openIntakeBtn" class="btn btn-secondary" type="button">Fill Out Intake Now</button>
-          </div>
-        </section>
-
-        <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Follow-up Actions</h4>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Email Setup</h4>
           <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="claimTypeSelect">Claim Type</label>
+              <select id="claimTypeSelect" class="input">
+                <option value="">Select claim type</option>
+              </select>
+            </div>
+
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
               <input id="callbackDate" type="date" class="input" />
             </div>
+
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
               <input id="callbackTime" type="time" class="input" />
             </div>
-          </div>
-          <div class="mt-4 flex flex-wrap gap-3">
-            <button id="rescheduleBtn" class="btn btn-secondary" type="button">Reschedule Follow-up</button>
-            <button id="markDoneBtn" class="btn btn-secondary" type="button">Mark Queue Done</button>
-            <button id="notInterestedBtn" class="btn btn-danger" type="button">Not Interested</button>
-            <button id="wrongNumberBtn" class="btn btn-danger" type="button">Wrong Number</button>
+
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="emailSubjectInput">Email Subject</label>
+              <input id="emailSubjectInput" type="text" class="input" />
+            </div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Notes</h4>
-          <textarea id="notesBox" class="input" rows="5" placeholder="Email notes, reply notes, follow-up comments..."></textarea>
-          <div class="mt-4 flex gap-3">
-            <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
-            <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
+          <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <h4 class="text-lg font-extrabold text-blue-900">Email Preview</h4>
+            <button id="generateEmailBtn" class="btn btn-secondary" type="button">Regenerate Email</button>
           </div>
+          <div id="emailPreview" class="email-preview-box"></div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
-          <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Internal Notes</h4>
+          <textarea id="notesBox" class="input" rows="5" placeholder="Internal notes about this intro email or callback..."></textarea>
+        </section>
+
+        <section class="card p-5">
+          <div class="flex flex-wrap gap-3">
+            <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="markSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
+            <button id="removeQueueBtn" class="btn btn-danger" type="button">Remove From Email Queue</button>
+          </div>
+          <p id="modalMessage" class="text-sm text-green-700 hidden mt-4"></p>
         </section>
       </div>
     </div>
@@ -294,7 +297,6 @@
       getDoc,
       getDocs,
       updateDoc,
-      deleteDoc,
       collection,
       query,
       where,
@@ -313,42 +315,124 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const CLAIM_TYPES = [
+      { value: "airbnb_refunds", label: "Airbnb Refunds" },
+      { value: "car_finance", label: "Car Finance" },
+      { value: "caravan_holiday_park", label: "Caravan / Holiday Park" },
+      { value: "complaint_letters", label: "Complaint Letters" },
+      { value: "contact_me", label: "Contact Me" },
+      { value: "credit_card_fees", label: "Credit Card Fees" },
+      { value: "cruise_compensation", label: "Cruise Compensation" },
+      { value: "crypto_scam_recovery", label: "Crypto Scam Recovery" },
+      { value: "cyber_data_breach", label: "Cyber Data Breach" },
+      { value: "debt_recovery", label: "Debt Recovery" },
+      { value: "foam_insulation", label: "Foam Insulation" },
+      { value: "formal_escalation", label: "Formal Escalation" },
+      { value: "frozen_accounts", label: "Frozen Accounts" },
+      { value: "holiday_compensation", label: "Holiday Compensation" },
+      { value: "housing_disrepair", label: "Housing Disrepair" },
+      { value: "investment_platforms", label: "Investment Platforms" },
+      { value: "loans_and_mortgages", label: "Loans and Mortgages" },
+      { value: "medical_negligence", label: "Medical Negligence" },
+      { value: "mis_sold_bank_accounts", label: "Mis-sold Bank Accounts" },
+      { value: "mortgage_review", label: "Mortgage Review" },
+      { value: "new_build_issues", label: "New Build Issues" },
+      { value: "pension_administration", label: "Pension Administration" },
+      { value: "pension_issues", label: "Pension Issues" },
+      { value: "platform_failure", label: "Platform Failure" },
+      { value: "refund_issues", label: "Refund Issues" },
+      { value: "return_issues", label: "Return Issues" },
+      { value: "section_75_support", label: "Section 75 Support" },
+      { value: "solar_support", label: "Solar Support" },
+      { value: "spanish_mortgage", label: "Spanish Mortgage" },
+      { value: "survey_review", label: "Survey Review" },
+      { value: "timeshare", label: "Timeshare" },
+      { value: "train_delay", label: "Train Delay" }
+    ];
+
+    const CLAIM_TYPE_ALIASES = {
+      "airbnb refunds": "airbnb_refunds",
+      "car finance": "car_finance",
+      "caravan holiday park": "caravan_holiday_park",
+      "caravan/holiday park": "caravan_holiday_park",
+      "complaint letters": "complaint_letters",
+      "contact me": "contact_me",
+      "credit card fees": "credit_card_fees",
+      "cruise compensation": "cruise_compensation",
+      "crypto scam recovery": "crypto_scam_recovery",
+      "cyber data breach": "cyber_data_breach",
+      "debt recovery": "debt_recovery",
+      "foam insulation": "foam_insulation",
+      "formal escalation": "formal_escalation",
+      "frozen accounts": "frozen_accounts",
+      "holiday compensation": "holiday_compensation",
+      "housing disrepair": "housing_disrepair",
+      "investment platforms": "investment_platforms",
+      "loans and mortgages": "loans_and_mortgages",
+      "medical negligence": "medical_negligence",
+      "mis sold bank accounts": "mis_sold_bank_accounts",
+      "mis-sold bank accounts": "mis_sold_bank_accounts",
+      "mortgage review": "mortgage_review",
+      "new build issues": "new_build_issues",
+      "newbuild": "new_build_issues",
+      "pension administration": "pension_administration",
+      "pension issues": "pension_issues",
+      "platform failure": "platform_failure",
+      "refund issues": "refund_issues",
+      "return issues": "return_issues",
+      "section 75 support": "section_75_support",
+      "solar": "solar_support",
+      "solar support": "solar_support",
+      "spanish mortgage": "spanish_mortgage",
+      "survey": "survey_review",
+      "survey review": "survey_review",
+      "timeshare": "timeshare",
+      "train delay": "train_delay"
+    };
+
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-    const statusFilter = document.getElementById("statusFilter");
-    const timingFilter = document.getElementById("timingFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
+    const emailStatusFilter = document.getElementById("emailStatusFilter");
     const searchInput = document.getElementById("searchInput");
     const refreshBtn = document.getElementById("refreshBtn");
     const queueBody = document.getElementById("queueBody");
     const resultsSummary = document.getElementById("resultsSummary");
-    const totalStat = document.getElementById("totalStat");
-    const sentStat = document.getElementById("sentStat");
-    const notSentStat = document.getElementById("notSentStat");
-    const callbackStat = document.getElementById("callbackStat");
-    const qualifiedStat = document.getElementById("qualifiedStat");
 
-    const leadModal = document.getElementById("leadModal");
+    const needsIntroStat = document.getElementById("needsIntroStat");
+    const withEmailStat = document.getElementById("withEmailStat");
+    const missingEmailStat = document.getElementById("missingEmailStat");
+    const dueCallbackStat = document.getElementById("dueCallbackStat");
+
+    const emailModal = document.getElementById("emailModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const emailTemplate = document.getElementById("emailTemplate");
-    const copyEmailBtn = document.getElementById("copyEmailBtn");
-    const openMailAppBtn = document.getElementById("openMailAppBtn");
-    const markSentBtn = document.getElementById("markSentBtn");
-    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
-    const sendToManagerBtn = document.getElementById("sendToManagerBtn");
-    const openIntakeBtn = document.getElementById("openIntakeBtn");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalSubtitle = document.getElementById("modalSubtitle");
+    const leadNameEl = document.getElementById("lead_name");
+    const leadEmailEl = document.getElementById("lead_email");
+    const leadPhoneEl = document.getElementById("lead_phone");
+    const leadMobileEl = document.getElementById("lead_mobile");
+    const leadPostcodeEl = document.getElementById("lead_postcode");
+    const leadCampaignEl = document.getElementById("lead_campaign");
+    const leadClaimTypeEl = document.getElementById("lead_claimType");
+    const leadCallbackEl = document.getElementById("lead_callback");
+
+    const claimTypeSelect = document.getElementById("claimTypeSelect");
     const callbackDate = document.getElementById("callbackDate");
     const callbackTime = document.getElementById("callbackTime");
-    const rescheduleBtn = document.getElementById("rescheduleBtn");
-    const markDoneBtn = document.getElementById("markDoneBtn");
-    const notInterestedBtn = document.getElementById("notInterestedBtn");
-    const wrongNumberBtn = document.getElementById("wrongNumberBtn");
+    const emailSubjectInput = document.getElementById("emailSubjectInput");
+    const emailPreview = document.getElementById("emailPreview");
     const notesBox = document.getElementById("notesBox");
-    const saveNotesBtn = document.getElementById("saveNotesBtn");
+    const generateEmailBtn = document.getElementById("generateEmailBtn");
+    const copyEmailBtn = document.getElementById("copyEmailBtn");
+    const markSentBtn = document.getElementById("markSentBtn");
+    const removeQueueBtn = document.getElementById("removeQueueBtn");
     const modalMessage = document.getElementById("modalMessage");
 
     let currentUser = null;
     let currentUserData = null;
-    let allLeads = [];
+    let introLeads = [];
     let selectedLead = null;
     let attendanceHeartbeatInterval = null;
 
@@ -375,6 +459,25 @@
       return String(value || "").trim();
     }
 
+    function normalizeText(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function normalizeClaimType(value) {
+      const raw = normalizeText(value);
+      if (!raw) return "";
+      const underscored = raw.replace(/\s+/g, "_");
+      if (CLAIM_TYPES.some(item => item.value === underscored)) return underscored;
+      if (CLAIM_TYPE_ALIASES[raw]) return CLAIM_TYPE_ALIASES[raw];
+      return underscored;
+    }
+
+    function getClaimTypeLabel(value) {
+      const normalized = normalizeClaimType(value);
+      const found = CLAIM_TYPES.find(item => item.value === normalized);
+      return found ? found.label : cleanValue(value) || "-";
+    }
+
     function getLeadTelephone(lead) {
       return cleanValue(lead.telephone || lead.landline || lead.phone);
     }
@@ -385,6 +488,14 @@
 
     function getLeadEmail(lead) {
       return cleanValue(lead.email || lead.emailAddress);
+    }
+
+    function getLeadCampaign(lead) {
+      return cleanValue(lead.campaign || lead.campaignName);
+    }
+
+    function getLeadClaimType(lead) {
+      return cleanValue(lead.claimType || lead.type || lead.intakeClaimType);
     }
 
     function formatAddress(lead) {
@@ -398,130 +509,74 @@
       ].filter(Boolean).join(", ") || "-";
     }
 
-    function formatAction(action) {
-      const map = {
-        send_intro_email: "Send Intro Email",
-        intro_email_sent: "Intro Email Sent",
-        intro_email_queue_done: "Intro Email Queue Done",
-        callback_rescheduled: "Callback Rescheduled",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        notes_saved: "Notes Saved",
-        interested_intake_started: "Intake Started",
-        intake_submitted: "Intake Submitted",
-        qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager Review",
-        converted: "Converted",
-        closed: "Closed"
-      };
-      return map[action] || action || "-";
-    }
-
-    function getScheduledText(lead) {
-      return lead.callbackDate ? `${lead.callbackDate} ${lead.callbackTime || ""}`.trim() : "-";
-    }
-
-    function buildEmailTemplate(lead) {
-      const name = `${lead.forename || ""} ${lead.surname || ""}`.trim();
-      return `Subject: Information about your potential solar claim
-
-Dear ${name || "Client"},
-
-Thank you for speaking with us.
-
-As discussed, we are sending you some introductory information regarding a possible solar-related claim review. This is an initial contact only and helps explain the next steps if you wish to proceed.
-
-At this stage, we may ask you for some basic information and documents so we can understand your situation properly and see whether your matter is suitable for a full intake and review.
-
-If you would like to continue, we can speak again at the arranged follow-up time.
-
-Kind regards,
-${currentUserData?.name || "Quaerens Team"}
-Quaerens`;
-    }
-
-    function isQualified(lead) {
-      return lead.leadStatus === "qualified";
-    }
-
-    function isLocked(lead) {
-      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
-    }
-
-    function isConverted(lead) {
-      return lead.leadStatus === "converted" || !!lead.convertedToSubmissionId;
+    function formatLeadStatus(lead) {
+      if (lead.closed === true || lead.usable === false) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      return "New";
     }
 
     function leadStatusBadge(lead) {
-      if (isLocked(lead)) return `<span class="badge badge-red">Closed</span>`;
-      if (lead.leadStatus === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
-      if (lead.leadStatus === "qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (lead.leadStatus === "converted") return `<span class="badge badge-green">Converted</span>`;
-      if (lead.introEmailSent) return `<span class="badge badge-blue">Email Sent</span>`;
-      return `<span class="badge badge-amber">Intro Email Needed</span>`;
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
+      if (status === "Intake In Progress") return `<span class="badge badge-purple">Intake In Progress</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
     }
 
-    function setButtonDisabled(button, disabled) {
-      button.disabled = !!disabled;
-      if (disabled) {
-        button.classList.add("opacity-60", "cursor-not-allowed");
-      } else {
-        button.classList.remove("opacity-60", "cursor-not-allowed");
-      }
+    function formatCallback(lead) {
+      if (!lead.callbackDate) return "-";
+      return `${lead.callbackDate}${lead.callbackTime ? ` ${lead.callbackTime}` : ""}`;
     }
 
-    function updateActionAvailability(lead) {
-      const locked = isLocked(lead);
-      const converted = isConverted(lead);
-      const awaitingManager = lead.leadStatus === "awaiting_manager";
+    function populateClaimTypeDropdowns() {
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+      claimTypeSelect.innerHTML = `<option value="">Select claim type</option>`;
 
-      [
-        copyEmailBtn,
-        openMailAppBtn,
-        markSentBtn,
-        markQualifiedBtn,
-        sendToManagerBtn,
-        openIntakeBtn,
-        rescheduleBtn,
-        markDoneBtn,
-        notInterestedBtn,
-        wrongNumberBtn,
-        saveNotesBtn
-      ].forEach(button => setButtonDisabled(button, false));
+      CLAIM_TYPES.forEach(item => {
+        const option1 = document.createElement("option");
+        option1.value = item.value;
+        option1.textContent = item.label;
+        claimTypeFilter.appendChild(option1);
 
-      if (locked || converted || awaitingManager) {
-        [
-          markSentBtn,
-          markQualifiedBtn,
-          sendToManagerBtn,
-          openIntakeBtn,
-          rescheduleBtn,
-          markDoneBtn,
-          notInterestedBtn,
-          wrongNumberBtn
-        ].forEach(button => setButtonDisabled(button, true));
-      }
-    }
-
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
-      wrap.innerHTML = "";
-
-      if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
-        return;
-      }
-
-      [...history].reverse().forEach(item => {
-        const div = document.createElement("div");
-        div.className = "border border-slate-200 rounded-xl p-3";
-        div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
-        `;
-        wrap.appendChild(div);
+        const option2 = document.createElement("option");
+        option2.value = item.value;
+        option2.textContent = item.label;
+        claimTypeSelect.appendChild(option2);
       });
+    }
+
+    function populateCampaignFilter() {
+      const currentValue = campaignFilter.value || "all";
+      const campaigns = [...new Set(
+        introLeads
+          .map(lead => getLeadCampaign(lead))
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b))
+      )];
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+
+      if ([...campaignFilter.options].some(option => option.value === currentValue)) {
+        campaignFilter.value = currentValue;
+      }
     }
 
     async function recordStaffLoginFromPage() {
@@ -590,10 +645,7 @@ Quaerens`;
     }
 
     function startAttendanceHeartbeat() {
-      if (attendanceHeartbeatInterval) {
-        clearInterval(attendanceHeartbeatInterval);
-      }
-
+      if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -640,7 +692,7 @@ Quaerens`;
       }, { merge: true });
     }
 
-    async function checkListerAccess(user) {
+    async function checkStaffAccess(user) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
@@ -664,17 +716,18 @@ Quaerens`;
       return true;
     }
 
-    async function loadLeads() {
+    async function loadIntroQueue() {
       try {
-        const introQuery = query(
+        const queueQuery = query(
           collection(db, "leadAssignments"),
           where("assignedToUid", "==", currentUser.uid),
           where("introEmailNeeded", "==", true)
         );
 
-        const snapshot = await getDocs(introQuery);
-        allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const snapshot = await getDocs(queueQuery);
+        introLeads = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 
+        populateCampaignFilter();
         renderStats();
         renderQueue();
       } catch (error) {
@@ -684,143 +737,171 @@ Quaerens`;
     }
 
     function renderStats() {
-      totalStat.textContent = String(allLeads.length);
-      sentStat.textContent = String(allLeads.filter(x => x.introEmailSent).length);
-      notSentStat.textContent = String(allLeads.filter(x => !x.introEmailSent).length);
-      callbackStat.textContent = String(allLeads.filter(x => x.callbackDate).length);
-      qualifiedStat.textContent = String(allLeads.filter(x => isQualified(x)).length);
+      needsIntroStat.textContent = String(introLeads.length);
+      withEmailStat.textContent = String(introLeads.filter(lead => !!getLeadEmail(lead)).length);
+      missingEmailStat.textContent = String(introLeads.filter(lead => !getLeadEmail(lead)).length);
+
+      const today = todayIso();
+      dueCallbackStat.textContent = String(
+        introLeads.filter(lead => lead.callbackDate && lead.callbackDate <= today).length
+      );
+    }
+
+    function getFilteredLeads() {
+      const claimType = claimTypeFilter.value;
+      const campaign = campaignFilter.value;
+      const emailStatus = emailStatusFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+
+      return introLeads.filter(lead => {
+        const normalizedLeadClaimType = normalizeClaimType(getLeadClaimType(lead));
+        const hasEmail = !!getLeadEmail(lead);
+
+        const matchesClaimType = claimType === "all" || normalizedLeadClaimType === normalizeClaimType(claimType);
+        const matchesCampaign = campaign === "all" || getLeadCampaign(lead) === campaign;
+        const matchesEmailStatus =
+          emailStatus === "all" ||
+          (emailStatus === "has_email" && hasEmail) ||
+          (emailStatus === "missing_email" && !hasEmail);
+
+        const haystack = `
+          ${lead.forename || ""}
+          ${lead.surname || ""}
+          ${getLeadEmail(lead)}
+          ${getLeadTelephone(lead)}
+          ${getLeadMobile(lead)}
+          ${lead.postcode || ""}
+          ${getLeadCampaign(lead)}
+          ${getLeadClaimType(lead)}
+          ${getClaimTypeLabel(getLeadClaimType(lead))}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesClaimType && matchesCampaign && matchesEmailStatus && matchesSearch;
+      });
     }
 
     function renderQueue() {
-      const status = statusFilter.value;
-      const timing = timingFilter.value;
-      const term = searchInput.value.trim().toLowerCase();
-      const today = todayIso();
-
-      const filtered = [...allLeads]
-        .filter(lead => {
-          const matchesStatus =
-            status === "all" ||
-            (status === "sent" && lead.introEmailSent) ||
-            (status === "not_sent" && !lead.introEmailSent);
-
-          const matchesTiming =
-            timing === "all" ||
-            (timing === "today" && lead.callbackDate === today) ||
-            (timing === "overdue" && lead.callbackDate && lead.callbackDate < today) ||
-            (timing === "future" && lead.callbackDate && lead.callbackDate > today);
-
-          const haystack = `
-            ${lead.forename || ""}
-            ${lead.surname || ""}
-            ${getLeadTelephone(lead)}
-            ${getLeadMobile(lead)}
-            ${getLeadEmail(lead)}
-            ${lead.postcode || ""}
-            ${lead.address || ""}
-            ${lead.address1 || ""}
-            ${lead.address2 || ""}
-            ${lead.address3 || ""}
-            ${lead.address4 || ""}
-            ${lead.address5 || ""}
-          `.toLowerCase();
-
-          const matchesSearch = !term || haystack.includes(term);
-
-          return matchesStatus && matchesTiming && matchesSearch;
-        })
-        .sort((a, b) => {
-          const aKey = `${a.callbackDate || "9999-12-31"} ${a.callbackTime || "23:59"}`;
-          const bKey = `${b.callbackDate || "9999-12-31"} ${b.callbackTime || "23:59"}`;
-          return aKey.localeCompare(bKey);
-        });
-
+      const filtered = getFilteredLeads();
       queueBody.innerHTML = "";
 
       if (!filtered.length) {
         queueBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No intro email leads found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No intro email leads found.</td>
           </tr>
         `;
       } else {
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
+
           tr.innerHTML = `
-            <td class="p-3 cell-wrap client-cell">
+            <td class="p-3 align-top">
               <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
               <div class="client-address">${formatAddress(lead)}</div>
             </td>
-            <td class="p-3 cell-wrap">${getLeadTelephone(lead) || "-"}</td>
-            <td class="p-3 cell-wrap">${getLeadMobile(lead) || "-"}</td>
-            <td class="p-3 cell-wrap">${getLeadEmail(lead) || "-"}</td>
-            <td class="p-3 cell-wrap">${lead.postcode || "-"}</td>
-            <td class="p-3 cell-wrap">${getScheduledText(lead)}</td>
-            <td class="p-3 cell-wrap">${lead.introEmailSent ? '<span class="badge badge-green">Sent</span>' : '<span class="badge badge-amber">Not Sent</span>'}</td>
-            <td class="p-3 cell-wrap">${leadStatusBadge(lead)}</td>
-            <td class="p-3 cell-wrap">
-              <button class="table-link" data-open-lead="${lead.id}">Open</button>
+            <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || '<span class="text-red-600 font-semibold">Missing email</span>'}</td>
+            <td class="p-3 align-top cell-wrap">
+              <div>${getLeadTelephone(lead) || "-"}</div>
+              <div class="text-slate-500 mt-1">${getLeadMobile(lead) || "-"}</div>
+            </td>
+            <td class="p-3 align-top cell-wrap">${getClaimTypeLabel(getLeadClaimType(lead))}</td>
+            <td class="p-3 align-top cell-wrap">${getLeadCampaign(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${formatCallback(lead)}</td>
+            <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
+            <td class="p-3 align-top">
+              <button class="text-blue-600 font-bold hover:underline" type="button" data-open-email="${lead.id}">
+                Open
+              </button>
             </td>
           `;
+
           queueBody.appendChild(tr);
         });
       }
 
       resultsSummary.textContent = `${filtered.length} intro email lead(s) shown`;
 
-      document.querySelectorAll("[data-open-lead]").forEach(btn => {
-        btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-lead")));
+      document.querySelectorAll("[data-open-email]").forEach(button => {
+        button.addEventListener("click", () => openLeadModal(button.getAttribute("data-open-email")));
       });
     }
 
-    function openLead(leadId) {
-      selectedLead = allLeads.find(x => x.id === leadId);
+    function buildEmailSubject(lead, claimTypeValue) {
+      const claimLabel = getClaimTypeLabel(claimTypeValue || getLeadClaimType(lead));
+      return `Quaerens Claims - ${claimLabel} Information`;
+    }
+
+    function buildEmailBody(lead, claimTypeValue) {
+      const firstName = cleanValue(lead.forename) || "there";
+      const claimLabel = getClaimTypeLabel(claimTypeValue || getLeadClaimType(lead));
+      const callbackLine = callbackDate.value
+        ? `We have scheduled your follow-up for ${callbackDate.value}${callbackTime.value ? ` at ${callbackTime.value}` : ""}.`
+        : `We will be in touch shortly to discuss the next steps with you.`;
+
+      return `Dear ${firstName},
+
+Thank you for speaking with Quaerens Claims.
+
+Following our conversation, we are sending this introductory email regarding your ${claimLabel} enquiry.
+
+${callbackLine}
+
+If any documents are available, please keep them ready as they may help with the next stage of your claim review.
+
+If you need to reply before your callback, please respond directly to this email and our team will review your message.
+
+Kind regards,
+
+Quaerens Claims
+Client Support Team`;
+    }
+
+    function openLeadModal(leadId) {
+      selectedLead = introLeads.find(item => item.id === leadId);
       if (!selectedLead) return;
 
-      document.getElementById("modalLeadTitle").textContent =
-        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Intro Email Detail";
-      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-      document.getElementById("lead_name").textContent =
-        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_phone").textContent = getLeadTelephone(selectedLead) || "-";
-      document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
-      document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
-      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = selectedLead.postcode || "-";
-      document.getElementById("lead_callback").textContent = getScheduledText(selectedLead);
-      document.getElementById("lead_emailSent").textContent = selectedLead.introEmailSent ? "Yes" : "No";
-      document.getElementById("lead_status").innerHTML = leadStatusBadge(selectedLead);
-      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
-      document.getElementById("lead_converted").textContent = selectedLead.convertedToSubmissionId || "-";
-      document.getElementById("lead_manager_state").textContent = selectedLead.leadStatus === "awaiting_manager" ? "Yes" : "No";
+      const claimTypeValue = normalizeClaimType(getLeadClaimType(selectedLead));
 
+      modalTitle.textContent = "Intro Email";
+      modalSubtitle.textContent = `Lead ID: ${selectedLead.id}`;
+      leadNameEl.textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      leadEmailEl.textContent = getLeadEmail(selectedLead) || "-";
+      leadPhoneEl.textContent = getLeadTelephone(selectedLead) || "-";
+      leadMobileEl.textContent = getLeadMobile(selectedLead) || "-";
+      leadPostcodeEl.textContent = selectedLead.postcode || "-";
+      leadCampaignEl.textContent = getLeadCampaign(selectedLead) || "-";
+      leadClaimTypeEl.textContent = getClaimTypeLabel(getLeadClaimType(selectedLead));
+      leadCallbackEl.textContent = formatCallback(selectedLead);
+
+      claimTypeSelect.value = claimTypeValue || "";
       callbackDate.value = selectedLead.callbackDate || "";
       callbackTime.value = selectedLead.callbackTime || "";
       notesBox.value = selectedLead.notes || "";
-      emailTemplate.value = selectedLead.introEmailBody || buildEmailTemplate(selectedLead);
+      emailSubjectInput.value = buildEmailSubject(selectedLead, claimTypeValue);
+      emailPreview.textContent = buildEmailBody(selectedLead, claimTypeValue);
 
-      renderHistory(selectedLead.actionHistory || []);
-      updateActionAvailability(selectedLead);
-      leadModal.classList.remove("hidden");
+      emailModal.classList.remove("hidden");
     }
 
-    async function refreshSelectedLead() {
-      const currentLeadId = selectedLead?.id || null;
-      await loadLeads();
+    async function refreshQueueAndSelected() {
+      const currentId = selectedLead?.id || null;
+      await loadIntroQueue();
 
-      if (currentLeadId) {
-        const updated = allLeads.find(x => x.id === currentLeadId);
+      if (currentId) {
+        const updated = introLeads.find(item => item.id === currentId);
         if (updated) {
-          selectedLead = updated;
-          openLead(updated.id);
+          openLeadModal(updated.id);
         } else {
-          leadModal.classList.add("hidden");
+          emailModal.classList.add("hidden");
+          selectedLead = null;
         }
       }
     }
 
-    async function updateLead(patch, historyAction, notes = "") {
+    async function updateLead(patch, historyAction, historyNotes = "") {
       if (!selectedLead) return;
 
       try {
@@ -832,224 +913,88 @@ Quaerens`;
             byUid: currentUser.uid,
             byName: currentUserData.name || "",
             at: new Date().toISOString(),
-            notes
+            notes: historyNotes
           })
         });
 
-        await refreshSelectedLead();
+        await refreshQueueAndSelected();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
-        console.error("Lead update failed:", error);
+        console.error("Update failed:", error);
         showModalMessage("Could not update lead.", true);
       }
     }
 
-    async function archiveAndDeleteLead(reason, noteText) {
+    generateEmailBtn.addEventListener("click", () => {
       if (!selectedLead) return;
-
-      try {
-        const historyEntry = {
-          action: reason,
-          byUid: currentUser.uid,
-          byName: currentUserData.name || "",
-          at: new Date().toISOString(),
-          notes: noteText || ""
-        };
-
-        await setDoc(doc(db, "closedLeadsArchive", selectedLead.id), {
-          ...selectedLead,
-          originalLeadId: selectedLead.id,
-          archiveReason: reason,
-          archiveNotes: noteText || "",
-          closedByUid: currentUser.uid,
-          closedByName: currentUserData.name || "",
-          archivedByUid: currentUser.uid,
-          archivedByName: currentUserData.name || "",
-          closedFromPage: "lister-intro-emails",
-          closedAt: new Date().toISOString(),
-          closed: true,
-          usable: false,
-          leadStatus: "closed",
-          lastAction: reason,
-          introEmailNeeded: false,
-          callbackRequired: false,
-          lastUpdatedAt: new Date().toISOString(),
-          actionHistory: [...(selectedLead.actionHistory || []), historyEntry]
-        });
-
-        await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
-
-        selectedLead = null;
-        leadModal.classList.add("hidden");
-        await loadLeads();
-        showModalMessage("Lead archived and removed from intro queue.");
-      } catch (error) {
-        console.error("Archive/delete failed:", error);
-        showModalMessage("Could not archive lead.", true);
-      }
-    }
-
-    async function openMailApp() {
-      if (!selectedLead) return;
-
-      const email = getLeadEmail(selectedLead);
-      if (!email) {
-        showModalMessage("No client email address found for this lead.", true);
-        return;
-      }
-
-      const rawTemplate = emailTemplate.value || buildEmailTemplate(selectedLead);
-      const lines = rawTemplate.split("\n");
-
-      let subject = "Information about your potential solar claim";
-      let body = rawTemplate;
-
-      if (lines.length && lines[0].toLowerCase().startsWith("subject:")) {
-        subject = lines[0].replace(/^subject:\s*/i, "").trim() || subject;
-        body = lines.slice(1).join("\n").trim();
-      }
-
-      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
-    }
+      const chosenClaimType = normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead));
+      emailSubjectInput.value = buildEmailSubject(selectedLead, chosenClaimType);
+      emailPreview.textContent = buildEmailBody(selectedLead, chosenClaimType);
+      showModalMessage("Email preview updated.");
+    });
 
     copyEmailBtn.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(emailTemplate.value || "");
-        showModalMessage("Email copied.");
+        const textToCopy = `Subject: ${emailSubjectInput.value}\n\n${emailPreview.textContent}`;
+        await navigator.clipboard.writeText(textToCopy);
+        showModalMessage("Email copied to clipboard.");
       } catch (error) {
-        console.error(error);
+        console.error("Clipboard copy failed:", error);
         showModalMessage("Could not copy email.", true);
       }
-    });
-
-    openMailAppBtn.addEventListener("click", () => {
-      openMailApp();
     });
 
     markSentBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
-      await updateLead({
-        introEmailSent: true,
-        introEmailSentAt: serverTimestamp(),
-        introEmailBody: emailTemplate.value || "",
-        lastAction: "intro_email_sent"
-      }, "intro_email_sent", "Introduction email marked as sent.");
-    });
-
-    markQualifiedBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "qualified",
-        introEmailNeeded: true,
-        callbackRequired: false,
-        introEmailBody: emailTemplate.value || "",
-        qualifiedAt: serverTimestamp(),
-        lastAction: "qualified"
-      }, "qualified", "Lead marked as qualified from intro email queue.");
-    });
-
-    sendToManagerBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "awaiting_manager",
-        introEmailNeeded: false,
-        callbackRequired: false,
-        callbackDate: "",
-        callbackTime: "",
-        introEmailBody: emailTemplate.value || "",
-        sentToManagerAt: serverTimestamp(),
-        lastAction: "awaiting_manager"
-      }, "awaiting_manager", "Lead sent to manager from intro email queue.");
-    });
-
-    openIntakeBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "intake_in_progress",
-        lastAction: "interested_intake_started",
-        introEmailBody: emailTemplate.value || ""
-      }, "interested_intake_started", "Lead moved to intake from intro email queue.");
-
-      window.location.href = `/client-intake-portal.html?leadId=${selectedLead.id}`;
-    });
-
-    rescheduleBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      if (!callbackDate.value || !callbackTime.value) {
-        showModalMessage("Please choose callback date and time.", true);
+      if (!getLeadEmail(selectedLead)) {
+        showModalMessage("This lead has no email address saved.", true);
         return;
       }
 
-      await updateLead({
-        callbackRequired: true,
-        callbackDate: callbackDate.value,
-        callbackTime: callbackTime.value,
-        introEmailBody: emailTemplate.value || "",
-        lastAction: "callback_rescheduled"
-      }, "callback_rescheduled", `Follow-up rescheduled for ${callbackDate.value} ${callbackTime.value}`);
-    });
-
-    markDoneBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
+      const chosenClaimType = normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead));
+      const subject = cleanValue(emailSubjectInput.value) || buildEmailSubject(selectedLead, chosenClaimType);
+      const callbackText = callbackDate.value
+        ? `Callback set for ${callbackDate.value}${callbackTime.value ? ` ${callbackTime.value}` : ""}.`
+        : "No callback date set.";
 
       await updateLead({
+        claimType: chosenClaimType || "",
+        intakeClaimType: chosenClaimType || "",
+        callbackDate: callbackDate.value || "",
+        callbackTime: callbackTime.value || "",
+        notes: notesBox.value || "",
+        introEmailSent: true,
+        introEmailSentAt: serverTimestamp(),
         introEmailNeeded: false,
-        callbackRequired: false,
-        callbackDate: "",
-        callbackTime: "",
-        introEmailBody: emailTemplate.value || "",
-        lastAction: "intro_email_queue_done"
-      }, "intro_email_queue_done", "Intro email queue item marked as done.");
+        callbackRequired: !!callbackDate.value,
+        leadStatus: callbackDate.value ? "callback_required" : (selectedLead.leadStatus || "new"),
+        lastAction: "send_intro_email",
+        lastIntroEmailSubject: subject,
+        lastIntroEmailBody: emailPreview.textContent || ""
+      }, "send_intro_email", `${callbackText} Intro email marked as sent.`);
     });
 
-    notInterestedBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-      await archiveAndDeleteLead("not_interested", notesBox.value || "Marked as not interested from intro email queue.");
-    });
-
-    wrongNumberBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-      await archiveAndDeleteLead("wrong_number", notesBox.value || "Marked as wrong number from intro email queue.");
-    });
-
-    saveNotesBtn.addEventListener("click", async () => {
+    removeQueueBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
 
-      try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          notes: notesBox.value || "",
-          introEmailBody: emailTemplate.value || "",
-          lastUpdatedAt: serverTimestamp(),
-          actionHistory: arrayUnion({
-            action: "notes_saved",
-            byUid: currentUser.uid,
-            byName: currentUserData.name || "",
-            at: new Date().toISOString(),
-            notes: notesBox.value || ""
-          })
-        });
-
-        await refreshSelectedLead();
-        showModalMessage("Notes saved.");
-      } catch (error) {
-        console.error("Failed to save notes:", error);
-        showModalMessage("Could not save notes.", true);
-      }
+      await updateLead({
+        claimType: normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead)) || "",
+        intakeClaimType: normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead)) || "",
+        callbackDate: callbackDate.value || "",
+        callbackTime: callbackTime.value || "",
+        notes: notesBox.value || "",
+        introEmailNeeded: false
+      }, "notes_saved", "Lead removed from intro email queue.");
     });
 
     closeModalBtn.addEventListener("click", () => {
-      leadModal.classList.add("hidden");
+      emailModal.classList.add("hidden");
     });
 
-    leadModal.addEventListener("click", (e) => {
-      if (e.target === leadModal) {
-        leadModal.classList.add("hidden");
+    emailModal.addEventListener("click", (e) => {
+      if (e.target === emailModal) {
+        emailModal.classList.add("hidden");
       }
     });
 
@@ -1060,7 +1005,9 @@ Quaerens`;
       }
 
       try {
-        const allowed = await checkListerAccess(user);
+        populateClaimTypeDropdowns();
+
+        const allowed = await checkStaffAccess(user);
         if (!allowed) return;
 
         try {
@@ -1070,7 +1017,7 @@ Quaerens`;
           console.error("Attendance login-from-page failed:", attendanceError);
         }
 
-        await loadLeads();
+        await loadIntroQueue();
         hideLoader();
       } catch (error) {
         console.error(error);
@@ -1090,7 +1037,7 @@ Quaerens`;
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
-        console.error(error);
+        console.error("Logout failed:", error);
         alert("Could not log out.");
       }
     });
@@ -1103,10 +1050,11 @@ Quaerens`;
       }
     });
 
-    statusFilter.addEventListener("change", renderQueue);
-    timingFilter.addEventListener("change", renderQueue);
+    claimTypeFilter.addEventListener("change", renderQueue);
+    campaignFilter.addEventListener("change", renderQueue);
+    emailStatusFilter.addEventListener("change", renderQueue);
     searchInput.addEventListener("input", renderQueue);
-    refreshBtn.addEventListener("click", loadLeads);
+    refreshBtn.addEventListener("click", loadIntroQueue);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {

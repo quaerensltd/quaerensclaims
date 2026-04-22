@@ -12,22 +12,31 @@
     body { font-family: 'Inter', sans-serif; }
     .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
     .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
-    .btn { border-radius: 12px; padding: 0.75rem 1rem; font-weight: 700; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-secondary { background: #eff6ff; color: #1d4ed8; }
     .btn-secondary:hover { background: #dbeafe; }
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #dcfce7; color: #166534; }
+    .btn-success:hover { background: #bbf7d0; }
     .hidden { display: none; }
-    .active-nav { background: #2563eb; color: white; }
-    .active-nav:hover { background: #1d4ed8; color: white; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
     .badge {
       display: inline-block;
       padding: 0.25rem 0.55rem;
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      line-height: 1.2;
     }
     .badge-blue { background: #dbeafe; color: #1d4ed8; }
     .badge-green { background: #dcfce7; color: #166534; }
@@ -35,17 +44,63 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-slate { background: #e2e8f0; color: #334155; }
     .badge-indigo { background: #e0e7ff; color: #4338ca; }
-    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+    .data-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .data-table th,
+    .data-table td {
+      vertical-align: top;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 1rem;
+    }
+    .detail-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1rem;
+      background: #fff;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    @media (min-width: 768px) {
+      .detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .detail-item span:first-child {
+      font-weight: 700;
+      color: #1e3a8a;
+    }
     .readonly-box {
       width: 100%;
-      min-height: 160px;
+      min-height: 120px;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       padding: 1rem;
       background: #f8fafc;
+      color: #1f2937;
       white-space: pre-wrap;
       line-height: 1.6;
-      color: #1f2937;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -53,7 +108,7 @@
   <div id="authLoader" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-slate-600 font-medium">Checking manager access...</p>
+      <p class="text-slate-600 font-medium">Loading manager review panel...</p>
     </div>
   </div>
 
@@ -62,229 +117,224 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Panel</h1>
-          <p class="text-sm text-slate-500">Review qualified leads, assign closers, book appointments, and send manager intro emails</p>
+          <p class="text-sm text-slate-500">Submission review, assessment, and manager decisions</p>
         </div>
+
         <div class="flex items-center gap-3 flex-wrap">
-          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
+          <a href="/client-intake-portal.html" class="btn btn-secondary py-2 px-4">Client Intake</a>
           <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
-          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
-          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
-          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
-          <a href="/closed-leads-admin.html" class="btn btn-secondary py-2 px-4">Closed Leads Admin</a>
-          <div class="text-sm text-slate-500 text-right">
-            <div id="staffStatus">Checking access...</div>
-            <div id="staffEmail" class="text-xs text-slate-400"></div>
-          </div>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <section class="grid lg:grid-cols-5 gap-4">
+      <section class="grid md:grid-cols-2 xl:grid-cols-6 gap-4">
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Awaiting Manager</div>
-          <div id="awaitingManagerStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+          <div class="text-sm text-slate-500">Total Submissions</div>
+          <div id="totalSubmissionsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Booked Today</div>
-          <div id="bookedTodayStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Submitted</div>
+          <div id="submittedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Sent to Closer</div>
-          <div id="sentToCloserStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Drafts</div>
+          <div id="draftStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Qualified</div>
-          <div id="qualifiedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Approved</div>
+          <div id="approvedStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Overdue Reviews</div>
-          <div id="overdueStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+          <div class="text-sm text-slate-500">Rejected</div>
+          <div id="rejectedStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Need More Info</div>
+          <div id="moreInfoStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
         </div>
       </section>
 
       <section class="card p-6">
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Lead Status</label>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Review Status</label>
             <select id="statusFilter" class="input">
               <option value="all">All statuses</option>
-              <option value="awaiting_manager">Awaiting Manager</option>
-              <option value="intake_in_progress">Intake In Progress</option>
               <option value="submitted">Submitted</option>
-              <option value="in_review">In Review</option>
-              <option value="assessment_complete">Assessment Complete</option>
-              <option value="qualified">Qualified</option>
-              <option value="sent_to_closer">Sent to Closer</option>
-              <option value="converted">Converted</option>
-              <option value="closed">Closed</option>
+              <option value="draft">Draft</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="more_info_needed">More Info Needed</option>
             </select>
           </div>
+
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Appointment Timing</label>
-            <select id="timingFilter" class="input">
-              <option value="all">All timings</option>
-              <option value="today">Today</option>
-              <option value="future">Future</option>
-              <option value="overdue">Overdue</option>
-              <option value="none">No appointment set</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
             </select>
           </div>
+
           <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2">Closer</label>
-            <select id="closerFilter" class="input">
-              <option value="all">All closers</option>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
             </select>
           </div>
+
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
-            <input id="searchInput" type="text" class="input" placeholder="Client, telephone, mobile, email, postcode..." />
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, postcode, lead ID..." />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Submitted By</label>
+            <input id="submittedByFilter" type="text" class="input" placeholder="Staff name or email" />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Panel</button>
           </div>
         </div>
       </section>
 
       <section class="card p-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
           <div>
-            <h2 class="text-xl font-extrabold text-blue-900">Manager Review Queue</h2>
-            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading leads...</p>
+            <h2 class="text-xl font-extrabold text-blue-900">Claim Submissions</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading submissions...</p>
           </div>
-          <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
+          <table class="data-table text-sm min-w-full">
+            <colgroup>
+              <col style="width: 18%">
+              <col style="width: 12%">
+              <col style="width: 12%">
+              <col style="width: 15%">
+              <col style="width: 10%">
+              <col style="width: 12%">
+              <col style="width: 11%">
+              <col style="width: 10%">
+            </colgroup>
             <thead>
               <tr class="bg-blue-50 text-blue-900">
                 <th class="text-left p-3">Client</th>
-                <th class="text-left p-3">Telephone</th>
-                <th class="text-left p-3">Mobile</th>
-                <th class="text-left p-3">Email</th>
-                <th class="text-left p-3">Lister</th>
+                <th class="text-left p-3">Contact</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Campaign / Lead</th>
                 <th class="text-left p-3">Status</th>
-                <th class="text-left p-3">Appointment</th>
-                <th class="text-left p-3">Closer</th>
+                <th class="text-left p-3">Submitted By</th>
+                <th class="text-left p-3">Updated</th>
                 <th class="text-left p-3">Action</th>
               </tr>
             </thead>
-            <tbody id="leadsBody"></tbody>
+            <tbody id="submissionsBody"></tbody>
           </table>
         </div>
       </section>
     </main>
   </div>
 
-  <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
-    <div class="max-w-6xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+  <div id="submissionModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-7xl mx-auto mt-6 bg-white rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between gap-4">
         <div>
-          <h3 id="modalLeadTitle" class="text-2xl font-extrabold text-blue-900">Manager Lead Review</h3>
-          <p id="modalLeadSubtitle" class="text-sm text-slate-500 mt-1"></p>
+          <h3 id="modalTitle" class="text-2xl font-extrabold text-blue-900">Submission Review</h3>
+          <p id="modalSubtitle" class="text-sm text-slate-500 mt-1"></p>
         </div>
         <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
       </div>
 
       <div class="p-6 space-y-6">
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
-          <div class="grid md:grid-cols-2 gap-4 text-sm">
-            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
-            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_telephone">-</span></div>
-            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
-            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
-            <div><span class="font-semibold text-blue-900">Address:</span> <span id="lead_address">-</span></div>
-            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
-            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
-            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
-            <div><span class="font-semibold text-blue-900">Lister:</span> <span id="lead_lister">-</span></div>
-            <div><span class="font-semibold text-blue-900">Status:</span> <span id="lead_status">-</span></div>
-            <div><span class="font-semibold text-blue-900">Last Action:</span> <span id="lead_lastAction">-</span></div>
-            <div><span class="font-semibold text-blue-900">Current Closer:</span> <span id="lead_closer">-</span></div>
-            <div><span class="font-semibold text-blue-900">Appointment:</span> <span id="lead_appointment">-</span></div>
-            <div><span class="font-semibold text-blue-900">Submission ID:</span> <span id="lead_submissionId">-</span></div>
-            <div><span class="font-semibold text-blue-900">Assessment ID:</span> <span id="lead_assessmentId">-</span></div>
+          <h4 class="section-title">Submission Summary</h4>
+          <div class="detail-grid text-sm">
+            <div class="detail-item"><span>Submission ID:</span> <span id="summary_submissionId">-</span></div>
+            <div class="detail-item"><span>Status:</span> <span id="summary_status">-</span></div>
+            <div class="detail-item"><span>Claim Type:</span> <span id="summary_claimType">-</span></div>
+            <div class="detail-item"><span>Campaign:</span> <span id="summary_campaign">-</span></div>
+            <div class="detail-item"><span>Linked Lead ID:</span> <span id="summary_leadId">-</span></div>
+            <div class="detail-item"><span>Submitted By:</span> <span id="summary_submittedBy">-</span></div>
+            <div class="detail-item"><span>Created:</span> <span id="summary_createdAt">-</span></div>
+            <div class="detail-item"><span>Updated:</span> <span id="summary_updatedAt">-</span></div>
+          </div>
+        </section>
+
+        <section class="grid lg:grid-cols-2 gap-6">
+          <div class="card p-5">
+            <h4 class="section-title">Client Details</h4>
+            <div class="detail-grid text-sm">
+              <div class="detail-item"><span>First Name:</span> <span id="client_firstName">-</span></div>
+              <div class="detail-item"><span>Second Name:</span> <span id="client_secondName">-</span></div>
+              <div class="detail-item"><span>First Name 2:</span> <span id="client_firstName2">-</span></div>
+              <div class="detail-item"><span>Second Name 2:</span> <span id="client_secondName2">-</span></div>
+              <div class="detail-item"><span>Landline:</span> <span id="client_landline">-</span></div>
+              <div class="detail-item"><span>Mobile:</span> <span id="client_mobile">-</span></div>
+              <div class="detail-item"><span>Email:</span> <span id="client_email">-</span></div>
+              <div class="detail-item"><span>Postcode:</span> <span id="client_postcode">-</span></div>
+              <div class="detail-item lg:col-span-2"><span>Address:</span> <span id="client_address">-</span></div>
+            </div>
+          </div>
+
+          <div class="card p-5">
+            <h4 class="section-title">Linked Lead</h4>
+            <div id="linkedLeadWrap" class="text-sm text-slate-700">
+              <div class="text-slate-500">No linked lead information loaded.</div>
+            </div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Assessment & Intake</h4>
-          <div class="flex flex-wrap gap-3">
-            <a id="openIntakeBtn" href="#" class="btn btn-secondary hidden">Open Intake Detail</a>
-            <a id="openAssessmentBtn" href="#" class="btn btn-secondary hidden">Open Assessment</a>
+          <h4 class="section-title">Claim Details</h4>
+          <div id="claimDetailsWrap" class="space-y-4 text-sm text-slate-700">
+            <div class="text-slate-500">No claim details loaded.</div>
           </div>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Intro Email</h4>
+          <h4 class="section-title">Manager Review</h4>
+
           <div class="grid md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2">Client Email</label>
-              <input id="managerEmailTo" class="input" type="text" readonly />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2">Email Status</label>
-              <div id="managerEmailStatus" class="text-sm text-slate-700 pt-3">Not sent</div>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerEmailTemplate">Email Template</label>
-            <textarea id="managerEmailTemplate" class="input" rows="12" placeholder="Manager intro email template..."></textarea>
-          </div>
-          <div class="mt-4 flex flex-wrap gap-3">
-            <button id="copyManagerEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
-            <button id="openManagerEmailBtn" class="btn btn-secondary" type="button">Open Email App</button>
-            <button id="markManagerEmailSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
-          </div>
-        </section>
-
-        <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Actions</h4>
-          <div class="grid md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="closerSelect">Assign Closer</label>
-              <select id="closerSelect" class="input"></select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerStatusSelect">Lead Status</label>
-              <select id="managerStatusSelect" class="input">
-                <option value="awaiting_manager">Awaiting Manager</option>
-                <option value="qualified">Qualified</option>
-                <option value="sent_to_closer">Sent to Closer</option>
-                <option value="converted">Converted</option>
-                <option value="closed">Closed</option>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerDecisionSelect">Decision</label>
+              <select id="managerDecisionSelect" class="input">
+                <option value="">Select decision</option>
+                <option value="approved">Approve</option>
+                <option value="rejected">Reject</option>
+                <option value="more_info_needed">Need More Info</option>
               </select>
             </div>
+
             <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentDate">Appointment Date</label>
-              <input id="appointmentDate" type="date" class="input" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentTime">Appointment Time</label>
-              <input id="appointmentTime" type="time" class="input" />
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerOutcomeInput">Outcome / Category</label>
+              <input id="managerOutcomeInput" type="text" class="input" placeholder="Example: strong claim, weak evidence, needs docs..." />
             </div>
           </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-semibold text-blue-900 mb-2" for="managerNotesBox">Manager Notes</label>
+            <textarea id="managerNotesBox" class="input" rows="7" placeholder="Manager review notes, case assessment, missing evidence, next steps..."></textarea>
+          </div>
+
           <div class="flex flex-wrap gap-3">
-            <button id="saveLeadChangesBtn" class="btn btn-primary" type="button">Save Changes</button>
-            <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
-            <button id="bookAppointmentBtn" class="btn btn-secondary" type="button">Book Closer Appointment</button>
-            <button id="sendToCloserBtn" class="btn btn-secondary" type="button">Send to Closer</button>
-            <button id="markConvertedBtn" class="btn btn-secondary" type="button">Mark Converted</button>
-            <button id="markClosedBtn" class="btn btn-danger" type="button">Close Lead</button>
+            <button id="saveManagerNotesBtn" class="btn btn-secondary" type="button">Save Review Notes</button>
+            <button id="approveBtn" class="btn btn-success" type="button">Approve</button>
+            <button id="moreInfoBtn" class="btn btn-secondary" type="button">Need More Info</button>
+            <button id="rejectBtn" class="btn btn-danger" type="button">Reject</button>
           </div>
+
+          <p id="modalMessage" class="text-sm text-green-700 hidden mt-4"></p>
         </section>
 
         <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Manager Notes</h4>
-          <textarea id="notesBox" class="input" rows="6" placeholder="Manager notes, booking details, closer handoff notes..."></textarea>
-          <div class="mt-4 flex gap-3 flex-wrap">
-            <button id="saveNotesBtn" class="btn btn-secondary" type="button">Save Notes</button>
-            <p id="modalMessage" class="text-sm text-green-700 hidden self-center"></p>
-          </div>
-        </section>
-
-        <section class="card p-5">
-          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Action History</h4>
-          <div id="historyWrap" class="space-y-3 text-sm text-slate-700"></div>
+          <h4 class="section-title">Review History</h4>
+          <div id="reviewHistoryWrap" class="space-y-3 text-sm text-slate-700"></div>
         </section>
       </div>
     </div>
@@ -303,10 +353,8 @@
       getDoc,
       getDocs,
       updateDoc,
-      addDoc,
       collection,
       query,
-      where,
       serverTimestamp,
       arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -321,62 +369,151 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const CLAIM_TYPES = [
+      { value: "airbnb_refunds", label: "Airbnb Refunds" },
+      { value: "car_finance", label: "Car Finance" },
+      { value: "caravan_holiday_park", label: "Caravan / Holiday Park" },
+      { value: "complaint_letters", label: "Complaint Letters" },
+      { value: "contact_me", label: "Contact Me" },
+      { value: "credit_card_fees", label: "Credit Card Fees" },
+      { value: "cruise_compensation", label: "Cruise Compensation" },
+      { value: "crypto_scam_recovery", label: "Crypto Scam Recovery" },
+      { value: "cyber_data_breach", label: "Cyber Data Breach" },
+      { value: "debt_recovery", label: "Debt Recovery" },
+      { value: "foam_insulation", label: "Foam Insulation" },
+      { value: "formal_escalation", label: "Formal Escalation" },
+      { value: "frozen_accounts", label: "Frozen Accounts" },
+      { value: "holiday_compensation", label: "Holiday Compensation" },
+      { value: "housing_disrepair", label: "Housing Disrepair" },
+      { value: "investment_platforms", label: "Investment Platforms" },
+      { value: "loans_and_mortgages", label: "Loans and Mortgages" },
+      { value: "medical_negligence", label: "Medical Negligence" },
+      { value: "mis_sold_bank_accounts", label: "Mis-sold Bank Accounts" },
+      { value: "mortgage_review", label: "Mortgage Review" },
+      { value: "new_build_issues", label: "New Build Issues" },
+      { value: "pension_administration", label: "Pension Administration" },
+      { value: "pension_issues", label: "Pension Issues" },
+      { value: "platform_failure", label: "Platform Failure" },
+      { value: "refund_issues", label: "Refund Issues" },
+      { value: "return_issues", label: "Return Issues" },
+      { value: "section_75_support", label: "Section 75 Support" },
+      { value: "solar_support", label: "Solar Support" },
+      { value: "spanish_mortgage", label: "Spanish Mortgage" },
+      { value: "survey_review", label: "Survey Review" },
+      { value: "timeshare", label: "Timeshare" },
+      { value: "train_delay", label: "Train Delay" }
+    ];
+
+    const CLAIM_TYPE_ALIASES = {
+      "airbnb refunds": "airbnb_refunds",
+      "car finance": "car_finance",
+      "caravan holiday park": "caravan_holiday_park",
+      "caravan/holiday park": "caravan_holiday_park",
+      "complaint letters": "complaint_letters",
+      "contact me": "contact_me",
+      "credit card fees": "credit_card_fees",
+      "cruise compensation": "cruise_compensation",
+      "crypto scam recovery": "crypto_scam_recovery",
+      "cyber data breach": "cyber_data_breach",
+      "debt recovery": "debt_recovery",
+      "foam insulation": "foam_insulation",
+      "formal escalation": "formal_escalation",
+      "frozen accounts": "frozen_accounts",
+      "holiday compensation": "holiday_compensation",
+      "housing disrepair": "housing_disrepair",
+      "investment platforms": "investment_platforms",
+      "loans and mortgages": "loans_and_mortgages",
+      "medical negligence": "medical_negligence",
+      "mis sold bank accounts": "mis_sold_bank_accounts",
+      "mis-sold bank accounts": "mis_sold_bank_accounts",
+      "mortgage review": "mortgage_review",
+      "new build issues": "new_build_issues",
+      "newbuild": "new_build_issues",
+      "pension administration": "pension_administration",
+      "pension issues": "pension_issues",
+      "platform failure": "platform_failure",
+      "refund issues": "refund_issues",
+      "return issues": "return_issues",
+      "section 75 support": "section_75_support",
+      "solar": "solar_support",
+      "solar support": "solar_support",
+      "spanish mortgage": "spanish_mortgage",
+      "survey": "survey_review",
+      "survey review": "survey_review",
+      "timeshare": "timeshare",
+      "train delay": "train_delay",
+      "mortgage": "mortgage_review"
+    };
+
     const authLoader = document.getElementById("authLoader");
-    const staffStatus = document.getElementById("staffStatus");
-    const staffEmail = document.getElementById("staffEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+
     const statusFilter = document.getElementById("statusFilter");
-    const timingFilter = document.getElementById("timingFilter");
-    const closerFilter = document.getElementById("closerFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
     const searchInput = document.getElementById("searchInput");
+    const submittedByFilter = document.getElementById("submittedByFilter");
     const refreshBtn = document.getElementById("refreshBtn");
-    const leadsBody = document.getElementById("leadsBody");
+
+    const submissionsBody = document.getElementById("submissionsBody");
     const resultsSummary = document.getElementById("resultsSummary");
-    const awaitingManagerStat = document.getElementById("awaitingManagerStat");
-    const bookedTodayStat = document.getElementById("bookedTodayStat");
-    const sentToCloserStat = document.getElementById("sentToCloserStat");
-    const qualifiedStat = document.getElementById("qualifiedStat");
-    const overdueStat = document.getElementById("overdueStat");
 
-    const leadModal = document.getElementById("leadModal");
+    const totalSubmissionsStat = document.getElementById("totalSubmissionsStat");
+    const submittedStat = document.getElementById("submittedStat");
+    const draftStat = document.getElementById("draftStat");
+    const approvedStat = document.getElementById("approvedStat");
+    const rejectedStat = document.getElementById("rejectedStat");
+    const moreInfoStat = document.getElementById("moreInfoStat");
+
+    const submissionModal = document.getElementById("submissionModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const closerSelect = document.getElementById("closerSelect");
-    const managerStatusSelect = document.getElementById("managerStatusSelect");
-    const appointmentDate = document.getElementById("appointmentDate");
-    const appointmentTime = document.getElementById("appointmentTime");
-    const notesBox = document.getElementById("notesBox");
+    const managerDecisionSelect = document.getElementById("managerDecisionSelect");
+    const managerOutcomeInput = document.getElementById("managerOutcomeInput");
+    const managerNotesBox = document.getElementById("managerNotesBox");
+    const saveManagerNotesBtn = document.getElementById("saveManagerNotesBtn");
+    const approveBtn = document.getElementById("approveBtn");
+    const moreInfoBtn = document.getElementById("moreInfoBtn");
+    const rejectBtn = document.getElementById("rejectBtn");
     const modalMessage = document.getElementById("modalMessage");
-    const markQualifiedBtn = document.getElementById("markQualifiedBtn");
-    const bookAppointmentBtn = document.getElementById("bookAppointmentBtn");
-    const sendToCloserBtn = document.getElementById("sendToCloserBtn");
-    const markConvertedBtn = document.getElementById("markConvertedBtn");
-    const markClosedBtn = document.getElementById("markClosedBtn");
-    const saveNotesBtn = document.getElementById("saveNotesBtn");
-    const saveLeadChangesBtn = document.getElementById("saveLeadChangesBtn");
-    const openIntakeBtn = document.getElementById("openIntakeBtn");
-    const openAssessmentBtn = document.getElementById("openAssessmentBtn");
-
-    const managerEmailTo = document.getElementById("managerEmailTo");
-    const managerEmailStatus = document.getElementById("managerEmailStatus");
-    const managerEmailTemplate = document.getElementById("managerEmailTemplate");
-    const copyManagerEmailBtn = document.getElementById("copyManagerEmailBtn");
-    const openManagerEmailBtn = document.getElementById("openManagerEmailBtn");
-    const markManagerEmailSentBtn = document.getElementById("markManagerEmailSentBtn");
 
     let currentUser = null;
     let currentUserData = null;
-    let allLeadAssignments = [];
-    let allClaimSubmissions = [];
-    let allUsers = [];
-    let closerUsers = [];
-    let queueItems = [];
-    let selectedLead = null;
-    let selectedAssessmentId = null;
-    let selectedSubmissionId = null;
-    let selectedSubmissionData = null;
+    let allSubmissions = [];
+    let selectedSubmission = null;
+    let selectedLinkedLead = null;
 
     function hideLoader() {
-      if (authLoader) authLoader.style.display = "none";
+      authLoader.style.display = "none";
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeText(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function normalizeClaimType(value) {
+      const raw = normalizeText(value);
+      if (!raw) return "";
+      const underscored = raw.replace(/\s+/g, "_");
+      if (CLAIM_TYPES.some(item => item.value === underscored)) return underscored;
+      if (CLAIM_TYPE_ALIASES[raw]) return CLAIM_TYPE_ALIASES[raw];
+      return underscored;
+    }
+
+    function getClaimTypeLabel(value) {
+      const normalized = normalizeClaimType(value);
+      const found = CLAIM_TYPES.find(item => item.value === normalized);
+      return found ? found.label : cleanValue(value) || "-";
+    }
+
+    function formatDateTime(timestamp) {
+      if (!timestamp) return "-";
+      if (typeof timestamp === "string") return timestamp;
+      if (timestamp?.toDate) return timestamp.toDate().toLocaleString();
+      return "-";
     }
 
     function showModalMessage(text, isError = false) {
@@ -386,337 +523,169 @@
       setTimeout(() => modalMessage.classList.add("hidden"), 3000);
     }
 
-    function todayIso() {
-      return new Date().toISOString().slice(0, 10);
+    function statusBadge(status) {
+      const val = cleanValue(status).toLowerCase();
+      if (val === "submitted") return `<span class="badge badge-amber">Submitted</span>`;
+      if (val === "draft") return `<span class="badge badge-slate">Draft</span>`;
+      if (val === "approved") return `<span class="badge badge-green">Approved</span>`;
+      if (val === "rejected") return `<span class="badge badge-red">Rejected</span>`;
+      if (val === "more_info_needed") return `<span class="badge badge-indigo">More Info Needed</span>`;
+      return `<span class="badge badge-slate">${cleanValue(status) || "Unknown"}</span>`;
     }
 
-    function safe(value) {
-      return String(value || "").trim();
+    function populateClaimTypeFilter() {
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+      CLAIM_TYPES.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.value;
+        option.textContent = item.label;
+        claimTypeFilter.appendChild(option);
+      });
     }
 
-    function formatAddress(lead) {
-      return [
-        lead.address,
-        lead.address1,
-        lead.address2,
-        lead.address3,
-        lead.address4,
-        lead.address5
-      ].filter(Boolean).join(", ") || "-";
-    }
+    function populateCampaignFilter() {
+      const currentValue = campaignFilter.value || "all";
 
-    function clientName(lead) {
-      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
-    }
+      const campaigns = [...new Set(
+        allSubmissions
+          .map(item => cleanValue(item.sourceCampaign || item.campaign || ""))
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b))
+      )];
 
-    function clientNameFromSubmission(submission) {
-      return `${submission.client?.firstName || ""} ${submission.client?.secondName || ""}`.trim() || "-";
-    }
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
 
-    function formatAction(action) {
-      const map = {
-        qualified: "Qualified",
-        awaiting_manager: "Awaiting Manager",
-        sent_to_closer: "Sent to Closer",
-        closer_appointment_booked: "Closer Appointment Booked",
-        converted: "Converted",
-        closed: "Closed",
-        notes_saved: "Notes Saved",
-        callback_required: "Callback Required",
-        send_intro_email: "Send Intro Email",
-        manager_intro_email_sent: "Manager Intro Email Sent",
-        no_answer: "No Answer",
-        voicemail: "Voicemail",
-        wrong_number: "Wrong Number",
-        not_interested: "Not Interested",
-        intake_in_progress: "Intake In Progress",
-        submitted: "Submitted",
-        in_review: "In Review",
-        assessment_complete: "Assessment Complete",
-        manager_changes_saved: "Manager Changes Saved"
-      };
-      return map[action] || action || "-";
-    }
-
-    function findUserById(uid) {
-      return allUsers.find(user => user.id === uid) || null;
-    }
-
-    function userDisplay(uid) {
-      if (!uid) return "-";
-      const user = findUserById(uid);
-      return user?.name || user?.email || uid;
-    }
-
-    function isLocked(lead) {
-      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
-    }
-
-    function statusBadgeFromStatus(status) {
-      if (status === "awaiting_manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
-      if (status === "intake_in_progress") return `<span class="badge badge-amber">Intake In Progress</span>`;
-      if (status === "submitted") return `<span class="badge badge-blue">Submitted</span>`;
-      if (status === "in_review") return `<span class="badge badge-indigo">In Review</span>`;
-      if (status === "assessment_complete") return `<span class="badge badge-green">Assessment Complete</span>`;
-      if (status === "qualified") return `<span class="badge badge-green">Qualified</span>`;
-      if (status === "sent_to_closer") return `<span class="badge badge-indigo">Sent to Closer</span>`;
-      if (status === "converted") return `<span class="badge badge-green">Converted</span>`;
-      if (status === "closed") return `<span class="badge badge-red">Closed</span>`;
-      return `<span class="badge badge-slate">${status || "-"}</span>`;
-    }
-
-    function statusBadge(lead) {
-      const status = isLocked(lead) ? "closed" : (lead.leadStatus || "new");
-      return statusBadgeFromStatus(status);
-    }
-
-    function getAppointmentText(lead) {
-      const date = lead.closerAppointmentDate || "";
-      const time = lead.closerAppointmentTime || "";
-      return date ? `${date} ${time}`.trim() : "-";
-    }
-
-    function isOverdueManagerLead(lead) {
-      if (lead.leadStatus !== "awaiting_manager") return false;
-      const sentAt = lead.sentToManagerAt?.toDate ? lead.sentToManagerAt.toDate().getTime() : 0;
-      if (!sentAt) return false;
-      return Date.now() - sentAt > 24 * 60 * 60 * 1000;
-    }
-
-    function getLeadEmail(lead) {
-      return safe(
-        lead.email ||
-        selectedSubmissionData?.client?.email ||
-        ""
-      );
-    }
-
-    function getLeadMobile(lead) {
-      return safe(
-        lead.mobile ||
-        selectedSubmissionData?.client?.mobile ||
-        ""
-      );
-    }
-
-    function getLeadTelephone(lead) {
-      return safe(
-        lead.telephone ||
-        selectedSubmissionData?.client?.landline ||
-        ""
-      );
-    }
-
-    function buildManagerEmailTemplate(lead) {
-      const name = clientName(lead);
-      const claimType = safe(lead.claimType || lead.type || "your claim");
-      return `Subject: Quaerens follow-up regarding ${claimType}
-Dear ${name || "Client"},
-Thank you for your enquiry.
-I am following up regarding your potential ${claimType}. We can review the matter further and guide you on the next step in the process.
-If needed, we may ask for further details or documents so we can move your matter forward properly.
-Please reply to this email or speak with us at the arranged follow-up time.
-Kind regards,
-${currentUserData?.name || "Quaerens Manager"}
-Quaerens`;
-    }
-
-    function populateCloserFilters() {
-      const currentCloserFilter = closerFilter.value || "all";
-      const currentModalCloser = closerSelect.value || "";
-
-      closerFilter.innerHTML = `<option value="all">All closers</option>`;
-      closerSelect.innerHTML = `<option value="">Select closer</option>`;
-
-      closerUsers.forEach(user => {
-        const option1 = document.createElement("option");
-        option1.value = user.id;
-        option1.textContent = user.name || user.email || user.id;
-        closerFilter.appendChild(option1);
-
-        const option2 = document.createElement("option");
-        option2.value = user.id;
-        option2.textContent = user.name || user.email || user.id;
-        closerSelect.appendChild(option2);
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
       });
 
-      if ([...closerFilter.options].some(o => o.value === currentCloserFilter)) {
-        closerFilter.value = currentCloserFilter;
-      }
-      if ([...closerSelect.options].some(o => o.value === currentModalCloser)) {
-        closerSelect.value = currentModalCloser;
+      if ([...campaignFilter.options].some(option => option.value === currentValue)) {
+        campaignFilter.value = currentValue;
       }
     }
 
     async function checkManagerAccess(user) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-        if (!userSnap.exists()) {
-          alert("No staff profile found for this account.");
-          window.location.href = "/login.html";
-          return false;
-        }
-
-        const userData = userSnap.data();
-        if (userData.role !== "manager") {
-          alert("You do not have permission to access the manager panel.");
-          window.location.href = "/login.html";
-          return false;
-        }
-
-        currentUser = user;
-        currentUserData = userData;
-        staffStatus.textContent = "Logged in as Manager";
-        staffEmail.textContent = user.email || "";
-        logoutBtn.classList.remove("hidden");
-        return true;
-      } catch (error) {
-        console.error("Manager access check failed:", error);
-        alert("There was a problem checking access.");
+      if (!userSnap.exists()) {
+        alert("No manager profile found for this account.");
         window.location.href = "/login.html";
         return false;
       }
+
+      const userData = userSnap.data();
+
+      if (userData.role !== "manager") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      logoutBtn.classList.remove("hidden");
+      return true;
     }
 
-    async function loadAllData() {
+    async function loadSubmissions() {
       try {
-        const [leadSnap, userSnap, submissionSnap] = await Promise.all([
-          getDocs(collection(db, "leadAssignments")),
-          getDocs(collection(db, "users")),
-          getDocs(collection(db, "claimSubmissions"))
-        ]);
+        const snap = await getDocs(query(collection(db, "claimSubmissions")));
+        allSubmissions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        allLeadAssignments = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allUsers = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allClaimSubmissions = submissionSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        closerUsers = allUsers.filter(user => user.role === "closer");
+        allSubmissions.sort((a, b) => {
+          const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+          const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+          return bTime - aTime;
+        });
 
-        buildQueueItems();
-        populateCloserFilters();
+        populateCampaignFilter();
         renderStats();
-        renderQueue();
+        renderSubmissions();
       } catch (error) {
-        console.error("Failed to load manager data:", error);
-        resultsSummary.textContent = "Could not load leads.";
-        leadsBody.innerHTML = `
-          <tr>
-            <td colspan="9" class="p-6 text-center text-red-600">Error loading leads.</td>
-          </tr>
-        `;
+        console.error("Failed to load submissions:", error);
+        resultsSummary.textContent = "Could not load submissions.";
       }
     }
 
-    function buildQueueItems() {
-      const queue = [];
-
-      allLeadAssignments.forEach(lead => {
-        queue.push({
-          sourceType: "lead",
-          id: lead.id,
-          record: lead,
-          status: isLocked(lead) ? "closed" : (lead.leadStatus || "new"),
-          searchName: clientName(lead),
-          telephone: lead.telephone || "",
-          mobile: lead.mobile || "",
-          email: lead.email || "",
-          postcode: lead.postcode || "",
-          claimType: lead.claimType || lead.type || "",
-          listerUid: lead.assignedToUid || "",
-          closerUid: lead.closerUid || "",
-          appointmentDate: lead.closerAppointmentDate || "",
-          appointmentTime: lead.closerAppointmentTime || "",
-          updatedAtValue: lead.lastUpdatedAt?.toDate ? lead.lastUpdatedAt.toDate().getTime() : 0
-        });
-      });
-
-      allClaimSubmissions.forEach(submission => {
-        const linkedLead = allLeadAssignments.find(lead =>
-          lead.convertedToSubmissionId === submission.id ||
-          lead.submissionId === submission.id ||
-          lead.claimSubmissionId === submission.id ||
-          lead.intakeSubmissionId === submission.id
-        );
-
-        if (!linkedLead) {
-          queue.push({
-            sourceType: "submission",
-            id: submission.id,
-            record: submission,
-            status: submission.status || "submitted",
-            searchName: clientNameFromSubmission(submission),
-            telephone: submission.client?.landline || "",
-            mobile: submission.client?.mobile || "",
-            email: submission.client?.email || "",
-            postcode: submission.client?.postcode || "",
-            claimType: submission.claimType || "",
-            listerUid: submission.submittedBy?.uid || "",
-            closerUid: "",
-            appointmentDate: "",
-            appointmentTime: "",
-            updatedAtValue: submission.reviewedAt?.toDate
-              ? submission.reviewedAt.toDate().getTime()
-              : (submission.createdAt?.toDate ? submission.createdAt.toDate().getTime() : 0)
-          });
-        }
-      });
-
-      queueItems = queue;
-    }
-
     function renderStats() {
-      const today = todayIso();
-      awaitingManagerStat.textContent = String(queueItems.filter(x => x.status === "awaiting_manager" || x.status === "submitted" || x.status === "in_review").length);
-      bookedTodayStat.textContent = String(queueItems.filter(x => x.appointmentDate === today).length);
-      sentToCloserStat.textContent = String(queueItems.filter(x => x.status === "sent_to_closer").length);
-      qualifiedStat.textContent = String(queueItems.filter(x => x.status === "qualified" || x.status === "assessment_complete").length);
-      overdueStat.textContent = String(allLeadAssignments.filter(x => isOverdueManagerLead(x)).length);
+      totalSubmissionsStat.textContent = String(allSubmissions.length);
+      submittedStat.textContent = String(allSubmissions.filter(x => x.status === "submitted").length);
+      draftStat.textContent = String(allSubmissions.filter(x => x.status === "draft").length);
+      approvedStat.textContent = String(allSubmissions.filter(x => x.managerDecision === "approved" || x.status === "approved").length);
+      rejectedStat.textContent = String(allSubmissions.filter(x => x.managerDecision === "rejected" || x.status === "rejected").length);
+      moreInfoStat.textContent = String(allSubmissions.filter(x => x.managerDecision === "more_info_needed" || x.status === "more_info_needed").length);
     }
 
-    function getFilteredQueue() {
-      const selectedStatus = statusFilter.value;
-      const selectedTiming = timingFilter.value;
-      const selectedCloser = closerFilter.value;
-      const term = searchInput.value.trim().toLowerCase();
-      const today = todayIso();
+    function getClientName(submission) {
+      const client = submission.client || {};
+      return `${client.firstName || ""} ${client.secondName || ""}`.trim() || "-";
+    }
 
-      return queueItems.filter(item => {
-        const matchesStatus = selectedStatus === "all" || item.status === selectedStatus;
-        const matchesTiming =
-          selectedTiming === "all" ||
-          (selectedTiming === "today" && item.appointmentDate === today) ||
-          (selectedTiming === "future" && item.appointmentDate && item.appointmentDate > today) ||
-          (selectedTiming === "overdue" && item.appointmentDate && item.appointmentDate < today) ||
-          (selectedTiming === "none" && !item.appointmentDate);
+    function getClientContact(submission) {
+      const client = submission.client || {};
+      return client.mobile || client.landline || client.email || "-";
+    }
 
-        const matchesCloser =
-          selectedCloser === "all" ||
-          item.closerUid === selectedCloser;
+    function getEffectiveStatus(submission) {
+      return cleanValue(submission.managerDecision || submission.status || "draft");
+    }
 
-        const haystack = `
-          ${item.searchName || ""}
-          ${item.telephone || ""}
-          ${item.mobile || ""}
-          ${item.email || ""}
-          ${item.postcode || ""}
-          ${item.claimType || ""}
-          ${item.status || ""}
+    function getFilteredSubmissions() {
+      const status = statusFilter.value;
+      const claimType = claimTypeFilter.value;
+      const campaign = campaignFilter.value;
+      const search = searchInput.value.trim().toLowerCase();
+      const submittedBy = submittedByFilter.value.trim().toLowerCase();
+
+      return allSubmissions.filter(item => {
+        const client = item.client || {};
+        const effectiveStatus = getEffectiveStatus(item);
+        const normalizedClaimType = normalizeClaimType(item.claimType);
+
+        const matchesStatus = status === "all" || effectiveStatus === status;
+        const matchesClaimType = claimType === "all" || normalizedClaimType === normalizeClaimType(claimType);
+        const matchesCampaign = campaign === "all" || cleanValue(item.sourceCampaign || item.campaign) === campaign;
+
+        const submitterText = `
+          ${item.submittedBy?.name || ""}
+          ${item.submittedBy?.email || ""}
         `.toLowerCase();
 
-        const matchesSearch = !term || haystack.includes(term);
-        return matchesStatus && matchesTiming && matchesCloser && matchesSearch;
-      }).sort((a, b) => b.updatedAtValue - a.updatedAtValue);
+        const haystack = `
+          ${item.id}
+          ${item.sourceLeadId || ""}
+          ${client.firstName || ""}
+          ${client.secondName || ""}
+          ${client.mobile || ""}
+          ${client.landline || ""}
+          ${client.email || ""}
+          ${client.postcode || ""}
+          ${client.address || ""}
+          ${item.claimType || ""}
+          ${item.sourceCampaign || ""}
+          ${item.submittedBy?.name || ""}
+          ${item.submittedBy?.email || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !search || haystack.includes(search);
+        const matchesSubmitter = !submittedBy || submitterText.includes(submittedBy);
+
+        return matchesStatus && matchesClaimType && matchesCampaign && matchesSearch && matchesSubmitter;
+      });
     }
 
-    function renderQueue() {
-      const filtered = getFilteredQueue();
-      leadsBody.innerHTML = "";
+    function renderSubmissions() {
+      const filtered = getFilteredSubmissions();
+      submissionsBody.innerHTML = "";
 
       if (!filtered.length) {
-        leadsBody.innerHTML = `
+        submissionsBody.innerHTML = `
           <tr>
-            <td colspan="9" class="p-6 text-center text-slate-500">No manager leads found.</td>
+            <td colspan="8" class="p-6 text-center text-slate-500">No submissions found.</td>
           </tr>
         `;
       } else {
@@ -724,73 +693,103 @@ Quaerens`;
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
 
-          let actionHtml = "";
-          if (item.sourceType === "submission") {
-            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.id}">Open</button>`;
-          } else if (item.status === "intake_in_progress" && item.record.convertedToSubmissionId) {
-            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-submission="${item.record.convertedToSubmissionId}">Open</button>`;
-          } else if (item.status === "intake_in_progress") {
-            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-intake-portal="${item.id}">Open</button>`;
-          } else {
-            actionHtml = `<button class="text-blue-600 font-semibold hover:underline" data-open-lead="${item.id}">Open</button>`;
-          }
+          const client = item.client || {};
 
           tr.innerHTML = `
-            <td class="p-3">
-              <div class="font-semibold text-slate-800">${item.searchName || "-"}</div>
-              <div class="text-xs text-slate-500">${item.claimType || "-"}</div>
+            <td class="p-3 align-top cell-wrap">
+              <div class="font-bold text-slate-800">${getClientName(item)}</div>
+              <div class="text-xs text-slate-500 mt-1">${client.postcode || "-"}</div>
             </td>
-            <td class="p-3">${item.telephone || "-"}</td>
-            <td class="p-3">${item.mobile || "-"}</td>
-            <td class="p-3">${item.email || "-"}</td>
-            <td class="p-3">${userDisplay(item.listerUid)}</td>
-            <td class="p-3">${statusBadgeFromStatus(item.status)}</td>
-            <td class="p-3">${item.appointmentDate ? `${item.appointmentDate} ${item.appointmentTime || ""}`.trim() : "-"}</td>
-            <td class="p-3">${userDisplay(item.closerUid)}</td>
-            <td class="p-3">${actionHtml}</td>
+            <td class="p-3 align-top cell-wrap">
+              <div>${client.mobile || client.landline || "-"}</div>
+              <div class="text-slate-500 mt-1">${client.email || "-"}</div>
+            </td>
+            <td class="p-3 align-top cell-wrap">${getClaimTypeLabel(item.claimType)}</td>
+            <td class="p-3 align-top cell-wrap">
+              <div>${cleanValue(item.sourceCampaign) || "-"}</div>
+              <div class="text-xs text-slate-500 mt-1">${item.sourceLeadId ? `Lead: ${item.sourceLeadId}` : "No linked lead"}</div>
+            </td>
+            <td class="p-3 align-top cell-wrap">${statusBadge(getEffectiveStatus(item))}</td>
+            <td class="p-3 align-top cell-wrap">
+              <div>${item.submittedBy?.name || "-"}</div>
+              <div class="text-xs text-slate-500 mt-1">${item.submittedBy?.email || "-"}</div>
+            </td>
+            <td class="p-3 align-top cell-wrap">${formatDateTime(item.updatedAt || item.createdAt)}</td>
+            <td class="p-3 align-top">
+              <button class="text-blue-600 font-bold hover:underline" type="button" data-open-submission="${item.id}">
+                Open
+              </button>
+            </td>
           `;
 
-          leadsBody.appendChild(tr);
+          submissionsBody.appendChild(tr);
         });
       }
 
-      resultsSummary.textContent = `${filtered.length} lead(s) shown`;
-
-      document.querySelectorAll("[data-open-lead]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          openLead(btn.getAttribute("data-open-lead"));
-        });
-      });
+      resultsSummary.textContent = `${filtered.length} submission(s) shown`;
 
       document.querySelectorAll("[data-open-submission]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const submissionId = btn.getAttribute("data-open-submission");
-          if (!submissionId) {
-            alert("No submission ID found for this row.");
-            return;
-          }
-          window.location.href = `/intake-detail.html?id=${submissionId}`;
-        });
-      });
-
-      document.querySelectorAll("[data-open-intake-portal]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const leadId = btn.getAttribute("data-open-intake-portal");
-          if (!leadId) {
-            alert("No lead ID found for this row.");
-            return;
-          }
-          window.location.href = `/client-intake-portal.html?leadId=${leadId}`;
-        });
+        btn.addEventListener("click", () => openSubmission(btn.getAttribute("data-open-submission")));
       });
     }
 
-    function renderHistory(history) {
-      const wrap = document.getElementById("historyWrap");
+    async function loadLinkedLead(leadId) {
+      if (!leadId) {
+        selectedLinkedLead = null;
+        return;
+      }
+
+      try {
+        const snap = await getDoc(doc(db, "leadAssignments", leadId));
+        if (snap.exists()) {
+          selectedLinkedLead = { id: snap.id, ...snap.data() };
+          return;
+        }
+
+        selectedLinkedLead = null;
+      } catch (error) {
+        console.error("Failed to load linked lead:", error);
+        selectedLinkedLead = null;
+      }
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = cleanValue(value) || "-";
+    }
+
+    function renderLinkedLead() {
+      const wrap = document.getElementById("linkedLeadWrap");
       wrap.innerHTML = "";
 
+      if (!selectedLinkedLead) {
+        wrap.innerHTML = `<div class="text-slate-500">No linked lead information found.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-item"><span>Lead ID:</span> <span>${selectedLinkedLead.id}</span></div>
+          <div class="detail-item"><span>Status:</span> <span>${selectedLinkedLead.leadStatus || "-"}</span></div>
+          <div class="detail-item"><span>Client:</span> <span>${selectedLinkedLead.forename || ""} ${selectedLinkedLead.surname || ""}</span></div>
+          <div class="detail-item"><span>Campaign:</span> <span>${selectedLinkedLead.campaign || "-"}</span></div>
+          <div class="detail-item"><span>Claim Type:</span> <span>${getClaimTypeLabel(selectedLinkedLead.claimType)}</span></div>
+          <div class="detail-item"><span>Telephone:</span> <span>${selectedLinkedLead.telephone || "-"}</span></div>
+          <div class="detail-item"><span>Mobile:</span> <span>${selectedLinkedLead.mobile || "-"}</span></div>
+          <div class="detail-item"><span>Email:</span> <span>${selectedLinkedLead.email || "-"}</span></div>
+          <div class="detail-item lg:col-span-2"><span>Notes:</span> <span>${selectedLinkedLead.notes || "-"}</span></div>
+        </div>
+      `;
+    }
+
+    function renderReviewHistory(submission) {
+      const wrap = document.getElementById("reviewHistoryWrap");
+      wrap.innerHTML = "";
+
+      const history = submission.managerHistory || [];
+
       if (!history.length) {
-        wrap.innerHTML = `<div class="text-slate-500">No actions recorded yet.</div>`;
+        wrap.innerHTML = `<div class="text-slate-500">No manager review actions recorded yet.</div>`;
         return;
       }
 
@@ -798,454 +797,255 @@ Quaerens`;
         const div = document.createElement("div");
         div.className = "border border-slate-200 rounded-xl p-3";
         div.innerHTML = `
-          <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
+          <div class="font-semibold text-slate-800">${item.action || "Review Action"}</div>
           <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
-          ${item.notes ? `<div class="mt-2 text-slate-700">${item.notes}</div>` : ""}
+          ${item.outcome ? `<div class="mt-2"><span class="font-semibold text-blue-900">Outcome:</span> ${item.outcome}</div>` : ""}
+          ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
         `;
         wrap.appendChild(div);
       });
     }
 
-    async function findAssessmentForLead(leadId) {
-      const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
-      const snap = await getDocs(q);
-      if (snap.empty) return null;
+    function addDetailBlock(title, obj) {
+      const wrap = document.getElementById("claimDetailsWrap");
+      const block = document.createElement("div");
+      block.className = "detail-block";
 
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      docs.sort((a, b) => {
-        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
-        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
-        return bTime - aTime;
+      const entries = Object.entries(obj || {}).filter(([, value]) => {
+        return cleanValue(value) !== "";
       });
 
-      return docs[0];
+      if (!entries.length) return;
+
+      block.innerHTML = `
+        <div class="font-bold text-blue-900 mb-3">${title}</div>
+        <div class="detail-grid">
+          ${entries.map(([key, value]) => `
+            <div class="detail-item">
+              <span>${formatFieldLabel(key)}:</span>
+              <span>${escapeHtml(String(value))}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      wrap.appendChild(block);
     }
 
-    async function loadLinkedSubmissionForLead(lead) {
-      selectedSubmissionData = null;
-      selectedSubmissionId = lead.convertedToSubmissionId || lead.submissionId || lead.claimSubmissionId || lead.intakeSubmissionId || "";
-      if (!selectedSubmissionId) return null;
-
-      try {
-        const snap = await getDoc(doc(db, "claimSubmissions", selectedSubmissionId));
-        if (snap.exists()) {
-          selectedSubmissionData = { id: snap.id, ...snap.data() };
-          return selectedSubmissionData;
-        }
-      } catch (error) {
-        console.error("Failed loading linked submission:", error);
-      }
-
-      return null;
+    function formatFieldLabel(key) {
+      return key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/_/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, chr => chr.toUpperCase());
     }
 
-    function renderManagerEmailSection() {
-      if (!selectedLead) return;
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
 
-      const email = getLeadEmail(selectedLead);
-      managerEmailTo.value = email;
-      managerEmailTemplate.value = selectedLead.managerIntroEmailBody || selectedLead.introEmailBody || buildManagerEmailTemplate(selectedLead);
+    function renderClaimDetails(submission) {
+      const wrap = document.getElementById("claimDetailsWrap");
+      wrap.innerHTML = "";
 
-      if (selectedLead.managerIntroEmailSent || selectedLead.introEmailSent) {
-        managerEmailStatus.innerHTML = `<span class="badge badge-green">Sent</span>`;
+      const type = normalizeClaimType(submission.claimType);
+
+      if (type === "solar_support") {
+        addDetailBlock("Product One", submission.product1 || {});
+        addDetailBlock("Product Two", submission.product2 || {});
+      } else if (type === "mortgage_review" || type === "loans_and_mortgages" || type === "spanish_mortgage") {
+        addDetailBlock("Mortgage Details", submission.mortgageDetails || {});
+      } else if (type === "survey_review") {
+        addDetailBlock("Survey Details", submission.surveyDetails || {});
+      } else if (type === "new_build_issues") {
+        addDetailBlock("New Build Details", submission.newbuildDetails || {});
       } else {
-        managerEmailStatus.innerHTML = `<span class="badge badge-amber">Not Sent</span>`;
+        const fallback = { ...submission };
+        delete fallback.client;
+        delete fallback.submittedBy;
+        delete fallback.createdAt;
+        delete fallback.updatedAt;
+        delete fallback.managerHistory;
+        delete fallback.managerNotes;
+        delete fallback.managerDecision;
+        delete fallback.managerOutcome;
+        addDetailBlock("Submission Fields", fallback);
       }
 
-      openManagerEmailBtn.disabled = !email;
-      markManagerEmailSentBtn.disabled = !email;
+      if (!wrap.innerHTML.trim()) {
+        wrap.innerHTML = `<div class="text-slate-500">No claim details available for this submission.</div>`;
+      }
     }
 
-    async function openLead(leadId) {
-      selectedLead = allLeadAssignments.find(x => x.id === leadId);
-      selectedAssessmentId = null;
-      selectedSubmissionId = "";
-      selectedSubmissionData = null;
+    async function openSubmission(submissionId) {
+      selectedSubmission = allSubmissions.find(x => x.id === submissionId);
+      if (!selectedSubmission) return;
 
-      if (!selectedLead) {
-        alert("Lead record not found.");
-        return;
-      }
+      await loadLinkedLead(selectedSubmission.sourceLeadId || "");
 
-      await loadLinkedSubmissionForLead(selectedLead);
-      const assessment = await findAssessmentForLead(selectedLead.id);
-      selectedAssessmentId = assessment?.id || selectedLead.assessmentId || "";
+      const client = selectedSubmission.client || {};
 
-      document.getElementById("modalLeadTitle").textContent =
-        `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Manager Lead Review";
-      document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
-      document.getElementById("lead_name").textContent =
-        `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
-      document.getElementById("lead_telephone").textContent = getLeadTelephone(selectedLead) || "-";
-      document.getElementById("lead_mobile").textContent = getLeadMobile(selectedLead) || "-";
-      document.getElementById("lead_email").textContent = getLeadEmail(selectedLead) || "-";
-      document.getElementById("lead_address").textContent = formatAddress(selectedLead);
-      document.getElementById("lead_postcode").textContent = selectedLead.postcode || selectedSubmissionData?.client?.postcode || "-";
-      document.getElementById("lead_campaign").textContent = selectedLead.campaign || "-";
-      document.getElementById("lead_claimType").textContent = selectedLead.claimType || selectedLead.type || selectedSubmissionData?.claimType || "-";
-      document.getElementById("lead_lister").textContent = userDisplay(selectedLead.assignedToUid);
-      document.getElementById("lead_status").innerHTML = statusBadge(selectedLead);
-      document.getElementById("lead_lastAction").textContent = formatAction(selectedLead.lastAction);
-      document.getElementById("lead_closer").textContent = userDisplay(selectedLead.closerUid);
-      document.getElementById("lead_appointment").textContent = getAppointmentText(selectedLead);
-      document.getElementById("lead_submissionId").textContent = selectedSubmissionId || "-";
-      document.getElementById("lead_assessmentId").textContent = selectedAssessmentId || "-";
+      document.getElementById("modalTitle").textContent = `${getClientName(selectedSubmission)} — Review`;
+      document.getElementById("modalSubtitle").textContent = `Submission ID: ${selectedSubmission.id}`;
 
-      closerSelect.value = selectedLead.closerUid || "";
-      managerStatusSelect.value = isLocked(selectedLead) ? "closed" : (selectedLead.leadStatus || "awaiting_manager");
-      appointmentDate.value = selectedLead.closerAppointmentDate || "";
-      appointmentTime.value = selectedLead.closerAppointmentTime || "";
-      notesBox.value = selectedLead.managerNotes || selectedLead.notes || "";
+      setText("summary_submissionId", selectedSubmission.id);
+      document.getElementById("summary_status").innerHTML = statusBadge(getEffectiveStatus(selectedSubmission));
+      setText("summary_claimType", getClaimTypeLabel(selectedSubmission.claimType));
+      setText("summary_campaign", selectedSubmission.sourceCampaign || selectedSubmission.campaign || "-");
+      setText("summary_leadId", selectedSubmission.sourceLeadId || "-");
+      setText("summary_submittedBy", `${selectedSubmission.submittedBy?.name || "-"} ${selectedSubmission.submittedBy?.email ? `(${selectedSubmission.submittedBy.email})` : ""}`);
+      setText("summary_createdAt", formatDateTime(selectedSubmission.createdAt));
+      setText("summary_updatedAt", formatDateTime(selectedSubmission.updatedAt));
 
-      if (selectedSubmissionId) {
-        openIntakeBtn.href = `/intake-detail.html?id=${selectedSubmissionId}`;
-        openIntakeBtn.classList.remove("hidden");
-      } else {
-        openIntakeBtn.href = "#";
-        openIntakeBtn.classList.add("hidden");
-      }
+      setText("client_firstName", client.firstName);
+      setText("client_secondName", client.secondName);
+      setText("client_firstName2", client.firstName2);
+      setText("client_secondName2", client.secondName2);
+      setText("client_landline", client.landline);
+      setText("client_mobile", client.mobile);
+      setText("client_email", client.email);
+      setText("client_postcode", client.postcode);
+      setText("client_address", client.address);
 
-      if (selectedAssessmentId) {
-        openAssessmentBtn.href = `/manager-assessment-detail.html?id=${selectedAssessmentId}`;
-        openAssessmentBtn.textContent = "Open Assessment";
-        openAssessmentBtn.classList.remove("hidden");
-      } else if (selectedSubmissionId) {
-        openAssessmentBtn.href = `/intake-detail.html?id=${selectedSubmissionId}`;
-        openAssessmentBtn.textContent = "Create Assessment";
-        openAssessmentBtn.classList.remove("hidden");
-      } else {
-        openAssessmentBtn.href = "#";
-        openAssessmentBtn.classList.add("hidden");
-      }
+      managerDecisionSelect.value = cleanValue(selectedSubmission.managerDecision);
+      managerOutcomeInput.value = cleanValue(selectedSubmission.managerOutcome);
+      managerNotesBox.value = cleanValue(selectedSubmission.managerNotes);
 
-      renderManagerEmailSection();
-      renderHistory(selectedLead.actionHistory || []);
-      leadModal.classList.remove("hidden");
+      renderLinkedLead();
+      renderClaimDetails(selectedSubmission);
+      renderReviewHistory(selectedSubmission);
+
+      submissionModal.classList.remove("hidden");
     }
 
-    async function refreshSelectedLead() {
-      await loadAllData();
+    async function refreshSelectedSubmission() {
+      await loadSubmissions();
 
-      if (selectedLead) {
-        const updated = allLeadAssignments.find(x => x.id === selectedLead.id);
+      if (selectedSubmission) {
+        const updated = allSubmissions.find(x => x.id === selectedSubmission.id);
         if (updated) {
-          selectedLead = updated;
-          await openLead(updated.id);
+          selectedSubmission = updated;
+          await openSubmission(updated.id);
         } else {
-          leadModal.classList.add("hidden");
+          submissionModal.classList.add("hidden");
+          selectedSubmission = null;
         }
       }
     }
 
-    async function updateLead(patch, historyAction, notes = "") {
-      if (!selectedLead) return;
+    async function updateSubmissionReview(decision = "", actionLabel = "review_saved") {
+      if (!selectedSubmission) return;
+
+      const notes = managerNotesBox.value.trim();
+      const outcome = managerOutcomeInput.value.trim();
+      const finalDecision = decision || managerDecisionSelect.value || "";
 
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          ...patch,
-          lastUpdatedAt: serverTimestamp(),
-          actionHistory: arrayUnion({
-            action: historyAction,
+        const patch = {
+          managerNotes: notes,
+          managerOutcome: outcome,
+          updatedAt: serverTimestamp(),
+          managerLastReviewedAt: serverTimestamp(),
+          managerLastReviewedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          },
+          managerHistory: arrayUnion({
+            action: actionLabel,
+            decision: finalDecision || "",
+            outcome,
+            notes,
             byUid: currentUser.uid,
             byName: currentUserData.name || "",
-            at: new Date().toISOString(),
-            notes
+            at: new Date().toISOString()
           })
-        });
+        };
 
-        await refreshSelectedLead();
-        showModalMessage("Lead updated successfully.");
+        if (finalDecision) {
+          patch.managerDecision = finalDecision;
+          patch.status = finalDecision;
+        }
+
+        await updateDoc(doc(db, "claimSubmissions", selectedSubmission.id), patch);
+
+        if (selectedSubmission.sourceLeadId) {
+          const leadPatch = {
+            managerDecision: finalDecision || selectedSubmission.managerDecision || "",
+            managerOutcome: outcome,
+            managerNotes: notes,
+            managerReviewedAt: serverTimestamp(),
+            managerReviewedByUid: currentUser.uid,
+            managerReviewedByName: currentUserData.name || "",
+            lastUpdatedAt: serverTimestamp()
+          };
+
+          if (finalDecision === "approved") {
+            leadPatch.leadStatus = "converted";
+            leadPatch.lastAction = "manager_approved";
+          } else if (finalDecision === "rejected") {
+            leadPatch.leadStatus = "closed";
+            leadPatch.closed = true;
+            leadPatch.usable = false;
+            leadPatch.callbackRequired = false;
+            leadPatch.introEmailNeeded = false;
+            leadPatch.lastAction = "manager_rejected";
+          } else if (finalDecision === "more_info_needed") {
+            leadPatch.leadStatus = "awaiting_manager";
+            leadPatch.lastAction = "manager_more_info_needed";
+          }
+
+          await updateDoc(doc(db, "leadAssignments", selectedSubmission.sourceLeadId), leadPatch);
+        }
+
+        await refreshSelectedSubmission();
+        showModalMessage("Manager review updated.");
       } catch (error) {
-        console.error("Lead update failed:", error);
-        showModalMessage("Could not update lead.", true);
+        console.error("Failed to update review:", error);
+        showModalMessage("Could not update review.", true);
       }
     }
 
-    async function createOrUpdateCloserAssignment(lead, mode = "send") {
-      const closerUid = closerSelect.value || lead.closerUid || "";
-      const closerUser = findUserById(closerUid);
-
-      if (!closerUid || !closerUser) {
-        throw new Error("Please choose a closer first.");
-      }
-
-      const client = selectedSubmissionData?.client || {};
-      const payload = {
-        sourceLeadId: lead.id,
-        leadAssignmentId: lead.id,
-        assessmentId: selectedAssessmentId || lead.assessmentId || "",
-        submissionId: selectedSubmissionId || "",
-        claimType: lead.claimType || lead.type || "",
-        closer: {
-          uid: closerUser.id,
-          name: closerUser.name || "",
-          email: closerUser.email || ""
-        },
-        client: {
-          firstName: client.firstName || lead.forename || "",
-          secondName: client.secondName || lead.surname || "",
-          firstName2: client.firstName2 || "",
-          secondName2: client.secondName2 || "",
-          landline: client.landline || lead.telephone || "",
-          mobile: client.mobile || lead.mobile || lead.telephone || "",
-          email: client.email || lead.email || "",
-          address: client.address || formatAddress(lead)
-        },
-        appointment: {
-          date: appointmentDate.value || "",
-          time: appointmentTime.value || ""
-        },
-        status: mode === "book" ? "Appointment Booked" : "Assigned",
-        outcome: "",
-        assessmentSummary: lead.assessmentSummary || lead.generatedAssessmentText || "",
-        generatedAssessmentText: lead.generatedAssessmentText || lead.assessmentSummary || "",
-        managerNotes: notesBox.value || lead.managerNotes || "",
-        handoffNotes: notesBox.value || lead.managerNotes || "",
-        product1: selectedSubmissionData?.product1 || {},
-        product2: selectedSubmissionData?.product2 || {},
-        assignedBy: {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || ""
-        },
-        updatedAt: serverTimestamp(),
-        lastUpdatedAt: serverTimestamp(),
-        lastUpdatedBy: {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || ""
-        }
-      };
-
-      let existingDocId = null;
-
-      const existingBySourceLead = await getDocs(
-        query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id))
-      );
-
-      if (!existingBySourceLead.empty) {
-        existingDocId = existingBySourceLead.docs[0].id;
-      } else {
-        const existingByLeadAssignment = await getDocs(
-          query(collection(db, "closerAssignments"), where("leadAssignmentId", "==", lead.id))
-        );
-        if (!existingByLeadAssignment.empty) {
-          existingDocId = existingByLeadAssignment.docs[0].id;
-        }
-      }
-
-      if (existingDocId) {
-        await updateDoc(doc(db, "closerAssignments", existingDocId), payload);
-      } else {
-        await addDoc(collection(db, "closerAssignments"), {
-          ...payload,
-          createdAt: serverTimestamp()
-        });
-      }
-    }
-
-    copyManagerEmailBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(managerEmailTemplate.value || "");
-        showModalMessage("Email copied.");
-      } catch (error) {
-        console.error(error);
-        showModalMessage("Could not copy email.", true);
-      }
+    saveManagerNotesBtn.addEventListener("click", async () => {
+      await updateSubmissionReview("", "review_saved");
     });
 
-    openManagerEmailBtn.addEventListener("click", () => {
-      if (!selectedLead) return;
-
-      const email = getLeadEmail(selectedLead);
-      if (!email) {
-        showModalMessage("No client email available for this lead.", true);
-        return;
-      }
-
-      const lines = (managerEmailTemplate.value || "").split("\n");
-      let subject = "Quaerens Follow-Up";
-      let body = managerEmailTemplate.value || "";
-
-      if (lines[0]?.toLowerCase().startsWith("subject:")) {
-        subject = lines[0].replace(/^subject:/i, "").trim() || subject;
-        body = lines.slice(1).join("\n").trim();
-      }
-
-      const href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = href;
+    approveBtn.addEventListener("click", async () => {
+      managerDecisionSelect.value = "approved";
+      await updateSubmissionReview("approved", "approved");
     });
 
-    markManagerEmailSentBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      const email = getLeadEmail(selectedLead);
-      if (!email) {
-        showModalMessage("No client email available for this lead.", true);
-        return;
-      }
-
-      await updateLead({
-        email,
-        managerIntroEmailBody: managerEmailTemplate.value || "",
-        managerIntroEmailSent: true,
-        managerIntroEmailSentAt: serverTimestamp(),
-        introEmailNeeded: true,
-        introEmailSent: true,
-        introEmailSentAt: serverTimestamp(),
-        lastAction: "manager_intro_email_sent"
-      }, "manager_intro_email_sent", "Manager marked intro email as sent.");
+    moreInfoBtn.addEventListener("click", async () => {
+      managerDecisionSelect.value = "more_info_needed";
+      await updateSubmissionReview("more_info_needed", "more_info_needed");
     });
 
-    saveLeadChangesBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: managerStatusSelect.value || selectedLead.leadStatus || "awaiting_manager",
-        closerUid: closerSelect.value || "",
-        closerAppointmentDate: appointmentDate.value || "",
-        closerAppointmentTime: appointmentTime.value || "",
-        managerNotes: notesBox.value || "",
-        managerIntroEmailBody: managerEmailTemplate.value || "",
-        email: getLeadEmail(selectedLead) || selectedLead.email || "",
-        mobile: getLeadMobile(selectedLead) || selectedLead.mobile || "",
-        telephone: getLeadTelephone(selectedLead) || selectedLead.telephone || "",
-        lastAction: "manager_changes_saved"
-      }, "manager_changes_saved", "Manager saved lead status, closer, appointment, email template, and notes.");
-    });
-
-    markQualifiedBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "qualified",
-        lastAction: "qualified"
-      }, "qualified", "Manager marked lead as qualified.");
-    });
-
-    bookAppointmentBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      if (!closerSelect.value) {
-        showModalMessage("Please choose a closer first.", true);
-        return;
-      }
-
-      if (!appointmentDate.value || !appointmentTime.value) {
-        showModalMessage("Please choose appointment date and time.", true);
-        return;
-      }
-
-      try {
-        await createOrUpdateCloserAssignment(selectedLead, "book");
-        await updateLead({
-          leadStatus: "sent_to_closer",
-          closerUid: closerSelect.value,
-          closerAppointmentDate: appointmentDate.value,
-          closerAppointmentTime: appointmentTime.value,
-          sentToCloserAt: serverTimestamp(),
-          callbackRequired: false,
-          introEmailNeeded: false,
-          managerNotes: notesBox.value || "",
-          managerIntroEmailBody: managerEmailTemplate.value || "",
-          lastAction: "closer_appointment_booked"
-        }, "closer_appointment_booked", `Closer appointment booked for ${appointmentDate.value} ${appointmentTime.value}.`);
-      } catch (error) {
-        console.error("Booking closer appointment failed:", error);
-        showModalMessage(error.message || "Could not book appointment.", true);
-      }
-    });
-
-    sendToCloserBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      if (!closerSelect.value) {
-        showModalMessage("Please choose a closer first.", true);
-        return;
-      }
-
-      try {
-        await createOrUpdateCloserAssignment(selectedLead, "send");
-        await updateLead({
-          leadStatus: "sent_to_closer",
-          closerUid: closerSelect.value,
-          sentToCloserAt: serverTimestamp(),
-          callbackRequired: false,
-          introEmailNeeded: false,
-          managerNotes: notesBox.value || "",
-          managerIntroEmailBody: managerEmailTemplate.value || "",
-          lastAction: "sent_to_closer"
-        }, "sent_to_closer", "Lead sent to closer by manager.");
-      } catch (error) {
-        console.error("Send to closer failed:", error);
-        showModalMessage(error.message || "Could not send to closer.", true);
-      }
-    });
-
-    markConvertedBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "converted",
-        convertedAt: serverTimestamp(),
-        lastAction: "converted"
-      }, "converted", "Lead marked as converted by manager.");
-    });
-
-    markClosedBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      await updateLead({
-        leadStatus: "closed",
-        closed: true,
-        usable: false,
-        callbackRequired: false,
-        introEmailNeeded: false,
-        lastAction: "closed"
-      }, "closed", "Lead closed by manager.");
-    });
-
-    saveNotesBtn.addEventListener("click", async () => {
-      if (!selectedLead) return;
-
-      try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          managerNotes: notesBox.value || "",
-          managerIntroEmailBody: managerEmailTemplate.value || "",
-          email: getLeadEmail(selectedLead) || selectedLead.email || "",
-          mobile: getLeadMobile(selectedLead) || selectedLead.mobile || "",
-          telephone: getLeadTelephone(selectedLead) || selectedLead.telephone || "",
-          closerUid: closerSelect.value || "",
-          closerAppointmentDate: appointmentDate.value || "",
-          closerAppointmentTime: appointmentTime.value || "",
-          leadStatus: managerStatusSelect.value || selectedLead.leadStatus || "awaiting_manager",
-          lastUpdatedAt: serverTimestamp(),
-          actionHistory: arrayUnion({
-            action: "notes_saved",
-            byUid: currentUser.uid,
-            byName: currentUserData.name || "",
-            at: new Date().toISOString(),
-            notes: notesBox.value || ""
-          })
-        });
-
-        await refreshSelectedLead();
-        showModalMessage("Notes saved.");
-      } catch (error) {
-        console.error("Failed to save notes:", error);
-        showModalMessage("Could not save notes.", true);
-      }
+    rejectBtn.addEventListener("click", async () => {
+      managerDecisionSelect.value = "rejected";
+      await updateSubmissionReview("rejected", "rejected");
     });
 
     closeModalBtn.addEventListener("click", () => {
-      leadModal.classList.add("hidden");
+      submissionModal.classList.add("hidden");
     });
 
-    leadModal.addEventListener("click", (e) => {
-      if (e.target === leadModal) {
-        leadModal.classList.add("hidden");
+    submissionModal.addEventListener("click", (e) => {
+      if (e.target === submissionModal) {
+        submissionModal.classList.add("hidden");
       }
     });
+
+    refreshBtn.addEventListener("click", loadSubmissions);
+    statusFilter.addEventListener("change", renderSubmissions);
+    claimTypeFilter.addEventListener("change", renderSubmissions);
+    campaignFilter.addEventListener("change", renderSubmissions);
+    searchInput.addEventListener("input", renderSubmissions);
+    submittedByFilter.addEventListener("input", renderSubmissions);
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -1253,11 +1053,19 @@ Quaerens`;
         return;
       }
 
-      const allowed = await checkManagerAccess(user);
-      if (!allowed) return;
+      try {
+        populateClaimTypeFilter();
 
-      hideLoader();
-      await loadAllData();
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+
+        await loadSubmissions();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert("Could not load manager panel.");
+        window.location.href = "/login.html";
+      }
     });
 
     logoutBtn.addEventListener("click", async () => {
@@ -1266,15 +1074,9 @@ Quaerens`;
         window.location.href = "/login.html";
       } catch (error) {
         console.error("Logout failed:", error);
-        alert("Could not log out. Please try again.");
+        alert("Could not log out.");
       }
     });
-
-    statusFilter.addEventListener("change", renderQueue);
-    timingFilter.addEventListener("change", renderQueue);
-    closerFilter.addEventListener("change", renderQueue);
-    searchInput.addEventListener("input", renderQueue);
-    refreshBtn.addEventListener("click", loadAllData);
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {
