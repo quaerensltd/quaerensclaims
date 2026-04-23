@@ -145,31 +145,26 @@
               <option value="no_date">No callback date</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
             <select id="claimTypeFilter" class="input">
               <option value="all">All claim types</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
             <select id="campaignFilter" class="input">
               <option value="all">All campaigns</option>
             </select>
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
             <input id="searchInput" type="text" class="input" placeholder="Name, phone, email, postcode..." />
           </div>
-
           <div>
             <label class="block text-sm font-semibold text-blue-900 mb-2">Date</label>
             <input id="specificDateFilter" type="date" class="input" />
           </div>
-
           <div class="flex items-end">
             <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Agenda</button>
           </div>
@@ -183,7 +178,6 @@
             <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading callbacks...</p>
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table class="agenda-table text-sm min-w-full">
             <colgroup>
@@ -251,26 +245,23 @@
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="campaignNameInput">Campaign Name</label>
               <input id="campaignNameInput" type="text" class="input" placeholder="Enter campaign name" />
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="leadClaimTypeSelect">Claim Type</label>
               <select id="leadClaimTypeSelect" class="input">
                 <option value="">Select claim type</option>
               </select>
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
               <input id="callbackDate" type="date" class="input" />
             </div>
-
             <div>
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
               <input id="callbackTime" type="time" class="input" />
             </div>
           </div>
           <div class="help-note">
-            Supported live intake routes currently include Solar, Mortgage, Survey, and New Build. All other claim types still work in lead flow and manager review.
+            Any claim type can now be opened in the universal client intake portal.
           </div>
         </section>
 
@@ -417,37 +408,25 @@
       "survey": "survey_review",
       "survey review": "survey_review",
       "timeshare": "timeshare",
-      "train delay": "train_delay"
-    };
-
-    const LIVE_INTAKE_MAP = {
-      solar_support: "solar",
-      mortgage_review: "mortgage",
-      loans_and_mortgages: "mortgage",
-      spanish_mortgage: "mortgage",
-      survey_review: "survey",
-      new_build_issues: "newbuild"
+      "train delay": "train_delay",
+      "mortgage": "mortgage_review"
     };
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const dateViewFilter = document.getElementById("dateViewFilter");
     const claimTypeFilter = document.getElementById("claimTypeFilter");
     const campaignFilter = document.getElementById("campaignFilter");
     const searchInput = document.getElementById("searchInput");
     const specificDateFilter = document.getElementById("specificDateFilter");
     const refreshBtn = document.getElementById("refreshBtn");
-
     const callbacksBody = document.getElementById("callbacksBody");
     const resultsSummary = document.getElementById("resultsSummary");
-
     const totalCallbacksStat = document.getElementById("totalCallbacksStat");
     const dueTodayStat = document.getElementById("dueTodayStat");
     const upcomingStat = document.getElementById("upcomingStat");
     const missingTimeStat = document.getElementById("missingTimeStat");
     const progressedStat = document.getElementById("progressedStat");
-
     const callbackModal = document.getElementById("callbackModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const callbackDate = document.getElementById("callbackDate");
@@ -456,7 +435,6 @@
     const modalMessage = document.getElementById("modalMessage");
     const campaignNameInput = document.getElementById("campaignNameInput");
     const leadClaimTypeSelect = document.getElementById("leadClaimTypeSelect");
-
     const rescheduleBtn = document.getElementById("rescheduleBtn");
     const openIntakeBtn = document.getElementById("openIntakeBtn");
     const sendIntroEmailBtn = document.getElementById("sendIntroEmailBtn");
@@ -518,8 +496,7 @@
     }
 
     function normalizeIntakeClaimType(value) {
-      const normalized = normalizeClaimType(value);
-      return LIVE_INTAKE_MAP[normalized] || "";
+      return normalizeClaimType(value);
     }
 
     function getLeadTelephone(lead) {
@@ -620,7 +597,6 @@
     function populateClaimTypeDropdowns() {
       claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
       leadClaimTypeSelect.innerHTML = `<option value="">Select claim type</option>`;
-
       CLAIM_TYPES.forEach(item => {
         const option1 = document.createElement("option");
         option1.value = item.value;
@@ -642,16 +618,13 @@
           .filter(Boolean)
           .sort((a, b) => a.localeCompare(b))
       )];
-
       campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
-
       campaigns.forEach(campaign => {
         const option = document.createElement("option");
         option.value = campaign;
         option.textContent = campaign;
         campaignFilter.appendChild(option);
       });
-
       if ([...campaignFilter.options].some(option => option.value === currentValue)) {
         campaignFilter.value = currentValue;
       }
@@ -659,7 +632,6 @@
 
     async function recordStaffLoginFromPage() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
@@ -692,25 +664,20 @@
           lastSeenAt: serverTimestamp(),
           isOnline: true
         };
-
         if (!existingData.isOnline || !existingData.currentSessionStartAt) {
           updateData.currentSessionStartAt = serverTimestamp();
         }
-
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-
         await setDoc(attendanceRef, updateData, { merge: true });
       }
     }
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
-
       await setDoc(attendanceRef, {
         uid: currentUser.uid,
         name: currentUserData.name || "",
@@ -724,7 +691,6 @@
 
     function startAttendanceHeartbeat() {
       if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
-
       attendanceHeartbeatInterval = setInterval(async () => {
         try {
           await updateStaffHeartbeat();
@@ -736,7 +702,6 @@
 
     async function recordStaffLogout() {
       if (!currentUser) return;
-
       const attendanceId = getTodayAttendanceId(currentUser.uid);
       const attendanceRef = doc(db, "staffAttendance", attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
@@ -782,7 +747,6 @@
       }
 
       const userData = userSnap.data();
-
       if (userData.role !== "staff") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -802,10 +766,8 @@
           where("assignedToUid", "==", currentUser.uid),
           where("callbackRequired", "==", true)
         );
-
         const snapshot = await getDocs(callbacksQuery);
         callbackLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
         populateCampaignFilter();
         renderStats();
         renderCallbacks();
@@ -817,7 +779,6 @@
 
     function renderStats() {
       const today = todayIso();
-
       totalCallbacksStat.textContent = String(callbackLeads.length);
       dueTodayStat.textContent = String(callbackLeads.filter(lead => lead.callbackDate === today).length);
       upcomingStat.textContent = String(callbackLeads.filter(lead => lead.callbackDate && compareDateOnly(lead.callbackDate, today) === 1).length);
@@ -869,7 +830,6 @@
           `.toLowerCase();
 
           const matchesSearch = !term || haystack.includes(term);
-
           return matchesDateView && matchesSpecificDate && matchesClaimType && matchesCampaign && matchesSearch;
         })
         .sort((a, b) => {
@@ -897,7 +857,6 @@
         filtered.forEach(lead => {
           const tr = document.createElement("tr");
           tr.className = "border-t border-slate-200";
-
           tr.innerHTML = `
             <td class="p-3 align-top">
               <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
@@ -918,13 +877,11 @@
               </button>
             </td>
           `;
-
           callbacksBody.appendChild(tr);
         });
       }
 
       resultsSummary.textContent = `${filtered.length} callback lead(s) shown`;
-
       document.querySelectorAll("[data-open-callback]").forEach(btn => {
         btn.addEventListener("click", () => openLead(btn.getAttribute("data-open-callback")));
       });
@@ -1004,7 +961,6 @@
 
       document.getElementById("modalLeadTitle").textContent =
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Callback Lead";
-
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       document.getElementById("lead_name").textContent =
         `${selectedLead.title || ""} ${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
@@ -1029,13 +985,11 @@
 
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
-
       callbackModal.classList.remove("hidden");
     }
 
     async function refreshSelectedLead() {
       await loadCallbacks();
-
       if (selectedLead) {
         const updated = callbackLeads.find(x => x.id === selectedLead.id);
         if (updated) {
@@ -1050,7 +1004,6 @@
 
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           ...patch,
@@ -1063,7 +1016,6 @@
             notes
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead updated successfully.");
       } catch (error) {
@@ -1074,10 +1026,8 @@
 
     async function archiveAndRemoveLead(reason, notes = "") {
       if (!selectedLead) return;
-
       try {
         const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
-
         await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
           originalLeadId: selectedLead.id,
@@ -1109,7 +1059,6 @@
         });
 
         await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
-
         callbackModal.classList.add("hidden");
         selectedLead = null;
         await loadCallbacks();
@@ -1121,7 +1070,6 @@
 
     async function saveLeadCoreFields(extraPatch = {}) {
       if (!selectedLead) return false;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
@@ -1142,7 +1090,6 @@
 
     rescheduleBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!callbackDate.value) {
         showModalMessage("Please choose a callback date first.", true);
         return;
@@ -1169,11 +1116,6 @@
 
       if (!chosenClaimType) {
         showModalMessage("Please select a claim type before opening intake.", true);
-        return;
-      }
-
-      if (!normalizedIntakeType) {
-        showModalMessage("This selected claim type does not have a live intake form yet. Use Solar, Mortgage, Survey, or New Build.", true);
         return;
       }
 
@@ -1215,12 +1157,10 @@
 
     sendIntroEmailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       if (!getLeadEmail(selectedLead)) {
         showModalMessage("This lead has no email address saved.", true);
         return;
       }
-
       if (!callbackDate.value || !callbackTime.value) {
         showModalMessage("Please choose callback date and time first.", true);
         return;
@@ -1242,7 +1182,6 @@
 
     markQualifiedBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
@@ -1258,7 +1197,6 @@
 
     sendToManagerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
@@ -1274,7 +1212,6 @@
 
     saveLeadBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
@@ -1285,7 +1222,6 @@
           callbackTime: callbackTime.value || "",
           lastUpdatedAt: serverTimestamp()
         });
-
         await refreshSelectedLead();
         showModalMessage("Lead saved.");
       } catch (error) {
@@ -1296,7 +1232,6 @@
 
     noAnswerBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
@@ -1312,7 +1247,6 @@
 
     voicemailBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       await updateLead({
         campaign: campaignNameInput.value.trim() || "",
         claimType: leadClaimTypeSelect.value || "",
@@ -1338,7 +1272,6 @@
 
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
-
       try {
         await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
@@ -1356,7 +1289,6 @@
             notes: notesBox.value || ""
           })
         });
-
         await refreshSelectedLead();
         showModalMessage("Notes saved.");
       } catch (error) {
@@ -1383,7 +1315,6 @@
 
       try {
         populateClaimTypeDropdowns();
-
         const allowed = await checkStaffAccess(user);
         if (!allowed) return;
 
@@ -1410,7 +1341,6 @@
         } catch (attendanceError) {
           console.error("Attendance logout failed:", attendanceError);
         }
-
         await signOut(auth);
         window.location.href = "/login.html";
       } catch (error) {
