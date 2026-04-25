@@ -709,21 +709,25 @@
             });
 
             if (claimData.marketingConsent) {
-              await addDoc(collection(window.db, "freeFlightClaimMarketingLeads"), {
-                email: claimData.email,
-                fullName: claimData.fullName,
-                airline: claimData.airline,
-                flightNumber: claimData.flightNumber,
-                flightDate: claimData.flightDate,
-                depAirport: claimData.depAirport,
-                arrAirport: claimData.arrAirport,
-                compensation: claimData.compensation,
-                source: "freeflightclaim-claim-form",
-                marketingConsent: true,
-                consentText: "Yes, I’d like to receive helpful updates about travel claims, rejected airline claims, complaint templates, and related support from FreeFlightClaim and Quaerens. I can unsubscribe at any time.",
-                consentCapturedAt: serverTimestamp(),
-                createdAt: serverTimestamp()
-              });
+              try {
+                await addDoc(collection(window.db, "freeFlightClaimMarketingLeads"), {
+                  email: claimData.email,
+                  fullName: claimData.fullName,
+                  airline: claimData.airline,
+                  flightNumber: claimData.flightNumber,
+                  flightDate: claimData.flightDate,
+                  depAirport: claimData.depAirport,
+                  arrAirport: claimData.arrAirport,
+                  compensation: claimData.compensation,
+                  source: "freeflightclaim-claim-form",
+                  marketingConsent: true,
+                  consentText: "Yes, I’d like to receive helpful updates about travel claims, rejected airline claims, complaint templates, and related support from FreeFlightClaim and Quaerens. I can unsubscribe at any time.",
+                  consentCapturedAt: serverTimestamp(),
+                  createdAt: serverTimestamp()
+                });
+              } catch (leadErr) {
+                console.warn("Marketing lead was not saved:", leadErr);
+              }
             }
           }
 
@@ -753,7 +757,8 @@
 
         } catch (err) {
           console.error("Error preparing claim letter:", err);
-          alert("Something went wrong. Please try again.");
+          alert("There was a database or email issue, but your PDF will still be generated now.");
+          generatePDF({ ...claimData, fileURL: "" });
           submitBtn.disabled = false;
           submitBtn.textContent = "Generate My Claim Letter";
         }
