@@ -77,27 +77,27 @@
           </button>
 
           <div x-show="open" @click.outside="open = false" class="absolute right-0 mt-2 w-48 rounded-md shadow bg-white text-sm text-gray-700 z-50" style="display:none;">
-            <a href="#" onclick="setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
-            <a href="#" onclick="setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
-            <a href="#" onclick="setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
-            <a href="#" onclick="setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
-            <a href="#" onclick="setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
-            <a href="#" onclick="setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
-            <a href="#" onclick="setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
-            <a href="#" onclick="setLanguage('en|da')" class="block px-4 py-2 hover:bg-gray-100">🇩🇰 Dansk</a>
-            <a href="#" onclick="setLanguage('en|pl')" class="block px-4 py-2 hover:bg-gray-100">🇵🇱 Polski</a>
-            <a href="#" onclick="setLanguage('en|cs')" class="block px-4 py-2 hover:bg-gray-100">🇨🇿 Čeština</a>
-            <a href="#" onclick="setLanguage('en|ro')" class="block px-4 py-2 hover:bg-gray-100">🇷🇴 Română</a>
-            <a href="#" onclick="setLanguage('en|bg')" class="block px-4 py-2 hover:bg-gray-100">🇧🇬 Български</a>
-            <a href="#" onclick="setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
-            <a href="#" onclick="setLanguage('en|pt')" class="block px-4 py-2 hover:bg-gray-100">🇵🇹 Português</a>
+            <a href="#" onclick="return setLanguage('en|en')" class="block px-4 py-2 hover:bg-gray-100">🇬🇧 English</a>
+            <a href="#" onclick="return setLanguage('en|fr')" class="block px-4 py-2 hover:bg-gray-100">🇫🇷 Français</a>
+            <a href="#" onclick="return setLanguage('en|es')" class="block px-4 py-2 hover:bg-gray-100">🇪🇸 Español</a>
+            <a href="#" onclick="return setLanguage('en|de')" class="block px-4 py-2 hover:bg-gray-100">🇩🇪 Deutsch</a>
+            <a href="#" onclick="return setLanguage('en|it')" class="block px-4 py-2 hover:bg-gray-100">🇮🇹 Italiano</a>
+            <a href="#" onclick="return setLanguage('en|nl')" class="block px-4 py-2 hover:bg-gray-100">🇳🇱 Nederlands</a>
+            <a href="#" onclick="return setLanguage('en|sv')" class="block px-4 py-2 hover:bg-gray-100">🇸🇪 Svenska</a>
+            <a href="#" onclick="return setLanguage('en|da')" class="block px-4 py-2 hover:bg-gray-100">🇩🇰 Dansk</a>
+            <a href="#" onclick="return setLanguage('en|pl')" class="block px-4 py-2 hover:bg-gray-100">🇵🇱 Polski</a>
+            <a href="#" onclick="return setLanguage('en|cs')" class="block px-4 py-2 hover:bg-gray-100">🇨🇿 Čeština</a>
+            <a href="#" onclick="return setLanguage('en|ro')" class="block px-4 py-2 hover:bg-gray-100">🇷🇴 Română</a>
+            <a href="#" onclick="return setLanguage('en|bg')" class="block px-4 py-2 hover:bg-gray-100">🇧🇬 Български</a>
+            <a href="#" onclick="return setLanguage('en|el')" class="block px-4 py-2 hover:bg-gray-100">🇬🇷 Ελληνικά</a>
+            <a href="#" onclick="return setLanguage('en|pt')" class="block px-4 py-2 hover:bg-gray-100">🇵🇹 Português</a>
           </div>
         </div>
       </nav>
     </div>
   </header>
 
-  <!-- ✅ Fixed Google Translate: only one setup, one setLanguage function -->
+  <!-- Google Translate -->
   <script>
     function setGoogleTranslateCookie(targetLang) {
       const hostname = window.location.hostname;
@@ -282,6 +282,15 @@
       return dist || "";
     }
 
+    function readablePayment(data) {
+      const method = data.paymentMethod || "";
+      const details = data.paymentDetails || "";
+      if (!method && !details) return "";
+      if (method === "iban") return `IBAN / bank transfer: ${details}`;
+      if (method === "paypal") return `PayPal: ${details}`;
+      return details;
+    }
+
     function addWrappedText(doc, text, x, y, maxWidth, lineHeight) {
       const lines = doc.splitTextToSize(text, maxWidth);
       lines.forEach(line => {
@@ -302,6 +311,7 @@
       const claimRef = `FFC-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const amount = data.compensation || 0;
       const amountText = amount > 0 ? `€${amount}` : "to be assessed by the airline";
+      const paymentText = readablePayment(data);
       let y = 20;
 
       doc.setFont("helvetica", "normal").setFontSize(12).setTextColor(0, 0, 0);
@@ -320,6 +330,7 @@
       [
         `Passenger Name: ${data.fullName || ""}`,
         `Email: ${data.email || ""}`,
+        `Phone: ${data.phone || ""}`,
         `Flight Number: ${data.flightNumber || ""}`,
         `Booking Reference: ${data.bookingRef || ""}`,
         `Flight Date: ${data.flightDate || ""}`,
@@ -330,7 +341,7 @@
         `Flight Distance: ${readableDistance(data.distance)}`,
         `Delay Duration: ${data.delayDuration || ""} hours`,
         `Estimated Compensation: ${amountText}`,
-        `Preferred Payment Method: ${data.iban || ""}`
+        `Preferred Payment Method: ${paymentText}`
       ].forEach(line => { doc.text(line, 10, y); y += 7; });
 
       y += 4;
@@ -368,6 +379,12 @@
       </div>
 
       <div>
+        <label for="phone" class="font-semibold">Phone Number</label>
+        <input type="tel" id="phone" name="phone" required class="w-full border p-2 rounded" autocomplete="tel" placeholder="e.g. +44 7123 456789" />
+        <p class="text-xs text-gray-500 mt-1">Used only if we need to contact you about your claim or follow-up support.</p>
+      </div>
+
+      <div>
         <label for="flightNumber" class="font-semibold">Flight Number</label>
         <input type="text" id="flightNumber" name="flightNumber" placeholder="e.g. FR1234" required class="w-full border p-2 rounded" />
       </div>
@@ -377,11 +394,21 @@
         <input type="text" id="bookingRef" name="bookingRef" class="w-full border p-2 rounded" required />
       </div>
 
-      <div>
-        <label for="iban" class="font-semibold">Preferred Payment Method (IBAN or PayPal)</label>
-        <input type="text" id="iban" name="iban" class="w-full border p-2 rounded" required />
-        <p class="text-xs text-gray-500 mt-1">This is inserted into the claim letter so the airline knows where to pay compensation.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="paymentMethod" class="font-semibold">How should the airline pay you?</label>
+          <select id="paymentMethod" name="paymentMethod" class="w-full border p-2 rounded" required>
+            <option value="">Select payment method</option>
+            <option value="iban">IBAN / bank transfer</option>
+            <option value="paypal">PayPal</option>
+          </select>
+        </div>
+        <div>
+          <label for="paymentDetails" class="font-semibold">Payment Details</label>
+          <input type="text" id="paymentDetails" name="paymentDetails" class="w-full border p-2 rounded" required placeholder="Enter IBAN or PayPal email" />
+        </div>
       </div>
+      <p class="text-xs text-gray-500 mt-1">These details are inserted into your claim letter so the airline knows where to pay compensation.</p>
 
       <div>
         <label for="flightDate" class="font-semibold">Flight Date</label>
@@ -632,6 +659,18 @@
         if (lang && languageSelect) languageSelect.value = lang;
       });
 
+      const paymentMethod = document.getElementById("paymentMethod");
+      const paymentDetails = document.getElementById("paymentDetails");
+      paymentMethod.addEventListener("change", function () {
+        if (this.value === "iban") {
+          paymentDetails.placeholder = "Enter your IBAN / bank details";
+        } else if (this.value === "paypal") {
+          paymentDetails.placeholder = "Enter your PayPal email address";
+        } else {
+          paymentDetails.placeholder = "Enter IBAN or PayPal email";
+        }
+      });
+
       function updateCompensationPreview() {
         const distance = document.getElementById("distance").value;
         const delayDuration = document.getElementById("delayDuration").value;
@@ -666,9 +705,12 @@
         const claimData = {
           fullName: formData.get("fullName")?.trim(),
           email: formData.get("email")?.trim(),
+          phone: formData.get("phone")?.trim(),
           flightNumber: formData.get("flightNumber")?.trim(),
           bookingRef: formData.get("bookingRef")?.trim(),
-          iban: formData.get("iban")?.trim(),
+          paymentMethod: formData.get("paymentMethod"),
+          paymentDetails: formData.get("paymentDetails")?.trim(),
+          iban: formData.get("paymentDetails")?.trim(),
           flightDate: formData.get("flightDate"),
           depAirport: formData.get("depAirport"),
           arrAirport: formData.get("arrAirport"),
@@ -708,10 +750,27 @@
               createdAt: serverTimestamp()
             });
 
+            await addDoc(collection(window.db, "emailQueue"), {
+              to: claimData.email,
+              fullName: claimData.fullName,
+              phone: claimData.phone,
+              airline: claimData.airline,
+              flightNumber: claimData.flightNumber,
+              compensation: claimData.compensation,
+              claimStatus: "new",
+              template: "claim_created",
+              subject: "Your FreeFlightClaim letter is ready",
+              sendAt: serverTimestamp(),
+              sent: false,
+              source: "freeflightclaim",
+              createdAt: serverTimestamp()
+            });
+
             if (claimData.marketingConsent) {
               try {
                 await addDoc(collection(window.db, "freeFlightClaimMarketingLeads"), {
                   email: claimData.email,
+                  phone: claimData.phone,
                   fullName: claimData.fullName,
                   airline: claimData.airline,
                   flightNumber: claimData.flightNumber,
@@ -725,8 +784,40 @@
                   consentCapturedAt: serverTimestamp(),
                   createdAt: serverTimestamp()
                 });
+
+                await addDoc(collection(window.db, "emailQueue"), {
+                  to: claimData.email,
+                  fullName: claimData.fullName,
+                  phone: claimData.phone,
+                  airline: claimData.airline,
+                  flightNumber: claimData.flightNumber,
+                  compensation: claimData.compensation,
+                  claimStatus: "follow_up_7_days",
+                  template: "airline_reply_check",
+                  subject: "Has the airline replied to your claim?",
+                  sendAfterDays: 7,
+                  sent: false,
+                  source: "freeflightclaim",
+                  createdAt: serverTimestamp()
+                });
+
+                await addDoc(collection(window.db, "emailQueue"), {
+                  to: claimData.email,
+                  fullName: claimData.fullName,
+                  phone: claimData.phone,
+                  airline: claimData.airline,
+                  flightNumber: claimData.flightNumber,
+                  compensation: claimData.compensation,
+                  claimStatus: "follow_up_14_days",
+                  template: "rejected_claim_help",
+                  subject: "Airline rejected or ignored your claim?",
+                  sendAfterDays: 14,
+                  sent: false,
+                  source: "freeflightclaim",
+                  createdAt: serverTimestamp()
+                });
               } catch (leadErr) {
-                console.warn("Marketing lead was not saved:", leadErr);
+                console.warn("Marketing lead or follow-up email queue was not saved:", leadErr);
               }
             }
           }
