@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreeFlightClaim Admin Dashboard</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <header class="bg-blue-900 text-white py-5 shadow">
+    <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
+      <h1 class="text-xl sm:text-2xl font-extrabold">FreeFlightClaim Admin</h1>
+      <button id="logoutBtn" class="hidden bg-white text-blue-900 font-bold px-4 py-2 rounded hover:bg-gray-100">Logout</button>
+    </div>
+  </header>
+
+  <!-- Login -->
+  <main id="loginView" class="max-w-md mx-auto px-4 py-16">
+    <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+      <h2 class="text-2xl font-extrabold text-blue-900 mb-2">Admin Login</h2>
+      <p class="text-sm text-gray-600 mb-6">Login to view claim submissions and marketing leads.</p>
+
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label for="email" class="font-semibold">Email</label>
+          <input type="email" id="email" required class="w-full border border-gray-300 p-3 rounded mt-1" />
+        </div>
+        <div>
+          <label for="password" class="font-semibold">Password</label>
+          <input type="password" id="password" required class="w-full border border-gray-300 p-3 rounded mt-1" />
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-6 rounded-xl">Login</button>
+      </form>
+
+      <p id="loginError" class="hidden mt-4 text-red-600 font-semibold text-sm"></p>
+    </div>
+  </main>
+
+  <!-- Dashboard -->
+  <main id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border p-5">
+        <p class="text-sm text-gray-500">Claim submissions</p>
+        <p id="claimsCount" class="text-3xl font-extrabold text-blue-900">0</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border p-5">
+        <p class="text-sm text-gray-500">Marketing leads</p>
+        <p id="leadsCount" class="text-3xl font-extrabold text-blue-900">0</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border p-5">
+        <p class="text-sm text-gray-500">Last updated</p>
+        <p id="lastUpdated" class="text-lg font-bold text-blue-900">—</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+      <button id="showClaimsBtn" class="bg-blue-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-blue-700">Claim Submissions</button>
+      <button id="showLeadsBtn" class="bg-gray-200 text-gray-800 font-bold px-5 py-3 rounded-xl hover:bg-gray-300">Marketing Leads</button>
+      <button id="exportCsvBtn" class="sm:ml-auto bg-yellow-400 text-blue-900 font-extrabold px-5 py-3 rounded-xl hover:bg-yellow-500">Export Current View CSV</button>
+    </div>
+
+    <section id="claimsSection" class="bg-white rounded-2xl shadow-md border overflow-hidden">
+      <div class="p-5 border-b">
+        <h2 class="text-2xl font-extrabold text-blue-900">Claim Submissions</h2>
+        <p class="text-sm text-gray-600">Full claim letter records from the form.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="text-left p-3">Date</th>
+              <th class="text-left p-3">Name</th>
+              <th class="text-left p-3">Email</th>
+              <th class="text-left p-3">Airline</th>
+              <th class="text-left p-3">Flight</th>
+              <th class="text-left p-3">Route</th>
+              <th class="text-left p-3">Comp.</th>
+              <th class="text-left p-3">Marketing</th>
+            </tr>
+          </thead>
+          <tbody id="claimsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="leadsSection" class="hidden bg-white rounded-2xl shadow-md border overflow-hidden">
+      <div class="p-5 border-b">
+        <h2 class="text-2xl font-extrabold text-blue-900">Marketing Leads</h2>
+        <p class="text-sm text-gray-600">Only people who ticked the marketing consent box.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="text-left p-3">Date</th>
+              <th class="text-left p-3">Name</th>
+              <th class="text-left p-3">Email</th>
+              <th class="text-left p-3">Airline</th>
+              <th class="text-left p-3">Flight</th>
+              <th class="text-left p-3">Route</th>
+              <th class="text-left p-3">Comp.</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      orderBy,
+      limit
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // IMPORTANT: Replace this with the same Firebase config used in firebase-setup.js
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginView = document.getElementById("loginView");
+    const dashboardView = document.getElementById("dashboardView");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const loginForm = document.getElementById("loginForm");
+    const loginError = document.getElementById("loginError");
+
+    const claimsSection = document.getElementById("claimsSection");
+    const leadsSection = document.getElementById("leadsSection");
+    const showClaimsBtn = document.getElementById("showClaimsBtn");
+    const showLeadsBtn = document.getElementById("showLeadsBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+
+    let currentView = "claims";
+    let claimsData = [];
+    let leadsData = [];
+
+    function formatDate(value) {
+      if (!value) return "—";
+      if (value.toDate) return value.toDate().toLocaleString();
+      if (typeof value === "string") return new Date(value).toLocaleString();
+      return "—";
+    }
+
+    function safe(value) {
+      return value || "—";
+    }
+
+    function route(row) {
+      return `${safe(row.depAirport)} → ${safe(row.arrAirport)}`;
+    }
+
+    function renderClaims() {
+      const body = document.getElementById("claimsTableBody");
+      body.innerHTML = "";
+      claimsData.forEach(row => {
+        body.insertAdjacentHTML("beforeend", `
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-3 whitespace-nowrap">${formatDate(row.createdAt || row.submittedAt)}</td>
+            <td class="p-3">${safe(row.fullName)}</td>
+            <td class="p-3"><a href="mailto:${safe(row.email)}" class="text-blue-600 underline">${safe(row.email)}</a></td>
+            <td class="p-3">${safe(row.airline)}</td>
+            <td class="p-3">${safe(row.flightNumber)}</td>
+            <td class="p-3">${route(row)}</td>
+            <td class="p-3">${row.compensation ? "€" + row.compensation : "—"}</td>
+            <td class="p-3">${row.marketingConsent ? "Yes" : "No"}</td>
+          </tr>
+        `);
+      });
+    }
+
+    function renderLeads() {
+      const body = document.getElementById("leadsTableBody");
+      body.innerHTML = "";
+      leadsData.forEach(row => {
+        body.insertAdjacentHTML("beforeend", `
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-3 whitespace-nowrap">${formatDate(row.createdAt || row.consentCapturedAt)}</td>
+            <td class="p-3">${safe(row.fullName)}</td>
+            <td class="p-3"><a href="mailto:${safe(row.email)}" class="text-blue-600 underline">${safe(row.email)}</a></td>
+            <td class="p-3">${safe(row.airline)}</td>
+            <td class="p-3">${safe(row.flightNumber)}</td>
+            <td class="p-3">${route(row)}</td>
+            <td class="p-3">${row.compensation ? "€" + row.compensation : "—"}</td>
+          </tr>
+        `);
+      });
+    }
+
+    async function loadData() {
+      const claimsQuery = query(collection(db, "flightClaimLetters"), orderBy("createdAt", "desc"), limit(500));
+      const leadsQuery = query(collection(db, "freeFlightClaimMarketingLeads"), orderBy("createdAt", "desc"), limit(500));
+
+      const [claimsSnap, leadsSnap] = await Promise.all([getDocs(claimsQuery), getDocs(leadsQuery)]);
+
+      claimsData = claimsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      leadsData = leadsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      document.getElementById("claimsCount").textContent = claimsData.length;
+      document.getElementById("leadsCount").textContent = leadsData.length;
+      document.getElementById("lastUpdated").textContent = new Date().toLocaleString();
+
+      renderClaims();
+      renderLeads();
+    }
+
+    function switchView(view) {
+      currentView = view;
+      claimsSection.classList.toggle("hidden", view !== "claims");
+      leadsSection.classList.toggle("hidden", view !== "leads");
+      showClaimsBtn.className = view === "claims"
+        ? "bg-blue-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-blue-700"
+        : "bg-gray-200 text-gray-800 font-bold px-5 py-3 rounded-xl hover:bg-gray-300";
+      showLeadsBtn.className = view === "leads"
+        ? "bg-blue-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-blue-700"
+        : "bg-gray-200 text-gray-800 font-bold px-5 py-3 rounded-xl hover:bg-gray-300";
+    }
+
+    function exportCSV() {
+      const data = currentView === "claims" ? claimsData : leadsData;
+      const filename = currentView === "claims" ? "flight-claim-submissions.csv" : "marketing-leads.csv";
+      const headers = ["date", "fullName", "email", "airline", "flightNumber", "depAirport", "arrAirport", "compensation", "marketingConsent"];
+
+      const rows = data.map(row => headers.map(h => {
+        let value = h === "date" ? formatDate(row.createdAt || row.submittedAt || row.consentCapturedAt) : row[h];
+        value = value == null ? "" : String(value).replace(/"/g, '""');
+        return `"${value}"`;
+      }).join(","));
+
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginError.classList.add("hidden");
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        loginError.textContent = "Login failed. Check your email and password.";
+        loginError.classList.remove("hidden");
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+    showClaimsBtn.addEventListener("click", () => switchView("claims"));
+    showLeadsBtn.addEventListener("click", () => switchView("leads"));
+    exportCsvBtn.addEventListener("click", exportCSV);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        loginView.classList.add("hidden");
+        dashboardView.classList.remove("hidden");
+        logoutBtn.classList.remove("hidden");
+        await loadData();
+      } else {
+        dashboardView.classList.add("hidden");
+        loginView.classList.remove("hidden");
+        logoutBtn.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
