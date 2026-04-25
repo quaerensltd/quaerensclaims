@@ -97,42 +97,59 @@
     </div>
   </header>
 
+  <!-- ✅ Fixed Google Translate: only one setup, one setLanguage function -->
   <script>
+    function setGoogleTranslateCookie(targetLang) {
+      const hostname = window.location.hostname;
+      const baseDomain = hostname.startsWith("www.") ? hostname.substring(4) : hostname;
+      const value = `/en/${targetLang}`;
+      const maxAge = "max-age=31536000";
+
+      document.cookie = `googtrans=${value}; path=/; ${maxAge}`;
+      document.cookie = `googtrans=${value}; path=/; domain=${hostname}; ${maxAge}`;
+      document.cookie = `googtrans=${value}; path=/; domain=.${hostname}; ${maxAge}`;
+      document.cookie = `googtrans=${value}; path=/; domain=${baseDomain}; ${maxAge}`;
+      document.cookie = `googtrans=${value}; path=/; domain=.${baseDomain}; ${maxAge}`;
+    }
+
+    function getGoogleTranslateLang() {
+      const match = document.cookie.match(/googtrans=\/en\/([a-zA-Z-]+)/);
+      return match ? match[1] : "en";
+    }
+
     function setLanguage(langPair) {
-      if (!langPair) return;
-      const langCode = langPair.split('|')[1];
-      document.cookie = `googtrans=/en/${langCode};path=/;max-age=31536000`;
-      const googleSelect = document.querySelector('select.goog-te-combo');
-      if (googleSelect && googleSelect.options) {
-        googleSelect.value = langCode;
-        googleSelect.dispatchEvent(new Event('change'));
-      }
+      if (!langPair) return false;
+      const targetLang = langPair.split("|")[1] || "en";
+      setGoogleTranslateCookie(targetLang);
+
       const languageSelect = document.getElementById("language");
-      if (languageSelect) languageSelect.value = langCode;
+      if (languageSelect) languageSelect.value = targetLang;
+
+      window.location.reload();
+      return false;
+    }
+
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: "en",
+        includedLanguages: "en,fr,es,de,nl,it,sv,da,pl,cs,ro,bg,el,pt",
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, "google_translate_element");
     }
 
     document.addEventListener("DOMContentLoaded", function () {
       const params = new URLSearchParams(window.location.search);
-      const langFromUrl = params.get('lang');
-      const cookieMatch = document.cookie.match(/googtrans=\/en\/(\w+)/);
-      const lang = langFromUrl || (cookieMatch ? cookieMatch[1] : null) || 'en';
+      const urlLang = params.get("lang");
+      const savedLang = urlLang || getGoogleTranslateLang();
+
+      if (urlLang) setGoogleTranslateCookie(urlLang);
+
       const languageSelect = document.getElementById("language");
-      if (languageSelect) languageSelect.value = lang;
+      if (languageSelect) languageSelect.value = savedLang;
     });
   </script>
-
-  <div id="google_translate_element2" style="display:none;"></div>
-  <script type="text/javascript">
-    function googleTranslateElementInit2() {
-      new google.translate.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'en,fr,es,de,nl,it,sv,da,pl,cs,ro,bg,el,pt',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-        autoDisplay: false
-      }, 'google_translate_element2');
-    }
-  </script>
-  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
   <!-- Hero Section -->
   <section class="relative w-full overflow-hidden bg-blue-900">
@@ -666,6 +683,9 @@
           handleOption: formData.get("handleOption"),
           donation: formData.get("donation"),
           marketingConsent: formData.get("marketingConsent") === "yes",
+          status: "new",
+          notes: "",
+          source: "freeflightclaim-form",
           submittedAt: new Date().toISOString()
         };
 
