@@ -132,7 +132,7 @@
   <section id="claimsSection" class="bg-white rounded-2xl shadow-md border overflow-hidden">
     <div class="p-5 border-b">
       <h2 class="text-2xl font-extrabold text-blue-900">Claim Submissions</h2>
-      <p class="text-sm text-gray-600">View, update status and add internal notes.</p>
+      <p class="text-sm text-gray-600">View, update status, add notes, or delete test/spam claims.</p>
     </div>
 
     <div class="overflow-x-auto">
@@ -150,6 +150,7 @@
             <th class="text-left p-3">Status</th>
             <th class="text-left p-3">Notes</th>
             <th class="text-left p-3">Save</th>
+            <th class="text-left p-3">Delete</th>
           </tr>
         </thead>
         <tbody id="claimsTableBody"></tbody>
@@ -202,19 +203,19 @@
     limit,
     doc,
     updateDoc,
+    deleteDoc,
     serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-  authDomain: "quaerensclaims.firebaseapp.com",
-  projectId: "quaerensclaims",
-  storageBucket: "quaerensclaims.appspot.com",
-  messagingSenderId: "207213580015",
-  appId: "1:207213580015:web:placeholder"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+    authDomain: "quaerensclaims.firebaseapp.com",
+    projectId: "quaerensclaims",
+    storageBucket: "quaerensclaims.appspot.com",
+    messagingSenderId: "207213580015",
+    appId: "1:207213580015:web:placeholder"
+  };
 
-  // ✅ ADD YOUR ADMIN EMAIL HERE
   const allowedAdmins = [
     "info@quaerens.co.uk"
   ];
@@ -314,7 +315,7 @@ const firebaseConfig = {
     const rows = filteredClaims();
 
     if (rows.length === 0) {
-      body.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-gray-500">No claims found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-gray-500">No claims found.</td></tr>`;
       return;
     }
 
@@ -344,6 +345,11 @@ const firebaseConfig = {
           <td class="p-3">
             <button class="saveClaimBtn bg-blue-600 text-white px-3 py-2 rounded-lg font-bold" data-id="${row.id}">
               Save
+            </button>
+          </td>
+          <td class="p-3">
+            <button class="deleteClaimBtn bg-red-600 text-white px-3 py-2 rounded-lg font-bold hover:bg-red-700" data-id="${row.id}">
+              Delete
             </button>
           </td>
         </tr>
@@ -377,6 +383,31 @@ const firebaseConfig = {
           console.error(err);
           alert("Could not save status/notes.");
           button.textContent = "Save";
+          button.disabled = false;
+        }
+      });
+    });
+
+    document.querySelectorAll(".deleteClaimBtn").forEach(button => {
+      button.addEventListener("click", async () => {
+        const id = button.dataset.id;
+        const row = claimsData.find(claim => claim.id === id);
+        const label = row ? `${row.fullName || "this claim"} / ${row.flightNumber || "no flight number"}` : "this claim";
+
+        if (!confirm(`Are you sure you want to delete ${label}? This cannot be undone.`)) {
+          return;
+        }
+
+        button.textContent = "Deleting...";
+        button.disabled = true;
+
+        try {
+          await deleteDoc(doc(db, "flightClaimLetters", id));
+          await loadData();
+        } catch (err) {
+          console.error(err);
+          alert("Could not delete claim.");
+          button.textContent = "Delete";
           button.disabled = false;
         }
       });
@@ -518,10 +549,10 @@ const firebaseConfig = {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-  console.error("LOGIN ERROR:", err.code, err.message);
-  loginError.textContent = `${err.code}: ${err.message}`;
-  loginError.classList.remove("hidden");
-}
+      console.error("LOGIN ERROR:", err.code, err.message);
+      loginError.textContent = `${err.code}: ${err.message}`;
+      loginError.classList.remove("hidden");
+    }
   });
 
   logoutBtn.addEventListener("click", () => signOut(auth));
