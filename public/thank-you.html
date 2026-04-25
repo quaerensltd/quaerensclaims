@@ -3,170 +3,244 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Your Claim Letter Is Ready | FreeFlightClaim.com</title>
   <meta name="robots" content="noindex, follow" />
+
   <link rel="icon" type="image/png" href="images/favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* FINAL LEVEL FLIGHT ANIMATION */
+    .flight-scene {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .flight-path-wrap {
+      position: absolute;
+      top: 120px;
+      left: 0;
+      width: 100vw;
+      height: 320px;
+      opacity: 0.95;
+    }
+
+    .flight-route-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .flight-route-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.45);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 10 12;
+      animation: routeDash 8s linear infinite;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.18));
+    }
+
+    .airport-dot {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #facc15;
+      box-shadow: 0 0 0 8px rgba(250, 204, 21, 0.18), 0 0 18px rgba(250, 204, 21, 0.7);
+      animation: dotPulse 1.8s ease-in-out infinite;
+    }
+
+    .airport-dot.start {
+      left: 6%;
+      top: 222px;
+    }
+
+    .airport-dot.end {
+      right: 8%;
+      top: 82px;
+      animation-delay: 0.6s;
+    }
+
+    .airport-label {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.94);
+      color: #1e3a8a;
+      border: 1px solid rgba(191, 219, 254, 0.9);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+      white-space: nowrap;
+    }
+
+    .airport-label.start {
+      left: 4%;
+      top: 248px;
+    }
+
+    .airport-label.end {
+      right: 5%;
+      top: 108px;
+    }
+
+    .animated-plane {
+      position: absolute;
+      width: 118px;
+      height: 118px;
+      left: -160px;
+      top: 235px;
+      animation: finalFlight 8.5s cubic-bezier(.22,.72,.2,1) forwards;
+      filter: drop-shadow(0 16px 18px rgba(15, 23, 42, 0.28));
+    }
+
+    .animated-plane svg {
+      width: 118px;
+      height: 118px;
+      transform: rotate(-12deg);
+    }
+
+    .plane-window {
+      animation: windowGlow 1.5s ease-in-out infinite;
+    }
+
+    .smoke-cloud {
+      position: absolute;
+      left: -20px;
+      top: 57px;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(226, 232, 240, 0.65);
+      filter: blur(4px);
+      opacity: 0;
+      animation: smokeTrail 1.7s ease-out infinite;
+    }
+
+    .smoke-cloud.s2 {
+      left: -36px;
+      top: 65px;
+      animation-delay: 0.32s;
+    }
+
+    .smoke-cloud.s3 {
+      left: -54px;
+      top: 50px;
+      animation-delay: 0.64s;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 5;
+    }
+
+    @keyframes routeDash {
+      to { stroke-dashoffset: -260; }
+    }
+
+    @keyframes dotPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(250, 204, 21, 0.18), 0 0 18px rgba(250, 204, 21, 0.7);
+      }
+      50% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 14px rgba(250, 204, 21, 0.1), 0 0 28px rgba(250, 204, 21, 0.9);
+      }
+    }
+
+    @keyframes finalFlight {
+      0% {
+        transform: translate(0, 0) rotate(5deg) scale(0.82);
+        opacity: 0;
+      }
+      7% {
+        opacity: 1;
+      }
+      28% {
+        transform: translate(28vw, -150px) rotate(-8deg) scale(0.95);
+      }
+      58% {
+        transform: translate(60vw, -55px) rotate(8deg) scale(1);
+      }
+      82% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(calc(100vw + 260px), -215px) rotate(-10deg) scale(0.9);
+        opacity: 0;
+      }
+    }
+
+    @keyframes smokeTrail {
+      0% {
+        transform: translateX(35px) scale(0.35);
+        opacity: 0;
+      }
+      30% {
+        opacity: 0.55;
+      }
+      100% {
+        transform: translateX(-65px) scale(2.2);
+        opacity: 0;
+      }
+    }
+
+    @keyframes windowGlow {
+      0%, 100% { fill: #facc15; opacity: 0.95; }
+      50% { fill: #fde68a; opacity: 1; }
+    }
+
+    @media (max-width: 640px) {
+      .flight-path-wrap {
+        top: 80px;
+        height: 240px;
+      }
+
+      .animated-plane {
+        width: 82px;
+        height: 82px;
+        top: 180px;
+      }
+
+      .animated-plane svg {
+        width: 82px;
+        height: 82px;
+      }
+
+      .airport-label {
+        font-size: 10px;
+        padding: 5px 9px;
+      }
+
+      .airport-dot.start {
+        top: 176px;
+      }
+
+      .airport-dot.end {
+        top: 70px;
+      }
+
+      .airport-label.start {
+        top: 202px;
+      }
+
+      .airport-label.end {
+        top: 96px;
+      }
+    }
   </style>
 </head>
+
 <body class="bg-gray-50 text-gray-800">
-
-  <header class="bg-white shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <a href="/">
-        <img src="images/logo-freeflightclaim.png" alt="FreeFlightClaim Logo" class="h-16 w-auto" />
-      </a>
-      <a href="/" class="text-blue-700 font-semibold hover:underline">Back to homepage</a>
-    </div>
-  </header>
-
-  <main>
-    <section class="bg-blue-900 text-white py-16">
-      <div class="max-w-4xl mx-auto px-4 text-center">
-        <div class="text-5xl mb-4">✅</div>
-        <h1 id="thankYouTitle" class="text-4xl sm:text-5xl font-extrabold mb-5">Your claim letter is ready</h1>
-        <p id="thankYouIntro" class="text-lg text-blue-100 max-w-2xl mx-auto">
-          You’ve taken the first step. Now send your claim letter to the airline and keep a copy for your records.
-        </p>
-
-        <div id="claimSummary" class="hidden max-w-3xl mx-auto mt-8 bg-white text-gray-800 rounded-2xl shadow-md p-6 border border-gray-200 text-left">
-          <h2 class="text-2xl font-extrabold text-blue-900 mb-4 text-center">Your claim summary</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm sm:text-base">
-            <p><strong>Name:</strong> <span id="summaryName">—</span></p>
-            <p><strong>Flight:</strong> <span id="summaryFlight">—</span></p>
-            <p><strong>Airline:</strong> <span id="summaryAirline">—</span></p>
-            <p><strong>Estimated compensation:</strong> <span id="summaryAmount">—</span></p>
-            <p><strong>Delivery method:</strong> <span id="summaryMethod">—</span></p>
-            <p><strong>Next step:</strong> Send your letter and save proof.</p>
-          </div>
-          <div class="mt-5 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-gray-700">
-            <strong>Tip:</strong> Send your claim as soon as possible. Keep a copy of the email, airline form confirmation, or any reference number they give you.
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-12 bg-white border-b">
-      <div class="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
-          <div class="text-3xl font-extrabold text-blue-700 mb-3">1</div>
-          <h2 class="font-bold text-blue-900 mb-2">Check your letter</h2>
-          <p class="text-sm text-gray-700">Make sure your flight details, booking reference, and payment information are correct before sending.</p>
-        </div>
-        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
-          <div class="text-3xl font-extrabold text-blue-700 mb-3">2</div>
-          <h2 class="font-bold text-blue-900 mb-2">Send it to the airline</h2>
-          <p class="text-sm text-gray-700">Send your letter by email or through the airline’s online complaint form, then save proof of submission.</p>
-        </div>
-        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
-          <div class="text-3xl font-extrabold text-blue-700 mb-3">3</div>
-          <h2 class="font-bold text-blue-900 mb-2">Wait for their reply</h2>
-          <p class="text-sm text-gray-700">Airlines often take a few weeks to respond. Keep any reply or rejection email safe.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-14 bg-gray-50">
-      <div class="max-w-4xl mx-auto px-4">
-        <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6 sm:p-8 text-center">
-          <h2 class="text-3xl font-extrabold text-blue-900 mb-4">What if the airline rejects your claim?</h2>
-          <p class="text-gray-700 text-lg mb-6">
-            Don’t panic. Airlines sometimes reject claims even when passengers may still have a case. If that happens, Quaerens can help you prepare a stronger follow-up or escalation document.
-          </p>
-          <a href="https://www.quaerens.co.uk/contact.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-7 rounded-xl shadow-md">
-            Get Help With a Rejected Claim
-          </a>
-          <p class="text-xs text-gray-500 mt-4">Only contact us after you receive a rejection, no response, or a request for more information.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-14 bg-white">
-      <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
-          <h2 class="text-2xl font-extrabold text-blue-900 mb-3">Was this useful?</h2>
-          <p class="text-gray-700 mb-5">
-            FreeFlightClaim is free to use. If it helped you, please share it with friends or family who had a delayed flight.
-          </p>
-          <button onclick="copyShareLink()" class="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-extrabold py-3 px-6 rounded-xl">
-            Copy Share Link
-          </button>
-          <p id="copyMessage" class="hidden text-green-700 font-semibold mt-3">Link copied!</p>
-        </div>
-
-        <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6">
-          <h2 class="text-2xl font-extrabold text-blue-900 mb-3">Support the free service</h2>
-          <p class="text-gray-700 mb-5">
-            We don’t take a percentage of your compensation. Optional donations help us keep this tool free.
-          </p>
-          <a href="/donate.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-6 rounded-xl">
-            Make an Optional Donation
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-12 bg-blue-900 text-white text-center">
-      <div class="max-w-4xl mx-auto px-4">
-        <h2 class="text-3xl font-extrabold mb-4">Need another claim letter?</h2>
-        <p class="text-blue-100 mb-6">You can create another free claim letter for a different flight.</p>
-        <a href="/claim-form.html" class="inline-block bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-extrabold py-3 px-7 rounded-xl shadow-md">
-          Create Another Claim Letter
-        </a>
-      </div>
-    </section>
-  </main>
-
-  <footer class="text-center text-sm text-gray-500 py-8 px-4 max-w-4xl mx-auto">
-    © 2025 Quaerens Ltd. FreeFlightClaim.com is a free document preparation tool.<br />
-    <a href="privacy.html" class="text-blue-600 mx-2">Privacy Policy</a> |
-    <a href="terms.html" class="text-blue-600 mx-2">Terms of Use</a> |
-    <a href="gdpr.html" class="text-blue-600 mx-2">GDPR</a> |
-    <a href="contact.html" class="text-blue-600 mx-2">Contact Us</a>
-  </footer>
-
-  <script>
-    function cleanText(value) {
-      return value ? String(value).replace(/[<>]/g, "").trim() : "";
-    }
-
-    function copyShareLink() {
-      navigator.clipboard.writeText("https://www.freeflightclaim.com/").then(() => {
-        document.getElementById("copyMessage").classList.remove("hidden");
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(window.location.search);
-
-      const name = cleanText(params.get("name"));
-      const airline = cleanText(params.get("airline"));
-      const amount = cleanText(params.get("amount"));
-      const method = cleanText(params.get("method"));
-      const flight = cleanText(params.get("flight"));
-
-      const hasAnyDetails = name || airline || amount || method || flight;
-      if (!hasAnyDetails) return;
-
-      const displayName = name || "there";
-      const displayAirline = airline || "the airline";
-      const displayFlight = flight || "your flight";
-      const displayAmount = amount && amount !== "0" ? `€${amount}` : "To be assessed by the airline";
-      const displayMethod = method === "email" ? "Letter emailed to you" : "PDF downloaded / generated";
-
-      document.getElementById("thankYouTitle").textContent = `Thanks ${displayName}, your claim letter is ready`;
-      document.getElementById("thankYouIntro").textContent = `Your letter for ${displayFlight} with ${displayAirline} is ready. Send it as soon as possible and keep proof of submission.`;
-
-      document.getElementById("summaryName").textContent = displayName;
-      document.getElementById("summaryFlight").textContent = displayFlight;
-      document.getElementById("summaryAirline").textContent = displayAirline;
-      document.getElementById("summaryAmount").textContent = displayAmount;
-      document.getElementById("summaryMethod").textContent = displayMethod;
-      document.getElementById("claimSummary").classList.remove("hidden");
-    });
-  </script>
-</body>
-</html>
