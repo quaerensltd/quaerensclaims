@@ -13,7 +13,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = "FreeFlightClaim <claims@freeflightclaim.com>";
 
-exports.sendClaimEmail = onRequest(async (req, res) => {
+exports.sendClaimEmailV2 = onRequest(async (req, res) => {
   cors(req, res, async () => {
     if (req.method === "OPTIONS") return res.status(204).send("");
     if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
