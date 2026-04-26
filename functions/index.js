@@ -11,7 +11,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "Freeflightclaim <info@quaerens.co.uk>";
+const FROM_EMAIL = "FreeFlightClaim <info@quaerens.co.uk>";
 
 exports.sendClaimEmailV2 = onRequest(async (req, res) => {
   cors(req, res, async () => {
@@ -25,13 +25,18 @@ exports.sendClaimEmailV2 = onRequest(async (req, res) => {
     }
 
     const subject = "Your FreeFlightClaim letter is ready";
-    const html = buildEmail({
-      template: "claim_created",
-      fullName: data.fullName,
-      airline: data.airline,
-      flightNumber: data.flightNumber,
-      compensation: data.compensation
-    }).html;
+   const depAirport = data.depAirport || "departure airport";
+const arrAirport = data.arrAirport || "arrival airport";
+
+const html = buildEmail({
+  template: "claim_created",
+  fullName: data.fullName,
+  airline: data.airline,
+  flightNumber: data.flightNumber,
+  depAirport,
+  arrAirport,
+  compensation: data.compensation
+}).html;
 
     try {
       await resend.emails.send({
@@ -138,12 +143,13 @@ function buildEmail(data) {
   }
 
   return {
-    subject: "Your FreeFlightClaim letter is ready",
-    html: [
-      "<p>Hi " + name + ",</p>",
-      "<p>Your claim letter for " + flight + " with " + airline + " is ready.</p>",
-      "<p>Estimated compensation: EUR " + compensation + "</p>",
-      "<p>Kind regards,<br>FreeFlightClaim / Quaerens</p>"
-    ].join("")
-  };
+  subject: "Your FreeFlightClaim letter is ready",
+  html: [
+    "<p>Hi " + name + ",</p>",
+    "<p>Your claim letter for " + flight + " with " + airline + " is ready.</p>",
+    "<p><strong>Route:</strong> " + (data.depAirport || "—") + " → " + (data.arrAirport || "—") + "</p>",
+    "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
+    "<p>Kind regards,<br>FreeFlightClaim / Quaerens</p>"
+  ].join("")
+};
 }
