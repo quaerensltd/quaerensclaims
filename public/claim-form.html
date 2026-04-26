@@ -652,210 +652,270 @@
         airportList.forEach(ap => sel.appendChild(new Option(ap, ap)));
       });
 
-      const airlineSelect = document.getElementById("airline");
-      const languageSelect = document.getElementById("language");
-      airlineSelect.addEventListener("change", function () {
-        const lang = window.airlineLangMap[this.value];
-        if (lang && languageSelect) languageSelect.value = lang;
-      });
-
-      const paymentMethod = document.getElementById("paymentMethod");
-      const paymentDetails = document.getElementById("paymentDetails");
-      paymentMethod.addEventListener("change", function () {
-        if (this.value === "iban") {
-          paymentDetails.placeholder = "Enter your IBAN / bank details";
-        } else if (this.value === "paypal") {
-          paymentDetails.placeholder = "Enter your PayPal email address";
-        } else {
-          paymentDetails.placeholder = "Enter IBAN or PayPal email";
-        }
-      });
-
-      function updateCompensationPreview() {
-        const distance = document.getElementById("distance").value;
-        const delayDuration = document.getElementById("delayDuration").value;
-        const box = document.getElementById("compensationPreview");
-        if (!distance || !delayDuration) {
-          box.classList.add("hidden");
-          return;
-        }
-        const amount = calculateCompensation(distance, delayDuration);
-        box.innerHTML = amount > 0
-          ? `Estimated compensation: <strong>€${amount}</strong>. Final eligibility depends on airline responsibility and circumstances.`
-          : `This may not qualify for fixed EC261 compensation, but you can still generate a letter if you want the airline to review it.`;
-        box.classList.remove("hidden");
-      }
-
-      document.getElementById("distance").addEventListener("change", updateCompensationPreview);
-      document.getElementById("delayDuration").addEventListener("change", updateCompensationPreview);
-
-      const scrollBtn = document.getElementById("scrollTopBtn");
-      window.addEventListener("scroll", () => scrollBtn.classList.toggle("hidden", window.scrollY < 300));
-      scrollBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-
-      const form = document.getElementById("claim-letter-form");
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const submitBtn = document.getElementById("submitBtn");
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Preparing your letter...";
-
-        const formData = new FormData(form);
-        const claimData = {
-          fullName: formData.get("fullName")?.trim(),
-          email: formData.get("email")?.trim(),
-          phone: formData.get("phone")?.trim(),
-          flightNumber: formData.get("flightNumber")?.trim(),
-          bookingRef: formData.get("bookingRef")?.trim(),
-          paymentMethod: formData.get("paymentMethod"),
-          paymentDetails: formData.get("paymentDetails")?.trim(),
-          iban: formData.get("paymentDetails")?.trim(),
-          flightDate: formData.get("flightDate"),
-          depAirport: formData.get("depAirport"),
-          arrAirport: formData.get("arrAirport"),
-          airline: formData.get("airline"),
-          airlineEmail: window.airlineEmails[formData.get("airline")] || "",
-          reasonCode: formData.get("reason"),
-          reason: reasonLabels[formData.get("reason")] || "Other / not sure",
-          distance: formData.get("distance"),
-          delayDuration: formData.get("delayDuration"),
-          compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
-          language: formData.get("language"),
-          handleOption: formData.get("handleOption"),
-          donation: formData.get("donation"),
-          marketingConsent: formData.get("marketingConsent") === "yes",
-          status: "new",
-          notes: "",
-          source: "freeflightclaim-form",
-          submittedAt: new Date().toISOString()
-        };
-
-        try {
-          let fileURL = "";
-
-          if (window.firebaseUtils && window.db) {
-            const { collection, addDoc, serverTimestamp, ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
-
-            const file = document.getElementById("fileUpload")?.files?.[0];
-            if (file && window.storage) {
-              const storageRef = ref(window.storage, `uploads/${Date.now()}-${file.name}`);
-              const snap = await uploadBytes(storageRef, file);
-              fileURL = await getDownloadURL(snap.ref);
-            }
-
-            await addDoc(collection(window.db, "flightClaimLetters"), {
-              ...claimData,
-              fileURL,
-              createdAt: serverTimestamp()
-            });
-
-            await addDoc(collection(window.db, "emailQueue"), {
-              to: claimData.email,
-              fullName: claimData.fullName,
-              phone: claimData.phone,
-              airline: claimData.airline,
-              flightNumber: claimData.flightNumber,
-              compensation: claimData.compensation,
-              claimStatus: "new",
-              template: "claim_created",
-              subject: "Your FreeFlightClaim letter is ready",
-              sendAt: serverTimestamp(),
-              sent: false,
-              source: "freeflightclaim",
-              createdAt: serverTimestamp()
-            });
-
-            if (claimData.marketingConsent) {
-              try {
-                await addDoc(collection(window.db, "freeFlightClaimMarketingLeads"), {
-                  email: claimData.email,
-                  phone: claimData.phone,
-                  fullName: claimData.fullName,
-                  airline: claimData.airline,
-                  flightNumber: claimData.flightNumber,
-                  flightDate: claimData.flightDate,
-                  depAirport: claimData.depAirport,
-                  arrAirport: claimData.arrAirport,
-                  compensation: claimData.compensation,
-                  source: "freeflightclaim-claim-form",
-                  marketingConsent: true,
-                  consentText: "Yes, I’d like to receive helpful updates about travel claims, rejected airline claims, complaint templates, and related support from FreeFlightClaim and Quaerens. I can unsubscribe at any time.",
-                  consentCapturedAt: serverTimestamp(),
-                  createdAt: serverTimestamp()
-                });
-
-                await addDoc(collection(window.db, "emailQueue"), {
-                  to: claimData.email,
-                  fullName: claimData.fullName,
-                  phone: claimData.phone,
-                  airline: claimData.airline,
-                  flightNumber: claimData.flightNumber,
-                  compensation: claimData.compensation,
-                  claimStatus: "follow_up_7_days",
-                  template: "airline_reply_check",
-                  subject: "Has the airline replied to your claim?",
-                  sendAfterDays: 7,
-                  sent: false,
-                  source: "freeflightclaim",
-                  createdAt: serverTimestamp()
-                });
-
-                await addDoc(collection(window.db, "emailQueue"), {
-                  to: claimData.email,
-                  fullName: claimData.fullName,
-                  phone: claimData.phone,
-                  airline: claimData.airline,
-                  flightNumber: claimData.flightNumber,
-                  compensation: claimData.compensation,
-                  claimStatus: "follow_up_14_days",
-                  template: "rejected_claim_help",
-                  subject: "Airline rejected or ignored your claim?",
-                  sendAfterDays: 14,
-                  sent: false,
-                  source: "freeflightclaim",
-                  createdAt: serverTimestamp()
-                });
-              } catch (leadErr) {
-                console.warn("Marketing lead or follow-up email queue was not saved:", leadErr);
-              }
-            }
-          }
-
-          if (claimData.handleOption === "email") {
-            await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmailV2", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ...claimData, fileURL })
-            });
-          } else {
-            generatePDF({ ...claimData, fileURL });
-          }
-
-          document.getElementById("claim-letter-result").classList.remove("hidden");
-
-          const thankYouParams = new URLSearchParams({
-  name: claimData.fullName || "",
-  airline: claimData.airline || "",
-  amount: claimData.compensation ? String(claimData.compensation) : "0",
-  method: claimData.handleOption || "pdf",
-  flight: claimData.flightNumber || "",
-  dep: claimData.depAirport || "",
-  arr: claimData.arrAirport || ""
+const airlineSelect = document.getElementById("airline");
+const languageSelect = document.getElementById("language");
+airlineSelect.addEventListener("change", function () {
+  const lang = window.airlineLangMap[this.value];
+  if (lang && languageSelect) languageSelect.value = lang;
 });
 
-          setTimeout(() => {
-            window.location.href = `/thank-you.html?${thankYouParams.toString()}`;
-          }, 900);
+const paymentMethod = document.getElementById("paymentMethod");
+const paymentDetails = document.getElementById("paymentDetails");
+paymentMethod.addEventListener("change", function () {
+  if (this.value === "iban") {
+    paymentDetails.placeholder = "Enter your IBAN / bank details";
+  } else if (this.value === "paypal") {
+    paymentDetails.placeholder = "Enter your PayPal email address";
+  } else {
+    paymentDetails.placeholder = "Enter IBAN or PayPal email";
+  }
+});
 
-        } catch (err) {
-          console.error("Error preparing claim letter:", err);
-          alert("There was a database or email issue, but your PDF will still be generated now.");
-          generatePDF({ ...claimData, fileURL: "" });
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Generate My Claim Letter";
-        }
+function updateCompensationPreview() {
+  const distance = document.getElementById("distance").value;
+  const delayDuration = document.getElementById("delayDuration").value;
+  const box = document.getElementById("compensationPreview");
+
+  if (!distance || !delayDuration) {
+    box.classList.add("hidden");
+    return;
+  }
+
+  const amount = calculateCompensation(distance, delayDuration);
+  box.innerHTML = amount > 0
+    ? `Estimated compensation: <strong>€${amount}</strong>. Final eligibility depends on airline responsibility and circumstances.`
+    : `This may not qualify for fixed EC261 compensation, but you can still generate a letter if you want the airline to review it.`;
+
+  box.classList.remove("hidden");
+}
+
+document.getElementById("distance").addEventListener("change", updateCompensationPreview);
+document.getElementById("delayDuration").addEventListener("change", updateCompensationPreview);
+
+const scrollBtn = document.getElementById("scrollTopBtn");
+window.addEventListener("scroll", () => scrollBtn.classList.toggle("hidden", window.scrollY < 300));
+scrollBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+const form = document.getElementById("claim-letter-form");
+
+async function trackEvent(eventName, claimData, extra = {}) {
+  if (!window.firebaseUtils || !window.db) return;
+
+  const { collection, addDoc, serverTimestamp } = window.firebaseUtils;
+
+  try {
+    await addDoc(collection(window.db, "conversionEvents"), {
+      eventName,
+      fullName: claimData.fullName || "",
+      email: claimData.email || "",
+      phone: claimData.phone || "",
+      airline: claimData.airline || "",
+      flightNumber: claimData.flightNumber || "",
+      depAirport: claimData.depAirport || "",
+      arrAirport: claimData.arrAirport || "",
+      compensation: claimData.compensation || 0,
+      handleOption: claimData.handleOption || "",
+      marketingConsent: claimData.marketingConsent || false,
+      source: "freeflightclaim-form",
+      createdAt: serverTimestamp(),
+      ...extra
+    });
+  } catch (trackErr) {
+    console.warn("Tracking event was not saved:", trackErr);
+  }
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const submitBtn = document.getElementById("submitBtn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Preparing your letter...";
+
+  const formData = new FormData(form);
+  const claimData = {
+    fullName: formData.get("fullName")?.trim(),
+    email: formData.get("email")?.trim(),
+    phone: formData.get("phone")?.trim(),
+    flightNumber: formData.get("flightNumber")?.trim(),
+    bookingRef: formData.get("bookingRef")?.trim(),
+    paymentMethod: formData.get("paymentMethod"),
+    paymentDetails: formData.get("paymentDetails")?.trim(),
+    iban: formData.get("paymentDetails")?.trim(),
+    flightDate: formData.get("flightDate"),
+    depAirport: formData.get("depAirport"),
+    arrAirport: formData.get("arrAirport"),
+    airline: formData.get("airline"),
+    airlineEmail: window.airlineEmails[formData.get("airline")] || "",
+    reasonCode: formData.get("reason"),
+    reason: reasonLabels[formData.get("reason")] || "Other / not sure",
+    distance: formData.get("distance"),
+    delayDuration: formData.get("delayDuration"),
+    compensation: calculateCompensation(formData.get("distance"), formData.get("delayDuration")),
+    language: formData.get("language"),
+    handleOption: formData.get("handleOption"),
+    donation: formData.get("donation"),
+    marketingConsent: formData.get("marketingConsent") === "yes",
+    status: "new",
+    notes: "",
+    source: "freeflightclaim-form",
+    submittedAt: new Date().toISOString()
+  };
+
+  try {
+    let fileURL = "";
+
+    await trackEvent("claim_submitted", claimData);
+
+    if (window.firebaseUtils && window.db) {
+      const { collection, addDoc, serverTimestamp, ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
+
+      const file = document.getElementById("fileUpload")?.files?.[0];
+      if (file && window.storage) {
+        const storageRef = ref(window.storage, `uploads/${Date.now()}-${file.name}`);
+        const snap = await uploadBytes(storageRef, file);
+        fileURL = await getDownloadURL(snap.ref);
+      }
+
+      await addDoc(collection(window.db, "flightClaimLetters"), {
+        ...claimData,
+        fileURL,
+        createdAt: serverTimestamp()
       });
+
+      await addDoc(collection(window.db, "emailQueue"), {
+        to: claimData.email,
+        fullName: claimData.fullName,
+        phone: claimData.phone,
+        airline: claimData.airline,
+        flightNumber: claimData.flightNumber,
+        depAirport: claimData.depAirport,
+        arrAirport: claimData.arrAirport,
+        compensation: claimData.compensation,
+        claimStatus: "new",
+        template: "claim_created",
+        subject: "Your FreeFlightClaim letter is ready",
+        sendAt: serverTimestamp(),
+        sent: false,
+        source: "freeflightclaim",
+        createdAt: serverTimestamp()
+      });
+
+      await trackEvent("follow_up_queued", claimData, {
+        template: "claim_created"
+      });
+
+      if (claimData.marketingConsent) {
+        try {
+          await addDoc(collection(window.db, "freeFlightClaimMarketingLeads"), {
+            email: claimData.email,
+            phone: claimData.phone,
+            fullName: claimData.fullName,
+            airline: claimData.airline,
+            flightNumber: claimData.flightNumber,
+            flightDate: claimData.flightDate,
+            depAirport: claimData.depAirport,
+            arrAirport: claimData.arrAirport,
+            compensation: claimData.compensation,
+            source: "freeflightclaim-claim-form",
+            marketingConsent: true,
+            consentText: "Yes, I’d like to receive helpful updates about travel claims, rejected airline claims, complaint templates, and related support from FreeFlightClaim and Quaerens. I can unsubscribe at any time.",
+            consentCapturedAt: serverTimestamp(),
+            createdAt: serverTimestamp()
+          });
+
+          await trackEvent("marketing_consent", claimData);
+
+          await addDoc(collection(window.db, "emailQueue"), {
+            to: claimData.email,
+            fullName: claimData.fullName,
+            phone: claimData.phone,
+            airline: claimData.airline,
+            flightNumber: claimData.flightNumber,
+            depAirport: claimData.depAirport,
+            arrAirport: claimData.arrAirport,
+            compensation: claimData.compensation,
+            claimStatus: "follow_up_7_days",
+            template: "airline_reply_check",
+            subject: "Has the airline replied to your claim?",
+            sendAfterDays: 7,
+            sent: false,
+            source: "freeflightclaim",
+            createdAt: serverTimestamp()
+          });
+
+          await trackEvent("follow_up_queued", claimData, {
+            template: "airline_reply_check",
+            sendAfterDays: 7
+          });
+
+          await addDoc(collection(window.db, "emailQueue"), {
+            to: claimData.email,
+            fullName: claimData.fullName,
+            phone: claimData.phone,
+            airline: claimData.airline,
+            flightNumber: claimData.flightNumber,
+            depAirport: claimData.depAirport,
+            arrAirport: claimData.arrAirport,
+            compensation: claimData.compensation,
+            claimStatus: "follow_up_14_days",
+            template: "rejected_claim_help",
+            subject: "Airline rejected or ignored your claim?",
+            sendAfterDays: 14,
+            sent: false,
+            source: "freeflightclaim",
+            createdAt: serverTimestamp()
+          });
+
+          await trackEvent("follow_up_queued", claimData, {
+            template: "rejected_claim_help",
+            sendAfterDays: 14
+          });
+
+        } catch (leadErr) {
+          console.warn("Marketing lead or follow-up email queue was not saved:", leadErr);
+        }
+      }
+    }
+
+    if (claimData.handleOption === "email") {
+      await trackEvent("email_requested", claimData);
+
+      await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmailV2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...claimData, fileURL })
+      });
+    } else {
+      generatePDF({ ...claimData, fileURL });
+      await trackEvent("pdf_generated", claimData);
+    }
+
+    document.getElementById("claim-letter-result").classList.remove("hidden");
+
+    const thankYouParams = new URLSearchParams({
+      name: claimData.fullName || "",
+      airline: claimData.airline || "",
+      amount: claimData.compensation ? String(claimData.compensation) : "0",
+      method: claimData.handleOption || "pdf",
+      flight: claimData.flightNumber || "",
+      dep: claimData.depAirport || "",
+      arr: claimData.arrAirport || ""
+    });
+
+    setTimeout(() => {
+      window.location.href = `/thank-you.html?${thankYouParams.toString()}`;
+    }, 900);
+
+  } catch (err) {
+    console.error("Error preparing claim letter:", err);
+    alert("There was a database or email issue, but your PDF will still be generated now.");
+    generatePDF({ ...claimData, fileURL: "" });
+    await trackEvent("pdf_generated_after_error", claimData);
+    submitBtn.disabled = false;
+       submitBtn.textContent = "Generate My Claim Letter";
+  }
+});
     });
   </script>
 </body>
