@@ -89,9 +89,136 @@
   }
 </style>
 
+
+<style>
+  /* Quaerens persistent language switcher */
+  .quaerens-language-switcher {
+    position: fixed;
+    right: 1rem;
+    top: 5.25rem;
+    z-index: 70;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(255,255,255,0.96);
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+    padding: 0.45rem 0.55rem 0.45rem 0.8rem;
+    font-family: Inter, Arial, sans-serif;
+  }
+
+  .quaerens-language-switcher label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1e3a8a;
+  }
+
+  .quaerens-language-switcher select {
+    border: 0;
+    background: transparent;
+    color: #111827;
+    font-weight: 700;
+    font-size: 0.82rem;
+    outline: none;
+    cursor: pointer;
+    max-width: 8.8rem;
+  }
+
+  .goog-te-banner-frame.skiptranslate,
+  .goog-logo-link,
+  .goog-te-gadget,
+  body > .skiptranslate {
+    display: none !important;
+  }
+
+  body {
+    top: 0 !important;
+  }
+
+  @media (max-width: 768px) {
+    .quaerens-language-switcher {
+      top: 4.35rem;
+      right: 0.75rem;
+      padding: 0.38rem 0.5rem 0.38rem 0.65rem;
+    }
+
+    .quaerens-language-switcher label {
+      display: none;
+    }
+
+    .quaerens-language-switcher select {
+      max-width: 7.6rem;
+      font-size: 0.78rem;
+    }
+  }
+</style>
+<script>
+  // Quaerens persistent language switcher
+  function quaerensSetLanguage(lang) {
+    var value = lang === 'en' ? '' : '/en/' + lang;
+    var expires = '; expires=' + new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+    var hostname = window.location.hostname;
+    document.cookie = 'googtrans=' + value + expires + '; path=/';
+    if (hostname) {
+      document.cookie = 'googtrans=' + value + expires + '; domain=' + hostname + '; path=/';
+      var parts = hostname.split('.');
+      if (parts.length > 2) {
+        document.cookie = 'googtrans=' + value + expires + '; domain=.' + parts.slice(-2).join('.') + '; path=/';
+      }
+    }
+    localStorage.setItem('quaerensLanguage', lang);
+    window.location.reload();
+  }
+
+  function quaerensReadTranslateCookie() {
+    var match = document.cookie.match(/(?:^|; )googtrans=([^;]*)/);
+    if (!match) return '';
+    var decoded = decodeURIComponent(match[1]);
+    var parts = decoded.split('/');
+    return parts.length >= 3 ? parts[2] : '';
+  }
+
+  function quaerensInitLanguageSelect() {
+    var select = document.getElementById('quaerensLanguageSelect');
+    if (!select) return;
+    var lang = quaerensReadTranslateCookie() || localStorage.getItem('quaerensLanguage') || 'en';
+    select.value = lang;
+  }
+
+  function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'en,nl,es,fr,de,it,sv,el',
+      autoDisplay: false
+    }, 'google_translate_element');
+    quaerensInitLanguageSelect();
+  }
+
+  document.addEventListener('DOMContentLoaded', quaerensInitLanguageSelect);
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 </head>
 <body class="bg-gray-50 text-gray-800">
-  <div id="google_translate_element" style="display:none;"></div>
+
+<!-- Quaerens persistent language switcher -->
+<div id="google_translate_element" style="display:none;"></div>
+<div class="quaerens-language-switcher" aria-label="Language selector">
+  <label for="quaerensLanguageSelect">Language</label>
+  <select id="quaerensLanguageSelect" onchange="quaerensSetLanguage(this.value)">
+    <option value="en">English</option>
+    <option value="nl">Nederlands</option>
+    <option value="es">Español</option>
+    <option value="fr">Français</option>
+    <option value="de">Deutsch</option>
+    <option value="it">Italiano</option>
+    <option value="sv">Svenska</option>
+    <option value="el">Ελληνικά</option>
+  </select>
+</div>
+
+  
   <header class="bg-white shadow-sm sticky top-0 z-40"><div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between"><a href="/" aria-label="Quaerens Home"><img src="images/new-investment.png" alt="Quaerens Logo" class="h-16 md:h-20 w-auto"></a><nav class="flex items-center gap-4"><a href="/" class="inline-flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium"><img src="images/homebutton.png" alt="Home" class="h-10 w-auto hover:opacity-80 transition"></a><a href="claim.html?type=Investment-Platform-Dispute-Resolution" class="hidden md:inline-block px-5 py-2.5 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">Check Your Case</a></nav></div></header>
   <section class="hero-section"><div class="hero-overlay"></div><div class="hero-content"><div class="hero-inner"><div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm font-medium mb-6"><span>Investment Platform Dispute Review</span></div><h1>Investment Platform Problem Not Being Fixed?</h1><p>If you are dealing with blocked withdrawals, trading errors, pricing issues, account restrictions or broker platform failures, your documents and complaint history may need a clearer review pack.</p><div class="hero-checklist"><span>✅ <strong>Evidence review</strong> for contracts, payments, messages, decisions and complaint replies</span><span>✅ <strong>Timeline support</strong> to show what happened, when it happened and who responded</span><span>✅ <strong>Escalation wording</strong> for a clearer, factual complaint or review route</span><span>✅ <strong>Practical next steps</strong> based on the documents and value affected</span></div><div class="flex flex-wrap items-center gap-4 mt-8"><a href="claim.html?type=Investment-Platform-Dispute-Resolution" class="cta-button cta-primary">Start Review</a><a href="#review-checker" class="cta-button cta-secondary">Use Review Tool</a></div><div class="quick-panel"><p class="font-extrabold text-lg" style="color:#0f172a!important;">Quick eligibility check</p><ul><li>✔ Practical evidence organisation and review support</li><li>✔ Help turning scattered documents into a clearer case summary</li><li>✔ Structured wording support for complaints and escalation</li><li>✔ Clear explanation of likely evidence gaps and next steps</li></ul></div></div></div></section>
   <section class="section-wrap -mt-10 relative z-10"><div class="info-box soft-blue fade-up"><div class="trust-strip"><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Document review</p><p class="text-sm text-gray-600">Organise the core paperwork and decision history.</p></div><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Payment evidence</p><p class="text-sm text-gray-600">Review receipts, statements, charges and losses.</p></div><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Complaint timeline</p><p class="text-sm text-gray-600">Build a clearer chronology of reports and replies.</p></div><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Structured escalation</p><p class="text-sm text-gray-600">Prepare clearer wording for the next step.</p></div></div></div></section>
@@ -109,6 +236,6 @@
   <section class="section-wrap py-6"><div class="rounded-3xl bg-blue-800 text-white text-center py-12 px-6 shadow-xl fade-up"><p class="text-sm font-semibold uppercase tracking-wide text-blue-200 mb-3">Take the next step</p><h2 class="text-3xl md:text-4xl font-extrabold mb-4">Start Investment Platform Dispute Review</h2><p class="text-blue-100 max-w-2xl mx-auto mb-8 text-lg">Send us a short summary of the issue, the amount affected and any documents or replies you have. We will confirm whether structured review support appears appropriate.</p><a href="claim.html?type=Investment-Platform-Dispute-Resolution" class="inline-block px-8 py-4 bg-white text-blue-800 font-bold rounded-full shadow-md hover:bg-gray-100 transition">Submit Your Information</a><p class="text-sm mt-5 text-blue-100">Quaerens provides structured review and document support. We do not guarantee outcomes.</p></div></section>
   <footer style="text-align:center;font-size:.85rem;color:#6b7280;padding:2rem 1rem;max-width:900px;margin:0 auto;">© 2025 Quaerens Ltd. All rights reserved.<br><a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Use</a> | <a href="gdpr.html">GDPR</a> | <a href="contact.html">Contact Us</a></footer><div class="sticky-mobile-cta md:hidden"><a href="claim.html?type=Investment-Platform-Dispute-Resolution" class="block text-center px-6 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">Start Review</a></div>
   <script>document.addEventListener('DOMContentLoaded',function(){const form=document.getElementById('reviewForm'),resultDiv=document.getElementById('reviewResult'),resultLevel=document.getElementById('reviewResultLevel'),resultMessage=document.getElementById('reviewResultMessage');form.addEventListener('submit',function(e){e.preventDefault();const issue=document.getElementById('issueType').value,value=parseFloat(document.getElementById('amountAffected').value)||0,evidence=document.getElementById('evidenceLevel').value;if(!issue||!value||!evidence){alert('Please complete all fields.');return}let score=2;if(value>=10000)score+=3;else if(value>=2500)score+=2;else score+=1;if(evidence==='strong')score+=3;else if(evidence==='some')score+=2;let level='May need more evidence',message='The issue may still be worth organising, but stronger documents and correspondence would usually make review clearer.';if(score>=7){level='Potentially suitable';message='This looks potentially suitable for structured review support, especially if the payment trail, timeline and responses can be evidenced.'}else if(score>=5){level='Worth reviewing';message='This may be worth reviewing, particularly if you can provide documents, payment records and correspondence showing the timeline.'}resultLevel.textContent=level;resultMessage.textContent=message;resultDiv.classList.remove('hidden');resultDiv.scrollIntoView({behavior:'smooth',block:'nearest'})});const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting)entry.target.classList.add('show')})},{threshold:.12});document.querySelectorAll('.fade-up').forEach(el=>observer.observe(el));document.querySelectorAll('.faq-button').forEach(button=>{button.addEventListener('click',()=>{const item=button.parentElement,icon=button.querySelector('.faq-icon'),isActive=item.classList.contains('active');document.querySelectorAll('.faq-item').forEach(faq=>{faq.classList.remove('active');const faqIcon=faq.querySelector('.faq-icon');if(faqIcon)faqIcon.textContent='+'});if(!isActive){item.classList.add('active');icon.textContent='-'}})})});</script>
-  <script type="text/javascript">function googleTranslateElementInit(){new google.translate.TranslateElement({pageLanguage:'en',includedLanguages:'en,es,fr,de,nl,it',layout:google.translate.TranslateElement.InlineLayout.SIMPLE},'google_translate_element')}</script><script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script><script>function setLanguage(lang){var newLang='/auto/'+lang;document.cookie='googtrans='+newLang+'; path=/';document.cookie='googtrans='+newLang+'; domain='+window.location.hostname+'; path=/';location.reload()}</script>
+  <script>function setLanguage(lang){var newLang='/auto/'+lang;document.cookie='googtrans='+newLang+'; path=/';document.cookie='googtrans='+newLang+'; domain='+window.location.hostname+'; path=/';location.reload()}</script>
 </body>
 </html>

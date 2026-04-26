@@ -89,8 +89,135 @@
   }
 </style>
 
+
+<style>
+  /* Quaerens persistent language switcher */
+  .quaerens-language-switcher {
+    position: fixed;
+    right: 1rem;
+    top: 5.25rem;
+    z-index: 70;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(255,255,255,0.96);
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+    padding: 0.45rem 0.55rem 0.45rem 0.8rem;
+    font-family: Inter, Arial, sans-serif;
+  }
+
+  .quaerens-language-switcher label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1e3a8a;
+  }
+
+  .quaerens-language-switcher select {
+    border: 0;
+    background: transparent;
+    color: #111827;
+    font-weight: 700;
+    font-size: 0.82rem;
+    outline: none;
+    cursor: pointer;
+    max-width: 8.8rem;
+  }
+
+  .goog-te-banner-frame.skiptranslate,
+  .goog-logo-link,
+  .goog-te-gadget,
+  body > .skiptranslate {
+    display: none !important;
+  }
+
+  body {
+    top: 0 !important;
+  }
+
+  @media (max-width: 768px) {
+    .quaerens-language-switcher {
+      top: 4.35rem;
+      right: 0.75rem;
+      padding: 0.38rem 0.5rem 0.38rem 0.65rem;
+    }
+
+    .quaerens-language-switcher label {
+      display: none;
+    }
+
+    .quaerens-language-switcher select {
+      max-width: 7.6rem;
+      font-size: 0.78rem;
+    }
+  }
+</style>
+<script>
+  // Quaerens persistent language switcher
+  function quaerensSetLanguage(lang) {
+    var value = lang === 'en' ? '' : '/en/' + lang;
+    var expires = '; expires=' + new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+    var hostname = window.location.hostname;
+    document.cookie = 'googtrans=' + value + expires + '; path=/';
+    if (hostname) {
+      document.cookie = 'googtrans=' + value + expires + '; domain=' + hostname + '; path=/';
+      var parts = hostname.split('.');
+      if (parts.length > 2) {
+        document.cookie = 'googtrans=' + value + expires + '; domain=.' + parts.slice(-2).join('.') + '; path=/';
+      }
+    }
+    localStorage.setItem('quaerensLanguage', lang);
+    window.location.reload();
+  }
+
+  function quaerensReadTranslateCookie() {
+    var match = document.cookie.match(/(?:^|; )googtrans=([^;]*)/);
+    if (!match) return '';
+    var decoded = decodeURIComponent(match[1]);
+    var parts = decoded.split('/');
+    return parts.length >= 3 ? parts[2] : '';
+  }
+
+  function quaerensInitLanguageSelect() {
+    var select = document.getElementById('quaerensLanguageSelect');
+    if (!select) return;
+    var lang = quaerensReadTranslateCookie() || localStorage.getItem('quaerensLanguage') || 'en';
+    select.value = lang;
+  }
+
+  function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'en,nl,es,fr,de,it,sv,el',
+      autoDisplay: false
+    }, 'google_translate_element');
+    quaerensInitLanguageSelect();
+  }
+
+  document.addEventListener('DOMContentLoaded', quaerensInitLanguageSelect);
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 </head>
 <body class="bg-gray-50 text-gray-800">
+
+<!-- Quaerens persistent language switcher -->
+<div id="google_translate_element" style="display:none;"></div>
+<div class="quaerens-language-switcher" aria-label="Language selector">
+  <label for="quaerensLanguageSelect">Language</label>
+  <select id="quaerensLanguageSelect" onchange="quaerensSetLanguage(this.value)">
+    <option value="en">English</option>
+    <option value="nl">Nederlands</option>
+    <option value="es">Español</option>
+    <option value="fr">Français</option>
+    <option value="de">Deutsch</option>
+    <option value="it">Italiano</option>
+    <option value="sv">Svenska</option>
+    <option value="el">Ελληνικά</option>
+  </select>
+</div>
+
   <header class="bg-white shadow-sm sticky top-0 z-40"><div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between"><a href="/" aria-label="Quaerens Home"><img src="images/logo-crypto.png" alt="Quaerens Logo" class="h-16 md:h-20 w-auto"></a><nav class="flex items-center gap-4"><a href="/"><img src="images/homebutton.png" alt="Home" class="h-10 w-auto hover:opacity-80 transition"></a><a href="claim.html?type=Crypto" class="hidden md:inline-block px-5 py-2.5 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">Check Your Case</a></nav></div></header>
   <section class="hero-section"><div class="hero-overlay"></div><div class="hero-content"><div class="hero-inner"><div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm font-medium mb-6"><span>Crypto Scam Recovery Review</span></div><h1>Lost Money to a Cryptocurrency Scam?</h1><p>If you are dealing with crypto scams, fake trading platforms, blocked withdrawals, wallet transfers, recovery scams and investment fraud, your documents and complaint history may need a clearer review pack.</p><div class="hero-checklist"><span>✅ <strong>Evidence review</strong> for payments, screenshots, messages and decision letters</span><span>✅ <strong>Timeline support</strong> to show what happened and when</span><span>✅ <strong>Escalation wording</strong> for a clearer, factual complaint route</span><span>✅ <strong>Practical next steps</strong> based on the documents available</span></div><div class="flex flex-wrap items-center gap-4 mt-8"><a href="claim.html?type=Crypto" class="cta-button cta-primary">Start Review</a><a href="#review-checker" class="cta-button cta-secondary">Use Review Tool</a></div><div class="quick-panel"><p class="font-extrabold text-lg" style="color:#0f172a!important;">Quick eligibility check</p><ul><li>✔ Practical evidence organisation and review support</li><li>✔ Help turning scattered documents into a clearer case summary</li><li>✔ Structured wording support for complaints and escalation</li><li>✔ Clear explanation of likely evidence gaps and next steps</li></ul></div></div></div></section>
   <section class="section-wrap -mt-10 relative z-10"><div class="info-box soft-blue fade-up"><div class="trust-strip"><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Document review</p><p class="text-sm text-gray-600">Organise the core paperwork and decision history.</p></div><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Payment trail</p><p class="text-sm text-gray-600">Review receipts, transfers, charges and losses.</p></div><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Complaint timeline</p><p class="text-sm text-gray-600">Build a clearer chronology of events and replies.</p></div><div class="trust-pill"><p class="font-semibold text-blue-900 mb-1">Structured escalation</p><p class="text-sm text-gray-600">Prepare clearer wording for the next step.</p></div></div></div></section>
