@@ -11,7 +11,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "FreeFlightClaim <info@quaerens.co.uk>";
+const FROM_EMAIL = "onboarding@resend.dev";
 
 exports.sendClaimEmailV2 = onRequest(async (req, res) => {
   cors(req, res, async () => {
