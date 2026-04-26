@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>FreeFlightClaim Admin Dashboard</title>
+  <title>Quaerens Admin V2 | Free Claim Tools</title>
   <link rel="icon" type="image/png" href="images/favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,10 +12,76 @@
   <style>
     body { font-family: 'Inter', sans-serif; }
     .hidden { display: none !important; }
+
     input, select, textarea {
       border: 1px solid #d1d5db;
-      border-radius: 8px;
-      padding: 0.6rem;
+      border-radius: 10px;
+      padding: 0.65rem;
+      width: 100%;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 1.25rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .claim-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 1rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .label {
+      font-size: 0.72rem;
+      color: #6b7280;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .value {
+      color: #111827;
+      font-weight: 650;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .badge-new { background: #dbeafe; color: #1e3a8a; }
+    .badge-won { background: #dcfce7; color: #166534; }
+    .badge-lost { background: #fee2e2; color: #991b1b; }
+    .badge-waiting { background: #fef3c7; color: #92400e; }
+    .badge-neutral { background: #f3f4f6; color: #374151; }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 50;
+    }
+
+    .drawer {
+      position: fixed;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: min(680px, 100%);
+      background: white;
+      z-index: 60;
+      overflow-y: auto;
+      box-shadow: -20px 0 60px rgba(15, 23, 42, 0.25);
     }
   </style>
 </head>
@@ -24,8 +90,12 @@
 
 <header class="bg-blue-900 text-white py-5 shadow">
   <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
-    <h1 class="text-xl sm:text-2xl font-extrabold">FreeFlightClaim Admin</h1>
-    <button id="logoutBtn" class="hidden bg-white text-blue-900 font-bold px-4 py-2 rounded hover:bg-gray-100">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-extrabold">Quaerens Admin V2</h1>
+      <p class="text-sm text-blue-100">Free claim tools dashboard</p>
+    </div>
+
+    <button id="logoutBtn" class="hidden bg-white text-blue-900 font-bold px-4 py-2 rounded-xl hover:bg-gray-100">
       Logout
     </button>
   </div>
@@ -35,17 +105,17 @@
 <main id="loginView" class="max-w-md mx-auto px-4 py-16">
   <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
     <h2 class="text-2xl font-extrabold text-blue-900 mb-2">Admin Login</h2>
-    <p class="text-sm text-gray-600 mb-6">Login to view claim submissions and marketing leads.</p>
+    <p class="text-sm text-gray-600 mb-6">Login to view claims, leads, and conversion tracking.</p>
 
     <form id="loginForm" class="space-y-4">
       <div>
         <label for="email" class="font-semibold">Email</label>
-        <input type="email" id="email" required class="w-full mt-1" />
+        <input type="email" id="email" required class="mt-1" />
       </div>
 
       <div>
         <label for="password" class="font-semibold">Password</label>
-        <input type="password" id="password" required class="w-full mt-1" />
+        <input type="password" id="password" required class="mt-1" />
       </div>
 
       <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-6 rounded-xl">
@@ -58,42 +128,94 @@
 </main>
 
 <!-- Dashboard -->
-<main id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-10">
+<main id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-8">
 
-  <!-- Stats -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-xl shadow-sm border p-5">
+  <!-- Top stats -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="stat-card">
       <p class="text-sm text-gray-500">Claim submissions</p>
       <p id="claimsCount" class="text-3xl font-extrabold text-blue-900">0</p>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border p-5">
+    <div class="stat-card">
       <p class="text-sm text-gray-500">Marketing leads</p>
       <p id="leadsCount" class="text-3xl font-extrabold text-blue-900">0</p>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border p-5">
+    <div class="stat-card">
       <p class="text-sm text-gray-500">New claims</p>
       <p id="newClaimsCount" class="text-3xl font-extrabold text-blue-900">0</p>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border p-5">
+    <div class="stat-card">
+      <p class="text-sm text-gray-500">Claim value</p>
+      <p id="claimValueTotal" class="text-3xl font-extrabold text-green-700">€0</p>
+    </div>
+
+    <div class="stat-card">
       <p class="text-sm text-gray-500">Last updated</p>
       <p id="lastUpdated" class="text-lg font-bold text-blue-900">—</p>
     </div>
-  </div>
+  </section>
 
-  <!-- Controls -->
-  <div class="bg-white rounded-2xl shadow-md border p-5 mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+  <!-- Conversion stats -->
+  <section class="bg-white rounded-2xl shadow-md border p-5 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
       <div>
+        <h2 class="text-2xl font-extrabold text-blue-900">Conversion Funnel</h2>
+        <p class="text-sm text-gray-600">Track user actions across FreeFlightClaim and future free claim tools.</p>
+      </div>
+
+      <select id="productFilter" class="lg:w-72">
+        <option value="all">All products</option>
+        <option value="freeflightclaim">FreeFlightClaim</option>
+        <option value="freeholidaycompensation">Holiday compensation</option>
+        <option value="train-delay">Train delay</option>
+        <option value="lost-luggage">Lost luggage</option>
+        <option value="gym-cancellation">Gym cancellation</option>
+        <option value="parking-appeal">Parking appeal</option>
+        <option value="energy-switch">Energy switch</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Submitted</p>
+        <p id="submittedCount" class="text-3xl font-extrabold text-blue-900">0</p>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Emails requested</p>
+        <p id="emailRequestedCount" class="text-3xl font-extrabold text-blue-900">0</p>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <p class="text-sm text-gray-500">PDF generated</p>
+        <p id="pdfGeneratedCount" class="text-3xl font-extrabold text-blue-900">0</p>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Marketing opt-ins</p>
+        <p id="marketingOptInCount" class="text-3xl font-extrabold text-blue-900">0</p>
+      </div>
+
+      <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+        <p class="text-sm text-gray-500">Follow-ups queued</p>
+        <p id="followUpQueuedCount" class="text-3xl font-extrabold text-yellow-700">0</p>
+      </div>
+    </div>
+  </section>
+    <!-- Controls -->
+  <section class="bg-white rounded-2xl shadow-md border p-5 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div class="md:col-span-2">
         <label class="text-sm font-semibold">Search</label>
-        <input id="searchInput" class="w-full mt-1" placeholder="Name, email, airline, flight" />
+        <input id="searchInput" class="mt-1" placeholder="Name, email, phone, airline, flight, route" />
       </div>
 
       <div>
         <label class="text-sm font-semibold">Status</label>
-        <select id="statusFilter" class="w-full mt-1">
+        <select id="statusFilter" class="mt-1">
           <option value="all">All statuses</option>
           <option value="new">New</option>
           <option value="letter_generated">Letter generated</option>
@@ -108,9 +230,10 @@
 
       <div>
         <label class="text-sm font-semibold">View</label>
-        <select id="viewSelect" class="w-full mt-1">
-          <option value="claims">Claim Submissions</option>
+        <select id="viewSelect" class="mt-1">
+          <option value="claims">Claims</option>
           <option value="leads">Marketing Leads</option>
+          <option value="events">Conversion Events</option>
         </select>
       </div>
 
@@ -119,465 +242,723 @@
           Refresh
         </button>
       </div>
-
-      <div class="flex items-end">
-        <button id="exportCsvBtn" class="w-full bg-yellow-400 text-blue-900 font-extrabold px-5 py-3 rounded-xl hover:bg-yellow-500">
-          Export CSV
-        </button>
-      </div>
     </div>
-  </div>
+  </section>
 
   <!-- Claims -->
   <section id="claimsSection" class="bg-white rounded-2xl shadow-md border overflow-hidden">
-    <div class="p-5 border-b">
-      <h2 class="text-2xl font-extrabold text-blue-900">Claim Submissions</h2>
-      <p class="text-sm text-gray-600">View, update status, add notes, or delete test/spam claims.</p>
+    <div class="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 class="text-2xl font-extrabold text-blue-900">Claim Submissions</h2>
+        <p class="text-sm text-gray-600">Card-style claim management with no horizontal scrolling.</p>
+      </div>
+
+      <button id="exportCsvBtn" class="bg-yellow-400 text-blue-900 font-extrabold px-5 py-3 rounded-xl hover:bg-yellow-500">
+        Export CSV
+      </button>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-100 text-gray-700">
-          <tr>
-            <th class="text-left p-3">Date</th>
-            <th class="text-left p-3">Name</th>
-            <th class="text-left p-3">Email</th>
-            <th class="text-left p-3">Airline</th>
-            <th class="text-left p-3">Flight</th>
-            <th class="text-left p-3">Route</th>
-            <th class="text-left p-3">Comp.</th>
-            <th class="text-left p-3">Marketing</th>
-            <th class="text-left p-3">Status</th>
-            <th class="text-left p-3">Notes</th>
-            <th class="text-left p-3">Save</th>
-            <th class="text-left p-3">Delete</th>
-          </tr>
-        </thead>
-        <tbody id="claimsTableBody"></tbody>
-      </table>
-    </div>
+    <div id="claimsCards" class="p-5 space-y-4"></div>
   </section>
 
   <!-- Leads -->
   <section id="leadsSection" class="hidden bg-white rounded-2xl shadow-md border overflow-hidden">
     <div class="p-5 border-b">
       <h2 class="text-2xl font-extrabold text-blue-900">Marketing Leads</h2>
-      <p class="text-sm text-gray-600">Only people who ticked the marketing consent box.</p>
+      <p class="text-sm text-gray-600">People who gave marketing consent.</p>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-100 text-gray-700">
-          <tr>
-            <th class="text-left p-3">Date</th>
-            <th class="text-left p-3">Name</th>
-            <th class="text-left p-3">Email</th>
-            <th class="text-left p-3">Airline</th>
-            <th class="text-left p-3">Flight</th>
-            <th class="text-left p-3">Route</th>
-            <th class="text-left p-3">Comp.</th>
-          </tr>
-        </thead>
-        <tbody id="leadsTableBody"></tbody>
-      </table>
-    </div>
+    <div id="leadsCards" class="p-5 space-y-4"></div>
   </section>
 
+  <!-- Events -->
+  <section id="eventsSection" class="hidden bg-white rounded-2xl shadow-md border overflow-hidden">
+    <div class="p-5 border-b">
+      <h2 class="text-2xl font-extrabold text-blue-900">Conversion Events</h2>
+      <p class="text-sm text-gray-600">Latest tracking activity from the claim forms.</p>
+    </div>
+
+    <div id="eventsCards" class="p-5 space-y-4"></div>
+  </section>
 </main>
 
+<!-- Claim Details Drawer -->
+<div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+
+<aside id="claimDrawer" class="drawer hidden">
+  <div class="p-5 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+    <div>
+      <h2 class="text-2xl font-extrabold text-blue-900">Claim Details</h2>
+      <p id="drawerSubtitle" class="text-sm text-gray-500">Full claim information</p>
+    </div>
+
+    <button id="closeDrawerBtn" class="bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 font-bold">
+      Close
+    </button>
+  </div>
+
+  <div id="drawerContent" class="p-5 space-y-4"></div>
+</aside>
+
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getAuth,
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  import {
-    getFirestore,
-    collection,
-    getDocs,
-    query,
-    orderBy,
-    limit,
-    doc,
-    updateDoc,
-    deleteDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-    authDomain: "quaerensclaims.firebaseapp.com",
-    projectId: "quaerensclaims",
-    storageBucket: "quaerensclaims.appspot.com",
-    messagingSenderId: "207213580015",
-    appId: "1:207213580015:web:placeholder"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+  authDomain: "quaerensclaims.firebaseapp.com",
+  projectId: "quaerensclaims",
+  storageBucket: "quaerensclaims.appspot.com",
+  messagingSenderId: "207213580015",
+  appId: "1:207213580015:web:placeholder"
+};
 
-  const allowedAdmins = [
-    "info@quaerens.co.uk"
-  ];
+const allowedAdmins = ["info@quaerens.co.uk"];
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  const loginView = document.getElementById("loginView");
-  const dashboardView = document.getElementById("dashboardView");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const loginForm = document.getElementById("loginForm");
-  const loginError = document.getElementById("loginError");
+const loginView = document.getElementById("loginView");
+const dashboardView = document.getElementById("dashboardView");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginForm = document.getElementById("loginForm");
+const loginError = document.getElementById("loginError");
 
-  const claimsSection = document.getElementById("claimsSection");
-  const leadsSection = document.getElementById("leadsSection");
+const claimsSection = document.getElementById("claimsSection");
+const leadsSection = document.getElementById("leadsSection");
+const eventsSection = document.getElementById("eventsSection");
 
-  const searchInput = document.getElementById("searchInput");
-  const statusFilter = document.getElementById("statusFilter");
-  const viewSelect = document.getElementById("viewSelect");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const exportCsvBtn = document.getElementById("exportCsvBtn");
+const claimsCards = document.getElementById("claimsCards");
+const leadsCards = document.getElementById("leadsCards");
+const eventsCards = document.getElementById("eventsCards");
 
-  let claimsData = [];
-  let leadsData = [];
+const searchInput = document.getElementById("searchInput");
+const statusFilter = document.getElementById("statusFilter");
+const viewSelect = document.getElementById("viewSelect");
+const productFilter = document.getElementById("productFilter");
+const refreshBtn = document.getElementById("refreshBtn");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
 
-  const statuses = [
-    "new",
-    "letter_generated",
-    "sent_to_airline",
-    "awaiting_airline",
-    "rejected",
-    "escalation_offered",
-    "won",
-    "lost"
-  ];
+const drawerBackdrop = document.getElementById("drawerBackdrop");
+const claimDrawer = document.getElementById("claimDrawer");
+const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+const drawerContent = document.getElementById("drawerContent");
+const drawerSubtitle = document.getElementById("drawerSubtitle");
 
-  function formatDate(value) {
-    if (!value) return "—";
-    if (value.toDate) return value.toDate().toLocaleString();
-    if (typeof value === "string") return new Date(value).toLocaleString();
-    return "—";
+let claimsData = [];
+let leadsData = [];
+let conversionData = [];
+
+const statuses = [
+  "new",
+  "letter_generated",
+  "sent_to_airline",
+  "awaiting_airline",
+  "rejected",
+  "escalation_offered",
+  "won",
+  "lost"
+];
+
+function safe(value) {
+  return value === undefined || value === null || value === "" ? "—" : value;
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  if (value.toDate) return value.toDate().toLocaleString();
+  if (typeof value === "string") return new Date(value).toLocaleString();
+  return "—";
+}
+
+function route(row) {
+  return `${safe(row.depAirport)} → ${safe(row.arrAirport)}`;
+}
+
+function statusBadgeClass(status) {
+  if (status === "new") return "badge-new";
+  if (status === "won") return "badge-won";
+  if (status === "lost" || status === "rejected") return "badge-lost";
+  if (status === "awaiting_airline" || status === "sent_to_airline") return "badge-waiting";
+  return "badge-neutral";
+}
+
+function statusOptions(currentStatus) {
+  return statuses.map(status => {
+    return `<option value="${status}" ${status === currentStatus ? "selected" : ""}>${status.replaceAll("_", " ")}</option>`;
+  }).join("");
+}
+
+function getCurrentProduct() {
+  return productFilter.value || "all";
+}
+function matchesProduct(row) {
+  const product = getCurrentProduct();
+  if (product === "all") return true;
+
+  const rowProduct = row.product || "";
+  const rowSource = row.source || "";
+
+  return rowProduct === product || rowSource.includes(product);
+}
+
+function matchesSearch(row) {
+  const term = searchInput.value.trim().toLowerCase();
+  if (!term) return true;
+
+  return [
+    row.fullName,
+    row.email,
+    row.phone,
+    row.airline,
+    row.flightNumber,
+    row.depAirport,
+    row.arrAirport,
+    row.product,
+    row.source
+  ]
+    .filter(Boolean)
+    .some(value => String(value).toLowerCase().includes(term));
+}
+
+function matchesStatus(row) {
+  const status = statusFilter.value;
+  if (status === "all") return true;
+  return (row.status || "new") === status;
+}
+
+function filteredClaims() {
+  return claimsData.filter(matchesSearch).filter(matchesStatus).filter(matchesProduct);
+}
+
+function filteredLeads() {
+  return leadsData.filter(matchesSearch).filter(matchesProduct);
+}
+
+function filteredEvents() {
+  return conversionData.filter(matchesSearch).filter(matchesProduct);
+}
+
+function renderConversions() {
+  const events = filteredEvents();
+
+  const count = name => events.filter(e => e.eventName === name).length;
+
+  document.getElementById("submittedCount").textContent = count("claim_submitted");
+  document.getElementById("emailRequestedCount").textContent = count("email_requested");
+  document.getElementById("pdfGeneratedCount").textContent = count("pdf_generated");
+  document.getElementById("marketingOptInCount").textContent = count("marketing_consent");
+  document.getElementById("followUpQueuedCount").textContent = count("follow_up_queued");
+
+  const total = events
+    .filter(e => e.eventName === "claim_submitted")
+    .reduce((sum, e) => sum + Number(e.compensation || 0), 0);
+
+  document.getElementById("claimValueTotal").textContent = `€${total}`;
+}
+
+function renderClaims() {
+  const rows = filteredClaims();
+  claimsCards.innerHTML = "";
+
+  if (!rows.length) {
+    claimsCards.innerHTML = `<p class="text-center text-gray-500 py-8">No claims found.</p>`;
+    return;
   }
 
-  function safe(value) {
-    return value || "—";
-  }
+  rows.forEach(row => {
+    const status = row.status || "new";
 
-  function route(row) {
-    return `${safe(row.depAirport)} → ${safe(row.arrAirport)}`;
-  }
+    claimsCards.insertAdjacentHTML("beforeend", `
+      <article class="claim-card">
+        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+          <div>
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <h3 class="text-xl font-extrabold text-blue-900">${safe(row.fullName)}</h3>
+              <span class="badge ${statusBadgeClass(status)}">${status.replaceAll("_", " ")}</span>
+              <span class="badge badge-neutral">${safe(row.product || "freeflightclaim")}</span>
+            </div>
 
-  function currentViewData() {
-    return viewSelect.value === "claims" ? filteredClaims() : filteredLeads();
-  }
+            <p class="text-sm text-gray-600">
+              ${formatDate(row.createdAt || row.submittedAt)}
+            </p>
+          </div>
 
-  function matchesSearch(row) {
-    const term = searchInput.value.trim().toLowerCase();
-    if (!term) return true;
-
-    return [
-      row.fullName,
-      row.email,
-      row.airline,
-      row.flightNumber,
-      row.depAirport,
-      row.arrAirport
-    ]
-      .filter(Boolean)
-      .some(value => String(value).toLowerCase().includes(term));
-  }
-
-  function matchesStatus(row) {
-    const status = statusFilter.value;
-    if (status === "all") return true;
-    return (row.status || "new") === status;
-  }
-
-  function filteredClaims() {
-    return claimsData.filter(matchesSearch).filter(matchesStatus);
-  }
-
-  function filteredLeads() {
-    return leadsData.filter(matchesSearch);
-  }
-
-  function statusOptions(currentStatus) {
-    return statuses.map(status => {
-      return `<option value="${status}" ${status === currentStatus ? "selected" : ""}>${status.replaceAll("_", " ")}</option>`;
-    }).join("");
-  }
-
-  function renderClaims() {
-    const body = document.getElementById("claimsTableBody");
-    body.innerHTML = "";
-
-    const rows = filteredClaims();
-
-    if (rows.length === 0) {
-      body.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-gray-500">No claims found.</td></tr>`;
-      return;
-    }
-
-    rows.forEach(row => {
-      const status = row.status || "new";
-
-      body.insertAdjacentHTML("beforeend", `
-        <tr class="border-t hover:bg-gray-50 align-top">
-          <td class="p-3 whitespace-nowrap">${formatDate(row.createdAt || row.submittedAt)}</td>
-          <td class="p-3">${safe(row.fullName)}</td>
-          <td class="p-3">
-            <a href="mailto:${safe(row.email)}" class="text-blue-600 underline">${safe(row.email)}</a>
-          </td>
-          <td class="p-3">${safe(row.airline)}</td>
-          <td class="p-3">${safe(row.flightNumber)}</td>
-          <td class="p-3">${route(row)}</td>
-          <td class="p-3">${row.compensation ? "€" + row.compensation : "—"}</td>
-          <td class="p-3">${row.marketingConsent ? "Yes" : "No"}</td>
-          <td class="p-3">
-            <select class="statusSelect w-44" data-id="${row.id}">
-              ${statusOptions(status)}
-            </select>
-          </td>
-          <td class="p-3">
-            <textarea class="notesInput w-56 h-20" data-id="${row.id}">${row.notes || ""}</textarea>
-          </td>
-          <td class="p-3">
-            <button class="saveClaimBtn bg-blue-600 text-white px-3 py-2 rounded-lg font-bold" data-id="${row.id}">
-              Save
+          <div class="flex flex-wrap gap-2">
+            <button class="openClaimBtn bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-4 py-2 rounded-xl" data-id="${row.id}">
+              Open Details
             </button>
-          </td>
-          <td class="p-3">
-            <button class="deleteClaimBtn bg-red-600 text-white px-3 py-2 rounded-lg font-bold hover:bg-red-700" data-id="${row.id}">
+            <button class="deleteClaimBtn bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl" data-id="${row.id}">
               Delete
             </button>
-          </td>
-        </tr>
-      `);
-    });
+          </div>
+        </div>
 
-    document.querySelectorAll(".saveClaimBtn").forEach(button => {
-      button.addEventListener("click", async () => {
-        const id = button.dataset.id;
-        const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
-        const notes = document.querySelector(`.notesInput[data-id="${id}"]`).value;
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+          <div>
+            <p class="label">Email</p>
+            <p class="value"><a href="mailto:${safe(row.email)}" class="text-blue-600 underline">${safe(row.email)}</a></p>
+          </div>
 
-        button.textContent = "Saving...";
-        button.disabled = true;
+          <div>
+            <p class="label">Phone</p>
+            <p class="value">${safe(row.phone)}</p>
+          </div>
 
-        try {
-          await updateDoc(doc(db, "flightClaimLetters", id), {
-            status,
-            notes,
-            updatedAt: serverTimestamp()
-          });
+          <div>
+            <p class="label">Airline / Flight</p>
+            <p class="value">${safe(row.airline)} / ${safe(row.flightNumber)}</p>
+          </div>
 
-          button.textContent = "Saved";
-          setTimeout(() => {
-            button.textContent = "Save";
-            button.disabled = false;
-          }, 1000);
+          <div>
+            <p class="label">Route</p>
+            <p class="value">${route(row)}</p>
+          </div>
 
-          await loadData();
-        } catch (err) {
-          console.error(err);
-          alert("Could not save status/notes.");
-          button.textContent = "Save";
-          button.disabled = false;
-        }
-      });
-    });
+          <div>
+            <p class="label">Compensation</p>
+            <p class="value">${row.compensation ? "€" + row.compensation : "—"}</p>
+          </div>
 
-    document.querySelectorAll(".deleteClaimBtn").forEach(button => {
-      button.addEventListener("click", async () => {
-        const id = button.dataset.id;
-        const row = claimsData.find(claim => claim.id === id);
-        const label = row ? `${row.fullName || "this claim"} / ${row.flightNumber || "no flight number"}` : "this claim";
+          <div>
+            <p class="label">Marketing</p>
+            <p class="value">${row.marketingConsent ? "Yes" : "No"}</p>
+          </div>
+        </div>
 
-        if (!confirm(`Are you sure you want to delete ${label}? This cannot be undone.`)) {
-          return;
-        }
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
+          <div>
+            <label class="label">Status</label>
+            <select class="statusSelect mt-1" data-id="${row.id}">
+              ${statusOptions(status)}
+            </select>
+          </div>
 
-        button.textContent = "Deleting...";
-        button.disabled = true;
+          <div class="lg:col-span-2">
+            <label class="label">Internal Notes</label>
+            <textarea class="notesInput mt-1 min-h-[90px]" data-id="${row.id}" placeholder="Add notes here...">${row.notes || ""}</textarea>
+          </div>
+        </div>
 
-        try {
-          await deleteDoc(doc(db, "flightClaimLetters", id));
-          await loadData();
-        } catch (err) {
-          console.error(err);
-          alert("Could not delete claim.");
-          button.textContent = "Delete";
-          button.disabled = false;
-        }
-      });
-    });
-  }
-
-  function renderLeads() {
-    const body = document.getElementById("leadsTableBody");
-    body.innerHTML = "";
-
-    const rows = filteredLeads();
-
-    if (rows.length === 0) {
-      body.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-500">No marketing leads found.</td></tr>`;
-      return;
-    }
-
-    rows.forEach(row => {
-      body.insertAdjacentHTML("beforeend", `
-        <tr class="border-t hover:bg-gray-50">
-          <td class="p-3 whitespace-nowrap">${formatDate(row.createdAt || row.consentCapturedAt)}</td>
-          <td class="p-3">${safe(row.fullName)}</td>
-          <td class="p-3">
-            <a href="mailto:${safe(row.email)}" class="text-blue-600 underline">${safe(row.email)}</a>
-          </td>
-          <td class="p-3">${safe(row.airline)}</td>
-          <td class="p-3">${safe(row.flightNumber)}</td>
-          <td class="p-3">${route(row)}</td>
-          <td class="p-3">${row.compensation ? "€" + row.compensation : "—"}</td>
-        </tr>
-      `);
-    });
-  }
-
-  async function loadData() {
-    const claimsQuery = query(
-      collection(db, "flightClaimLetters"),
-      orderBy("createdAt", "desc"),
-      limit(500)
-    );
-
-    const leadsQuery = query(
-      collection(db, "freeFlightClaimMarketingLeads"),
-      orderBy("createdAt", "desc"),
-      limit(500)
-    );
-
-    const [claimsSnap, leadsSnap] = await Promise.all([
-      getDocs(claimsQuery),
-      getDocs(leadsQuery)
-    ]);
-
-    claimsData = claimsSnap.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    leadsData = leadsSnap.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    document.getElementById("claimsCount").textContent = claimsData.length;
-    document.getElementById("leadsCount").textContent = leadsData.length;
-    document.getElementById("newClaimsCount").textContent =
-      claimsData.filter(c => (c.status || "new") === "new").length;
-
-    document.getElementById("lastUpdated").textContent = new Date().toLocaleString();
-
-    renderClaims();
-    renderLeads();
-  }
-
-  function switchView() {
-    const view = viewSelect.value;
-
-    claimsSection.classList.toggle("hidden", view !== "claims");
-    leadsSection.classList.toggle("hidden", view !== "leads");
-
-    statusFilter.disabled = view !== "claims";
-
-    renderClaims();
-    renderLeads();
-  }
-
-  function exportCSV() {
-    const data = currentViewData();
-
-    const filename = viewSelect.value === "claims"
-      ? "flight-claim-submissions.csv"
-      : "marketing-leads.csv";
-
-    const headers = [
-      "date",
-      "fullName",
-      "email",
-      "airline",
-      "flightNumber",
-      "depAirport",
-      "arrAirport",
-      "compensation",
-      "marketingConsent",
-      "status",
-      "notes"
-    ];
-
-    const rows = data.map(row => {
-      return headers.map(header => {
-        let value =
-          header === "date"
-            ? formatDate(row.createdAt || row.submittedAt || row.consentCapturedAt)
-            : row[header];
-
-        value = value == null ? "" : String(value).replace(/"/g, '""');
-        return `"${value}"`;
-      }).join(",");
-    });
-
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    loginError.classList.add("hidden");
-
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      console.error("LOGIN ERROR:", err.code, err.message);
-      loginError.textContent = `${err.code}: ${err.message}`;
-      loginError.classList.remove("hidden");
-    }
+        <div class="mt-4">
+          <button class="saveClaimBtn bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${row.id}">
+            Save Status / Notes
+          </button>
+        </div>
+      </article>
+    `);
   });
 
-  logoutBtn.addEventListener("click", () => signOut(auth));
+  document.querySelectorAll(".saveClaimBtn").forEach(button => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.id;
+      const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
+      const notes = document.querySelector(`.notesInput[data-id="${id}"]`).value;
 
-  viewSelect.addEventListener("change", switchView);
-  searchInput.addEventListener("input", switchView);
-  statusFilter.addEventListener("change", switchView);
-  refreshBtn.addEventListener("click", loadData);
-  exportCsvBtn.addEventListener("click", exportCSV);
+      button.textContent = "Saving...";
+      button.disabled = true;
 
-  onAuthStateChanged(auth, async (user) => {
-    if (user && allowedAdmins.includes(user.email)) {
-      loginView.classList.add("hidden");
-      dashboardView.classList.remove("hidden");
-      logoutBtn.classList.remove("hidden");
+      try {
+        await updateDoc(doc(db, "flightClaimLetters", id), {
+          status,
+          notes,
+          updatedAt: serverTimestamp()
+        });
 
-      await loadData();
-    } else {
-      if (user) await signOut(auth);
+        button.textContent = "Saved";
+        setTimeout(() => {
+          button.textContent = "Save Status / Notes";
+          button.disabled = false;
+        }, 1000);
 
-      dashboardView.classList.add("hidden");
-      loginView.classList.remove("hidden");
-      logoutBtn.classList.add("hidden");
-    }
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        alert("Could not save status/notes.");
+        button.textContent = "Save Status / Notes";
+        button.disabled = false;
+      }
+    });
   });
+
+  document.querySelectorAll(".deleteClaimBtn").forEach(button => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.id;
+      const row = claimsData.find(claim => claim.id === id);
+      const label = row ? `${row.fullName || "this claim"} / ${row.flightNumber || "no flight number"}` : "this claim";
+
+      if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
+
+      button.textContent = "Deleting...";
+      button.disabled = true;
+
+      try {
+        await deleteDoc(doc(db, "flightClaimLetters", id));
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        alert("Could not delete claim.");
+        button.textContent = "Delete";
+        button.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll(".openClaimBtn").forEach(button => {
+    button.addEventListener("click", () => {
+      const row = claimsData.find(claim => claim.id === button.dataset.id);
+      if (row) openDrawer(row);
+    });
+  });
+}
+
+function renderLeads() {
+  const rows = filteredLeads();
+  leadsCards.innerHTML = "";
+
+  if (!rows.length) {
+    leadsCards.innerHTML = `<p class="text-center text-gray-500 py-8">No marketing leads found.</p>`;
+    return;
+  }
+
+  rows.forEach(row => {
+    leadsCards.insertAdjacentHTML("beforeend", `
+      <article class="claim-card">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div>
+            <h3 class="text-xl font-extrabold text-blue-900">${safe(row.fullName)}</h3>
+            <p class="text-sm text-gray-600">${formatDate(row.createdAt || row.consentCapturedAt)}</p>
+          </div>
+
+          <span class="badge badge-won">marketing consent</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+          <div>
+            <p class="label">Email</p>
+            <p class="value"><a href="mailto:${safe(row.email)}" class="text-blue-600 underline">${safe(row.email)}</a></p>
+          </div>
+
+          <div>
+            <p class="label">Phone</p>
+            <p class="value">${safe(row.phone)}</p>
+          </div>
+
+          <div>
+            <p class="label">Airline / Flight</p>
+            <p class="value">${safe(row.airline)} / ${safe(row.flightNumber)}</p>
+          </div>
+
+          <div>
+            <p class="label">Route</p>
+            <p class="value">${route(row)}</p>
+          </div>
+
+          <div>
+            <p class="label">Compensation</p>
+            <p class="value">${row.compensation ? "€" + row.compensation : "—"}</p>
+          </div>
+        </div>
+      </article>
+    `);
+  });
+}
+
+function renderEvents() {
+  const rows = filteredEvents().slice(0, 80);
+  eventsCards.innerHTML = "";
+
+  if (!rows.length) {
+    eventsCards.innerHTML = `<p class="text-center text-gray-500 py-8">No conversion events found.</p>`;
+    return;
+  }
+
+  rows.forEach(row => {
+    eventsCards.insertAdjacentHTML("beforeend", `
+      <article class="claim-card">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div>
+            <h3 class="text-lg font-extrabold text-blue-900">${safe(row.eventName)}</h3>
+            <p class="text-sm text-gray-600">${formatDate(row.createdAt)}</p>
+          </div>
+          <span class="badge badge-neutral">${safe(row.product || row.source || "unknown")}</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-5">
+          <div>
+            <p class="label">Name</p>
+            <p class="value">${safe(row.fullName)}</p>
+          </div>
+
+          <div>
+            <p class="label">Email</p>
+            <p class="value">${safe(row.email)}</p>
+          </div>
+
+          <div>
+            <p class="label">Phone</p>
+            <p class="value">${safe(row.phone)}</p>
+          </div>
+
+          <div>
+            <p class="label">Flight</p>
+            <p class="value">${safe(row.flightNumber)}</p>
+          </div>
+
+          <div>
+            <p class="label">Airline</p>
+            <p class="value">${safe(row.airline)}</p>
+          </div>
+
+          <div>
+            <p class="label">Route</p>
+            <p class="value">${route(row)}</p>
+          </div>
+
+          <div>
+            <p class="label">Compensation</p>
+            <p class="value">${row.compensation ? "€" + row.compensation : "—"}</p>
+          </div>
+
+          <div>
+            <p class="label">Handle option</p>
+            <p class="value">${safe(row.handleOption)}</p>
+          </div>
+        </div>
+      </article>
+    `);
+  });
+}
+
+function detailField(label, value) {
+  return `
+    <div class="border rounded-xl p-3">
+      <p class="label">${label}</p>
+      <p class="value">${safe(value)}</p>
+    </div>
+  `;
+}
+
+function openDrawer(row) {
+  drawerSubtitle.textContent = `${safe(row.fullName)} / ${safe(row.flightNumber)}`;
+
+  drawerContent.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      ${detailField("Full name", row.fullName)}
+      ${detailField("Email", row.email)}
+      ${detailField("Phone", row.phone)}
+      ${detailField("Airline", row.airline)}
+      ${detailField("Flight number", row.flightNumber)}
+      ${detailField("Booking reference", row.bookingRef)}
+      ${detailField("Flight date", row.flightDate)}
+      ${detailField("Route", route(row))}
+      ${detailField("Distance", row.distance)}
+      ${detailField("Delay duration", row.delayDuration)}
+      ${detailField("Reason", row.reason)}
+      ${detailField("Compensation", row.compensation ? "€" + row.compensation : "—")}
+      ${detailField("Payment method", row.paymentMethod)}
+      ${detailField("Payment details", row.paymentDetails || row.iban)}
+      ${detailField("Language", row.language)}
+      ${detailField("Handle option", row.handleOption)}
+      ${detailField("Donation", row.donation)}
+      ${detailField("Marketing consent", row.marketingConsent ? "Yes" : "No")}
+      ${detailField("Status", row.status || "new")}
+      ${detailField("File upload", row.fileURL ? `<a href="${row.fileURL}" target="_blank" class="text-blue-600 underline">Open file</a>` : "—")}
+    </div>
+
+    <div class="border rounded-xl p-3">
+      <p class="label">Internal Notes</p>
+      <p class="value whitespace-pre-wrap">${safe(row.notes)}</p>
+    </div>
+  `;
+
+  drawerBackdrop.classList.remove("hidden");
+  claimDrawer.classList.remove("hidden");
+}
+
+function closeDrawer() {
+  drawerBackdrop.classList.add("hidden");
+  claimDrawer.classList.add("hidden");
+}
+
+async function loadData() {
+  const [claimsSnap, leadsSnap, eventsSnap] = await Promise.all([
+    getDocs(query(collection(db, "flightClaimLetters"), orderBy("createdAt", "desc"), limit(500))),
+    getDocs(query(collection(db, "freeFlightClaimMarketingLeads"), orderBy("createdAt", "desc"), limit(500))),
+    getDocs(query(collection(db, "conversionEvents"), orderBy("createdAt", "desc"), limit(800)))
+  ]);
+
+  claimsData = claimsSnap.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
+
+  leadsData = leadsSnap.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
+
+  conversionData = eventsSnap.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
+
+  document.getElementById("claimsCount").textContent = filteredClaims().length;
+  document.getElementById("leadsCount").textContent = filteredLeads().length;
+  document.getElementById("newClaimsCount").textContent =
+    filteredClaims().filter(c => (c.status || "new") === "new").length;
+  document.getElementById("lastUpdated").textContent = new Date().toLocaleString();
+
+  renderConversions();
+  renderClaims();
+  renderLeads();
+  renderEvents();
+}
+
+function switchView() {
+  const view = viewSelect.value;
+
+  claimsSection.classList.toggle("hidden", view !== "claims");
+  leadsSection.classList.toggle("hidden", view !== "leads");
+  eventsSection.classList.toggle("hidden", view !== "events");
+
+  statusFilter.disabled = view !== "claims";
+
+  renderClaims();
+  renderLeads();
+  renderEvents();
+}
+
+function exportCSV() {
+  const data = viewSelect.value === "claims"
+    ? filteredClaims()
+    : viewSelect.value === "leads"
+      ? filteredLeads()
+      : filteredEvents();
+
+  const filename = `${viewSelect.value}-export.csv`;
+
+  const headers = [
+    "date",
+    "product",
+    "eventName",
+    "fullName",
+    "email",
+    "phone",
+    "airline",
+    "flightNumber",
+    "depAirport",
+    "arrAirport",
+    "compensation",
+    "marketingConsent",
+    "status",
+    "notes"
+  ];
+
+  const rows = data.map(row => {
+    return headers.map(header => {
+      let value =
+        header === "date"
+          ? formatDate(row.createdAt || row.submittedAt || row.consentCapturedAt)
+          : row[header];
+
+      value = value == null ? "" : String(value).replace(/"/g, '""');
+      return `"${value}"`;
+    }).join(",");
+  });
+
+  const csv = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  loginError.classList.add("hidden");
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    console.error("LOGIN ERROR:", err.code, err.message);
+    loginError.textContent = `${err.code}: ${err.message}`;
+    loginError.classList.remove("hidden");
+  }
+});
+
+logoutBtn.addEventListener("click", () => signOut(auth));
+refreshBtn.addEventListener("click", loadData);
+exportCsvBtn.addEventListener("click", exportCSV);
+
+viewSelect.addEventListener("change", switchView);
+searchInput.addEventListener("input", () => {
+  renderClaims();
+  renderLeads();
+  renderEvents();
+  renderConversions();
+});
+statusFilter.addEventListener("change", () => {
+  renderClaims();
+  renderConversions();
+});
+productFilter.addEventListener("change", () => {
+  renderClaims();
+  renderLeads();
+  renderEvents();
+  renderConversions();
+  document.getElementById("claimsCount").textContent = filteredClaims().length;
+  document.getElementById("leadsCount").textContent = filteredLeads().length;
+  document.getElementById("newClaimsCount").textContent =
+    filteredClaims().filter(c => (c.status || "new") === "new").length;
+});
+
+closeDrawerBtn.addEventListener("click", closeDrawer);
+drawerBackdrop.addEventListener("click", closeDrawer);
+
+onAuthStateChanged(auth, async (user) => {
+  if (user && allowedAdmins.includes(user.email)) {
+    loginView.classList.add("hidden");
+    dashboardView.classList.remove("hidden");
+    logoutBtn.classList.remove("hidden");
+
+    await loadData();
+  } else {
+    if (user) await signOut(auth);
+
+    dashboardView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+  }
+});
 </script>
 
 </body>
