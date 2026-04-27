@@ -9,9 +9,16 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 
 const db = admin.firestore();
+
+if (!process.env.RESEND_API_KEY) {
+  console.error("Missing RESEND_API_KEY");
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "onboarding@resend.dev";
+// Test sender first. Later change back to:
+// const FROM_EMAIL = "FreeFlightClaim <info@quaerens.co.uk>";
+const FROM_EMAIL = "FreeFlightClaim <info@quaerens.co.uk>";
 
 exports.sendClaimEmailV2 = onRequest(async (req, res) => {
   cors(req, res, async () => {
@@ -24,40 +31,53 @@ exports.sendClaimEmailV2 = onRequest(async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing customer email" });
     }
 
-    const subject = "Your FreeFlightClaim letter is ready";
-   const depAirport = data.depAirport || "departure airport";
-const arrAirport = data.arrAirport || "arrival airport";
-
-const html = buildEmail({
-  template: "claim_created",
-  fullName: data.fullName,
-  airline: data.airline,
-  flightNumber: data.flightNumber,
-  depAirport,
-  arrAirport,
-  compensation: data.compensation
-}).html;
+    const emailContent = buildEmail({
+      template: "claim_created",
+      fullName: data.fullName,
+      airline: data.airline,
+      flightNumber: data.flightNumber,
+      depAirport: data.depAirport,
+      arrAirport: data.arrAirport,
+      compensation: data.compensation
+    });
 
     try {
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: FROM_EMAIL,
         to: data.email,
-        subject,
-        html
+        subject: emailContent.subject,
+        html: emailContent.html
       });
 
       await db.collection("sentEmails").add({
         to: data.email,
-        subject,
-        source: "sendClaimEmail",
+        subject: emailContent.subject,
+        source: "sendClaimEmailV2-resend",
+        resendId: result?.data?.id || "",
         sent: true,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({
+        success: true,
+        resendId: result?.data?.id || ""
+      });
     } catch (error) {
-      console.error("sendClaimEmail error:", error);
-      return res.status(500).json({ success: false, message: error.message });
+      console.error("sendClaimEmailV2 Resend error:", error);
+
+      await db.collection("sentEmails").add({
+        to: data.email,
+        subject: emailContent.subject,
+        source: "sendClaimEmailV2-resend",
+        sent: false,
+        error: error.message,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   });
 });
@@ -89,7 +109,7 @@ exports.sendQueuedEmails = onSchedule("every 5 minutes", async () => {
 
       const emailContent = buildEmail(data);
 
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: FROM_EMAIL,
         to: data.to,
         subject: emailContent.subject,
@@ -99,11 +119,13 @@ exports.sendQueuedEmails = onSchedule("every 5 minutes", async () => {
       await emailDoc.ref.update({
         sent: true,
         sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        resendId: result?.data?.id || "",
         error: admin.firestore.FieldValue.delete()
       });
 
     } catch (error) {
       console.error("Queued email failed:", emailDoc.id, error);
+
       await emailDoc.ref.update({
         sent: false,
         error: error.message,
@@ -120,6 +142,8 @@ function buildEmail(data) {
   const airline = data.airline || "the airline";
   const flight = data.flightNumber || "your flight";
   const compensation = data.compensation || 0;
+  const depAirport = data.depAirport || "—";
+  const arrAirport = data.arrAirport || "—";
 
   if (data.template === "airline_reply_check") {
     return {
@@ -143,13 +167,17 @@ function buildEmail(data) {
   }
 
   return {
-  subject: "Your FreeFlightClaim letter is ready",
-  html: [
-    "<p>Hi " + name + ",</p>",
-    "<p>Your claim letter for " + flight + " with " + airline + " is ready.</p>",
-    "<p><strong>Route:</strong> " + (data.depAirport || "—") + " → " + (data.arrAirport || "—") + "</p>",
-    "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
-    "<p>Kind regards,<br>FreeFlightClaim / Quaerens</p>"
-  ].join("")
-};
+    subject: "Your FreeFlightClaim letter is ready",
+    html: [
+      "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;'>",
+      "<h2>Your FreeFlightClaim letter is ready</h2>",
+      "<p>Hi " + name + ",</p>",
+      "<p>Your claim letter for <strong>" + flight + "</strong> with <strong>" + airline + "</strong> is ready.</p>",
+      "<p><strong>Route:</strong> " + depAirport + " → " + arrAirport + "</p>",
+      "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
+      "<p>Please send your claim letter to the airline and keep proof of submission.</p>",
+      "<p>Kind regards,<br>FreeFlightClaim / Quaerens</p>",
+      "</div>"
+    ].join("")
+  };
 }
