@@ -217,7 +217,7 @@ function buildEmail(data) {
       "Your claim letter for " + flight + " with " + airline + " is ready.\n" +
       "Route: " + depAirport + " to " + arrAirport + "\n" +
       "Estimated compensation: EUR " + compensation + "\n\n" +
-      "Please send your claim letter to the airline and keep proof of submission.\n\n" +
+      "You can send it directly to the airline and keep proof of submission. If you need help later, we’re here.\n\n" +
       "Kind regards,\nFreeFlightClaim / Quaerens",
     html: [
       "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:640px;margin:auto;'>",
@@ -227,6 +227,7 @@ function buildEmail(data) {
 "<h2 style='color:#1e3a8a;text-align:center;'>Your FreeFlightClaim letter is ready</h2>",
       "<p>Hi " + name + ",</p>",
       "<p>Your claim letter for <strong>" + flight + "</strong> with <strong>" + airline + "</strong> is ready.</p>",
+      "<p><a href='https://www.quaerens.com/thank-you.html' style='color:#1e3a8a;font-weight:bold;'>View your claim summary</a></p>",
       "<p><strong>Route:</strong> " + depAirport + " → " + arrAirport + "</p>",
       "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
       "<p>Please send your claim letter to the airline and keep proof of submission.</p>",
@@ -234,9 +235,10 @@ function buildEmail(data) {
 
 "<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
 "<p style='font-size:12px;color:#666;text-align:center;'>",
-"Quaerens Ltd · London, UK<br>",
-"You are receiving this email because you requested a claim letter.<br>",
-"<a href='mailto:noreply@quaerens.co.uk?subject=Unsubscribe' style='color:#1e3a8a;'>Unsubscribe</a>",
+"Quaerens Ltd<br>",
+"London, United Kingdom<br><br>",
+"You received this email because you requested a claim letter on FreeFlightClaim.com.<br><br>",
+"<a href='mailto:noreply@quaerens.co.uk?subject=Unsubscribe'>Unsubscribe</a>",
 "</p>",
 
 "</div>"
