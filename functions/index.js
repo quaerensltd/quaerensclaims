@@ -32,13 +32,18 @@ exports.sendClaimEmailV2 = onRequest(async (req, res) => {
     }
 
     const emailContent = buildEmail({
-      template: "claim_created",
+      template: data.template || "claim_created",
+      product: data.product || "freeflightclaim",
       fullName: data.fullName,
       airline: data.airline,
+      company: data.company,
       flightNumber: data.flightNumber,
+      referenceNumber: data.referenceNumber,
       depAirport: data.depAirport,
       arrAirport: data.arrAirport,
-      compensation: data.compensation
+      issueTypeLabel: data.issueTypeLabel,
+      compensation: data.compensation,
+      amountClaimed: data.amountClaimed
     });
 
     let attachments = [];
@@ -49,7 +54,7 @@ if (data.pdfURL) {
   const pdfBase64 = Buffer.from(pdfArrayBuffer).toString("base64");
 
   attachments.push({
-    filename: `EC261-Claim-${data.flightNumber || "flight"}.pdf`,
+    filename: data.pdfFileName || buildAttachmentName(data),
     content: pdfBase64
   });
 }
@@ -67,7 +72,7 @@ headers: {
 },
 tags: [
     { name: "type", value: "claim_created" },
-    { name: "product", value: "freeflightclaim" }
+    { name: "product", value: data.product || "freeflightclaim" }
   ]
 });
 
@@ -76,8 +81,8 @@ tags: [
   subject: emailContent.subject,
   source: "sendClaimEmailV2-resend",
   resendId: result?.data?.id || "",
-  product: "freeflightclaim",
-  type: "claim_created",
+  product: data.product || "freeflightclaim",
+  type: data.template || "claim_created",
   sent: true,
   createdAt: admin.firestore.FieldValue.serverTimestamp()
 });
@@ -140,7 +145,7 @@ if (data.pdfURL) {
   const pdfBase64 = Buffer.from(pdfArrayBuffer).toString("base64");
 
   attachments.push({
-    filename: `EC261-Claim-${data.flightNumber || "flight"}.pdf`,
+    filename: data.pdfFileName || buildAttachmentName(data),
     content: pdfBase64
   });
 }
@@ -181,20 +186,149 @@ tags: [
   return null;
 });
 
+function productEmailConfig(product) {
+  const configs = {
+    freeholidaycompensation: {
+      title: "Your holiday compensation letter is ready",
+      brand: "Holiday Compensation by Quaerens",
+      logo: "logoemailholidayclaim.png",
+      refLabel: "Booking reference",
+      companyLabel: "Travel company"
+    },
+    "train-delay": {
+      title: "Your train delay claim letter is ready",
+      brand: "Train Delay by Quaerens",
+      logo: "logoemailtraindelay.png",
+      refLabel: "Ticket reference",
+      companyLabel: "Train company"
+    },
+    "lost-luggage": {
+      title: "Your lost luggage claim letter is ready",
+      brand: "Lost Luggage by Quaerens",
+      logo: "logoemaillostluggage.png",
+      refLabel: "Booking or PIR reference",
+      companyLabel: "Airline or provider"
+    },
+    "gym-cancellation": {
+      title: "Your gym cancellation letter is ready",
+      brand: "Gym Cancellation by Quaerens",
+      logo: "logoemailgymcancellation.png",
+      refLabel: "Membership number",
+      companyLabel: "Gym"
+    },
+    "parking-appeal": {
+      title: "Your parking appeal letter is ready",
+      brand: "Parking Appeal by Quaerens",
+      logo: "logoemailparkingappeal.png",
+      refLabel: "PCN reference",
+      companyLabel: "Parking operator"
+    },
+    "energy-switch": {
+      title: "Your energy complaint letter is ready",
+      brand: "Energy Switch by Quaerens",
+      logo: "logoemailenergyswitch.png",
+      refLabel: "Account reference",
+      companyLabel: "Energy supplier"
+    },
+    freeflightclaim: {
+      title: "Your FreeFlightClaim letter is ready",
+      brand: "FreeFlightClaim by Quaerens",
+      logo: "logoemail.png",
+      refLabel: "Flight number",
+      companyLabel: "Airline"
+    }
+  };
+
+  return configs[product] || configs.freeflightclaim;
+}
+
+function buildAttachmentName(data) {
+  const config = productEmailConfig(data.product || "freeflightclaim");
+  const ref = data.referenceNumber || data.flightNumber || "claim";
+  const safeRef = String(ref).replace(/[^a-z0-9-]+/gi, "-");
+  return config.title.replace(/^Your /, "").replace(/ is ready$/, "").replace(/[^a-z0-9]+/gi, "-") + "-" + safeRef + ".pdf";
+}
+
+function productEmailConfig(product) {
+  const configs = {
+    freeholidaycompensation: {
+      title: "Your holiday compensation letter is ready",
+      brand: "Holiday Compensation by Quaerens",
+      logo: "logoemailholidayclaim.png",
+      refLabel: "Booking reference",
+      companyLabel: "Travel company"
+    },
+    "train-delay": {
+      title: "Your train delay claim letter is ready",
+      brand: "Train Delay by Quaerens",
+      logo: "logoemailtraindelay.png",
+      refLabel: "Ticket reference",
+      companyLabel: "Train company"
+    },
+    "lost-luggage": {
+      title: "Your lost luggage claim letter is ready",
+      brand: "Lost Luggage by Quaerens",
+      logo: "logoemaillostluggage.png",
+      refLabel: "Booking or PIR reference",
+      companyLabel: "Airline or provider"
+    },
+    "gym-cancellation": {
+      title: "Your gym cancellation letter is ready",
+      brand: "Gym Cancellation by Quaerens",
+      logo: "logoemailgymcancellation.png",
+      refLabel: "Membership number",
+      companyLabel: "Gym"
+    },
+    "parking-appeal": {
+      title: "Your parking appeal letter is ready",
+      brand: "Parking Appeal by Quaerens",
+      logo: "logoemailparkingappeal.png",
+      refLabel: "PCN reference",
+      companyLabel: "Parking operator"
+    },
+    "energy-switch": {
+      title: "Your energy complaint letter is ready",
+      brand: "Energy Switch by Quaerens",
+      logo: "logoemailenergyswitch.png",
+      refLabel: "Account reference",
+      companyLabel: "Energy supplier"
+    },
+    freeflightclaim: {
+      title: "Your FreeFlightClaim letter is ready",
+      brand: "FreeFlightClaim by Quaerens",
+      logo: "logoemail.png",
+      refLabel: "Flight number",
+      companyLabel: "Airline"
+    }
+  };
+
+  return configs[product] || configs.freeflightclaim;
+}
+
+function buildAttachmentName(data) {
+  const config = productEmailConfig(data.product || "freeflightclaim");
+  const ref = data.referenceNumber || data.flightNumber || "claim";
+  const safeRef = String(ref).replace(/[^a-z0-9-]+/gi, "-");
+  return config.title.replace(/^Your /, "").replace(/ is ready$/, "").replace(/[^a-z0-9]+/gi, "-") + "-" + safeRef + ".pdf";
+}
+
 function buildEmail(data) {
+  const product = data.product || "freeflightclaim";
+  const config = productEmailConfig(product);
   const name = data.fullName || "there";
-  const airline = data.airline || "the airline";
-  const flight = data.flightNumber || "your flight";
-  const compensation = data.compensation || 0;
-  const depAirport = data.depAirport || "—";
-  const arrAirport = data.arrAirport || "—";
+  const company = data.company || data.airline || "the company";
+  const ref = data.referenceNumber || data.flightNumber || "your reference";
+  const compensation = data.amountClaimed || data.compensation || 0;
+  const depAirport = data.depAirport || "";
+  const arrAirport = data.arrAirport || "";
+  const issue = data.issueTypeLabel || "";
 
   if (data.template === "airline_reply_check") {
     return {
       subject: "Has the airline replied to your claim?",
       html: [
         "<p>Hi " + name + ",</p>",
-        "<p>Has " + airline + " replied about " + flight + "?</p>",
+        "<p>Has " + company + " replied about " + ref + "?</p>",
         "<p>If not, Quaerens can help with the next step.</p>"
       ].join("")
     };
@@ -205,46 +339,72 @@ function buildEmail(data) {
       subject: "Airline rejected or ignored your claim?",
       html: [
         "<p>Hi " + name + ",</p>",
-        "<p>If " + airline + " rejected or ignored your claim for " + flight + ", Quaerens can help prepare a stronger response.</p>"
+        "<p>If " + company + " rejected or ignored your claim for " + ref + ", Quaerens can help prepare a stronger response.</p>"
+      ].join("")
+    };
+  }
+
+  if (product === "freeflightclaim") {
+    return {
+      subject: "Your FreeFlightClaim letter is ready",
+      text:
+        "Hi " + name + ",\n\n" +
+        "Your claim letter for " + ref + " with " + company + " is ready.\n" +
+        "Route: " + (depAirport || "-") + " to " + (arrAirport || "-") + "\n" +
+        "Estimated compensation: EUR " + compensation + "\n\n" +
+        "You can send it directly to the airline and keep proof of submission. If you need help later, we are here.\n\n" +
+        "Kind regards,\nFreeFlightClaim / Quaerens",
+      html: [
+        "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:640px;margin:auto;'>",
+        "<div style='text-align:center;margin-bottom:20px;'>",
+        "<img src='https://www.quaerens.co.uk/images/logoemail.png' alt='FreeFlightClaim by Quaerens' style='display:block;margin:0 auto;max-width:320px;width:100%;height:auto;border:0;'>",
+        "</div>",
+        "<h2 style='color:#1e3a8a;text-align:center;'>Your FreeFlightClaim letter is ready</h2>",
+        "<p>Hi " + name + ",</p>",
+        "<p>Your claim letter for <strong>" + ref + "</strong> with <strong>" + company + "</strong> is ready.</p>",
+        "<p><a href='https://www.quaerens.co.uk/thank-you.html' style='color:#1e3a8a;font-weight:bold;'>View your claim summary</a></p>",
+        "<p><strong>Route:</strong> " + (depAirport || "-") + " to " + (arrAirport || "-") + "</p>",
+        "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
+        "<p>Please send your claim letter to the airline and keep proof of submission.</p>",
+        "<p style='margin-top:25px;'>Kind regards,<br><strong>FreeFlightClaim</strong><br><span style='color:#666;'>by Quaerens</span></p>",
+        "<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
+        "<p style='font-size:12px;color:#666;text-align:center;'>Quaerens Ltd<br>London, United Kingdom<br><br>You received this email because you requested a claim letter on FreeFlightClaim.com.<br><br><a href='mailto:noreply@quaerens.co.uk?subject=Unsubscribe'>Unsubscribe</a></p>",
+        "</div>"
       ].join("")
     };
   }
 
   return {
-    subject: "Your FreeFlightClaim letter is ready",
+    subject: config.title,
     text:
       "Hi " + name + ",\n\n" +
-      "Your claim letter for " + flight + " with " + airline + " is ready.\n" +
-      "Route: " + depAirport + " to " + arrAirport + "\n" +
-      "Estimated compensation: EUR " + compensation + "\n\n" +
-      "You can send it directly to the airline and keep proof of submission. If you need help later, we’re here.\n\n" +
-      "Kind regards,\nFreeFlightClaim / Quaerens",
+      config.title + ".\n" +
+      config.companyLabel + ": " + company + "\n" +
+      config.refLabel + ": " + ref + "\n" +
+      (issue ? "Issue: " + issue + "\n" : "") +
+      (compensation ? "Amount: " + compensation + "\n" : "") +
+      "\nPlease send the PDF to the relevant company and keep proof of submission.\n\nKind regards,\nQuaerens",
     html: [
       "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:640px;margin:auto;'>",
-"<div style='text-align:center;margin-bottom:20px;'>",
-"<img src='https://www.quaerens.co.uk/images/logoemail.png' alt='FreeFlightClaim by Quaerens' style='display:block;margin:0 auto;max-width:320px;width:100%;height:auto;border:0;'>",
-"</div>",
-"<h2 style='color:#1e3a8a;text-align:center;'>Your FreeFlightClaim letter is ready</h2>",
+      "<div style='text-align:center;margin-bottom:20px;'>",
+      "<img src='https://www.quaerens.co.uk/images/" + config.logo + "' alt='" + config.brand + "' style='display:block;margin:0 auto;max-width:320px;width:100%;height:auto;border:0;'>",
+      "</div>",
+      "<h2 style='color:#1e3a8a;text-align:center;'>" + config.title + "</h2>",
       "<p>Hi " + name + ",</p>",
-      "<p>Your claim letter for <strong>" + flight + "</strong> with <strong>" + airline + "</strong> is ready.</p>",
-      "<p><a href='https://www.quaerens.co.uk/thank-you.html' style='color:#1e3a8a;font-weight:bold;'>View your claim summary</a></p>",
-      "<p><strong>Route:</strong> " + depAirport + " → " + arrAirport + "</p>",
-      "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
-      "<p>Please send your claim letter to the airline and keep proof of submission.</p>",
-      "<p style='margin-top:25px;'>Kind regards,<br><strong>FreeFlightClaim</strong><br><span style='color:#666;'>by Quaerens</span></p>",
-
-"<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
-"<p style='font-size:12px;color:#666;text-align:center;'>",
-"Quaerens Ltd<br>",
-"London, United Kingdom<br><br>",
-"You received this email because you requested a claim letter on FreeFlightClaim.com.<br><br>",
-"<a href='mailto:noreply@quaerens.co.uk?subject=Unsubscribe'>Unsubscribe</a>",
-"</p>",
-
-"</div>"
-        ].join("")
+      "<p>Your letter has been prepared and is attached to this email.</p>",
+      "<p><strong>" + config.companyLabel + ":</strong> " + company + "</p>",
+      "<p><strong>" + config.refLabel + ":</strong> " + ref + "</p>",
+      issue ? "<p><strong>Issue:</strong> " + issue + "</p>" : "",
+      compensation ? "<p><strong>Amount entered:</strong> " + compensation + "</p>" : "",
+      "<p>Please send the PDF to the relevant company and keep proof of submission.</p>",
+      "<p style='margin-top:25px;'>Kind regards,<br><strong>Quaerens</strong></p>",
+      "<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
+      "<p style='font-size:12px;color:#666;text-align:center;'>Quaerens Ltd<br>London, United Kingdom<br><br>You received this email because you requested a free letter from Quaerens.<br><br><a href='mailto:noreply@quaerens.co.uk?subject=Unsubscribe'>Unsubscribe</a></p>",
+      "</div>"
+    ].join("")
   };
 }
+
 exports.resendWebhook = onRequest(async (req, res) => {
   try {
     const event = req.body;
