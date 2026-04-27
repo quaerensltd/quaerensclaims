@@ -653,22 +653,27 @@ if (airportOptions) {
           }
 
           if (claimData.handleOption === "email") {
-            await trackEvent("email_requested", claimData);
-            if (window.firebaseUtils && window.storage) {
-  const { ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
+  await trackEvent("email_requested", claimData);
 
-  const pdfResult = generatePDF({
-    ...claimData,
-    fileURL,
-    returnBlob: true
-  });
+  try {
+    if (window.firebaseUtils && window.storage) {
+      const { ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
 
-  if (pdfResult && pdfResult.blob) {
-    const pdfRef = ref(window.storage, `claim-pdfs/${Date.now()}-${pdfResult.fileName}`);
-    const snap = await uploadBytes(pdfRef, pdfResult.blob);
-    pdfURL = await getDownloadURL(snap.ref);
+      const pdfResult = generatePDF({
+        ...claimData,
+        fileURL,
+        returnBlob: true
+      });
+
+      if (pdfResult && pdfResult.blob) {
+        const pdfRef = ref(window.storage, `claim-pdfs/${Date.now()}-${pdfResult.fileName}`);
+        const snap = await uploadBytes(pdfRef, pdfResult.blob);
+        pdfURL = await getDownloadURL(snap.ref);
+      }
+    }
+  } catch (pdfErr) {
+    console.warn("PDF upload failed, email will send without attachment:", pdfErr);
   }
-}
             await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmailV2", {
               method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...claimData, fileURL, pdfURL })
             });
