@@ -240,6 +240,27 @@ function buildEmail(data) {
 "</p>",
 
 "</div>"
-    ].join("")
+        ].join("")
   };
 }
+exports.resendWebhook = onRequest(async (req, res) => {
+  try {
+    const event = req.body;
+    console.log("Resend webhook:", JSON.stringify(event, null, 2));
+
+    const { type, data } = event;
+
+    await db.collection("emailEvents").add({
+      resendId: data?.email_id || "",
+      type: type || "",
+      email: data?.to || "",
+      subject: data?.subject || "",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(200).send("ok");
+  } catch (err) {
+    console.error("Webhook error:", err);
+    res.status(500).send("error");
+  }
+});
