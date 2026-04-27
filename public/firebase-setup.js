@@ -11,7 +11,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
   authDomain: "quaerensclaims.firebaseapp.com",
   projectId: "quaerensclaims",
-  storageBucket: "quaerensclaims.appspot.com",
+  storageBucket: "quaerensclaims.firebasestorage.app",
   messagingSenderId: "57715464932",
   appId: "1:57715464932:web:a69a4949f36c2ad214eaf1",
 };
