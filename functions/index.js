@@ -190,7 +190,7 @@ function buildEmail(data) {
     html: [
       "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:640px;margin:auto;'>",
 "<div style='text-align:center;margin-bottom:20px;'>",
-"<img src='https://www.quaerens.com/images/logoemail.png' alt='FreeFlightClaim by Quaerens' style='max-width:320px;width:100%;height:auto;'>",
+"<img src='https://www.quaerens.co.uk/images/logoemail.png' alt='FreeFlightClaim by Quaerens' style='display:block;margin:0 auto;max-width:320px;width:100%;height:auto;border:0;'>",
 "</div>",
 "<h2 style='color:#1e3a8a;text-align:center;'>Your FreeFlightClaim letter is ready</h2>",
       "<p>Hi " + name + ",</p>",
