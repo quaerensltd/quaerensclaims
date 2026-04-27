@@ -346,7 +346,17 @@
       addWrappedText(doc, closing, 10, y, 180, 6);
       const pageHeight = doc.internal.pageSize.getHeight();
       doc.setFontSize(10).setTextColor(120).text("This document was generated free of charge by FreeFlightClaim.com.", 10, pageHeight - 10);
-      doc.save(`EC261-Claim-${data.flightNumber || "flight"}.pdf`);
+      const pdfFileName = `EC261-Claim-${data.flightNumber || "flight"}.pdf`;
+
+if (data.returnBlob) {
+  return {
+    blob: doc.output("blob"),
+    fileName: pdfFileName
+  };
+}
+
+doc.save(pdfFileName);
+return null;
     }
   </script>
 
@@ -586,6 +596,7 @@ if (airportOptions) {
 
         try {
           let fileURL = "";
+          let pdfURL = "";
           await trackEvent("claim_submitted", claimData);
 
           if (window.firebaseUtils && window.db) {
@@ -643,8 +654,23 @@ if (airportOptions) {
 
           if (claimData.handleOption === "email") {
             await trackEvent("email_requested", claimData);
+            if (window.firebaseUtils && window.storage) {
+  const { ref, uploadBytes, getDownloadURL } = window.firebaseUtils;
+
+  const pdfResult = generatePDF({
+    ...claimData,
+    fileURL,
+    returnBlob: true
+  });
+
+  if (pdfResult && pdfResult.blob) {
+    const pdfRef = ref(window.storage, `claim-pdfs/${Date.now()}-${pdfResult.fileName}`);
+    const snap = await uploadBytes(pdfRef, pdfResult.blob);
+    pdfURL = await getDownloadURL(snap.ref);
+  }
+}
             await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmailV2", {
-              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...claimData, fileURL })
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...claimData, fileURL, pdfURL })
             });
           } else {
             generatePDF({ ...claimData, fileURL });

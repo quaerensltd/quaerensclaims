@@ -41,6 +41,19 @@ exports.sendClaimEmailV2 = onRequest(async (req, res) => {
       compensation: data.compensation
     });
 
+    let attachments = [];
+
+if (data.pdfURL) {
+  const pdfResponse = await fetch(data.pdfURL);
+  const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+  const pdfBase64 = Buffer.from(pdfArrayBuffer).toString("base64");
+
+  attachments.push({
+    filename: `EC261-Claim-${data.flightNumber || "flight"}.pdf`,
+    content: pdfBase64
+  });
+}
+
     try {
       const result = await resend.emails.send({
   from: FROM_EMAIL,
@@ -48,6 +61,7 @@ exports.sendClaimEmailV2 = onRequest(async (req, res) => {
   subject: emailContent.subject,
   html: emailContent.html,
   text: emailContent.text,
+  attachments,
   tags: [
     { name: "type", value: "claim_created" },
     { name: "product", value: "freeflightclaim" }
@@ -115,13 +129,25 @@ exports.sendQueuedEmails = onSchedule("every 5 minutes", async () => {
       if (!isDue || !data.to) continue;
 
       const emailContent = buildEmail(data);
+let attachments = [];
 
+if (data.pdfURL) {
+  const pdfResponse = await fetch(data.pdfURL);
+  const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+  const pdfBase64 = Buffer.from(pdfArrayBuffer).toString("base64");
+
+  attachments.push({
+    filename: `EC261-Claim-${data.flightNumber || "flight"}.pdf`,
+    content: pdfBase64
+  });
+}
       const result = await resend.emails.send({
   from: FROM_EMAIL,
   to: data.to,
   subject: emailContent.subject,
   html: emailContent.html,
   text: emailContent.text,
+  attachments,
   tags: [
     { name: "type", value: data.template || "queued_email" },
     { name: "product", value: data.product || "freeflightclaim" }
