@@ -82,6 +82,36 @@ if (data.pdfURL) {
     filename: data.pdfFileName || buildAttachmentName(data),
     content: data.pdfBase64
   });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
 }
 
     try {
@@ -172,6 +202,36 @@ if (data.pdfURL) {
   attachments.push({
     filename: data.pdfFileName || buildAttachmentName(data),
     content: pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
   });
 } else if (data.pdfBase64) {
   attachments.push({
