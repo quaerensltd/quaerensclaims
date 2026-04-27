@@ -227,7 +227,7 @@ function buildEmail(data) {
 "<h2 style='color:#1e3a8a;text-align:center;'>Your FreeFlightClaim letter is ready</h2>",
       "<p>Hi " + name + ",</p>",
       "<p>Your claim letter for <strong>" + flight + "</strong> with <strong>" + airline + "</strong> is ready.</p>",
-      "<p><a href='https://www.quaerens.com/thank-you.html' style='color:#1e3a8a;font-weight:bold;'>View your claim summary</a></p>",
+      "<p><a href='https://www.quaerens.co.uk/thank-you.html' style='color:#1e3a8a;font-weight:bold;'>View your claim summary</a></p>",
       "<p><strong>Route:</strong> " + depAirport + " → " + arrAirport + "</p>",
       "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
       "<p>Please send your claim letter to the airline and keep proof of submission.</p>",
