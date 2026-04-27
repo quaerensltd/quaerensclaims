@@ -43,20 +43,27 @@ exports.sendClaimEmailV2 = onRequest(async (req, res) => {
 
     try {
       const result = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: data.email,
-        subject: emailContent.subject,
-        html: emailContent.html
-      });
+  from: FROM_EMAIL,
+  to: data.email,
+  subject: emailContent.subject,
+  html: emailContent.html,
+  text: emailContent.text,
+  tags: [
+    { name: "type", value: "claim_created" },
+    { name: "product", value: "freeflightclaim" }
+  ]
+});
 
       await db.collection("sentEmails").add({
-        to: data.email,
-        subject: emailContent.subject,
-        source: "sendClaimEmailV2-resend",
-        resendId: result?.data?.id || "",
-        sent: true,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+  to: data.email,
+  subject: emailContent.subject,
+  source: "sendClaimEmailV2-resend",
+  resendId: result?.data?.id || "",
+  product: "freeflightclaim",
+  type: "claim_created",
+  sent: true,
+  createdAt: admin.firestore.FieldValue.serverTimestamp()
+});
 
       return res.status(200).json({
         success: true,
@@ -110,11 +117,16 @@ exports.sendQueuedEmails = onSchedule("every 5 minutes", async () => {
       const emailContent = buildEmail(data);
 
       const result = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: data.to,
-        subject: emailContent.subject,
-        html: emailContent.html
-      });
+  from: FROM_EMAIL,
+  to: data.to,
+  subject: emailContent.subject,
+  html: emailContent.html,
+  text: emailContent.text,
+  tags: [
+    { name: "type", value: data.template || "queued_email" },
+    { name: "product", value: data.product || "freeflightclaim" }
+  ]
+});
 
       await emailDoc.ref.update({
         sent: true,
@@ -168,6 +180,13 @@ function buildEmail(data) {
 
   return {
     subject: "Your FreeFlightClaim letter is ready",
+    text:
+      "Hi " + name + ",\n\n" +
+      "Your claim letter for " + flight + " with " + airline + " is ready.\n" +
+      "Route: " + depAirport + " to " + arrAirport + "\n" +
+      "Estimated compensation: EUR " + compensation + "\n\n" +
+      "Please send your claim letter to the airline and keep proof of submission.\n\n" +
+      "Kind regards,\nFreeFlightClaim / Quaerens",
     html: [
       "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;'>",
       "<h2>Your FreeFlightClaim letter is ready</h2>",
