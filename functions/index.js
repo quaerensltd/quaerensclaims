@@ -62,7 +62,10 @@ if (data.pdfURL) {
   html: emailContent.html,
   text: emailContent.text,
   attachments,
-  tags: [
+headers: {
+  "List-Unsubscribe": "<mailto:noreply@quaerens.co.uk?subject=Unsubscribe>"
+},
+tags: [
     { name: "type", value: "claim_created" },
     { name: "product", value: "freeflightclaim" }
   ]
@@ -148,7 +151,10 @@ if (data.pdfURL) {
   html: emailContent.html,
   text: emailContent.text,
   attachments,
-  tags: [
+headers: {
+  "List-Unsubscribe": "<mailto:noreply@quaerens.co.uk?subject=Unsubscribe>"
+},
+tags: [
     { name: "type", value: data.template || "queued_email" },
     { name: "product", value: data.product || "freeflightclaim" }
   ]
@@ -225,7 +231,15 @@ function buildEmail(data) {
       "<p><strong>Estimated compensation:</strong> EUR " + compensation + "</p>",
       "<p>Please send your claim letter to the airline and keep proof of submission.</p>",
       "<p style='margin-top:25px;'>Kind regards,<br><strong>FreeFlightClaim</strong><br><span style='color:#666;'>by Quaerens</span></p>",
-      "</div>"
+
+"<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
+"<p style='font-size:12px;color:#666;text-align:center;'>",
+"Quaerens Ltd · London, UK<br>",
+"You are receiving this email because you requested a claim letter.<br>",
+"<a href='mailto:noreply@quaerens.co.uk?subject=Unsubscribe' style='color:#1e3a8a;'>Unsubscribe</a>",
+"</p>",
+
+"</div>"
     ].join("")
   };
 }
