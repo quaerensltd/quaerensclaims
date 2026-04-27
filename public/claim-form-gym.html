@@ -16,7 +16,8 @@
     html{scroll-behavior:smooth}
     body{font-family:Inter,sans-serif;background:#f8fafc;color:#111827;margin:0;top:0!important}
     label{display:block;margin-bottom:.4rem}
-    input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:.85rem;margin-top:.35rem;background:white}
+    input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:.9rem 1rem;margin-top:.35rem;background:white;line-height:1.45;text-indent:0}
+    input[type="file"]{padding:.65rem 1rem}
     textarea{min-height:140px}
     .hero{position:relative;background:#0f172a;color:white;overflow:hidden}
     .hero:before{content:"";position:absolute;inset:0;background:url('/images/hero-gym1.png') center/cover;opacity:.32}
@@ -226,6 +227,18 @@
       return { fileName };
     }
 
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = String(reader.result || "");
+          resolve(result.includes(",") ? result.split(",")[1] : result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
     async function trackEvent(eventName, claimData, extra = {}) {
       try {
         await addDoc(collection(db, "conversionEvents"), {
@@ -292,24 +305,27 @@
       try {
         let fileURL = "";
         let pdfURL = "";
+        let pdfBase64 = "";
         let pdfFileName = "";
         const uploadFile = document.getElementById("fileUpload")?.files?.[0];
 
         await trackEvent("claim_submitted", claimData);
 
         if (uploadFile) {
-          const uploadRef = ref(storage, "uploads/" + pageConfig.product + "/" + Date.now() + "-" + uploadFile.name);
-          const uploadSnap = await uploadBytes(uploadRef, uploadFile);
-          fileURL = await getDownloadURL(uploadSnap.ref);
+          try {
+            const uploadRef = ref(storage, "uploads/" + pageConfig.product + "/" + Date.now() + "-" + uploadFile.name);
+            const uploadSnap = await uploadBytes(uploadRef, uploadFile);
+            fileURL = await getDownloadURL(uploadSnap.ref);
+          } catch (uploadErr) {
+            console.warn("Supporting document upload failed. Continuing without uploaded file.", uploadErr);
+          }
         }
 
         if (claimData.handleOption === "email") {
           await trackEvent("email_requested", claimData);
           const pdfResult = generatePDF({ ...claimData, returnBlob: true });
           pdfFileName = pdfResult.fileName;
-          const pdfRef = ref(storage, "claim-pdfs/" + pageConfig.product + "/" + Date.now() + "-" + pdfResult.fileName);
-          const pdfSnap = await uploadBytes(pdfRef, pdfResult.blob);
-          pdfURL = await getDownloadURL(pdfSnap.ref);
+          pdfBase64 = await blobToBase64(pdfResult.blob);
         } else {
           const pdfResult = generatePDF(claimData);
           pdfFileName = pdfResult.fileName;
@@ -338,6 +354,7 @@
           amountClaimed: claimData.amountClaimed,
           compensation: claimData.amountClaimed,
           pdfURL,
+          pdfBase64,
           pdfFileName,
           template: "free_tool_letter_created",
           subject: "Your " + pageConfig.toolName + " letter is ready",
@@ -371,7 +388,7 @@
           await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendClaimEmailV2", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...claimData, fileURL, pdfURL, pdfFileName })
+            body: JSON.stringify({ ...claimData, fileURL, pdfURL, pdfBase64, pdfFileName })
           });
         }
 
