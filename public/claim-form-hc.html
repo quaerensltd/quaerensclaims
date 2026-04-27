@@ -16,7 +16,7 @@
     html{scroll-behavior:smooth}
     body{font-family:Inter,sans-serif;background:#f8fafc;color:#111827;margin:0;top:0!important}
     label{display:block;margin-bottom:.4rem}
-    input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:.9rem 1rem;margin-top:.35rem;background:white;line-height:1.45;text-indent:0}
+    input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:0;padding:.95rem 1.15rem;margin-top:.35rem;background:white;line-height:1.45;text-indent:0}
     input[type="file"]{padding:.65rem 1rem}
     textarea{min-height:140px}
     .hero{position:relative;background:#0f172a;color:white;overflow:hidden}
@@ -92,6 +92,16 @@
           <div>
             <label for="returnDate" class="font-semibold">Return date</label>
             <input type="date" id="returnDate" name="returnDate" >
+          </div>
+        </div>
+
+        <div class="border border-blue-100 bg-blue-50 p-4">
+          <p class="font-extrabold text-blue-950 mb-2">Payment details to include in the letter</p>
+          <p class="text-sm text-blue-900 mb-4">These details are inserted into the PDF so the company knows where to send any refund or compensation.</p>
+          <div class="grid md:grid-cols-3 gap-5">
+            <div><label for="accountName" class="font-semibold">Account holder name</label><input type="text" id="accountName" name="accountName" autocomplete="name"></div>
+            <div><label for="sortCode" class="font-semibold">Sort code</label><input type="text" id="sortCode" name="sortCode" inputmode="numeric" placeholder="00-00-00"></div>
+            <div><label for="accountNumber" class="font-semibold">Bank account number</label><input type="text" id="accountNumber" name="accountNumber" inputmode="numeric" placeholder="12345678"></div>
           </div>
         </div>
 
@@ -209,7 +219,10 @@
         pageConfig.respondentLabel + ": " + (data.company || ""),
         pageConfig.referenceLabel + ": " + (data.referenceNumber || ""),
         "Issue type: " + issueLabel(data.issueType),
-        pageConfig.amountLabel + ": " + money(data.amountClaimed)
+        pageConfig.amountLabel + ": " + money(data.amountClaimed),
+        "Account holder name: " + (data.accountName || ""),
+        "Sort code: " + (data.sortCode || ""),
+        "Bank account number: " + (data.accountNumber || "")
       ];
       pageConfig.fields.forEach(field => lines.push(field.label + ": " + (data[field.id] || "")));
       lines.forEach(line => { if (y > 275) { doc.addPage(); y = 20; } doc.text(line, 10, y); y += 7; });
@@ -292,6 +305,9 @@
         issueTypeLabel: issueLabel(formData.get("issueType")),
         issueSummary: (formData.get("issueSummary") || "").trim(),
         desiredOutcome: (formData.get("desiredOutcome") || "").trim(),
+        accountName: (formData.get("accountName") || "").trim(),
+        sortCode: (formData.get("sortCode") || "").trim(),
+        accountNumber: (formData.get("accountNumber") || "").trim(),
         language: formData.get("language") || "en",
         handleOption: formData.get("handleOption") || "pdf",
         marketingConsent: formData.get("marketingConsent") === "yes",

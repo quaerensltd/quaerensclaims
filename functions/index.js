@@ -67,11 +67,26 @@ if (data.pdfURL) {
     filename: data.pdfFileName || buildAttachmentName(data),
     content: data.pdfBase64
   });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
 }
 
     try {
       const result = await resend.emails.send({
-  from: FROM_EMAIL,
+  from: senderEmail(data),
   to: data.email,
   subject: emailContent.subject,
   html: emailContent.html,
@@ -168,9 +183,24 @@ if (data.pdfURL) {
     filename: data.pdfFileName || buildAttachmentName(data),
     content: data.pdfBase64
   });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
+} else if (data.pdfBase64) {
+  attachments.push({
+    filename: data.pdfFileName || buildAttachmentName(data),
+    content: data.pdfBase64
+  });
 }
       const result = await resend.emails.send({
-  from: FROM_EMAIL,
+  from: senderEmail(data),
   to: data.to,
   subject: emailContent.subject,
   html: emailContent.html,
@@ -269,193 +299,9 @@ function buildAttachmentName(data) {
   return config.title.replace(/^Your /, "").replace(/ is ready$/, "").replace(/[^a-z0-9]+/gi, "-") + "-" + safeRef + ".pdf";
 }
 
-function productEmailConfig(product) {
-  const configs = {
-    freeholidaycompensation: {
-      title: "Your holiday compensation letter is ready",
-      brand: "Holiday Compensation by Quaerens",
-      logo: "logoemailholidayclaim.png",
-      refLabel: "Booking reference",
-      companyLabel: "Travel company"
-    },
-    "train-delay": {
-      title: "Your train delay claim letter is ready",
-      brand: "Train Delay by Quaerens",
-      logo: "logoemailtraindelay.png",
-      refLabel: "Ticket reference",
-      companyLabel: "Train company"
-    },
-    "lost-luggage": {
-      title: "Your lost luggage claim letter is ready",
-      brand: "Lost Luggage by Quaerens",
-      logo: "logoemaillostluggage.png",
-      refLabel: "Booking or PIR reference",
-      companyLabel: "Airline or provider"
-    },
-    "gym-cancellation": {
-      title: "Your gym cancellation letter is ready",
-      brand: "Gym Cancellation by Quaerens",
-      logo: "logoemailgymcancellation.png",
-      refLabel: "Membership number",
-      companyLabel: "Gym"
-    },
-    "parking-appeal": {
-      title: "Your parking appeal letter is ready",
-      brand: "Parking Appeal by Quaerens",
-      logo: "logoemailparkingappeal.png",
-      refLabel: "PCN reference",
-      companyLabel: "Parking operator"
-    },
-    "energy-switch": {
-      title: "Your energy complaint letter is ready",
-      brand: "Energy Switch by Quaerens",
-      logo: "logoemailenergyswitch.png",
-      refLabel: "Account reference",
-      companyLabel: "Energy supplier"
-    },
-    freeflightclaim: {
-      title: "Your FreeFlightClaim letter is ready",
-      brand: "FreeFlightClaim by Quaerens",
-      logo: "logoemail.png",
-      refLabel: "Flight number",
-      companyLabel: "Airline"
-    }
-  };
-
-  return configs[product] || configs.freeflightclaim;
-}
-
-function buildAttachmentName(data) {
+function senderEmail(data) {
   const config = productEmailConfig(data.product || "freeflightclaim");
-  const ref = data.referenceNumber || data.flightNumber || "claim";
-  const safeRef = String(ref).replace(/[^a-z0-9-]+/gi, "-");
-  return config.title.replace(/^Your /, "").replace(/ is ready$/, "").replace(/[^a-z0-9]+/gi, "-") + "-" + safeRef + ".pdf";
-}
-
-function productEmailConfig(product) {
-  const configs = {
-    freeholidaycompensation: {
-      title: "Your holiday compensation letter is ready",
-      brand: "Holiday Compensation by Quaerens",
-      logo: "logoemailholidayclaim.png",
-      refLabel: "Booking reference",
-      companyLabel: "Travel company"
-    },
-    "train-delay": {
-      title: "Your train delay claim letter is ready",
-      brand: "Train Delay by Quaerens",
-      logo: "logoemailtraindelay.png",
-      refLabel: "Ticket reference",
-      companyLabel: "Train company"
-    },
-    "lost-luggage": {
-      title: "Your lost luggage claim letter is ready",
-      brand: "Lost Luggage by Quaerens",
-      logo: "logoemaillostluggage.png",
-      refLabel: "Booking or PIR reference",
-      companyLabel: "Airline or provider"
-    },
-    "gym-cancellation": {
-      title: "Your gym cancellation letter is ready",
-      brand: "Gym Cancellation by Quaerens",
-      logo: "logoemailgymcancellation.png",
-      refLabel: "Membership number",
-      companyLabel: "Gym"
-    },
-    "parking-appeal": {
-      title: "Your parking appeal letter is ready",
-      brand: "Parking Appeal by Quaerens",
-      logo: "logoemailparkingappeal.png",
-      refLabel: "PCN reference",
-      companyLabel: "Parking operator"
-    },
-    "energy-switch": {
-      title: "Your energy complaint letter is ready",
-      brand: "Energy Switch by Quaerens",
-      logo: "logoemailenergyswitch.png",
-      refLabel: "Account reference",
-      companyLabel: "Energy supplier"
-    },
-    freeflightclaim: {
-      title: "Your FreeFlightClaim letter is ready",
-      brand: "FreeFlightClaim by Quaerens",
-      logo: "logoemail.png",
-      refLabel: "Flight number",
-      companyLabel: "Airline"
-    }
-  };
-
-  return configs[product] || configs.freeflightclaim;
-}
-
-function buildAttachmentName(data) {
-  const config = productEmailConfig(data.product || "freeflightclaim");
-  const ref = data.referenceNumber || data.flightNumber || "claim";
-  const safeRef = String(ref).replace(/[^a-z0-9-]+/gi, "-");
-  return config.title.replace(/^Your /, "").replace(/ is ready$/, "").replace(/[^a-z0-9]+/gi, "-") + "-" + safeRef + ".pdf";
-}
-
-function productEmailConfig(product) {
-  const configs = {
-    freeholidaycompensation: {
-      title: "Your holiday compensation letter is ready",
-      brand: "Holiday Compensation by Quaerens",
-      logo: "logoemailholidayclaim.png",
-      refLabel: "Booking reference",
-      companyLabel: "Travel company"
-    },
-    "train-delay": {
-      title: "Your train delay claim letter is ready",
-      brand: "Train Delay by Quaerens",
-      logo: "logoemailtraindelay.png",
-      refLabel: "Ticket reference",
-      companyLabel: "Train company"
-    },
-    "lost-luggage": {
-      title: "Your lost luggage claim letter is ready",
-      brand: "Lost Luggage by Quaerens",
-      logo: "logoemaillostluggage.png",
-      refLabel: "Booking or PIR reference",
-      companyLabel: "Airline or provider"
-    },
-    "gym-cancellation": {
-      title: "Your gym cancellation letter is ready",
-      brand: "Gym Cancellation by Quaerens",
-      logo: "logoemailgymcancellation.png",
-      refLabel: "Membership number",
-      companyLabel: "Gym"
-    },
-    "parking-appeal": {
-      title: "Your parking appeal letter is ready",
-      brand: "Parking Appeal by Quaerens",
-      logo: "logoemailparkingappeal.png",
-      refLabel: "PCN reference",
-      companyLabel: "Parking operator"
-    },
-    "energy-switch": {
-      title: "Your energy complaint letter is ready",
-      brand: "Energy Switch by Quaerens",
-      logo: "logoemailenergyswitch.png",
-      refLabel: "Account reference",
-      companyLabel: "Energy supplier"
-    },
-    freeflightclaim: {
-      title: "Your FreeFlightClaim letter is ready",
-      brand: "FreeFlightClaim by Quaerens",
-      logo: "logoemail.png",
-      refLabel: "Flight number",
-      companyLabel: "Airline"
-    }
-  };
-
-  return configs[product] || configs.freeflightclaim;
-}
-
-function buildAttachmentName(data) {
-  const config = productEmailConfig(data.product || "freeflightclaim");
-  const ref = data.referenceNumber || data.flightNumber || "claim";
-  const safeRef = String(ref).replace(/[^a-z0-9-]+/gi, "-");
-  return config.title.replace(/^Your /, "").replace(/ is ready$/, "").replace(/[^a-z0-9]+/gi, "-") + "-" + safeRef + ".pdf";
+  return config.brand + " <noreply@quaerens.co.uk>";
 }
 
 function buildEmail(data) {
