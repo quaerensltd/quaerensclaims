@@ -17,8 +17,8 @@ if (!process.env.RESEND_API_KEY) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Test sender first. Later change back to:
-// const FROM_EMAIL = "FreeFlightClaim <info@quaerens.co.uk>";
-const FROM_EMAIL = "FreeFlightClaim <info@quaerens.co.uk>";
+// const FROM_EMAIL = "FreeFlightClaim <noreply@quaerens.co.uk>";
+const FROM_EMAIL = "FreeFlightClaim <noreply@quaerens.co.uk>";
 
 exports.sendClaimEmailV2 = onRequest(async (req, res) => {
   cors(req, res, async () => {
@@ -188,8 +188,12 @@ function buildEmail(data) {
       "Please send your claim letter to the airline and keep proof of submission.\n\n" +
       "Kind regards,\nFreeFlightClaim / Quaerens",
     html: [
-      "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;'>",
-      "<h2>Your FreeFlightClaim letter is ready</h2>",
+      "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:640px;margin:auto;'>",
+"<div style='text-align:center;margin-bottom:20px;'>",
+"<img src='https://www.quaerens.co.uk/images/quaerens-logo.png' alt='Quaerens' style='height:70px;margin:0 10px;vertical-align:middle;'>",
+"<img src='https://www.freeflightclaim.com/images/logo-freeflightclaim.png' alt='FreeFlightClaim' style='height:70px;margin:0 10px;vertical-align:middle;'>",
+"</div>",
+"<h2 style='color:#1e3a8a;text-align:center;'>Your FreeFlightClaim letter is ready</h2>",
       "<p>Hi " + name + ",</p>",
       "<p>Your claim letter for <strong>" + flight + "</strong> with <strong>" + airline + "</strong> is ready.</p>",
       "<p><strong>Route:</strong> " + depAirport + " → " + arrAirport + "</p>",
