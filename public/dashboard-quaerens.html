@@ -594,22 +594,43 @@ function filteredEvents() {
   return conversionData.filter(matchesSearch).filter(matchesProduct);
 }
 
+function moneyValue(value) {
+  if (value === undefined || value === null || value === "") return 0;
+  const cleaned = String(value).replace(/[^0-9.-]/g, "");
+  const number = Number(cleaned);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatClaimTotal(total) {
+  return `£${total.toLocaleString("en-GB", {
+    minimumFractionDigits: total % 1 ? 2 : 0,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+function updateDashboardStats() {
+  const claims = filteredClaims();
+  const leads = filteredLeads();
+  const claimTotal = claims.reduce((sum, claim) => sum + moneyValue(claim.compensation), 0);
+
+  document.getElementById("claimsCount").textContent = claims.length;
+  document.getElementById("leadsCount").textContent = leads.length;
+  document.getElementById("newClaimsCount").textContent =
+    claims.filter(c => (c.status || "new") === "new").length;
+  document.getElementById("claimValueTotal").textContent = formatClaimTotal(claimTotal);
+}
+
 function renderConversions() {
   const events = filteredEvents();
-
   const count = name => events.filter(e => e.eventName === name).length;
 
-  document.getElementById("submittedCount").textContent = count("claim_submitted");
+  document.getElementById("submittedCount").textContent = filteredClaims().length;
   document.getElementById("emailRequestedCount").textContent = count("email_requested");
   document.getElementById("pdfGeneratedCount").textContent = count("pdf_generated");
   document.getElementById("marketingOptInCount").textContent = count("marketing_consent");
   document.getElementById("followUpQueuedCount").textContent = count("follow_up_queued");
 
-  const total = events
-    .filter(e => e.eventName === "claim_submitted")
-    .reduce((sum, e) => sum + Number(e.compensation || 0), 0);
-
-  document.getElementById("claimValueTotal").textContent = `€${total}`;
+  updateDashboardStats();
 }
 
 function renderClaims() {
@@ -749,6 +770,13 @@ function renderClaims() {
 
       try {
         await deleteDoc(doc(db, "flightClaimLetters", id));
+
+        claimsData = claimsData.filter(claim => claim.id !== id);
+        renderClaims();
+        renderConversions();
+        renderLeads();
+        renderEvents();
+
         await loadData();
       } catch (err) {
         console.error(err);
@@ -1071,10 +1099,6 @@ productFilter.addEventListener("change", () => {
   renderLeads();
   renderEvents();
   renderConversions();
-  document.getElementById("claimsCount").textContent = filteredClaims().length;
-  document.getElementById("leadsCount").textContent = filteredLeads().length;
-  document.getElementById("newClaimsCount").textContent =
-    filteredClaims().filter(c => (c.status || "new") === "new").length;
 });
 
 closeDrawerBtn.addEventListener("click", closeDrawer);
