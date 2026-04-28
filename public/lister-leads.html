@@ -850,7 +850,7 @@
 
       const userData = userSnap.data();
 
-      if (userData.role !== "staff") {
+      if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -877,7 +877,7 @@
         renderLeads();
       } catch (error) {
         console.error("Failed to load leads:", error);
-        resultsSummary.textContent = "Could not load leads.";
+        resultsSummary.textContent = `Could not load leads: ${error.code || error.message || "Unknown error"}`;
       }
     }
 
@@ -1421,8 +1421,8 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load your leads.");
-        window.location.href = "/login.html";
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load your leads: ${error.code || error.message || "Unknown error"}`);
       }
     });
 

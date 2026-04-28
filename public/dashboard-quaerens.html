@@ -204,7 +204,8 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -899,7 +900,21 @@ closeDrawerBtn.addEventListener("click", closeDrawer);
 drawerBackdrop.addEventListener("click", closeDrawer);
 
 onAuthStateChanged(auth, async (user) => {
-  if (user && allowedAdmins.includes(user.email)) {
+  let isAllowedAdmin = false;
+
+  if (user) {
+    try {
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      const profile = userSnap.exists() ? userSnap.data() : {};
+      isAllowedAdmin = allowedAdmins.includes(user.email) || profile.role === "admin" || profile.admin === true;
+    } catch (error) {
+      console.error("Admin access check failed:", error);
+      loginError.textContent = `Admin access check failed: ${error.code || error.message || "Unknown error"}`;
+      loginError.classList.remove("hidden");
+    }
+  }
+
+  if (user && isAllowedAdmin) {
     loginView.classList.add("hidden");
     dashboardView.classList.remove("hidden");
     logoutBtn.classList.remove("hidden");

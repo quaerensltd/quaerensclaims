@@ -588,6 +588,7 @@
 
     async function loadSubmissions() {
       try {
+        resultsSummary.textContent = "Loading submissions...";
         const snap = await getDocs(query(collection(db, "claimSubmissions")));
         allSubmissions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -602,7 +603,10 @@
         renderSubmissions();
       } catch (error) {
         console.error("Failed to load submissions:", error);
-        resultsSummary.textContent = "Could not load submissions.";
+        resultsSummary.textContent = `Could not load submissions: ${error.code || error.message || "Unknown error"}`;
+        allSubmissions = [];
+        renderStats();
+        renderSubmissions();
       }
     }
 
@@ -995,14 +999,20 @@
             leadPatch.lastAction = "manager_more_info_needed";
           }
 
-          await updateDoc(doc(db, "leadAssignments", selectedSubmission.sourceLeadId), leadPatch);
+          try {
+            await updateDoc(doc(db, "leadAssignments", selectedSubmission.sourceLeadId), leadPatch);
+          } catch (leadError) {
+            console.error("Manager review saved, but linked lead could not be updated:", leadError);
+            showModalMessage(`Review saved, but linked lead update failed: ${leadError.code || leadError.message || "Unknown error"}`, true);
+            return;
+          }
         }
 
         await refreshSelectedSubmission();
         showModalMessage("Manager review updated.");
       } catch (error) {
         console.error("Failed to update review:", error);
-        showModalMessage("Could not update review.", true);
+        showModalMessage(`Could not update review: ${error.code || error.message || "Unknown error"}`, true);
       }
     }
 
@@ -1058,8 +1068,8 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load manager panel.");
-        window.location.href = "/login.html";
+        hideLoader();
+        alert(`Could not load manager panel: ${error.code || error.message || "Unknown error"}`);
       }
     });
 

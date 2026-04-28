@@ -697,7 +697,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "staff") {
+      if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -826,7 +826,7 @@
           <td class="p-3 cell-wrap">${statusBadge(lead.leadStatus || "qualified")}</td>
           <td class="p-3 cell-wrap">
             ${isAwaitingManager(lead)
-              ? `<a href="/manager-panel.html" class="text-blue-600 font-semibold hover:underline">Open Manager Queue</a>`
+              ? `<span class="text-slate-500 font-semibold">Awaiting manager review</span>`
               : `<button class="btn-small btn-blue" data-action="send-to-manager" data-id="${lead.id}">Send to Manager</button>`
             }
           </td>
@@ -1040,8 +1040,8 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load staff dashboard.");
-        window.location.href = "/login.html";
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load staff dashboard: ${error.code || error.message || "Unknown error"}`);
       }
     });
 

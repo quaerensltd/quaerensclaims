@@ -742,7 +742,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "staff") {
+      if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -768,7 +768,7 @@
         renderCallbacks();
       } catch (error) {
         console.error("Failed to load callbacks:", error);
-        resultsSummary.textContent = "Could not load callback agenda.";
+        resultsSummary.textContent = `Could not load callback agenda: ${error.code || error.message || "Unknown error"}`;
       }
     }
 
@@ -1324,8 +1324,8 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load callback agenda.");
-        window.location.href = "/login.html";
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load callback agenda: ${error.code || error.message || "Unknown error"}`);
       }
     });
 

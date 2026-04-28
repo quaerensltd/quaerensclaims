@@ -529,7 +529,7 @@
       const userData = userSnap.data();
       const allowedRoles = ["manager", "admin", "staff"];
 
-      if (!allowedRoles.includes(userData.role)) {
+      if (!allowedRoles.includes(userData.role) && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -556,7 +556,7 @@
         renderArchive();
       } catch (error) {
         console.error("Failed to load closed leads archive:", error);
-        resultsSummary.textContent = "Could not load closed leads archive.";
+        resultsSummary.textContent = `Could not load closed leads archive: ${error.code || error.message || "Unknown error"}`;
       }
     }
 
@@ -743,8 +743,8 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load closed leads archive.");
-        window.location.href = "/login.html";
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load closed leads archive: ${error.code || error.message || "Unknown error"}`);
       }
     });
 
