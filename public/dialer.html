@@ -1,0 +1,634 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Power Dialer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, sans-serif; background:#f8fafc; color:#0f172a; margin:0; }
+    .shell { width:min(1250px, calc(100% - 2rem)); margin:0 auto; }
+    .card { background:white; border:1px solid #dbeafe; border-radius:18px; box-shadow:0 10px 28px rgba(15,23,42,.07); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; border-radius:14px; font-weight:800; transition:.2s; border:0; cursor:pointer; text-decoration:none; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#eff6ff; color:#1d4ed8; }
+    .btn-secondary:hover { background:#dbeafe; }
+    .btn-green { background:#059669; color:white; }
+    .btn-red { background:#dc2626; color:white; }
+    .btn-amber { background:#d97706; color:white; }
+    .btn-dark { background:#0f172a; color:white; }
+    .input { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:.82rem .95rem; font-size:1rem; background:white; }
+    .badge { display:inline-flex; border-radius:999px; padding:.32rem .65rem; font-size:.78rem; font-weight:800; }
+    .badge-blue { background:#dbeafe; color:#1e40af; }
+    .badge-green { background:#dcfce7; color:#166534; }
+    .badge-amber { background:#fef3c7; color:#92400e; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
+    #toast { position:fixed; right:1rem; bottom:1rem; background:#0f172a; color:white; padding:.9rem 1rem; border-radius:14px; opacity:0; transform:translateY(10px); transition:.2s; z-index:80; max-width:360px; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    .muted { color:#64748b; }
+    .mono { font-variant-numeric: tabular-nums; }
+    @media (max-width: 760px) {
+      .shell { width:min(100% - 1rem, 1250px); }
+      .btn { width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div id="authLoader" class="fixed inset-0 bg-white/90 z-50 flex items-center justify-center">
+    <div class="card p-8 text-center">
+      <p class="text-xl font-extrabold text-blue-900">Loading dialer...</p>
+      <p class="text-slate-500 mt-2">Checking CRM access and lead queue.</p>
+    </div>
+  </div>
+
+  <header class="bg-white border-b border-blue-100 sticky top-0 z-30">
+    <div class="shell py-5 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Power Dialer</h1>
+        <p class="text-sm text-slate-500">Click-to-call, outcomes, callbacks and call notes</p>
+      </div>
+      <nav class="flex items-center gap-3 flex-wrap">
+        <a id="dashboardLink" href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+        <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">Leads</a>
+        <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Queue</button>
+        <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell py-8 space-y-6">
+    <section class="grid md:grid-cols-5 gap-4">
+      <div class="card p-5"><div class="muted text-sm">Queue</div><div id="queueCount" class="text-3xl font-extrabold text-blue-900 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Callable</div><div id="callableCount" class="text-3xl font-extrabold text-green-700 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Callbacks</div><div id="callbackCount" class="text-3xl font-extrabold text-amber-600 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Called Today</div><div id="calledTodayCount" class="text-3xl font-extrabold text-indigo-700 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Skipped/DNC</div><div id="blockedCount" class="text-3xl font-extrabold text-red-600 mt-1">0</div></div>
+    </section>
+
+    <section class="card p-6">
+      <div class="grid md:grid-cols-5 gap-4 items-end">
+        <div>
+          <label class="block text-sm font-bold text-blue-900 mb-2" for="queueMode">Queue</label>
+          <select id="queueMode" class="input">
+            <option value="priority">Priority queue</option>
+            <option value="new">New / untouched</option>
+            <option value="callbacks">Callbacks due</option>
+            <option value="no_answer">No answer follow-up</option>
+            <option value="all">All callable leads</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-blue-900 mb-2" for="campaignFilter">Campaign</label>
+          <select id="campaignFilter" class="input"><option value="all">All campaigns</option></select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-blue-900 mb-2" for="searchInput">Search</label>
+          <input id="searchInput" class="input" placeholder="Name, phone, postcode..." />
+        </div>
+        <button id="startBtn" class="btn btn-primary py-3 px-5" type="button">Start Dialer</button>
+        <button id="nextBtn" class="btn btn-secondary py-3 px-5" type="button">Next Lead</button>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-3 gap-6">
+      <div class="card p-6 lg:col-span-2">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p class="text-sm font-bold uppercase text-blue-700 tracking-wide">Current Lead</p>
+            <h2 id="leadName" class="text-3xl font-extrabold text-blue-950 mt-2">No lead selected</h2>
+            <p id="leadMeta" class="muted mt-2">Start the dialer to load the first callable lead.</p>
+          </div>
+          <span id="leadStatusBadge" class="badge badge-blue">Waiting</span>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-6">
+          <div class="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+            <p class="text-sm font-bold text-slate-500">Primary Phone</p>
+            <p id="primaryPhone" class="text-2xl font-extrabold mono mt-1">-</p>
+            <a id="primaryCallBtn" href="#" class="btn btn-green py-3 px-5 mt-4">Call Primary</a>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+            <p class="text-sm font-bold text-slate-500">Mobile / Alternative</p>
+            <p id="mobilePhone" class="text-2xl font-extrabold mono mt-1">-</p>
+            <a id="mobileCallBtn" href="#" class="btn btn-green py-3 px-5 mt-4">Call Mobile</a>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 mt-6 text-sm">
+          <div><span class="font-bold text-blue-900">Email:</span> <span id="leadEmail">-</span></div>
+          <div><span class="font-bold text-blue-900">Postcode:</span> <span id="leadPostcode">-</span></div>
+          <div><span class="font-bold text-blue-900">Campaign:</span> <span id="leadCampaign">-</span></div>
+          <div><span class="font-bold text-blue-900">Attempts:</span> <span id="leadAttempts">0</span></div>
+          <div><span class="font-bold text-blue-900">Last Call:</span> <span id="leadLastCall">-</span></div>
+          <div><span class="font-bold text-blue-900">Callback:</span> <span id="leadCallback">-</span></div>
+        </div>
+
+        <div class="mt-6">
+          <label class="block text-sm font-bold text-blue-900 mb-2" for="callNotes">Call Notes</label>
+          <textarea id="callNotes" class="input" rows="5" placeholder="What happened on the call?"></textarea>
+        </div>
+      </div>
+
+      <aside class="card p-6">
+        <h3 class="text-xl font-extrabold text-blue-900 mb-4">Call Outcome</h3>
+        <div class="grid gap-3">
+          <button class="btn btn-amber py-3 px-4" type="button" data-outcome="no_answer">No Answer</button>
+          <button class="btn btn-secondary py-3 px-4" type="button" data-outcome="voicemail">Voicemail</button>
+          <button class="btn btn-secondary py-3 px-4" type="button" data-outcome="wrong_number">Wrong Number</button>
+          <button class="btn btn-green py-3 px-4" type="button" data-outcome="interested">Interested</button>
+          <button class="btn btn-primary py-3 px-4" type="button" data-outcome="qualified">Qualified</button>
+          <button class="btn btn-red py-3 px-4" type="button" data-outcome="not_interested">Not Interested</button>
+          <button class="btn btn-dark py-3 px-4" type="button" data-outcome="do_not_call">Do Not Call</button>
+        </div>
+
+        <div class="mt-6 border-t pt-5">
+          <h4 class="font-extrabold text-blue-900 mb-3">Book Callback</h4>
+          <div class="grid gap-3">
+            <input id="callbackDate" type="date" class="input" />
+            <input id="callbackTime" type="time" class="input" />
+            <button id="bookCallbackBtn" class="btn btn-primary py-3 px-4" type="button">Save Callback</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+        <div>
+          <h3 class="text-xl font-extrabold text-blue-900">Upcoming Queue</h3>
+          <p id="queueSummary" class="muted text-sm mt-1">No queue loaded yet.</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-blue-50 text-blue-900">
+            <tr>
+              <th class="text-left p-3">Lead</th>
+              <th class="text-left p-3">Phone</th>
+              <th class="text-left p-3">Status</th>
+              <th class="text-left p-3">Callback</th>
+              <th class="text-left p-3">Attempts</th>
+            </tr>
+          </thead>
+          <tbody id="queueBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      where,
+      doc,
+      getDoc,
+      updateDoc,
+      serverTimestamp,
+      arrayUnion,
+      increment
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.appspot.com",
+      messagingSenderId: "207213580015",
+      appId: "1:207213580015:web:placeholder"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const dashboardLink = document.getElementById("dashboardLink");
+    const queueMode = document.getElementById("queueMode");
+    const campaignFilter = document.getElementById("campaignFilter");
+    const searchInput = document.getElementById("searchInput");
+    const startBtn = document.getElementById("startBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const callNotes = document.getElementById("callNotes");
+    const callbackDate = document.getElementById("callbackDate");
+    const callbackTime = document.getElementById("callbackTime");
+    const bookCallbackBtn = document.getElementById("bookCallbackBtn");
+    const queueBody = document.getElementById("queueBody");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allLeads = [];
+    let queueLeads = [];
+    let queueIndex = -1;
+    let currentLead = null;
+
+    function hideLoader() {
+      if (authLoader) authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function clean(value) {
+      return (value || "").toString().trim();
+    }
+
+    function clientName(lead) {
+      return clean(lead.clientName || lead.name || lead.fullName || `${clean(lead.firstName)} ${clean(lead.lastName || lead.secondName)}`) || "Unnamed lead";
+    }
+
+    function primaryPhone(lead) {
+      return clean(lead.telephone || lead.landline || lead.phone || lead.homePhone);
+    }
+
+    function mobilePhone(lead) {
+      return clean(lead.mobile || lead.mobileNumber || lead.cell || lead.altPhone);
+    }
+
+    function bestPhone(lead) {
+      return primaryPhone(lead) || mobilePhone(lead);
+    }
+
+    function normalizePhone(phone) {
+      const raw = clean(phone);
+      if (!raw) return "";
+      const plus = raw.startsWith("+") ? "+" : "";
+      return plus + raw.replace(/[^\d]/g, "");
+    }
+
+    function telHref(phone) {
+      const normalized = normalizePhone(phone);
+      return normalized ? `tel:${normalized}` : "#";
+    }
+
+    function isAdminLike() {
+      return currentUserData?.role === "admin" || currentUserData?.admin === true || currentUserData?.role === "manager";
+    }
+
+    function isCloserLike() {
+      return currentUserData?.role === "closer";
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed" || lead.doNotCall === true;
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function timestampToText(value) {
+      if (!value) return "-";
+      const date = value.toDate ? value.toDate() : new Date(value);
+      if (Number.isNaN(date.getTime())) return "-";
+      return date.toLocaleString("en-GB");
+    }
+
+    function callbackText(lead) {
+      if (!lead.callbackDate) return "-";
+      return `${lead.callbackDate}${lead.callbackTime ? " " + lead.callbackTime : ""}`;
+    }
+
+    function userDashboard() {
+      if (currentUserData?.role === "manager" || currentUserData?.role === "admin" || currentUserData?.admin === true) return "/manager-dashboard.html";
+      if (currentUserData?.role === "closer") return "/closer-dashboard.html";
+      return "/staff-dashboard.html";
+    }
+
+    async function checkAccess(user) {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (!snap.exists()) {
+        alert("No CRM user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = snap.data();
+      const role = currentUserData.role;
+      if (!["staff", "manager", "closer", "admin"].includes(role) && currentUserData.admin !== true) {
+        alert("You do not have permission to use the dialer.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      dashboardLink.href = userDashboard();
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadLeads() {
+      let snap;
+      if (currentUserData.role === "staff") {
+        snap = await getDocs(query(collection(db, "leadAssignments"), where("assignedToUid", "==", currentUser.uid)));
+      } else {
+        snap = await getDocs(collection(db, "leadAssignments"));
+      }
+
+      allLeads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      if (isCloserLike()) {
+        allLeads = allLeads.filter(lead =>
+          lead.closerUid === currentUser.uid ||
+          lead.assignedCloserUid === currentUser.uid ||
+          lead.sentToCloserUid === currentUser.uid ||
+          lead.closerEmail === currentUser.email ||
+          lead.leadStatus === "sent_to_closer"
+        );
+      }
+
+      populateCampaigns();
+      rebuildQueue(false);
+      renderStats();
+    }
+
+    function populateCampaigns() {
+      const current = campaignFilter.value || "all";
+      const campaigns = [...new Set(allLeads.map(lead => clean(lead.sourceCampaign || lead.campaign || lead.campaignName)).filter(Boolean))].sort();
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+      if ([...campaignFilter.options].some(option => option.value === current)) campaignFilter.value = current;
+    }
+
+    function leadMatchesQueueMode(lead) {
+      const mode = queueMode.value;
+      const status = clean(lead.leadStatus).toLowerCase();
+      const callbackDue = lead.callbackRequired && (!lead.callbackDate || lead.callbackDate <= todayIso());
+      if (mode === "new") return !status || status === "new" || status === "pending";
+      if (mode === "callbacks") return callbackDue;
+      if (mode === "no_answer") return status === "no_answer";
+      if (mode === "all") return true;
+      return callbackDue || !status || status === "new" || status === "pending" || status === "no_answer";
+    }
+
+    function rebuildQueue(resetCurrent = true) {
+      const campaign = campaignFilter.value;
+      const search = searchInput.value.trim().toLowerCase();
+
+      queueLeads = allLeads
+        .filter(lead => !isLocked(lead))
+        .filter(lead => bestPhone(lead))
+        .filter(lead => leadMatchesQueueMode(lead))
+        .filter(lead => campaign === "all" || clean(lead.sourceCampaign || lead.campaign || lead.campaignName) === campaign)
+        .filter(lead => {
+          if (!search) return true;
+          return [
+            clientName(lead),
+            primaryPhone(lead),
+            mobilePhone(lead),
+            lead.email,
+            lead.postcode,
+            lead.claimType,
+            lead.type
+          ].some(value => clean(value).toLowerCase().includes(search));
+        })
+        .sort((a, b) => {
+          const aCb = `${a.callbackDate || "9999-99-99"} ${a.callbackTime || "99:99"}`;
+          const bCb = `${b.callbackDate || "9999-99-99"} ${b.callbackTime || "99:99"}`;
+          if (a.callbackRequired || b.callbackRequired) return aCb.localeCompare(bCb);
+          return (a.callAttempts || 0) - (b.callAttempts || 0);
+        });
+
+      if (resetCurrent) {
+        queueIndex = -1;
+        currentLead = null;
+        renderCurrentLead();
+      }
+
+      renderQueue();
+      renderStats();
+    }
+
+    function renderStats() {
+      const callable = allLeads.filter(lead => !isLocked(lead) && bestPhone(lead)).length;
+      const callbacks = allLeads.filter(lead => !isLocked(lead) && lead.callbackRequired).length;
+      const today = todayIso();
+      const calledToday = allLeads.filter(lead => clean(lead.lastCallDate) === today).length;
+      const blocked = allLeads.filter(lead => isLocked(lead)).length;
+      document.getElementById("queueCount").textContent = String(queueLeads.length);
+      document.getElementById("callableCount").textContent = String(callable);
+      document.getElementById("callbackCount").textContent = String(callbacks);
+      document.getElementById("calledTodayCount").textContent = String(calledToday);
+      document.getElementById("blockedCount").textContent = String(blocked);
+    }
+
+    function renderQueue() {
+      queueBody.innerHTML = "";
+      document.getElementById("queueSummary").textContent = `${queueLeads.length} lead(s) in this queue.`;
+      if (!queueLeads.length) {
+        queueBody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No callable leads found for this queue.</td></tr>`;
+        return;
+      }
+
+      queueLeads.slice(0, 12).forEach(lead => {
+        const row = document.createElement("tr");
+        row.className = currentLead?.id === lead.id ? "bg-blue-50" : "border-b";
+        row.innerHTML = `
+          <td class="p-3 font-bold">${clientName(lead)}</td>
+          <td class="p-3 mono">${bestPhone(lead)}</td>
+          <td class="p-3">${clean(lead.leadStatus) || "new"}</td>
+          <td class="p-3">${callbackText(lead)}</td>
+          <td class="p-3">${lead.callAttempts || 0}</td>
+        `;
+        queueBody.appendChild(row);
+      });
+    }
+
+    function setCallButton(button, phone) {
+      if (!phone) {
+        button.href = "#";
+        button.classList.add("opacity-50", "pointer-events-none");
+      } else {
+        button.href = telHref(phone);
+        button.classList.remove("opacity-50", "pointer-events-none");
+      }
+    }
+
+    function renderCurrentLead() {
+      const lead = currentLead;
+      document.getElementById("leadName").textContent = lead ? clientName(lead) : "No lead selected";
+      document.getElementById("leadMeta").textContent = lead ? `${clean(lead.claimType || lead.type) || "General lead"} Ã¢â‚¬Â¢ ${clean(lead.sourceCampaign || lead.campaign || lead.campaignName) || "No campaign"}` : "Start the dialer to load the first callable lead.";
+      document.getElementById("leadStatusBadge").textContent = lead ? (clean(lead.leadStatus) || "new") : "Waiting";
+      document.getElementById("primaryPhone").textContent = lead ? (primaryPhone(lead) || "-") : "-";
+      document.getElementById("mobilePhone").textContent = lead ? (mobilePhone(lead) || "-") : "-";
+      document.getElementById("leadEmail").textContent = lead ? (clean(lead.email) || "-") : "-";
+      document.getElementById("leadPostcode").textContent = lead ? (clean(lead.postcode) || "-") : "-";
+      document.getElementById("leadCampaign").textContent = lead ? (clean(lead.sourceCampaign || lead.campaign || lead.campaignName) || "-") : "-";
+      document.getElementById("leadAttempts").textContent = lead ? String(lead.callAttempts || 0) : "0";
+      document.getElementById("leadLastCall").textContent = lead ? timestampToText(lead.lastCallAt) : "-";
+      document.getElementById("leadCallback").textContent = lead ? callbackText(lead) : "-";
+      callNotes.value = lead ? clean(lead.lastCallNotes || lead.notes) : "";
+      callbackDate.value = lead?.callbackDate || "";
+      callbackTime.value = lead?.callbackTime || "";
+      setCallButton(document.getElementById("primaryCallBtn"), lead ? primaryPhone(lead) : "");
+      setCallButton(document.getElementById("mobileCallBtn"), lead ? mobilePhone(lead) : "");
+      renderQueue();
+    }
+
+    function goNextLead() {
+      if (!queueLeads.length) {
+        currentLead = null;
+        queueIndex = -1;
+        renderCurrentLead();
+        showToast("No callable leads in this queue.");
+        return;
+      }
+      queueIndex += 1;
+      if (queueIndex >= queueLeads.length) queueIndex = 0;
+      currentLead = queueLeads[queueIndex];
+      renderCurrentLead();
+    }
+
+    async function saveOutcome(outcome) {
+      if (!currentLead) {
+        showToast("Start the dialer first.");
+        return;
+      }
+
+      const notes = callNotes.value.trim();
+      const patch = {
+        callAttempts: increment(1),
+        lastCallAt: serverTimestamp(),
+        lastCallDate: todayIso(),
+        lastCallOutcome: outcome,
+        lastCallNotes: notes,
+        lastAction: `dialer_${outcome}`,
+        lastUpdatedAt: serverTimestamp(),
+        actionHistory: arrayUnion({
+          action: `dialer_${outcome}`,
+          outcome,
+          notes,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || currentUser.email || "",
+          at: new Date().toISOString()
+        })
+      };
+
+      if (outcome === "no_answer" || outcome === "voicemail") {
+        patch.leadStatus = "no_answer";
+        patch.callbackRequired = true;
+      }
+      if (outcome === "interested") {
+        patch.leadStatus = "intro_email_needed";
+        patch.introEmailNeeded = true;
+        patch.callbackRequired = false;
+      }
+      if (outcome === "qualified") {
+        patch.leadStatus = "qualified";
+        patch.qualifiedAt = serverTimestamp();
+        patch.callbackRequired = false;
+      }
+      if (outcome === "wrong_number" || outcome === "not_interested" || outcome === "do_not_call") {
+        patch.leadStatus = "closed";
+        patch.closed = true;
+        patch.usable = false;
+        patch.callbackRequired = false;
+        patch.introEmailNeeded = false;
+      }
+      if (outcome === "do_not_call") patch.doNotCall = true;
+
+      await updateDoc(doc(db, "leadAssignments", currentLead.id), patch);
+      showToast("Call outcome saved.");
+      await loadLeads();
+      goNextLead();
+    }
+
+    async function saveCallback() {
+      if (!currentLead) {
+        showToast("Start the dialer first.");
+        return;
+      }
+      if (!callbackDate.value) {
+        alert("Please choose a callback date.");
+        return;
+      }
+
+      const notes = callNotes.value.trim();
+      await updateDoc(doc(db, "leadAssignments", currentLead.id), {
+        leadStatus: "callback_required",
+        callbackRequired: true,
+        callbackDate: callbackDate.value,
+        callbackTime: callbackTime.value || "",
+        callbackNotes: notes,
+        lastCallNotes: notes,
+        lastAction: "dialer_callback_booked",
+        lastUpdatedAt: serverTimestamp(),
+        actionHistory: arrayUnion({
+          action: "dialer_callback_booked",
+          callbackDate: callbackDate.value,
+          callbackTime: callbackTime.value || "",
+          notes,
+          byUid: currentUser.uid,
+          byName: currentUserData.name || currentUser.email || "",
+          at: new Date().toISOString()
+        })
+      });
+
+      showToast("Callback saved.");
+      await loadLeads();
+      goNextLead();
+    }
+
+    startBtn.addEventListener("click", () => {
+      rebuildQueue(true);
+      goNextLead();
+    });
+    nextBtn.addEventListener("click", goNextLead);
+    refreshBtn.addEventListener("click", async () => {
+      await loadLeads();
+      showToast("Dialer queue refreshed.");
+    });
+    queueMode.addEventListener("change", () => rebuildQueue(true));
+    campaignFilter.addEventListener("change", () => rebuildQueue(true));
+    searchInput.addEventListener("input", () => rebuildQueue(true));
+    bookCallbackBtn.addEventListener("click", saveCallback);
+    document.querySelectorAll("[data-outcome]").forEach(button => {
+      button.addEventListener("click", () => saveOutcome(button.getAttribute("data-outcome")).catch(error => {
+        console.error(error);
+        alert(`Could not save call outcome: ${error.code || error.message || "Unknown error"}`);
+      }));
+    });
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "/login.html";
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+      try {
+        const allowed = await checkAccess(user);
+        if (!allowed) return;
+        await loadLeads();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        hideLoader();
+        alert(`Could not load dialer: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+  </script>
+</body>
+</html>
+
