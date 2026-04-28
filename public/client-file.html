@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Client File</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, sans-serif; background:#f8fafc; color:#0f172a; margin:0; }
+    .shell { width:min(1250px, calc(100% - 2rem)); margin:0 auto; }
+    .card { background:white; border:1px solid #dbeafe; border-radius:18px; box-shadow:0 10px 28px rgba(15,23,42,.07); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; border-radius:14px; font-weight:800; transition:.2s; border:0; cursor:pointer; text-decoration:none; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#eff6ff; color:#1d4ed8; }
+    .btn-secondary:hover { background:#dbeafe; }
+    .btn-green { background:#059669; color:white; }
+    .btn-red { background:#dc2626; color:white; }
+    .btn-amber { background:#d97706; color:white; }
+    .input { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:.82rem .95rem; font-size:1rem; background:white; }
+    .badge { display:inline-flex; border-radius:999px; padding:.32rem .65rem; font-size:.78rem; font-weight:800; white-space:nowrap; }
+    .badge-blue { background:#dbeafe; color:#1e40af; }
+    .badge-green { background:#dcfce7; color:#166534; }
+    .badge-amber { background:#fef3c7; color:#92400e; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
+    .badge-slate { background:#e2e8f0; color:#334155; }
+    .muted { color:#64748b; }
+    .timeline-line { position:absolute; left:1.1rem; top:2.4rem; bottom:-1.2rem; width:2px; background:#dbeafe; }
+    #toast { position:fixed; right:1rem; bottom:1rem; background:#0f172a; color:white; padding:.9rem 1rem; border-radius:14px; opacity:0; transform:translateY(10px); transition:.2s; z-index:80; max-width:360px; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:760px) { .shell { width:min(100% - 1rem, 1250px); } .btn { width:100%; } }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div id="authLoader" class="fixed inset-0 bg-white/90 z-50 flex items-center justify-center">
+    <div class="card p-8 text-center">
+      <p class="text-xl font-extrabold text-blue-900">Loading client file...</p>
+      <p class="text-slate-500 mt-2">Opening the client record and timeline.</p>
+    </div>
+  </div>
+
+  <header class="bg-white border-b border-blue-100 sticky top-0 z-30">
+    <div class="shell py-5 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-blue-900">Client File</h1>
+        <p class="text-sm text-slate-500">Overview, notes, timeline, follow-ups and next actions</p>
+      </div>
+      <nav class="flex items-center gap-3 flex-wrap">
+        <a id="dashboardLink" href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+        <a href="/agenda.html" class="btn btn-secondary py-2 px-4">Agenda</a>
+        <a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a>
+        <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+        <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell py-8 space-y-6">
+    <section class="card p-6">
+      <div class="flex items-start justify-between gap-5 flex-wrap">
+        <div>
+          <div class="flex gap-2 flex-wrap mb-3"><span id="sourceBadge" class="badge badge-blue">Client</span><span id="statusBadge" class="badge badge-slate">Open</span></div>
+          <h2 id="clientName" class="text-4xl font-extrabold text-blue-950">Client</h2>
+          <p id="clientMeta" class="muted mt-2">Loading client details...</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          <a id="callPrimaryBtn" href="#" class="btn btn-green py-3 px-5">Call Primary</a>
+          <button id="copyPhoneBtn" class="btn btn-secondary py-3 px-5" type="button">Copy Phone</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-3 gap-6">
+      <aside class="space-y-6">
+        <section class="card p-6">
+          <h3 class="text-xl font-extrabold text-blue-900 mb-4">Client Details</h3>
+          <div class="space-y-3 text-sm">
+            <div><span class="font-bold text-blue-900">Phone:</span> <span id="detailPhone">-</span></div>
+            <div><span class="font-bold text-blue-900">Mobile:</span> <span id="detailMobile">-</span></div>
+            <div><span class="font-bold text-blue-900">Email:</span> <span id="detailEmail">-</span></div>
+            <div><span class="font-bold text-blue-900">Postcode:</span> <span id="detailPostcode">-</span></div>
+            <div><span class="font-bold text-blue-900">Claim type:</span> <span id="detailClaimType">-</span></div>
+            <div><span class="font-bold text-blue-900">Campaign:</span> <span id="detailCampaign">-</span></div>
+            <div><span class="font-bold text-blue-900">Owner:</span> <span id="detailOwner">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h3 class="text-xl font-extrabold text-blue-900 mb-4">Book Follow-Up</h3>
+          <form id="followUpForm" class="space-y-4">
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="followDate">Date</label><input id="followDate" class="input" type="date" required /></div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="followTime">Time</label><input id="followTime" class="input" type="time" /></div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="followAction">Action</label><select id="followAction" class="input"><option>Call back</option><option>Send information</option><option>Check documents</option><option>Payment follow-up</option><option>Manager review</option><option>Processing update</option></select></div>
+            <div class="grid grid-cols-3 gap-2"><button class="btn btn-secondary py-2 px-3" data-days="1" type="button">+1 Day</button><button class="btn btn-secondary py-2 px-3" data-days="2" type="button">+2 Days</button><button class="btn btn-secondary py-2 px-3" data-days="7" type="button">+7 Days</button></div>
+            <button class="btn btn-primary py-3 px-5 w-full" type="submit">Add to Agenda</button>
+          </form>
+        </section>
+      </aside>
+
+      <section class="lg:col-span-2 space-y-6">
+        <section class="card p-6">
+          <h3 class="text-xl font-extrabold text-blue-900 mb-4">Add Timeline Note</h3>
+          <form id="noteForm" class="space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="block text-sm font-bold text-blue-900 mb-2" for="noteType">Type</label><select id="noteType" class="input"><option value="note">General note</option><option value="call">Call note</option><option value="email">Email</option><option value="document">Document</option><option value="payment">Payment</option><option value="status">Status update</option></select></div>
+              <div><label class="block text-sm font-bold text-blue-900 mb-2" for="noteTitle">Title</label><input id="noteTitle" class="input" placeholder="Short title" required /></div>
+            </div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="noteBody">Details</label><textarea id="noteBody" class="input" rows="4" placeholder="What happened, what was agreed, or what needs to happen next?"></textarea></div>
+            <button class="btn btn-primary py-3 px-5" type="submit">Save Timeline Note</button>
+          </form>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <div><h3 class="text-xl font-extrabold text-blue-900">Unified Timeline</h3><p class="muted text-sm mt-1">Calls, notes, agenda items and CRM events in one place.</p></div>
+            <span id="timelineCount" class="badge badge-blue">0 events</span>
+          </div>
+          <div id="timelineList" class="space-y-5"></div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA", authDomain: "quaerensclaims.firebaseapp.com", projectId: "quaerensclaims" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const allowedRoles = ["staff", "manager", "closer", "processing", "admin"];
+    const roleDashboard = { staff:"/staff-dashboard.html", manager:"/manager-dashboard.html", admin:"/admin-dashboard.html", closer:"/closer-dashboard.html", processing:"/processing-dashboard.html" };
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("source") || "leadAssignments";
+    const id = params.get("id") || "";
+    const safeSources = ["leadAssignments", "agendaItems", "processingCases", "processingFiles", "closerAssignments", "claimSubmissions", "managerAssessments"];
+
+    let currentUser = null;
+    let currentUserData = null;
+    let client = null;
+    let clientKey = "";
+
+    const els = {
+      authLoader: document.getElementById("authLoader"), dashboardLink: document.getElementById("dashboardLink"), logoutBtn: document.getElementById("logoutBtn"), refreshBtn: document.getElementById("refreshBtn"),
+      clientName: document.getElementById("clientName"), clientMeta: document.getElementById("clientMeta"), sourceBadge: document.getElementById("sourceBadge"), statusBadge: document.getElementById("statusBadge"),
+      callPrimaryBtn: document.getElementById("callPrimaryBtn"), copyPhoneBtn: document.getElementById("copyPhoneBtn"), detailPhone: document.getElementById("detailPhone"), detailMobile: document.getElementById("detailMobile"), detailEmail: document.getElementById("detailEmail"), detailPostcode: document.getElementById("detailPostcode"), detailClaimType: document.getElementById("detailClaimType"), detailCampaign: document.getElementById("detailCampaign"), detailOwner: document.getElementById("detailOwner"),
+      followUpForm: document.getElementById("followUpForm"), followDate: document.getElementById("followDate"), followTime: document.getElementById("followTime"), followAction: document.getElementById("followAction"), noteForm: document.getElementById("noteForm"), noteType: document.getElementById("noteType"), noteTitle: document.getElementById("noteTitle"), noteBody: document.getElementById("noteBody"), timelineList: document.getElementById("timelineList"), timelineCount: document.getElementById("timelineCount")
+    };
+
+    function todayIso() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+    function addDaysIso(days) { const d = new Date(); d.setDate(d.getDate()+days); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+    function escapeHtml(value) { return String(value || "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
+    function showToast(message) { const toast = document.getElementById("toast"); toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 2600); }
+    function roleOf(data) { if (data?.admin === true) return "admin"; return data?.role || ""; }
+    function redirectToLogin() { sessionStorage.setItem("crmReturnTo", window.location.pathname + window.location.search); window.location.href = "/login.html?next=" + encodeURIComponent(window.location.pathname + window.location.search); }
+    function first(...values) { return values.find((value) => value !== undefined && value !== null && String(value).trim() !== "") || ""; }
+    function formatDate(value) { if (!value) return ""; if (value.toDate) return value.toDate().toLocaleString("en-GB"); if (typeof value === "string") return value; return ""; }
+    function primaryPhone(data) { return first(data.phone, data.primaryPhone, data.mobile, data.clientPhone, data.phoneNumber, data.telephone); }
+    function clientName(data) { return first(data.clientName, data.name, data.fullName, [data.firstName, data.lastName].filter(Boolean).join(" "), data.customerName, "Unnamed client"); }
+    function claimType(data) { return first(data.claimType, data.type, data.campaign, data.product, data.category, "General"); }
+    function campaign(data) { return first(data.campaign, data.leadCampaign, data.product, "-"); }
+    function makeClientKey(src, docId) { return src + ":" + docId; }
+
+    function renderClient() {
+      const name = clientName(client);
+      const phone = primaryPhone(client);
+      const mobile = first(client.mobile, client.altPhone, client.alternativePhone);
+      const email = first(client.email, client.clientEmail);
+      const postcode = first(client.postcode, client.postCode, client.zip);
+      const type = claimType(client);
+      const camp = campaign(client);
+      const status = first(client.leadStatus, client.status, client.reviewStatus, client.paymentStatus, "open");
+      els.clientName.textContent = name;
+      els.clientMeta.textContent = type + " - " + camp;
+      els.sourceBadge.textContent = source;
+      els.statusBadge.textContent = status;
+      els.statusBadge.className = "badge " + (status.includes("closed") || status.includes("completed") ? "badge-green" : status.includes("reject") || status.includes("not") ? "badge-red" : "badge-slate");
+      els.detailPhone.textContent = phone || "-";
+      els.detailMobile.textContent = mobile || "-";
+      els.detailEmail.textContent = email || "-";
+      els.detailPostcode.textContent = postcode || "-";
+      els.detailClaimType.textContent = type || "-";
+      els.detailCampaign.textContent = camp || "-";
+      els.detailOwner.textContent = first(client.ownerName, client.assignedToName, client.closerName, client.processingOwnerName, client.ownerEmail, client.assignedToEmail, "-");
+      if (phone) { els.callPrimaryBtn.href = "tel:" + phone.replace(/[^+0-9]/g, ""); els.callPrimaryBtn.classList.remove("opacity-50", "pointer-events-none"); }
+      else { els.callPrimaryBtn.href = "#"; els.callPrimaryBtn.classList.add("opacity-50", "pointer-events-none"); }
+      els.followDate.value = todayIso();
+    }
+
+    function baseEvents() {
+      const events = [];
+      events.push({ type:"created", title:"Client file opened", body:"Source record from " + source + ".", at:first(client.createdAt, client.submittedAt, client.date, client.timestamp), by:first(client.ownerName, client.assignedToName, client.email) });
+      if (Array.isArray(client.actionHistory)) {
+        client.actionHistory.forEach((item) => events.push({ type:first(item.action, item.type, "crm"), title:first(item.label, item.action, "CRM activity"), body:first(item.notes, item.note, item.outcome, ""), at:first(item.at, item.date, item.createdAt), by:first(item.by, item.byEmail, item.user) }));
+      }
+      if (client.lastCallAt || client.lastCallOutcome || client.lastCallNotes) events.push({ type:"call", title:"Last call: " + first(client.lastCallOutcome, "Call"), body:first(client.lastCallNotes, ""), at:first(client.lastCallAt, client.lastCallDate), by:first(client.lastUpdatedByEmail, client.assignedToEmail, "") });
+      if (client.callbackDate) events.push({ type:"callback", title:"Callback booked", body:first(client.callbackNotes, ""), at:client.callbackDate + (client.callbackTime ? " " + client.callbackTime : ""), by:first(client.assignedToEmail, "") });
+      return events;
+    }
+
+    async function loadTimeline() {
+      const snap = await getDocs(query(collection(db, "clientTimeline"), where("clientKey", "==", clientKey)));
+      const manual = snap.docs.map((d) => ({ id:d.id, ...d.data() }));
+      const events = baseEvents().concat(manual.map((item) => ({ type:item.type || "note", title:item.title || "Timeline note", body:item.body || "", at:item.createdAt, by:item.createdByName || item.createdByEmail || "" })));
+      events.sort((a,b) => {
+        const av = a.at?.toDate ? a.at.toDate().getTime() : Date.parse(a.at || "") || 0;
+        const bv = b.at?.toDate ? b.at.toDate().getTime() : Date.parse(b.at || "") || 0;
+        return bv - av;
+      });
+      els.timelineCount.textContent = events.length + " event" + (events.length === 1 ? "" : "s");
+      if (!events.length) { els.timelineList.innerHTML = '<div class="rounded-2xl bg-slate-50 border border-slate-200 p-6 text-slate-600">No timeline activity yet.</div>'; return; }
+      els.timelineList.innerHTML = events.map((event, index) => '<article class="relative pl-12"><div class="absolute left-0 top-1 w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-extrabold">' + escapeHtml((event.type || "n").slice(0,1).toUpperCase()) + '</div>' + (index === events.length - 1 ? '' : '<div class="timeline-line"></div>') + '<div class="rounded-2xl border border-blue-100 bg-slate-50 p-4"><div class="flex items-start justify-between gap-3 flex-wrap"><div><span class="badge badge-blue">' + escapeHtml(event.type || "note") + '</span><h4 class="text-lg font-extrabold text-blue-950 mt-2">' + escapeHtml(event.title || "Timeline event") + '</h4></div><div class="text-sm text-slate-500">' + escapeHtml(formatDate(event.at)) + '</div></div><p class="mt-3 text-slate-700 whitespace-pre-wrap">' + escapeHtml(event.body || "") + '</p>' + (event.by ? '<p class="mt-3 text-xs font-bold text-slate-500">By ' + escapeHtml(event.by) + '</p>' : '') + '</div></article>').join("");
+    }
+
+    async function loadClient() {
+      if (!id || !safeSources.includes(source)) throw new Error("Missing or invalid client file reference.");
+      const snap = await getDoc(doc(db, source, id));
+      if (!snap.exists()) throw new Error("Client record not found.");
+      client = { id:snap.id, ...snap.data() };
+      clientKey = makeClientKey(source, id);
+      renderClient();
+      await loadTimeline();
+    }
+
+    async function saveNote(e) {
+      e.preventDefault();
+      await addDoc(collection(db, "clientTimeline"), { clientKey, source, sourceId:id, type:els.noteType.value, title:els.noteTitle.value.trim(), body:els.noteBody.value.trim(), createdAt:serverTimestamp(), createdByUid:currentUser.uid, createdByEmail:currentUser.email || "", createdByName:currentUserData?.name || currentUser.email || "" });
+      els.noteForm.reset();
+      showToast("Timeline note saved.");
+      await loadTimeline();
+    }
+
+    async function saveFollowUp(e) {
+      e.preventDefault();
+      await addDoc(collection(db, "agendaItems"), { clientName:clientName(client), clientPhone:primaryPhone(client), clientEmail:first(client.email, client.clientEmail), claimType:claimType(client), nextAction:els.followAction.value, nextActionDate:els.followDate.value, nextActionTime:els.followTime.value, notes:"Follow-up created from client file.", status:"open", source, sourceId:id, clientKey, ownerUid:currentUser.uid, ownerEmail:currentUser.email || "", ownerName:currentUserData?.name || currentUser.email || "", ownerRole:roleOf(currentUserData), createdAt:serverTimestamp(), updatedAt:serverTimestamp() });
+      await addDoc(collection(db, "clientTimeline"), { clientKey, source, sourceId:id, type:"agenda", title:"Follow-up booked", body:els.followAction.value + " on " + els.followDate.value + (els.followTime.value ? " at " + els.followTime.value : ""), createdAt:serverTimestamp(), createdByUid:currentUser.uid, createdByEmail:currentUser.email || "", createdByName:currentUserData?.name || currentUser.email || "" });
+      showToast("Follow-up added to agenda.");
+      await loadTimeline();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { setTimeout(() => { if (!auth.currentUser) redirectToLogin(); }, 1600); return; }
+      try {
+        currentUser = user;
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        currentUserData = userSnap.exists() ? userSnap.data() : {};
+        const role = roleOf(currentUserData);
+        if (!allowedRoles.includes(role)) { alert("You do not have access to client files."); redirectToLogin(); return; }
+        els.dashboardLink.href = roleDashboard[role] || "/staff-dashboard.html";
+        els.logoutBtn.classList.remove("hidden");
+        await loadClient();
+      } catch (error) {
+        console.error("Could not load client file:", error);
+        alert("Could not load client file: " + (error.code || error.message || "Unknown error"));
+      } finally { els.authLoader.style.display = "none"; }
+    });
+
+    els.noteForm.addEventListener("submit", saveNote);
+    els.followUpForm.addEventListener("submit", saveFollowUp);
+    els.refreshBtn.addEventListener("click", async () => { await loadClient(); showToast("Client file refreshed."); });
+    els.logoutBtn.addEventListener("click", async () => { await signOut(auth); window.location.href = "/login.html"; });
+    els.copyPhoneBtn.addEventListener("click", async () => { const phone = primaryPhone(client); if (!phone) return showToast("No phone number to copy."); await navigator.clipboard.writeText(phone); showToast("Phone number copied."); });
+    document.querySelectorAll("button[data-days]").forEach((btn) => btn.addEventListener("click", () => { els.followDate.value = addDaysIso(parseInt(btn.dataset.days, 10)); }));
+  </script>
+</body>
+</html>
