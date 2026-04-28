@@ -346,6 +346,16 @@
       authLoader.style.display = "none";
     }
 
+    async function safeGetCollection(collectionName) {
+      try {
+        return await getDocs(collection(db, collectionName));
+      } catch (error) {
+        console.error(`Could not load ${collectionName}:`, error);
+        showToast(`Could not load ${collectionName}. Some dashboard figures may be incomplete.`);
+        return { docs: [] };
+      }
+    }
+
     function showToast(message) {
       const toast = document.getElementById("toast");
       toast.textContent = message;
@@ -573,7 +583,7 @@
       }
 
       const userData = userSnap.data();
-      if (userData.role !== "manager") {
+      if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -595,11 +605,11 @@
           closerAssignmentsSnap,
           claimSubmissionsSnap
         ] = await Promise.all([
-          getDocs(collection(db, "staffAttendance")),
-          getDocs(collection(db, "leadAssignments")),
-          getDocs(collection(db, "users")),
-          getDocs(collection(db, "closerAssignments")),
-          getDocs(collection(db, "claimSubmissions"))
+          safeGetCollection("staffAttendance"),
+          safeGetCollection("leadAssignments"),
+          safeGetCollection("users"),
+          safeGetCollection("closerAssignments"),
+          safeGetCollection("claimSubmissions")
         ]);
 
         const today = todayIso();
@@ -963,7 +973,7 @@
         if (showToastMessage) showToast("Manager dashboard refreshed.");
       } catch (error) {
         console.error("Could not refresh dashboard:", error);
-        alert("Could not refresh dashboard.");
+        alert(`Could not refresh dashboard: ${error.code || error.message || "Unknown error"}`);
       }
     }
 
@@ -982,8 +992,8 @@
         hideLoader();
       } catch (error) {
         console.error(error);
-        alert("Could not load manager dashboard.");
-        window.location.href = "/login.html";
+        hideLoader();
+        alert(`Could not load manager dashboard: ${error.code || error.message || "Unknown error"}`);
       }
     });
 
