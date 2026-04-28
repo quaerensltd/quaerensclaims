@@ -1,13 +1,201 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /claims/{claimId} {
-      allow read: if true;
-      allow write: if request.auth != null && isAdmin();
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function currentUserPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return isSignedIn() && exists(currentUserPath());
+    }
+
+    function userData() {
+      return get(currentUserPath()).data;
+    }
+
+    function userRole() {
+      return userExists() ? userData().role : null;
     }
 
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true;
+      return userExists() && (
+        userRole() == "admin" ||
+        userData().admin == true
+      );
+    }
+
+    function isManager() {
+      return userExists() && (
+        userRole() == "manager" ||
+        isAdmin()
+      );
+    }
+
+    function isStaff() {
+      return userExists() && userRole() == "staff";
+    }
+
+    function isCloser() {
+      return userExists() && userRole() == "closer";
+    }
+
+    function isProcessing() {
+      return userExists() && userRole() == "processing";
+    }
+
+    function isStaffOrManager() {
+      return isStaff() || isManager();
+    }
+
+    function isManagerOrCloser() {
+      return isManager() || isCloser();
+    }
+
+    function isManagerOrProcessing() {
+      return isManager() || isProcessing();
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /leadAssignments/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isStaffOrManager();
+    }
+
+    match /agendaItems/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /closedLeadsArchive/{docId} {
+      allow create: if isStaffOrManager();
+      allow read: if isManager();
+      allow update: if isManager();
+      allow delete: if isManager();
+    }
+
+    match /claimSubmissions/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /assessmentReports/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /managerAssessments/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /closerAssignments/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /processingFiles/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /processingCases/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /processingCaseEvents/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /processingCaseTasks/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /staffAttendance/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isManager();
+    }
+
+    match /claims/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    match /fullServiceRequests/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    match /checkout/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    match /flightClaims/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    match /holidayClaims/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    match /flightClaimLetters/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /freeFlightClaimMarketingLeads/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /conversionEvents/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isManager();
+    }
+
+    match /emailQueue/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

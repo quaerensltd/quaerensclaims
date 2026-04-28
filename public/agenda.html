@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Agenda</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, sans-serif; background:#f8fafc; color:#0f172a; margin:0; }
+    .shell { width:min(1250px, calc(100% - 2rem)); margin:0 auto; }
+    .card { background:white; border:1px solid #dbeafe; border-radius:18px; box-shadow:0 10px 28px rgba(15,23,42,.07); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; border-radius:14px; font-weight:800; transition:.2s; border:0; cursor:pointer; text-decoration:none; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#eff6ff; color:#1d4ed8; }
+    .btn-secondary:hover { background:#dbeafe; }
+    .btn-green { background:#059669; color:white; }
+    .btn-red { background:#dc2626; color:white; }
+    .btn-amber { background:#d97706; color:white; }
+    .btn-dark { background:#0f172a; color:white; }
+    .input { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:.82rem .95rem; font-size:1rem; background:white; }
+    .badge { display:inline-flex; border-radius:999px; padding:.32rem .65rem; font-size:.78rem; font-weight:800; white-space:nowrap; }
+    .badge-blue { background:#dbeafe; color:#1e40af; }
+    .badge-green { background:#dcfce7; color:#166534; }
+    .badge-amber { background:#fef3c7; color:#92400e; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
+    .badge-slate { background:#e2e8f0; color:#334155; }
+    .muted { color:#64748b; }
+    #toast { position:fixed; right:1rem; bottom:1rem; background:#0f172a; color:white; padding:.9rem 1rem; border-radius:14px; opacity:0; transform:translateY(10px); transition:.2s; z-index:80; max-width:360px; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:760px) { .shell { width:min(100% - 1rem, 1250px); } .btn { width:100%; } }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div id="authLoader" class="fixed inset-0 bg-white/90 z-50 flex items-center justify-center">
+    <div class="card p-8 text-center">
+      <p class="text-xl font-extrabold text-blue-900">Loading agenda...</p>
+      <p class="text-slate-500 mt-2">Checking CRM access and follow-up items.</p>
+    </div>
+  </div>
+
+  <header class="bg-white border-b border-blue-100 sticky top-0 z-30">
+    <div class="shell py-5 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Agenda</h1>
+        <p class="text-sm text-slate-500">Daily client files, follow-ups, notes and callbacks</p>
+      </div>
+      <nav class="flex items-center gap-3 flex-wrap">
+        <a id="dashboardLink" href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+        <a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a>
+        <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+        <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell py-8 space-y-6">
+    <section class="grid md:grid-cols-5 gap-4">
+      <div class="card p-5"><div class="muted text-sm">Today</div><div id="todayCount" class="text-3xl font-extrabold text-blue-900 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Overdue</div><div id="overdueCount" class="text-3xl font-extrabold text-red-600 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Upcoming</div><div id="upcomingCount" class="text-3xl font-extrabold text-indigo-700 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Completed</div><div id="completedCount" class="text-3xl font-extrabold text-green-700 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Selected Date</div><div id="selectedDateLabel" class="text-xl font-extrabold text-slate-900 mt-2">-</div></div>
+    </section>
+
+    <section class="card p-6">
+      <div class="grid lg:grid-cols-6 gap-4 items-end">
+        <div>
+          <label for="agendaDate" class="block text-sm font-bold text-blue-900 mb-2">Agenda date</label>
+          <input id="agendaDate" class="input" type="date" />
+        </div>
+        <div>
+          <label for="viewMode" class="block text-sm font-bold text-blue-900 mb-2">View</label>
+          <select id="viewMode" class="input">
+            <option value="mine">My agenda</option>
+            <option value="all">All agenda items</option>
+          </select>
+        </div>
+        <div class="lg:col-span-2">
+          <label for="searchInput" class="block text-sm font-bold text-blue-900 mb-2">Search</label>
+          <input id="searchInput" class="input" placeholder="Client, phone, email, claim type..." />
+        </div>
+        <button id="todayBtn" class="btn btn-secondary py-3 px-5" type="button">Today</button>
+        <button id="newItemBtn" class="btn btn-primary py-3 px-5" type="button">Create Client File</button>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-3 gap-6">
+      <section class="card p-6 lg:col-span-2">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Agenda Items</h2>
+            <p id="agendaSummary" class="muted text-sm mt-1">Select a date to view follow-ups.</p>
+          </div>
+        </div>
+        <div id="agendaList" class="space-y-4"></div>
+      </section>
+
+      <aside class="card p-6">
+        <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Create</h2>
+        <form id="quickForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="clientName">Client name</label>
+            <input id="clientName" class="input" required />
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="clientPhone">Phone</label>
+              <input id="clientPhone" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="claimType">Claim type</label>
+              <input id="claimType" class="input" placeholder="Solar, finance, housing..." />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="clientEmail">Email</label>
+            <input id="clientEmail" class="input" type="email" />
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="nextActionDate">Follow-up date</label>
+              <input id="nextActionDate" class="input" type="date" required />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="nextActionTime">Time</label>
+              <input id="nextActionTime" class="input" type="time" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="nextAction">Next action</label>
+            <select id="nextAction" class="input">
+              <option value="Call back">Call back</option>
+              <option value="Send information">Send information</option>
+              <option value="Check documents">Check documents</option>
+              <option value="Prepare update">Prepare update</option>
+              <option value="Other follow-up">Other follow-up</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="notes">Notes</label>
+            <textarea id="notes" class="input" rows="4" placeholder="What was discussed and what needs to happen next?"></textarea>
+          </div>
+          <button class="btn btn-primary py-3 px-5 w-full" type="submit">Save Agenda Item</button>
+        </form>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc,
+      query, where, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAM_kdcFQbDdhBga32XJAwbsiRxRxJK7ZU",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.appspot.com",
+      messagingSenderId: "577541642131",
+      appId: "1:577541642131:web:3bb6a5b8372fe57bf509ba"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const allowedRoles = ["staff", "manager", "closer", "processing", "admin"];
+    const roleDashboard = {
+      staff: "/staff-dashboard.html",
+      manager: "/manager-dashboard.html",
+      admin: "/admin-dashboard.html",
+      closer: "/closer-dashboard.html",
+      processing: "/processing-dashboard.html"
+    };
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allItems = [];
+
+    const els = {
+      authLoader: document.getElementById("authLoader"),
+      dashboardLink: document.getElementById("dashboardLink"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      agendaDate: document.getElementById("agendaDate"),
+      viewMode: document.getElementById("viewMode"),
+      searchInput: document.getElementById("searchInput"),
+      todayBtn: document.getElementById("todayBtn"),
+      newItemBtn: document.getElementById("newItemBtn"),
+      quickForm: document.getElementById("quickForm"),
+      agendaList: document.getElementById("agendaList"),
+      agendaSummary: document.getElementById("agendaSummary"),
+      selectedDateLabel: document.getElementById("selectedDateLabel"),
+      todayCount: document.getElementById("todayCount"),
+      overdueCount: document.getElementById("overdueCount"),
+      upcomingCount: document.getElementById("upcomingCount"),
+      completedCount: document.getElementById("completedCount")
+    };
+
+    function todayIso() {
+      const date = new Date();
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date.toISOString().slice(0, 10);
+    }
+
+    function addDaysIso(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date.toISOString().slice(0, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[char]));
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function roleOf(userData) {
+      if (userData?.admin === true) return "admin";
+      return userData?.role || "";
+    }
+
+    function canViewAll() {
+      const role = roleOf(currentUserData);
+      return role === "manager" || role === "admin";
+    }
+
+    function statusBadge(item) {
+      if (item.status === "completed") return '<span class="badge badge-green">Completed</span>';
+      if ((item.nextActionDate || "") < todayIso()) return '<span class="badge badge-red">Overdue</span>';
+      if ((item.nextActionDate || "") === todayIso()) return '<span class="badge badge-amber">Today</span>';
+      return '<span class="badge badge-blue">Upcoming</span>';
+    }
+
+    async function loadItems() {
+      if (!currentUser) return;
+      const view = els.viewMode.value;
+      let snap;
+      if (view === "all" && canViewAll()) {
+        snap = await getDocs(collection(db, "agendaItems"));
+      } else {
+        snap = await getDocs(query(collection(db, "agendaItems"), where("ownerUid", "==", currentUser.uid)));
+      }
+      allItems = snap.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+      render();
+    }
+
+    function render() {
+      const selectedDate = els.agendaDate.value || todayIso();
+      const term = (els.searchInput.value || "").trim().toLowerCase();
+      const today = todayIso();
+      const active = allItems.filter((item) => item.status !== "completed");
+      const completed = allItems.filter((item) => item.status === "completed");
+      els.todayCount.textContent = active.filter((item) => item.nextActionDate === today).length;
+      els.overdueCount.textContent = active.filter((item) => (item.nextActionDate || "") < today).length;
+      els.upcomingCount.textContent = active.filter((item) => (item.nextActionDate || "") > today).length;
+      els.completedCount.textContent = completed.length;
+      els.selectedDateLabel.textContent = selectedDate;
+
+      let items = allItems.filter((item) => item.nextActionDate === selectedDate);
+      if (term) {
+        items = items.filter((item) => [item.clientName, item.clientPhone, item.clientEmail, item.claimType, item.notes, item.nextAction]
+          .join(" ").toLowerCase().includes(term));
+      }
+      items.sort((a, b) => ((a.nextActionTime || "99:99") + " " + (a.clientName || "")).localeCompare((b.nextActionTime || "99:99") + " " + (b.clientName || "")));
+      els.agendaSummary.textContent = items.length + " item" + (items.length === 1 ? "" : "s") + " for " + selectedDate + ".";
+
+      if (!items.length) {
+        els.agendaList.innerHTML = '<div class="rounded-2xl bg-slate-50 border border-slate-200 p-6 text-slate-600">No agenda items for this date.</div>';
+        return;
+      }
+
+      els.agendaList.innerHTML = items.map((item) => `
+        <article class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm" data-id="${item.id}">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">${statusBadge(item)} <span class="badge badge-slate">${escapeHtml(item.nextAction || "Follow-up")}</span></div>
+              <h3 class="text-2xl font-extrabold text-blue-950 mt-3">${escapeHtml(item.clientName || "Unnamed client")}</h3>
+              <p class="muted mt-1">${escapeHtml(item.claimType || "General")} ${item.ownerName ? "- " + escapeHtml(item.ownerName) : ""}</p>
+            </div>
+            <div class="text-right text-sm text-slate-600">
+              <div class="font-extrabold text-blue-900">${escapeHtml(item.nextActionDate || "-")} ${escapeHtml(item.nextActionTime || "")}</div>
+              <div>${escapeHtml(item.clientPhone || "No phone")}</div>
+              <div>${escapeHtml(item.clientEmail || "")}</div>
+            </div>
+          </div>
+          <div class="mt-4 grid md:grid-cols-2 gap-4">
+            <textarea class="input item-notes" rows="4">${escapeHtml(item.notes || "")}</textarea>
+            <div class="grid gap-3 content-start">
+              <div class="grid grid-cols-2 gap-3">
+                <input class="input item-date" type="date" value="${escapeHtml(item.nextActionDate || selectedDate)}" />
+                <input class="input item-time" type="time" value="${escapeHtml(item.nextActionTime || "")}" />
+              </div>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <button class="btn btn-secondary py-2 px-3" data-action="tomorrow" type="button">Tomorrow</button>
+                <button class="btn btn-secondary py-2 px-3" data-action="twoDays" type="button">In 2 Days</button>
+                <button class="btn btn-secondary py-2 px-3" data-action="sevenDays" type="button">In 7 Days</button>
+                <button class="btn btn-primary py-2 px-3" data-action="save" type="button">Save Changes</button>
+                <button class="btn btn-green py-2 px-3" data-action="complete" type="button">Mark Completed</button>
+                <button class="btn btn-red py-2 px-3" data-action="reopen" type="button">Reopen</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function updateAgendaItem(card, changes) {
+      const id = card.dataset.id;
+      await updateDoc(doc(db, "agendaItems", id), {
+        ...changes,
+        updatedAt: serverTimestamp(),
+        updatedByUid: currentUser.uid,
+        updatedByEmail: currentUser.email || ""
+      });
+      showToast("Agenda updated.");
+      await loadItems();
+    }
+
+    async function createAgendaItem(event) {
+      event.preventDefault();
+      const clientName = document.getElementById("clientName").value.trim();
+      if (!clientName) {
+        showToast("Please enter a client name.");
+        return;
+      }
+      const nextDate = document.getElementById("nextActionDate").value || todayIso();
+      await addDoc(collection(db, "agendaItems"), {
+        clientName,
+        clientPhone: document.getElementById("clientPhone").value.trim(),
+        clientEmail: document.getElementById("clientEmail").value.trim(),
+        claimType: document.getElementById("claimType").value.trim(),
+        nextAction: document.getElementById("nextAction").value,
+        nextActionDate: nextDate,
+        nextActionTime: document.getElementById("nextActionTime").value,
+        notes: document.getElementById("notes").value.trim(),
+        status: "open",
+        ownerUid: currentUser.uid,
+        ownerEmail: currentUser.email || "",
+        ownerName: currentUserData?.name || currentUserData?.displayName || currentUser.email || "",
+        ownerRole: roleOf(currentUserData),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      els.quickForm.reset();
+      document.getElementById("nextActionDate").value = nextDate;
+      els.agendaDate.value = nextDate;
+      showToast("Client file added to agenda.");
+      await loadItems();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+      try {
+        currentUser = user;
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        currentUserData = userSnap.exists() ? userSnap.data() : {};
+        const role = roleOf(currentUserData);
+        if (!allowedRoles.includes(role)) {
+          alert("You do not have access to the agenda.");
+          window.location.href = "/login.html";
+          return;
+        }
+        els.dashboardLink.href = roleDashboard[role] || "/staff-dashboard.html";
+        if (!canViewAll()) {
+          els.viewMode.value = "mine";
+          els.viewMode.querySelector('option[value="all"]').disabled = true;
+        }
+        const today = todayIso();
+        els.agendaDate.value = today;
+        document.getElementById("nextActionDate").value = today;
+        els.logoutBtn.classList.remove("hidden");
+        await loadItems();
+      } catch (error) {
+        console.error("Could not load agenda:", error);
+        alert("Could not load agenda: " + (error.code || error.message || "Unknown error"));
+      } finally {
+        els.authLoader.style.display = "none";
+      }
+    });
+
+    els.quickForm.addEventListener("submit", createAgendaItem);
+    els.refreshBtn.addEventListener("click", loadItems);
+    els.todayBtn.addEventListener("click", () => { els.agendaDate.value = todayIso(); render(); });
+    els.newItemBtn.addEventListener("click", () => document.getElementById("clientName").focus());
+    els.agendaDate.addEventListener("change", render);
+    els.viewMode.addEventListener("change", loadItems);
+    els.searchInput.addEventListener("input", render);
+    els.logoutBtn.addEventListener("click", async () => { await signOut(auth); window.location.href = "/login.html"; });
+
+    els.agendaList.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const card = button.closest("article[data-id]");
+      const notes = card.querySelector(".item-notes").value.trim();
+      const date = card.querySelector(".item-date").value;
+      const time = card.querySelector(".item-time").value;
+      const action = button.dataset.action;
+      if (action === "tomorrow") return updateAgendaItem(card, { nextActionDate: addDaysIso(1), nextActionTime: time, notes, status: "open" });
+      if (action === "twoDays") return updateAgendaItem(card, { nextActionDate: addDaysIso(2), nextActionTime: time, notes, status: "open" });
+      if (action === "sevenDays") return updateAgendaItem(card, { nextActionDate: addDaysIso(7), nextActionTime: time, notes, status: "open" });
+      if (action === "save") return updateAgendaItem(card, { nextActionDate: date, nextActionTime: time, notes, status: "open" });
+      if (action === "complete") return updateAgendaItem(card, { notes, status: "completed", completedAt: serverTimestamp() });
+      if (action === "reopen") return updateAgendaItem(card, { notes, status: "open" });
+    });
+  </script>
+</body>
+</html>
