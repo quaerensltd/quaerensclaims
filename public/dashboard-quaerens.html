@@ -265,7 +265,7 @@
     </div>
 
     <div class="stat-card">
-      <p class="text-sm text-gray-500">Marketing leads</p>
+      <p class="text-sm text-gray-500">Marketing opt-ins</p>
       <p id="leadsCount" class="text-3xl font-extrabold text-blue-900">0</p>
     </div>
 
@@ -276,12 +276,12 @@
 
     <div class="stat-card">
       <p class="text-sm text-gray-500">Claim value</p>
-      <p id="claimValueTotal" class="text-3xl font-extrabold text-green-700">â‚¬0</p>
+      <p id="claimValueTotal" class="text-3xl font-extrabold text-green-700">£0</p>
     </div>
 
     <div class="stat-card">
       <p class="text-sm text-gray-500">Last updated</p>
-      <p id="lastUpdated" class="text-lg font-bold text-blue-900">â€”</p>
+      <p id="lastUpdated" class="text-lg font-bold text-blue-900">—</p>
     </div>
   </section>
 
@@ -359,7 +359,7 @@
         <label class="text-sm font-semibold">View</label>
         <select id="viewSelect" class="mt-1">
           <option value="claims">Claims</option>
-          <option value="leads">Marketing Leads</option>
+          <option value="leads">Marketing opt-ins</option>
           <option value="events">Conversion Events</option>
         </select>
       </div>
@@ -391,7 +391,7 @@
   <!-- Leads -->
   <section id="leadsSection" class="hidden bg-white rounded-2xl shadow-md border overflow-hidden">
     <div class="p-5 border-b">
-      <h2 class="text-2xl font-extrabold text-blue-900">Marketing Leads</h2>
+      <h2 class="text-2xl font-extrabold text-blue-900">Marketing opt-ins</h2>
       <p class="text-sm text-gray-600">People who gave marketing consent.</p>
     </div>
 
@@ -506,15 +506,21 @@ const statuses = [
   "lost"
 ];
 
+const EMPTY_VALUE = "Not provided";
+const CURRENCY_SYMBOLS = {
+  GBP: "\u00A3",
+  EUR: "\u20AC"
+};
+
 function safe(value) {
-  return value === undefined || value === null || value === "" ? "â€”" : value;
+  return value === undefined || value === null || value === "" ? EMPTY_VALUE : value;
 }
 
 function formatDate(value) {
-  if (!value) return "â€”";
+  if (!value) return EMPTY_VALUE;
   if (value.toDate) return value.toDate().toLocaleString();
   if (typeof value === "string") return new Date(value).toLocaleString();
-  return "â€”";
+  return EMPTY_VALUE;
 }
 
 function route(row) {
@@ -601,34 +607,64 @@ function moneyValue(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function formatClaimTotal(total) {
-  return `Â£${total.toLocaleString("en-GB", {
-    minimumFractionDigits: total % 1 ? 2 : 0,
+function claimCurrency(row) {
+  const currency = String(row.amountCurrency || row.currency || "").toUpperCase();
+  if (currency === "GBP" || currency === "EUR") return currency;
+  return (row.product || row.source || "") === "freeflightclaim" ? "EUR" : "GBP";
+}
+
+function formatMoney(value, currency = "GBP") {
+  if (value === undefined || value === null || value === "") return EMPTY_VALUE;
+  const number = moneyValue(value);
+  const symbol = CURRENCY_SYMBOLS[currency] || "";
+  return `${symbol}${number.toLocaleString("en-GB", {
+    minimumFractionDigits: number % 1 ? 2 : 0,
     maximumFractionDigits: 2
   })}`;
 }
 
+function formatClaimMoney(row) {
+  return formatMoney(row.compensation, claimCurrency(row));
+}
+
+function formatClaimTotal(claims) {
+  const totals = claims.reduce((acc, claim) => {
+    const currency = claimCurrency(claim);
+    acc[currency] = (acc[currency] || 0) + moneyValue(claim.compensation);
+    return acc;
+  }, {});
+
+  const entries = Object.entries(totals).filter(([, total]) => total !== 0);
+  if (!entries.length) return "\u00A30";
+
+  return entries
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, total]) => formatMoney(total, currency))
+    .join(" / ");
+}
+
 function updateDashboardStats() {
   const claims = filteredClaims();
-  const leads = filteredLeads();
-  const claimTotal = claims.reduce((sum, claim) => sum + moneyValue(claim.compensation), 0);
+  const marketingClaims = claims.filter(claim => claim.marketingConsent === true);
 
   document.getElementById("claimsCount").textContent = claims.length;
-  document.getElementById("leadsCount").textContent = leads.length;
+  document.getElementById("leadsCount").textContent = marketingClaims.length;
   document.getElementById("newClaimsCount").textContent =
     claims.filter(c => (c.status || "new") === "new").length;
-  document.getElementById("claimValueTotal").textContent = formatClaimTotal(claimTotal);
+  document.getElementById("claimValueTotal").textContent = formatClaimTotal(claims);
 }
 
 function renderConversions() {
-  const events = filteredEvents();
-  const count = name => events.filter(e => e.eventName === name).length;
+  const claims = filteredClaims();
+  const emailRequested = claims.filter(claim => claim.handleOption === "email").length;
+  const pdfGenerated = claims.length;
+  const marketingOptIns = claims.filter(claim => claim.marketingConsent === true).length;
 
-  document.getElementById("submittedCount").textContent = filteredClaims().length;
-  document.getElementById("emailRequestedCount").textContent = count("email_requested");
-  document.getElementById("pdfGeneratedCount").textContent = count("pdf_generated");
-  document.getElementById("marketingOptInCount").textContent = count("marketing_consent");
-  document.getElementById("followUpQueuedCount").textContent = count("follow_up_queued");
+  document.getElementById("submittedCount").textContent = claims.length;
+  document.getElementById("emailRequestedCount").textContent = emailRequested;
+  document.getElementById("pdfGeneratedCount").textContent = pdfGenerated;
+  document.getElementById("marketingOptInCount").textContent = marketingOptIns;
+  document.getElementById("followUpQueuedCount").textContent = claims.length;
 
   updateDashboardStats();
 }
@@ -693,7 +729,7 @@ function renderClaims() {
 
           <div>
             <p class="label">Compensation</p>
-            <p class="value">${row.compensation ? "â‚¬" + row.compensation : "â€”"}</p>
+            <p class="value">${formatClaimMoney(row)}</p>
           </div>
 
           <div>
@@ -800,7 +836,7 @@ function renderLeads() {
   leadsCards.innerHTML = "";
 
   if (!rows.length) {
-    leadsCards.innerHTML = `<p class="text-center text-gray-500 py-8">No marketing leads found.</p>`;
+    leadsCards.innerHTML = `<p class="text-center text-gray-500 py-8">No Marketing opt-ins found.</p>`;
     return;
   }
 
@@ -839,7 +875,7 @@ function renderLeads() {
 
           <div>
             <p class="label">Compensation</p>
-            <p class="value">${row.compensation ? "â‚¬" + row.compensation : "â€”"}</p>
+            <p class="value">${formatClaimMoney(row)}</p>
           </div>
         </div>
       </article>
@@ -900,7 +936,7 @@ function renderEvents() {
 
           <div>
             <p class="label">Compensation</p>
-            <p class="value">${row.compensation ? "â‚¬" + row.compensation : "â€”"}</p>
+            <p class="value">${formatClaimMoney(row)}</p>
           </div>
 
           <div>
@@ -938,7 +974,7 @@ function openDrawer(row) {
       ${detailField("Distance", row.distance)}
       ${detailField("Delay duration", row.delayDuration)}
       ${detailField("Issue", row.issueTypeLabel || row.reason)}
-      ${detailField("Compensation", row.compensation ? "â‚¬" + row.compensation : "â€”")}
+      ${detailField("Compensation", formatClaimMoney(row))}
       ${detailField("Payment method", row.paymentMethod)}
       ${detailField("Payment details", row.paymentDetails || row.iban)}
       ${detailField("Language", row.language)}
@@ -946,7 +982,7 @@ function openDrawer(row) {
       ${detailField("Donation", row.donation)}
       ${detailField("Marketing consent", row.marketingConsent ? "Yes" : "No")}
       ${detailField("Status", row.status || "new")}
-      ${detailField("File upload", row.fileURL ? `<a href="${row.fileURL}" target="_blank" class="text-blue-600 underline">Open file</a>` : "â€”")}
+      ${detailField("File upload", row.fileURL ? `<a href="${row.fileURL}" target="_blank" class="text-blue-600 underline">Open file</a>` : EMPTY_VALUE)}
     </div>
 
     <div class="border rounded-xl p-3">
@@ -987,7 +1023,7 @@ async function loadData() {
   }));
 
   document.getElementById("claimsCount").textContent = filteredClaims().length;
-  document.getElementById("leadsCount").textContent = filteredLeads().length;
+  updateDashboardStats();
   document.getElementById("newClaimsCount").textContent =
     filteredClaims().filter(c => (c.status || "new") === "new").length;
   document.getElementById("lastUpdated").textContent = new Date().toLocaleString();
@@ -1123,3 +1159,4 @@ onAuthStateChanged(auth, async (user) => {
 
 </body>
 </html>
+
