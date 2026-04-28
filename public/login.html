@@ -113,6 +113,13 @@
       loginBtn.textContent = isLoading ? "Logging in..." : "Log In";
     }
 
+    function getSafeReturnPath() {
+      const params = new URLSearchParams(window.location.search);
+      const requested = params.get("next") || sessionStorage.getItem("crmReturnTo") || "";
+      if (requested === "/agenda.html") return requested;
+      return "";
+    }
+
     function getTodayAttendanceId(uid) {
       const today = new Date().toISOString().slice(0, 10);
       return `${uid}_${today}`;
@@ -152,6 +159,20 @@
 
     async function redirectByRole(user, userData) {
       const role = userData.role;
+      const returnPath = getSafeReturnPath();
+
+      if (returnPath && ["manager", "staff", "closer", "processing", "admin"].includes(role)) {
+        if (role === "staff") {
+          try {
+            await recordStaffLogin(user, userData);
+          } catch (attendanceError) {
+            console.error("Attendance logging failed:", attendanceError);
+          }
+        }
+        sessionStorage.removeItem("crmReturnTo");
+        window.location.href = returnPath;
+        return;
+      }
 
       if (role === "manager") {
         window.location.href = "/manager-dashboard.html";

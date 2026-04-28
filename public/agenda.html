@@ -228,6 +228,11 @@
       setTimeout(() => toast.classList.remove("show"), 2600);
     }
 
+    function redirectToLogin() {
+      sessionStorage.setItem("crmReturnTo", "/agenda.html");
+      window.location.href = "/login.html?next=%2Fagenda.html";
+    }
+
     function roleOf(userData) {
       if (userData?.admin === true) return "admin";
       return userData?.role || "";
@@ -364,7 +369,9 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = "/login.html";
+        setTimeout(() => {
+          if (!auth.currentUser) redirectToLogin();
+        }, 1800);
         return;
       }
       try {
@@ -374,7 +381,7 @@
         const role = roleOf(currentUserData);
         if (!allowedRoles.includes(role)) {
           alert("You do not have access to the agenda.");
-          window.location.href = "/login.html";
+          redirectToLogin();
           return;
         }
         els.dashboardLink.href = roleDashboard[role] || "/staff-dashboard.html";
