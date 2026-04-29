@@ -457,6 +457,105 @@ function buildEmail(data) {
   };
 }
 
+
+function escapeAgreementHtml(value) {
+  return String(value || "").replace(/[&<>'"]/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;"
+  }[char]));
+}
+
+exports.sendAgreementEmail = onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+
+    try {
+      const authHeader = req.get("authorization") || "";
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!token) return res.status(401).json({ success: false, error: "Missing CRM authorisation." });
+
+      const decoded = await admin.auth().verifyIdToken(token);
+      const userSnap = await db.collection("users").doc(decoded.uid).get();
+      const userData = userSnap.exists ? userSnap.data() : {};
+      const role = userData.role || (userData.admin === true ? "admin" : "");
+      if (!["admin", "manager", "closer", "processing"].includes(role)) {
+        return res.status(403).json({ success: false, error: "CRM user is not allowed to send agreements." });
+      }
+
+      const data = req.body || {};
+      const to = String(data.to || "").trim();
+      const clientName = String(data.clientName || "Client").trim();
+      const subject = String(data.subject || "Next Step - Getting Started").trim();
+      const text = String(data.text || "").trim();
+      const pdfBase64 = String(data.pdfBase64 || "").trim();
+      const pdfFileName = String(data.pdfFileName || "Quaerens-Agreement.pdf").trim();
+
+      if (!to) return res.status(400).json({ success: false, error: "Missing recipient email." });
+      if (!pdfBase64) return res.status(400).json({ success: false, error: "Missing PDF attachment." });
+
+      const safeText = text || ("Dear " + clientName + ",\n\nPlease find your Quaerens agreement attached.\n\nKind regards,\nQuaerens Ltd");
+      const htmlBody = escapeAgreementHtml(safeText).replace(/\n/g, "<br>");
+
+      const result = await resend.emails.send({
+        from: "Quaerens Admin <admin@quaerens.co.uk>",
+        to,
+        subject,
+        text: safeText,
+        html: [
+          "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:680px;margin:auto;'>",
+          "<div style='text-align:center;margin-bottom:20px;'>",
+          "<img src='https://www.quaerens.co.uk/images/quaerens-logo.png' alt='Quaerens' style='display:block;margin:0 auto;max-width:260px;width:100%;height:auto;border:0;'>",
+          "</div>",
+          "<h2 style='color:#1e3a8a;text-align:center;'>Your Quaerens agreement</h2>",
+          "<p>", htmlBody, "</p>",
+          "<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
+          "<p style='font-size:12px;color:#666;text-align:center;'>Quaerens Ltd<br>71-75 Shelton Street, Covent Garden, London WC2H 9JQ<br>Company No. 16176152<br><br>You received this email because you asked Quaerens to prepare an agreement for your matter.</p>",
+          "</div>"
+        ].join(""),
+        attachments: [
+          {
+            filename: pdfFileName,
+            content: pdfBase64
+          }
+        ],
+        tags: [
+          { name: "type", value: "agreement" }
+        ]
+      });
+
+      if (result?.error) {
+        throw new Error(result.error.message || "Resend rejected the agreement email.");
+      }
+
+      await db.collection("sentEmails").add({
+        type: "agreement",
+        source: data.source || "",
+        sourceId: data.sourceId || "",
+        clientKey: data.clientKey || "",
+        to,
+        clientName,
+        subject,
+        pdfFileName,
+        from: "admin@quaerens.co.uk",
+        resendId: result?.data?.id || result?.id || "",
+        sentByUid: decoded.uid,
+        sentByEmail: decoded.email || "",
+        sentByRole: role,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      res.json({ success: true, resendId: result?.data?.id || result?.id || "" });
+    } catch (err) {
+      console.error("sendAgreementEmail error:", err);
+      res.status(500).json({ success: false, error: err.message || "Email failed." });
+    }
+  });
+});
+
 exports.resendWebhook = onRequest(async (req, res) => {
   try {
     const event = req.body;

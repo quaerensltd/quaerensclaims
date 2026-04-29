@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Agreement Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, sans-serif; background:#f8fafc; color:#0f172a; margin:0; }
+    .shell { width:min(1250px, calc(100% - 2rem)); margin:0 auto; }
+    .card { background:white; border:1px solid #dbeafe; border-radius:18px; box-shadow:0 10px 28px rgba(15,23,42,.07); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; border-radius:14px; font-weight:800; transition:.2s; border:0; cursor:pointer; text-decoration:none; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#eff6ff; color:#1d4ed8; }
+    .btn-secondary:hover { background:#dbeafe; }
+    .btn-green { background:#059669; color:white; }
+    .btn-amber { background:#d97706; color:white; }
+    .input { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:.82rem .95rem; font-size:1rem; background:white; }
+    .label { display:block; font-weight:800; color:#1e3a8a; margin-bottom:.45rem; font-size:.92rem; }
+    .muted { color:#64748b; }
+    .preview { white-space:pre-wrap; line-height:1.65; font-size:.94rem; }
+    #toast { position:fixed; right:1rem; bottom:1rem; background:#0f172a; color:white; padding:.9rem 1rem; border-radius:14px; opacity:0; transform:translateY(10px); transition:.2s; z-index:80; max-width:360px; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:760px) { .shell { width:min(100% - 1rem, 1250px); } .btn { width:100%; } }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div id="authLoader" class="fixed inset-0 bg-white/90 z-50 flex items-center justify-center">
+    <div class="card p-8 text-center">
+      <p class="text-xl font-extrabold text-blue-900">Loading agreement...</p>
+      <p class="text-slate-500 mt-2">Opening client details and agreement template.</p>
+    </div>
+  </div>
+
+  <header class="bg-white border-b border-blue-100 sticky top-0 z-30">
+    <div class="shell py-5 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-blue-900">Write Up Agreement</h1>
+        <p class="text-sm text-slate-500">Create, edit, download and send a client agreement</p>
+      </div>
+      <nav class="flex items-center gap-3 flex-wrap">
+        <a id="backLink" href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Back to Client</a>
+        <a id="clientFileLink" href="#" class="btn btn-secondary py-2 px-4">Client File</a>
+        <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell py-8 space-y-6">
+    <section class="card p-6">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wide text-blue-700">Agreement for</p>
+          <h2 id="clientTitle" class="text-3xl font-extrabold text-blue-950 mt-2">Client</h2>
+          <p id="clientSubtitle" class="muted mt-2">Loading...</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          <button id="downloadPdfBtn" class="btn btn-primary py-3 px-5" type="button">Create PDF</button>
+          <button id="saveRecordBtn" class="btn btn-secondary py-3 px-5" type="button">Save Record</button>
+          <button id="sendEmailBtn" class="btn btn-green py-3 px-5" type="button">Send to Client</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-2 gap-6">
+      <section class="card p-6">
+        <h3 class="text-xl font-extrabold text-blue-900 mb-4">Editable Agreement Details</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div><label class="label" for="agreementDate">Agreement date</label><input id="agreementDate" class="input" type="date" /></div>
+          <div><label class="label" for="signatureDate">Date at bottom</label><input id="signatureDate" class="input" type="date" /></div>
+          <div><label class="label" for="serviceFee">Service fee amount</label><input id="serviceFee" class="input" value="£750" /></div>
+          <div><label class="label" for="successFee">Success fee percentage</label><input id="successFee" class="input" value="25%" /></div>
+          <div><label class="label" for="claimType">Claim type / matter</label><input id="claimType" class="input" /></div>
+          <div><label class="label" for="clientEmail">Client email</label><input id="clientEmail" class="input" type="email" /></div>
+          <div><label class="label" for="clientName">Client name</label><input id="clientName" class="input" /></div>
+          <div><label class="label" for="clientAddress">Client address</label><input id="clientAddress" class="input" /></div>
+        </div>
+        <div class="mt-4">
+          <label class="label" for="agreementText">Agreement text</label>
+          <textarea id="agreementText" class="input" rows="22"></textarea>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <h3 class="text-xl font-extrabold text-blue-900 mb-4">Email to Client</h3>
+        <div class="space-y-4">
+          <div><label class="label" for="emailSubject">Subject</label><input id="emailSubject" class="input" /></div>
+          <div><label class="label" for="emailBody">Email body</label><textarea id="emailBody" class="input" rows="16"></textarea></div>
+          <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4 text-sm text-blue-900">
+            Sender: <strong>Quaerens Admin &lt;admin@quaerens.co.uk&gt;</strong><br>
+            The agreement PDF is attached automatically when sent.
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h4 class="font-extrabold text-blue-900 mb-3">Agreement Preview</h4>
+          <div id="agreementPreview" class="preview rounded-2xl bg-slate-50 border border-slate-200 p-4 max-h-[520px] overflow-auto"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA", authDomain: "quaerensclaims.firebaseapp.com", projectId: "quaerensclaims" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("source") || "closerAssignments";
+    const sourceId = params.get("id") || "";
+    const safeSources = ["closerAssignments", "leadAssignments", "agendaItems", "processingCases", "processingFiles"];
+    const allowedRoles = ["closer", "manager", "admin", "processing"];
+    let currentUser = null;
+    let currentUserData = null;
+    let clientRecord = null;
+    let clientKey = "";
+
+    const els = {
+      authLoader: document.getElementById("authLoader"), logoutBtn: document.getElementById("logoutBtn"), backLink: document.getElementById("backLink"), clientFileLink: document.getElementById("clientFileLink"), clientTitle: document.getElementById("clientTitle"), clientSubtitle: document.getElementById("clientSubtitle"),
+      agreementDate: document.getElementById("agreementDate"), signatureDate: document.getElementById("signatureDate"), serviceFee: document.getElementById("serviceFee"), successFee: document.getElementById("successFee"), claimType: document.getElementById("claimType"), clientEmail: document.getElementById("clientEmail"), clientName: document.getElementById("clientName"), clientAddress: document.getElementById("clientAddress"), agreementText: document.getElementById("agreementText"), agreementPreview: document.getElementById("agreementPreview"), emailSubject: document.getElementById("emailSubject"), emailBody: document.getElementById("emailBody"), downloadPdfBtn: document.getElementById("downloadPdfBtn"), saveRecordBtn: document.getElementById("saveRecordBtn"), sendEmailBtn: document.getElementById("sendEmailBtn")
+    };
+
+    function todayIso() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+    function formatUkDate(iso) { if (!iso) return ""; const parts = iso.split("-"); return parts[2] + "/" + parts[1] + "/" + parts[0]; }
+    function escapeHtml(v) { return String(v || "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
+    function showToast(message) { const toast = document.getElementById("toast"); toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 3000); }
+    function roleOf(data) { if (data?.admin === true) return "admin"; return data?.role || ""; }
+    function redirectToLogin() { sessionStorage.setItem("crmReturnTo", window.location.pathname + window.location.search); window.location.href = "/login.html?next=" + encodeURIComponent(window.location.pathname + window.location.search); }
+    function first(...values) { return values.find((v) => v !== undefined && v !== null && String(v).trim() !== "") || ""; }
+    function nestedClient(data) { return data.client || data.clientDetails || data.customer || data; }
+    function fullName(data) { const c = nestedClient(data); return first(c.fullName, c.name, [c.firstName, c.secondName].filter(Boolean).join(" "), [c.firstName, c.lastName].filter(Boolean).join(" "), data.clientName, data.name, "Client"); }
+    function address(data) { const c = nestedClient(data); return first(c.address, c.fullAddress, [c.address1, c.address2, c.town, c.postcode].filter(Boolean).join(", "), data.address, data.postcode); }
+    function email(data) { const c = nestedClient(data); return first(c.email, data.email, data.clientEmail); }
+    function claim(data) { return first(data.claimType, data.campaign, data.product, data.type, "Financial matter"); }
+    function makeClientKey() { return source + ":" + sourceId; }
+
+    function agreementTemplate() {
+      const agreementDate = formatUkDate(els.agreementDate.value);
+      const bottomDate = formatUkDate(els.signatureDate.value);
+      return [
+        "Mediation and Arbitration Services Agreement",
+        "This Mediation and Arbitration Services Agreement (the Agreement) is made and entered into on " + agreementDate + ", by and between:",
+        "Quaerens Ltd, a company incorporated under the laws of England and Wales, with its registered office at 71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom (Company No. 16176152) - hereinafter the Service Provider;",
+        "and",
+        (els.clientName.value || "Client") + ", residing at " + (els.clientAddress.value || "the address provided") + " (hereinafter the Client).",
+        "Client Service Summary Agreement",
+        "This document outlines the key terms of working with Quaerens Ltd in relation to your " + (els.claimType.value || "matter") + ".",
+        "What We Do",
+        "We assist you in handling your financial matter and manage the process on your behalf, including communication, documentation, and guidance through mediation, arbitration, or similar procedures.",
+        "Our goal is to make the process straightforward and handled for you.",
+        "Our Approach",
+        "We will handle your matter with care and professionalism and take the steps we believe are appropriate to move things forward.",
+        "If further action is appropriate, we will discuss the available options with you and support you in progressing the matter.",
+        "Fees",
+        "A " + (els.serviceFee.value || "service fee") + " Service Fee is payable at the start (non-refundable).",
+        "If you receive a financial benefit, a " + (els.successFee.value || "success fee") + " Success Fee (plus VAT) applies.",
+        "The Service Fee is deducted from the Success Fee.",
+        "If no financial benefit is obtained, no Success Fee is payable.",
+        "Additional Costs",
+        "If further steps require third-party services (such as legal professionals), we will:",
+        "clearly explain this in advance",
+        "only proceed with your agreement",
+        "You are responsible for these costs once approved.",
+        "Your Responsibilities",
+        "You agree to:",
+        "provide accurate and complete information",
+        "cooperate throughout the process",
+        "provide documents and sign forms when required",
+        "Important Information",
+        "Quaerens is an assistance service. We prepare documents, organise evidence, guide practical next steps, and where needed coordinate with suitable external specialists.",
+        "We cannot guarantee a specific outcome.",
+        "The Service Fee is non-refundable once work has started.",
+        "Agreement",
+        "By signing below, you confirm that:",
+        "you understand how the service works",
+        "you agree to the fees and responsibilities outlined above",
+        "you agree to proceed on this basis",
+        "Signed by:",
+        "Client (" + (els.clientName.value || "Client") + "): Date:",
+        "Service Provider (on behalf of Quaerens Ltd): Date: " + bottomDate
+      ].join("\n\n");
+    }
+
+    function emailTemplate() {
+      return [
+        "Dear " + (els.clientName.value || "Client") + ",",
+        "I have put together a short summary of how we will work together so everything is clear and straightforward.",
+        "There is no complicated legal wording - just the key points around how we handle your matter, how fees work, and what to expect.",
+        "Once you are happy, you can sign it and we will get started immediately.",
+        "I have attached the agreement for completeness, and it covers everything in a simple format.",
+        "If you have any questions at all, just let me know - happy to walk you through it.",
+        "Best regards,",
+        "Quaerens Ltd",
+        "71-75 Shelton Street",
+        "Covent Garden",
+        "WC2H 9JQ",
+        "London",
+        "United Kingdom",
+        "Telephone: 020 8050 0725",
+        "Whatsapp: 07459775812",
+        "Webpage: www.quaerens.co.uk",
+        "Email: admin@quaerens.co.uk"
+      ].join("\n\n");
+    }
+
+    function refreshPreview() {
+      els.agreementPreview.textContent = els.agreementText.value;
+    }
+
+    function buildPdf(returnBase64 = false) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const margin = 14;
+      const pageWidth = 210 - margin * 2;
+      let y = 16;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text("Mediation and Arbitration Services Agreement", margin, y);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10.5);
+      const lines = doc.splitTextToSize(els.agreementText.value, pageWidth);
+      for (const line of lines) {
+        if (y > 282) { doc.addPage(); y = 16; }
+        doc.text(line, margin, y);
+        y += 5.4;
+      }
+      const fileName = "Quaerens-Agreement-" + (els.clientName.value || "Client").replace(/[^a-z0-9]+/gi, "-") + ".pdf";
+      if (returnBase64) {
+        return { fileName, base64: doc.output("datauristring").split(",")[1] };
+      }
+      doc.save(fileName);
+      return { fileName, base64: "" };
+    }
+
+    async function saveAgreementRecord(status, resendId = "") {
+      const agreementData = {
+        source, sourceId, clientKey,
+        clientName: els.clientName.value.trim(),
+        clientEmail: els.clientEmail.value.trim(),
+        clientAddress: els.clientAddress.value.trim(),
+        claimType: els.claimType.value.trim(),
+        agreementDate: els.agreementDate.value,
+        signatureDate: els.signatureDate.value,
+        serviceFee: els.serviceFee.value.trim(),
+        successFee: els.successFee.value.trim(),
+        agreementText: els.agreementText.value,
+        emailSubject: els.emailSubject.value,
+        emailBody: els.emailBody.value,
+        status,
+        resendId,
+        createdByUid: currentUser.uid,
+        createdByEmail: currentUser.email || "",
+        createdByName: currentUserData?.name || currentUser.email || "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      const ref = await addDoc(collection(db, "agreementRecords"), agreementData);
+      await addDoc(collection(db, "clientTimeline"), {
+        clientKey, source, sourceId,
+        type: "agreement",
+        title: status === "sent" ? "Agreement sent to client" : "Agreement created",
+        body: (els.serviceFee.value || "Service fee") + " service fee, " + (els.successFee.value || "success fee") + " success fee. Agreement record: " + ref.id,
+        agreementRecordId: ref.id,
+        createdAt: serverTimestamp(),
+        createdByUid: currentUser.uid,
+        createdByEmail: currentUser.email || "",
+        createdByName: currentUserData?.name || currentUser.email || ""
+      });
+      return ref.id;
+    }
+
+    async function sendAgreement() {
+      if (!els.clientEmail.value.trim()) return showToast("Client email is missing.");
+      els.sendEmailBtn.disabled = true;
+      els.sendEmailBtn.textContent = "Sending...";
+      try {
+        const pdf = buildPdf(true);
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendAgreementEmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
+          body: JSON.stringify({
+            to: els.clientEmail.value.trim(),
+            clientName: els.clientName.value.trim(),
+            subject: els.emailSubject.value.trim(),
+            text: els.emailBody.value,
+            pdfBase64: pdf.base64,
+            pdfFileName: pdf.fileName,
+            source, sourceId, clientKey
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success === false) throw new Error(result.error || result.message || "Could not send agreement email.");
+        await saveAgreementRecord("sent", result.resendId || "");
+        showToast("Agreement sent and logged to client file.");
+      } catch (error) {
+        console.error(error);
+        alert("Could not send agreement: " + (error.message || "Unknown error"));
+      } finally {
+        els.sendEmailBtn.disabled = false;
+        els.sendEmailBtn.textContent = "Send to Client";
+      }
+    }
+
+    async function loadClient() {
+      if (!sourceId || !safeSources.includes(source)) throw new Error("Missing or invalid client reference.");
+      const snap = await getDoc(doc(db, source, sourceId));
+      if (!snap.exists()) throw new Error("Client record not found.");
+      clientRecord = { id: snap.id, ...snap.data() };
+      clientKey = makeClientKey();
+      const name = fullName(clientRecord);
+      els.clientName.value = name;
+      els.clientAddress.value = address(clientRecord);
+      els.clientEmail.value = email(clientRecord);
+      els.claimType.value = claim(clientRecord);
+      els.agreementDate.value = todayIso();
+      els.signatureDate.value = todayIso();
+      els.emailSubject.value = "Next Step - Getting Started";
+      els.agreementText.value = agreementTemplate();
+      els.emailBody.value = emailTemplate();
+      els.clientTitle.textContent = name;
+      els.clientSubtitle.textContent = (els.claimType.value || "Client matter") + " - " + source + " " + sourceId;
+      els.backLink.href = source === "closerAssignments" ? "/closer-detail.html?id=" + encodeURIComponent(sourceId) : "/closer-panel.html";
+      els.clientFileLink.href = "/client-file.html?source=" + encodeURIComponent(source) + "&id=" + encodeURIComponent(sourceId);
+      refreshPreview();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { setTimeout(() => { if (!auth.currentUser) redirectToLogin(); }, 1600); return; }
+      try {
+        currentUser = user;
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        currentUserData = userSnap.exists() ? userSnap.data() : {};
+        const role = roleOf(currentUserData);
+        if (!allowedRoles.includes(role)) { alert("You do not have access to agreements."); redirectToLogin(); return; }
+        els.logoutBtn.classList.remove("hidden");
+        await loadClient();
+      } catch (error) {
+        console.error("Could not load agreement page:", error);
+        alert("Could not load agreement page: " + (error.code || error.message || "Unknown error"));
+      } finally { els.authLoader.style.display = "none"; }
+    });
+
+    [els.agreementDate, els.signatureDate, els.serviceFee, els.successFee, els.claimType, els.clientName, els.clientAddress].forEach((input) => {
+      input.addEventListener("input", () => { els.agreementText.value = agreementTemplate(); refreshPreview(); });
+      input.addEventListener("change", () => { els.agreementText.value = agreementTemplate(); refreshPreview(); });
+    });
+    els.agreementText.addEventListener("input", refreshPreview);
+    els.downloadPdfBtn.addEventListener("click", async () => { buildPdf(false); await saveAgreementRecord("created"); showToast("PDF created and logged to client file."); });
+    els.saveRecordBtn.addEventListener("click", async () => { await saveAgreementRecord("created"); showToast("Agreement record saved to client file."); });
+    els.sendEmailBtn.addEventListener("click", sendAgreement);
+    els.logoutBtn.addEventListener("click", async () => { await signOut(auth); window.location.href = "/login.html"; });
+  </script>
+</body>
+</html>
