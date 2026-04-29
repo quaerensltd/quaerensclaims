@@ -458,6 +458,8 @@ function buildEmail(data) {
 }
 
 
+const AGREEMENT_EMAIL_NOTICE = "Confidentiality Notice: This email and any attachments are intended solely for the use of the individual or entity to whom they are addressed. They may contain confidential, privileged, proprietary, or legally protected information. If you are not the intended recipient, you must immediately notify the sender, delete this email and any attachments from your system, and must not copy, distribute, disclose, or take any action based on the contents of this email. Unauthorized use of this email may constitute a violation of law. Accuracy and Liability: Quaerens Ltd makes no representations or warranties regarding the accuracy, completeness, or reliability of the information contained in this email. Any opinions expressed are those of the sender and do not necessarily represent the views of Quaerens Ltd, its directors, employees, or affiliates. Limitation of Liability: To the fullest extent permitted by law, Quaerens Ltd shall not be liable for any loss or damage, direct or indirect, arising from or in connection with this email, including but not limited to any loss of data, profits, or other consequential or incidental damages. This includes any viruses or malware that may be transmitted with this email. Recipients should carry out their own checks before opening attachments or acting on the content. Data Protection - GDPR / UK GDPR: This email may contain personal data. Any such data must be handled in accordance with applicable data protection laws, including the EU General Data Protection Regulation (GDPR) and UK GDPR. Personal data must not be disclosed, shared, or processed without lawful justification and consent where required. If you are not the intended recipient, you must delete this email immediately. Third-Party Content: This email may contain links, references, or attachments relating to third parties. Quaerens Ltd does not accept responsibility for the content, accuracy, or availability of third-party material, and inclusion of such content does not imply endorsement. Legal Privilege and Professional Opinions: Any opinions, statements, or information contained in this email are provided for informational purposes only unless explicitly stated to be made on behalf of Quaerens Ltd. Nothing in this email should be taken as legal, financial, or professional advice unless specifically confirmed in writing. Governing Law: This email and its contents are governed by the laws of England and Wales. Any disputes arising in connection with this email shall be subject to the exclusive jurisdiction of the courts of England and Wales. By reading or acting upon this email, you acknowledge and agree to be bound by the terms of this disclaimer.";
+
 function escapeAgreementHtml(value) {
   return String(value || "").replace(/[&<>'"]/g, (char) => ({
     "&": "&amp;",
@@ -497,7 +499,10 @@ exports.sendAgreementEmail = onRequest(async (req, res) => {
       if (!to) return res.status(400).json({ success: false, error: "Missing recipient email." });
       if (!pdfBase64) return res.status(400).json({ success: false, error: "Missing PDF attachment." });
 
-      const safeText = text || ("Dear " + clientName + ",\n\nPlease find your Quaerens agreement attached.\n\nKind regards,\nQuaerens Ltd");
+      let safeText = text || ("Dear " + clientName + ",\n\nPlease find your Quaerens agreement attached.\n\nKind regards,\nQuaerens Ltd");
+      if (!safeText.includes("Confidentiality Notice:")) {
+        safeText += "\n\n" + AGREEMENT_EMAIL_NOTICE;
+      }
       const htmlBody = escapeAgreementHtml(safeText).replace(/\n/g, "<br>");
 
       const result = await resend.emails.send({
