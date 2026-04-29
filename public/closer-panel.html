@@ -273,7 +273,8 @@
             <button id="generateEmailBtn" class="btn btn-secondary" type="button">Generate Email</button>
             <button id="saveEmailDraftBtn" class="btn btn-secondary" type="button">Save Email Draft</button>
             <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
-            <button id="openMailBtn" class="btn btn-primary" type="button">Open Email App</button>
+            <button id="sendEmailBtn" class="btn btn-primary" type="button">Send Email</button>
+            <button id="openMailBtn" class="btn btn-secondary" type="button">Open Email App</button>
           </div>
           <p id="emailMessage" class="text-sm text-green-700 hidden mt-4"></p>
         </section>
@@ -434,10 +435,12 @@
     const panelSaveMessage = document.getElementById("panelSaveMessage");
     const emailSubjectInput = document.getElementById("emailSubjectInput");
     const emailBodyInput = document.getElementById("emailBodyInput");
+    const emailAttachmentInput = document.getElementById("emailAttachmentInput");
     const generateEmailBtn = document.getElementById("generateEmailBtn");
     const saveEmailDraftBtn = document.getElementById("saveEmailDraftBtn");
     const copyEmailBtn = document.getElementById("copyEmailBtn");
     const openMailBtn = document.getElementById("openMailBtn");
+    const sendEmailBtn = document.getElementById("sendEmailBtn");
     const emailMessage = document.getElementById("emailMessage");
 
     let currentUser = null;
@@ -682,11 +685,7 @@
           followUpDue > 0 ? `Follow-up amount: ${money(followUpDue)}` : "",
           link ? `Payment link: ${link}` : "",
           "",
-          "Once this has been completed, your file can continue to the next stage.",
-          "",
-          "Kind regards,",
-          currentUserData?.name || "Quaerens",
-          "Quaerens"
+          "Once this has been completed, your file can continue to the next stage."
         ].filter(Boolean).join("\n");
       }
 
@@ -697,11 +696,7 @@
           "Thank you for speaking with me.",
           "",
           `This email confirms your follow-up appointment: ${appt}.`,
-          "If you need to rearrange, please reply to this email.",
-          "",
-          "Kind regards,",
-          currentUserData?.name || "Quaerens",
-          "Quaerens"
+          "If you need to rearrange, please reply to this email."
         ].join("\n");
       }
 
@@ -711,11 +706,7 @@
           "",
           "I attempted to contact you regarding your matter but was unable to reach you.",
           "",
-          "Please reply to this email if you would like to arrange a more convenient time.",
-          "",
-          "Kind regards,",
-          currentUserData?.name || "Quaerens",
-          "Quaerens"
+          "Please reply to this email if you would like to arrange a more convenient time."
         ].join("\n");
       }
 
@@ -727,11 +718,7 @@
         "I am writing with a follow-up regarding your Quaerens matter.",
         appointmentDate(item) ? `Appointment reference: ${appt}` : "",
         "",
-        "Please reply if you have any questions.",
-        "",
-        "Kind regards,",
-        currentUserData?.name || "Quaerens",
-        "Quaerens"
+        "Please reply if you have any questions."
       ].filter(Boolean).join("\n");
     }
 
@@ -1203,6 +1190,86 @@
       }
     }
 
+    function readPdfAttachment() {
+      const file = emailAttachmentInput.files && emailAttachmentInput.files[0];
+      if (!file) return Promise.resolve(null);
+      if (file.type && file.type !== "application/pdf") {
+        return Promise.reject(new Error("Please attach a PDF file only."));
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return Promise.reject(new Error("PDF attachment is too large. Please keep it under 10MB."));
+      }
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          resolve({
+            filename: file.name || "Assessment-Report.pdf",
+            content: result.includes(",") ? result.split(",")[1] : result
+          });
+        };
+        reader.onerror = () => reject(new Error("Could not read the PDF attachment."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function sendClientEmailFromCrm() {
+      if (!selectedAssignment) {
+        showEmailMessage("No assignment selected.", true);
+        return;
+      }
+
+      const to = clientEmail(selectedAssignment) || "";
+      if (!to) {
+        showEmailMessage("No client email address found.", true);
+        return;
+      }
+
+      const subject = (emailSubjectInput.value || "").trim();
+      const body = (emailBodyInput.value || "").trim();
+      if (!subject || !body) {
+        showEmailMessage("Please enter an email subject and message.", true);
+        return;
+      }
+
+      sendEmailBtn.disabled = true;
+      sendEmailBtn.textContent = "Sending...";
+
+      try {
+        const attachment = await readPdfAttachment();
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendCloserClientEmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
+          body: JSON.stringify({
+            to,
+            clientName: clientName(selectedAssignment),
+            subject,
+            text: body,
+            attachment,
+            source: "closerAssignments",
+            sourceId: selectedAssignment.id,
+            clientKey: "closerAssignments:" + selectedAssignment.id
+          })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success === false) {
+          throw new Error(result.error || result.message || "Could not send email.");
+        }
+
+        await saveEmailDraft();
+        showEmailMessage("Email sent and logged to client file.");
+        showToast("Email sent.");
+      } catch (error) {
+        console.error("Could not send client email:", error);
+        showEmailMessage("Could not send email: " + (error.message || "Unknown error"), true);
+      } finally {
+        sendEmailBtn.disabled = false;
+        sendEmailBtn.textContent = "Send Email";
+      }
+    }
+
     function openMailApp() {
       if (!selectedAssignment) {
         showEmailMessage("No assignment selected.", true);
@@ -1253,6 +1320,7 @@
       }
     });
 
+    sendEmailBtn.addEventListener("click", sendClientEmailFromCrm);
     openMailBtn.addEventListener("click", openMailApp);
     savePanelCloserBtn.addEventListener("click", saveSelectedAssignmentActions);
 
