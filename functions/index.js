@@ -462,6 +462,8 @@ const QUAERENS_EMAIL_SIGNATURE = "Best regards,\nQuaerens Ltd\n71-75 Shelton Str
 
 const QUAERENS_CLIENT_SUPPORT_SIGNATURE = "Best regards,\n\nQuaerens Ltd\n71-75 Shelton Street\nCovent Garden\nWC2H 9JQ\nLondon\n\nUnited Kingdom\n\nTelephone: 020 8050 0725\nWhatsapp: 07459775812\n\nWebpage: www.quaerens.co.uk\nEmail: admin@quaerens.co.uk";
 
+const QUAERENS_PROCESSING_SUPPORT_SIGNATURE = "Best regards,\n\nQuaerens Ltd\n71-75 Shelton Street\nCovent Garden\nWC2H 9JQ\nLondon\n\nUnited Kingdom\n\nTelephone: 020 8050 0725\nWhatsapp: 07459775812\n\nWebpage: www.quaerens.co.uk\nEmail: support@quaerens.co.uk";
+
 const AGREEMENT_EMAIL_NOTICE = "Confidentiality Notice: This email and any attachments are intended solely for the use of the individual or entity to whom they are addressed. They may contain confidential, privileged, proprietary, or legally protected information. If you are not the intended recipient, you must immediately notify the sender, delete this email and any attachments from your system, and must not copy, distribute, disclose, or take any action based on the contents of this email. Unauthorized use of this email may constitute a violation of law. Accuracy and Liability: Quaerens Ltd makes no representations or warranties regarding the accuracy, completeness, or reliability of the information contained in this email. Any opinions expressed are those of the sender and do not necessarily represent the views of Quaerens Ltd, its directors, employees, or affiliates. Limitation of Liability: To the fullest extent permitted by law, Quaerens Ltd shall not be liable for any loss or damage, direct or indirect, arising from or in connection with this email, including but not limited to any loss of data, profits, or other consequential or incidental damages. This includes any viruses or malware that may be transmitted with this email. Recipients should carry out their own checks before opening attachments or acting on the content. Data Protection - GDPR / UK GDPR: This email may contain personal data. Any such data must be handled in accordance with applicable data protection laws, including the EU General Data Protection Regulation (GDPR) and UK GDPR. Personal data must not be disclosed, shared, or processed without lawful justification and consent where required. If you are not the intended recipient, you must delete this email immediately. Third-Party Content: This email may contain links, references, or attachments relating to third parties. Quaerens Ltd does not accept responsibility for the content, accuracy, or availability of third-party material, and inclusion of such content does not imply endorsement. Legal Privilege and Professional Opinions: Any opinions, statements, or information contained in this email are provided for informational purposes only unless explicitly stated to be made on behalf of Quaerens Ltd. Nothing in this email should be taken as legal, financial, or professional advice unless specifically confirmed in writing. Governing Law: This email and its contents are governed by the laws of England and Wales. Any disputes arising in connection with this email shall be subject to the exclusive jurisdiction of the courts of England and Wales. By reading or acting upon this email, you acknowledge and agree to be bound by the terms of this disclaimer.";
 
 function escapeAgreementHtml(value) {
@@ -586,6 +588,110 @@ exports.sendCloserClientEmail = onRequest(async (req, res) => {
       res.json({ success: true, resendId: sentEmail.resendId, sentEmailId: emailRef.id });
     } catch (err) {
       console.error("sendCloserClientEmail error:", err);
+      res.status(500).json({ success: false, error: err.message || "Email failed." });
+    }
+  });
+});
+
+
+exports.sendProcessingClientEmail = onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+
+    try {
+      const authHeader = req.get("authorization") || "";
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!token) return res.status(401).json({ success: false, error: "Missing CRM authorisation." });
+
+      const decoded = await admin.auth().verifyIdToken(token);
+      const userSnap = await db.collection("users").doc(decoded.uid).get();
+      const userData = userSnap.exists ? userSnap.data() : {};
+      const role = userData.role || (userData.admin === true ? "admin" : "");
+      if (!["admin", "manager", "processing"].includes(role)) {
+        return res.status(403).json({ success: false, error: "CRM user is not allowed to send processing emails." });
+      }
+
+      const data = req.body || {};
+      const to = String(data.to || "").trim();
+      const clientName = String(data.clientName || "Client").trim();
+      const subject = String(data.subject || "Quaerens - update regarding your case").trim();
+      const customText = String(data.text || "").trim();
+
+      if (!to) return res.status(400).json({ success: false, error: "Missing recipient email." });
+      if (!customText) return res.status(400).json({ success: false, error: "Email body is empty." });
+
+      let safeText = customText;
+      if (!safeText.includes("71-75 Shelton Street")) {
+        safeText += "\n\n" + QUAERENS_PROCESSING_SUPPORT_SIGNATURE;
+      }
+      if (!safeText.includes("Confidentiality Notice:")) {
+        safeText += "\n\n" + AGREEMENT_EMAIL_NOTICE;
+      }
+
+      const htmlBody = escapeAgreementHtml(safeText).replace(/\n/g, "<br>");
+
+      const result = await resend.emails.send({
+        from: "Quaerens Support <support@quaerens.co.uk>",
+        to,
+        subject,
+        text: safeText,
+        html: [
+          "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:680px;margin:auto;'>",
+          "<div style='text-align:center;margin-bottom:20px;'>",
+          "<img src='https://www.quaerens.co.uk/images/quaerens-logo.png' alt='Quaerens' style='display:block;margin:0 auto;max-width:260px;width:100%;height:auto;border:0;'>",
+          "</div>",
+          "<h2 style='color:#1e3a8a;text-align:center;'>Message from Quaerens</h2>",
+          "<p>", htmlBody, "</p>",
+          "<hr style='margin:30px 0;border:none;border-top:1px solid #eee;'>",
+          "<p style='font-size:12px;color:#666;text-align:center;'>Quaerens Ltd<br>71-75 Shelton Street, Covent Garden, London WC2H 9JQ<br>Company No. 16176152</p>",
+          "</div>"
+        ].join(""),
+        tags: [
+          { name: "type", value: "processing_client_email" }
+        ]
+      });
+
+      if (result?.error) {
+        throw new Error(result.error.message || "Resend rejected the processing email.");
+      }
+
+      const sentEmail = {
+        type: "processing_client_email",
+        source: data.source || "processingCases",
+        sourceId: data.sourceId || "",
+        clientKey: data.clientKey || "",
+        to,
+        clientName,
+        subject,
+        from: "support@quaerens.co.uk",
+        resendId: result?.data?.id || result?.id || "",
+        sentByUid: decoded.uid,
+        sentByEmail: decoded.email || "",
+        sentByRole: role,
+        sentByName: userData.name || decoded.email || "",
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      const emailRef = await db.collection("sentEmails").add(sentEmail);
+
+      await db.collection("clientTimeline").add({
+        clientKey: sentEmail.clientKey,
+        source: sentEmail.source,
+        sourceId: sentEmail.sourceId,
+        type: "email",
+        title: "Processing email sent",
+        body: "Subject: " + subject,
+        sentEmailId: emailRef.id,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdByUid: decoded.uid,
+        createdByEmail: decoded.email || "",
+        createdByName: userData.name || decoded.email || ""
+      });
+
+      res.json({ success: true, resendId: sentEmail.resendId, sentEmailId: emailRef.id });
+    } catch (err) {
+      console.error("sendProcessingClientEmail error:", err);
       res.status(500).json({ success: false, error: err.message || "Email failed." });
     }
   });
