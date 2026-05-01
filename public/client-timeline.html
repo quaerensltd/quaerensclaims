@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Client Timeline</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .badge { display: inline-block; padding: 0.25rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 800; white-space: nowrap; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .timeline-row { position: relative; padding-left: 1.7rem; }
+    .timeline-row::before { content: ""; position: absolute; left: 0.45rem; top: 0.2rem; bottom: -1.2rem; width: 2px; background: #dbeafe; }
+    .timeline-row:last-child::before { bottom: 1rem; }
+    .timeline-dot { position: absolute; left: 0; top: 0.35rem; width: 0.95rem; height: 0.95rem; border-radius: 999px; background: #2563eb; border: 3px solid white; box-shadow: 0 0 0 1px #bfdbfe; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Client Timeline</h1>
+          <p class="text-sm text-slate-500">Complete audit trail for emails, documents, notes, tasks and processing actions</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button id="backBtn" class="btn btn-secondary py-2 px-4" type="button">Back</button>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6">
+        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+          <div>
+            <p class="text-sm font-bold text-blue-700 uppercase tracking-wide">Client file</p>
+            <h2 id="clientTitle" class="text-3xl font-extrabold text-slate-950 mt-1">Loading timeline...</h2>
+            <p id="clientSub" class="text-slate-500 mt-2">Checking CRM records.</p>
+          </div>
+          <div class="grid sm:grid-cols-4 gap-3 text-center">
+            <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4">
+              <div class="text-sm text-slate-500">Timeline Items</div>
+              <div id="totalItemsStat" class="text-3xl font-extrabold text-blue-900">0</div>
+            </div>
+            <div class="rounded-2xl bg-green-50 border border-green-100 p-4">
+              <div class="text-sm text-slate-500">Emails</div>
+              <div id="emailItemsStat" class="text-3xl font-extrabold text-emerald-700">0</div>
+            </div>
+            <div class="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <div class="text-sm text-slate-500">Documents</div>
+              <div id="documentItemsStat" class="text-3xl font-extrabold text-amber-700">0</div>
+            </div>
+            <div class="rounded-2xl bg-violet-50 border border-violet-100 p-4">
+              <div class="text-sm text-slate-500">Tasks</div>
+              <div id="taskItemsStat" class="text-3xl font-extrabold text-violet-700">0</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 card p-6">
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+            <div>
+              <h3 class="text-xl font-extrabold text-blue-900">Timeline</h3>
+              <p class="text-sm text-slate-500">Newest activity appears first.</p>
+            </div>
+            <select id="typeFilter" class="input max-w-xs">
+              <option value="all">All activity</option>
+              <option value="note">Notes</option>
+              <option value="email">Emails</option>
+              <option value="document">Documents</option>
+              <option value="event">Processing events</option>
+              <option value="task">Tasks</option>
+            </select>
+          </div>
+          <div id="timelineList" class="space-y-5">
+            <div class="text-slate-500">Loading timeline...</div>
+          </div>
+        </div>
+
+        <aside class="space-y-6">
+          <section class="card p-6">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Add Timeline Note</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-bold text-blue-900 mb-2" for="noteTitle">Note Title</label>
+                <input id="noteTitle" class="input" type="text" placeholder="Example: Client update" />
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-blue-900 mb-2" for="noteBody">Note</label>
+                <textarea id="noteBody" class="input" rows="7" placeholder="Write the note here..."></textarea>
+              </div>
+              <button id="saveNoteBtn" class="btn btn-primary w-full" type="button">Save Timeline Note</button>
+              <p id="noteMessage" class="text-sm font-semibold hidden"></p>
+            </div>
+          </section>
+
+          <section class="card p-6">
+            <h3 class="text-lg font-extrabold text-blue-900 mb-4">Timeline Sources</h3>
+            <div id="sourceInfo" class="space-y-2 text-sm text-slate-600"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("source") || "";
+    const sourceId = params.get("sourceId") || params.get("id") || "";
+    const clientKey = params.get("clientKey") || (source && sourceId ? `${source}:${sourceId}` : "");
+    const caseId = params.get("caseId") || (source === "processingCases" ? sourceId : "");
+    const clientNameParam = params.get("clientName") || "";
+
+    const clientTitle = document.getElementById("clientTitle");
+    const clientSub = document.getElementById("clientSub");
+    const timelineList = document.getElementById("timelineList");
+    const typeFilter = document.getElementById("typeFilter");
+    const sourceInfo = document.getElementById("sourceInfo");
+    const totalItemsStat = document.getElementById("totalItemsStat");
+    const emailItemsStat = document.getElementById("emailItemsStat");
+    const documentItemsStat = document.getElementById("documentItemsStat");
+    const taskItemsStat = document.getElementById("taskItemsStat");
+    const noteTitle = document.getElementById("noteTitle");
+    const noteBody = document.getElementById("noteBody");
+    const saveNoteBtn = document.getElementById("saveNoteBtn");
+    const noteMessage = document.getElementById("noteMessage");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const backBtn = document.getElementById("backBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allItems = [];
+
+    function safe(value) {
+      return value === undefined || value === null ? "" : String(value).trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>'"]/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[char]));
+    }
+
+    function readDate(value) {
+      if (!value) return null;
+      if (typeof value.toDate === "function") return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateTime(value) {
+      const date = readDate(value);
+      if (!date) return "-";
+      return date.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+    }
+
+    function itemTime(item) {
+      return readDate(item.createdAt || item.sentAt || item.updatedAt || item.dueDate)?.getTime() || 0;
+    }
+
+    function badge(type) {
+      switch (type) {
+        case "email": return '<span class="badge badge-green">Email</span>';
+        case "document": return '<span class="badge badge-amber">Document</span>';
+        case "task": return '<span class="badge badge-violet">Task</span>';
+        case "event": return '<span class="badge badge-blue">Event</span>';
+        case "note": return '<span class="badge badge-slate">Note</span>';
+        default: return '<span class="badge badge-slate">Activity</span>';
+      }
+    }
+
+    function showNoteMessage(message, isError = false) {
+      noteMessage.textContent = message;
+      noteMessage.classList.remove("hidden", "text-green-700", "text-red-700");
+      noteMessage.classList.add(isError ? "text-red-700" : "text-green-700");
+    }
+
+    async function getUserProfile(user) {
+      const q = query(collection(db, "users"), where("__name__", "==", user.uid));
+      const snap = await getDocs(q);
+      return snap.docs[0]?.data() || {};
+    }
+
+    async function collectQuery(collectionName, filters, mapper) {
+      try {
+        const q = query(collection(db, collectionName), ...filters);
+        const snap = await getDocs(q);
+        return snap.docs.map((docSnap) => mapper({ id: docSnap.id, ...docSnap.data() }));
+      } catch (error) {
+        console.warn(`Could not load ${collectionName}:`, error);
+        return [];
+      }
+    }
+
+    async function loadTimeline() {
+      allItems = [];
+      const queries = [];
+
+      if (clientKey) {
+        queries.push(collectQuery("clientTimeline", [where("clientKey", "==", clientKey)], (item) => ({
+          id: item.id,
+          type: item.type || "note",
+          title: item.title || "Timeline item",
+          body: item.body || item.notes || "",
+          createdAt: item.createdAt,
+          actor: item.createdByName || item.createdByEmail || "",
+          source: item.source || "",
+          sourceId: item.sourceId || "",
+          link: item.attachmentUrl || ""
+        })));
+        queries.push(collectQuery("sentEmails", [where("clientKey", "==", clientKey)], (item) => ({
+          id: item.id,
+          type: "email",
+          title: item.subject || "Email sent",
+          body: `From: ${item.from || "-"}\nTo: ${item.to || "-"}${item.attachmentFileName ? "\nAttachment: " + item.attachmentFileName : ""}`,
+          createdAt: item.sentAt || item.createdAt,
+          actor: item.sentByName || item.sentByEmail || "",
+          source: item.source || "",
+          sourceId: item.sourceId || ""
+        })));
+      }
+
+      if (source && sourceId) {
+        queries.push(collectQuery("clientTimeline", [where("source", "==", source), where("sourceId", "==", sourceId)], (item) => ({
+          id: item.id,
+          type: item.type || "note",
+          title: item.title || "Timeline item",
+          body: item.body || item.notes || "",
+          createdAt: item.createdAt,
+          actor: item.createdByName || item.createdByEmail || "",
+          source: item.source || "",
+          sourceId: item.sourceId || "",
+          link: item.attachmentUrl || ""
+        })));
+        queries.push(collectQuery("sentEmails", [where("source", "==", source), where("sourceId", "==", sourceId)], (item) => ({
+          id: item.id,
+          type: "email",
+          title: item.subject || "Email sent",
+          body: `From: ${item.from || "-"}\nTo: ${item.to || "-"}${item.attachmentFileName ? "\nAttachment: " + item.attachmentFileName : ""}`,
+          createdAt: item.sentAt || item.createdAt,
+          actor: item.sentByName || item.sentByEmail || "",
+          source: item.source || "",
+          sourceId: item.sourceId || ""
+        })));
+      }
+
+      if (caseId) {
+        queries.push(collectQuery("processingCaseEvents", [where("caseId", "==", caseId)], (item) => ({
+          id: item.id,
+          type: "event",
+          title: item.subject || item.type || "Processing event",
+          body: [item.summary, item.notes].filter(Boolean).join("\n\n"),
+          createdAt: item.createdAt,
+          actor: item.createdBy?.name || item.createdBy?.email || "",
+          source: "processingCaseEvents",
+          sourceId: item.id,
+          link: item.attachmentUrl || ""
+        })));
+        queries.push(collectQuery("processingFiles", [where("caseId", "==", caseId)], (item) => ({
+          id: item.id,
+          type: "document",
+          title: item.fileName || "Document uploaded",
+          body: [item.documentType, item.notes].filter(Boolean).join("\n"),
+          createdAt: item.createdAt,
+          actor: item.uploadedBy?.name || item.uploadedBy?.email || "",
+          source: "processingFiles",
+          sourceId: item.id,
+          link: item.fileURL || ""
+        })));
+        queries.push(collectQuery("processingCaseTasks", [where("caseId", "==", caseId)], (item) => ({
+          id: item.id,
+          type: "task",
+          title: item.title || "Task",
+          body: `Priority: ${item.priority || "normal"}\nCompleted: ${item.completed ? "Yes" : "No"}`,
+          createdAt: item.createdAt || item.dueDate,
+          actor: item.createdBy?.name || item.createdBy?.email || "",
+          source: "processingCaseTasks",
+          sourceId: item.id
+        })));
+      }
+
+      const results = await Promise.all(queries);
+      const seen = new Set();
+      allItems = results.flat().filter((item) => {
+        const key = `${item.type}:${item.source}:${item.sourceId}:${item.id}:${item.title}:${itemTime(item)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).sort((a, b) => itemTime(b) - itemTime(a));
+
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      const type = typeFilter.value;
+      const items = type === "all" ? allItems : allItems.filter((item) => item.type === type);
+
+      totalItemsStat.textContent = allItems.length;
+      emailItemsStat.textContent = allItems.filter((item) => item.type === "email").length;
+      documentItemsStat.textContent = allItems.filter((item) => item.type === "document").length;
+      taskItemsStat.textContent = allItems.filter((item) => item.type === "task").length;
+
+      clientTitle.textContent = clientNameParam || clientKey || sourceId || "Client Timeline";
+      clientSub.textContent = [clientKey ? `Client key: ${clientKey}` : "", source && sourceId ? `Source: ${source} / ${sourceId}` : "", caseId ? `Processing case: ${caseId}` : ""].filter(Boolean).join(" | ") || "Timeline view";
+      sourceInfo.innerHTML = `
+        <div><strong>Client key:</strong> ${escapeHtml(clientKey || "-")}</div>
+        <div><strong>Source:</strong> ${escapeHtml(source || "-")}</div>
+        <div><strong>Source ID:</strong> ${escapeHtml(sourceId || "-")}</div>
+        <div><strong>Processing case:</strong> ${escapeHtml(caseId || "-")}</div>
+      `;
+
+      if (!items.length) {
+        timelineList.innerHTML = '<div class="rounded-2xl bg-slate-50 border border-slate-200 p-5 text-slate-500">No timeline items found for this filter yet.</div>';
+        return;
+      }
+
+      timelineList.innerHTML = items.map((item) => `
+        <article class="timeline-row">
+          <span class="timeline-dot"></span>
+          <div class="rounded-2xl border border-slate-200 bg-white p-5">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap mb-2">${badge(item.type)}<span class="text-sm text-slate-500">${escapeHtml(formatDateTime(item.createdAt))}</span></div>
+                <h4 class="text-lg font-extrabold text-slate-950">${escapeHtml(item.title)}</h4>
+                ${item.actor ? `<p class="text-sm text-slate-500 mt-1">By ${escapeHtml(item.actor)}</p>` : ""}
+              </div>
+              ${item.link ? `<a class="btn btn-secondary py-2 px-4" href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer">Open</a>` : ""}
+            </div>
+            ${item.body ? `<div class="mt-3 text-slate-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(item.body)}</div>` : ""}
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function saveTimelineNote() {
+      const title = safe(noteTitle.value) || "Timeline note";
+      const body = safe(noteBody.value);
+      if (!body) {
+        showNoteMessage("Please write a note before saving.", true);
+        return;
+      }
+
+      saveNoteBtn.disabled = true;
+      saveNoteBtn.textContent = "Saving...";
+      try {
+        await addDoc(collection(db, "clientTimeline"), {
+          clientKey,
+          source,
+          sourceId,
+          caseId,
+          type: "note",
+          title,
+          body,
+          createdAt: serverTimestamp(),
+          createdByUid: currentUser.uid,
+          createdByEmail: currentUser.email || "",
+          createdByName: currentUserData.name || currentUser.email || ""
+        });
+        noteTitle.value = "";
+        noteBody.value = "";
+        showNoteMessage("Timeline note saved.");
+        await loadTimeline();
+      } catch (error) {
+        console.error("Could not save timeline note:", error);
+        showNoteMessage(error.message || "Could not save timeline note.", true);
+      } finally {
+        saveNoteBtn.disabled = false;
+        saveNoteBtn.textContent = "Save Timeline Note";
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+      currentUser = user;
+      logoutBtn.classList.remove("hidden");
+      currentUserData = await getUserProfile(user);
+      await loadTimeline();
+    });
+
+    saveNoteBtn.addEventListener("click", saveTimelineNote);
+    typeFilter.addEventListener("change", renderTimeline);
+    refreshBtn.addEventListener("click", loadTimeline);
+    backBtn.addEventListener("click", () => {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = "/manager-dashboard.html";
+    });
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "/login.html";
+    });
+  </script>
+</body>
+</html>
