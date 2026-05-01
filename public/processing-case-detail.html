@@ -1233,6 +1233,45 @@
       processingEmailMessage.classList.add(isError ? "text-red-700" : "text-green-700");
     }
 
+    function addDaysDate(days) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + Number(days || 0));
+      return date;
+    }
+
+    function automationAssignee() {
+      return {
+        uid: caseData.assignedToUid || currentUser.uid,
+        name: caseData.assignedToName || currentUserData.name || "",
+        email: caseData.assignedToEmail || currentUser.email || ""
+      };
+    }
+
+    async function createAutoProcessingTask({ title, dueInDays = 2, priorityValue = "normal", reason = "", notes = "" }) {
+      if (!caseId || !currentUser || !title) return;
+      const assignee = automationAssignee();
+      await addDoc(collection(db, "processingCaseTasks"), {
+        caseId,
+        title,
+        dueDate: addDaysDate(dueInDays),
+        priority: priorityValue,
+        completed: false,
+        automated: true,
+        automationReason: reason,
+        notes,
+        assignedToUid: assignee.uid,
+        assignedToName: assignee.name,
+        assignedToEmail: assignee.email,
+        createdAt: serverTimestamp(),
+        createdBy: {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || ""
+        }
+      });
+    }
+
     async function uploadCaseDocument() {
       const file = caseDocumentFile.files && caseDocumentFile.files[0];
       if (!file) {
@@ -1285,6 +1324,14 @@
             name: currentUserData.name || "",
             email: currentUser.email || ""
           }
+        });
+
+        await createAutoProcessingTask({
+          title: "Review uploaded " + documentTypeLabel(caseDocumentType.value) + ": " + file.name,
+          dueInDays: 1,
+          priorityValue: caseDocumentType.value === "response_received" ? "high" : "normal",
+          reason: "document_uploaded",
+          notes: caseDocumentNotes.value.trim()
         });
 
         await updateDoc(doc(db, "processingCases", caseId), {
@@ -1379,12 +1426,20 @@
           }
         });
 
+        await createAutoProcessingTask({
+          title: "Follow up client email: " + subject,
+          dueInDays: 2,
+          priorityValue: "normal",
+          reason: "processing_email_sent",
+          notes: "Automatic follow-up created after support email was sent to " + to + "."
+        });
+
         await updateDoc(doc(db, "processingCases", caseId), {
           lastActivityAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
 
-        showProcessingEmailMessage("Email sent from support@quaerens.co.uk and logged to the client file.");
+        showProcessingEmailMessage("Email sent from support@quaerens.co.uk and logged to the client file. Follow-up task created automatically.");
         showToast("Email sent.");
         await loadCase();
       } catch (error) {

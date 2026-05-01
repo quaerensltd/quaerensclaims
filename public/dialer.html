@@ -192,6 +192,7 @@
       doc,
       getDoc,
       updateDoc,
+      addDoc,
       serverTimestamp,
       arrayUnion,
       increment
@@ -301,6 +302,41 @@
     function callbackText(lead) {
       if (!lead.callbackDate) return "-";
       return `${lead.callbackDate}${lead.callbackTime ? " " + lead.callbackTime : ""}`;
+    }
+
+    function addDaysIso(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + Number(days || 0));
+      return date.toISOString().slice(0, 10);
+    }
+
+    function leadCampaign(lead) {
+      return clean(lead.sourceCampaign || lead.campaign || lead.campaignName);
+    }
+
+    async function createAgendaFollowUp(lead, { date, time = "", nextAction = "Call back", notes = "", source = "dialer" }) {
+      if (!lead || !currentUser || !date) return;
+      await addDoc(collection(db, "agendaItems"), {
+        clientName: clientName(lead),
+        clientPhone: bestPhone(lead),
+        clientEmail: clean(lead.email),
+        claimType: clean(lead.claimType || lead.type || leadCampaign(lead) || "General"),
+        campaign: leadCampaign(lead),
+        sourceLeadId: lead.id,
+        sourceCollection: "leadAssignments",
+        nextAction,
+        nextActionDate: date,
+        nextActionTime: time,
+        notes,
+        status: "open",
+        ownerUid: currentUser.uid,
+        ownerEmail: currentUser.email || "",
+        ownerName: currentUserData?.name || currentUserData?.displayName || currentUser.email || "",
+        ownerRole: currentUserData?.role || "",
+        createdByAutomation: source,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     }
 
     function userDashboard() {
@@ -547,6 +583,16 @@
       if (outcome === "do_not_call") patch.doNotCall = true;
 
       await updateDoc(doc(db, "leadAssignments", currentLead.id), patch);
+
+      if (outcome === "no_answer" || outcome === "voicemail") {
+        await createAgendaFollowUp(currentLead, {
+          date: addDaysIso(2),
+          nextAction: outcome === "voicemail" ? "Follow up voicemail" : "Call back",
+          notes: notes || "Automatic follow-up after " + outcome.replace("_", " ") + ".",
+          source: "dialer_outcome"
+        });
+      }
+
       showToast("Call outcome saved.");
       await loadLeads();
       goNextLead();
@@ -583,7 +629,15 @@
         })
       });
 
-      showToast("Callback saved.");
+      await createAgendaFollowUp(currentLead, {
+        date: callbackDate.value,
+        time: callbackTime.value || "",
+        nextAction: "Call back",
+        notes: notes || "Callback booked from power dialer.",
+        source: "dialer_callback"
+      });
+
+      showToast("Callback saved and added to agenda.");
       await loadLeads();
       goNextLead();
     }
