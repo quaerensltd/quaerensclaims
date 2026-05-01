@@ -4,11 +4,13 @@ const admin = require("firebase-admin");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { Resend } = require("resend");
+const crypto = require("crypto");
 const cors = require("cors")({ origin: true });
 
 admin.initializeApp();
 
 const db = admin.firestore();
+const STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || "quaerensclaims.appspot.com";
 
 if (!process.env.RESEND_API_KEY) {
   console.error("Missing RESEND_API_KEY");
@@ -693,6 +695,63 @@ exports.sendProcessingClientEmail = onRequest(async (req, res) => {
     } catch (err) {
       console.error("sendProcessingClientEmail error:", err);
       res.status(500).json({ success: false, error: err.message || "Email failed." });
+    }
+  });
+});
+
+exports.uploadProcessingCaseDocument = onRequest({ maxInstances: 10, memory: "512MiB" }, async (req, res) => {
+  cors(req, res, async () => {
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+
+    try {
+      const authHeader = req.headers.authorization || "";
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!token) return res.status(401).json({ success: false, error: "Missing authentication token." });
+
+      await admin.auth().verifyIdToken(token);
+
+      const data = req.body || {};
+      const caseId = String(data.caseId || "").trim();
+      const fileName = String(data.fileName || "document.pdf").trim();
+      const contentType = String(data.contentType || "application/octet-stream").trim();
+      const fileBase64 = String(data.fileBase64 || "").trim();
+
+      if (!caseId) return res.status(400).json({ success: false, error: "Missing case ID." });
+      if (!fileBase64) return res.status(400).json({ success: false, error: "Missing file content." });
+
+      const buffer = Buffer.from(fileBase64, "base64");
+      if (!buffer.length) return res.status(400).json({ success: false, error: "The uploaded file is empty." });
+      if (buffer.length > 15 * 1024 * 1024) {
+        return res.status(413).json({ success: false, error: "File is too large. Please keep uploads under 15MB." });
+      }
+
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "-") || "document.pdf";
+      const storagePath = `processing-cases/${caseId}/${Date.now()}-${safeName}`;
+      const downloadToken = crypto.randomUUID();
+      const storageBucket = admin.storage().bucket(STORAGE_BUCKET);
+
+      await storageBucket.file(storagePath).save(buffer, {
+        resumable: false,
+        metadata: {
+          contentType,
+          metadata: {
+            firebaseStorageDownloadTokens: downloadToken
+          }
+        }
+      });
+
+      const fileURL = `https://firebasestorage.googleapis.com/v0/b/${storageBucket.name}/o/${encodeURIComponent(storagePath)}?alt=media&token=${downloadToken}`;
+
+      return res.json({
+        success: true,
+        storagePath,
+        fileURL,
+        fileSize: buffer.length
+      });
+    } catch (err) {
+      console.error("uploadProcessingCaseDocument error:", err);
+      return res.status(500).json({ success: false, error: err.message || "Could not upload document." });
     }
   });
 });
