@@ -756,6 +756,44 @@ exports.uploadProcessingCaseDocument = onRequest({ maxInstances: 10, memory: "51
   });
 });
 
+exports.deleteProcessingCaseDocument = onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+
+    try {
+      const authHeader = req.headers.authorization || "";
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!token) return res.status(401).json({ success: false, error: "Missing authentication token." });
+
+      const decoded = await admin.auth().verifyIdToken(token);
+      const userSnap = await db.collection("users").doc(decoded.uid).get();
+      const userData = userSnap.exists ? userSnap.data() : {};
+      const role = userData.role || (userData.admin === true ? "admin" : "");
+      if (!["admin", "manager", "processing"].includes(role)) {
+        return res.status(403).json({ success: false, error: "You do not have permission to delete processing documents." });
+      }
+
+      const data = req.body || {};
+      const caseId = String(data.caseId || "").trim();
+      const storagePath = String(data.storagePath || "").trim();
+
+      if (!caseId) return res.status(400).json({ success: false, error: "Missing case ID." });
+      if (!storagePath) return res.status(400).json({ success: false, error: "Missing storage path." });
+      if (!storagePath.startsWith(`processing-cases/${caseId}/`)) {
+        return res.status(400).json({ success: false, error: "Storage path does not match this processing case." });
+      }
+
+      await admin.storage().bucket(STORAGE_BUCKET).file(storagePath).delete({ ignoreNotFound: true });
+
+      return res.json({ success: true });
+    } catch (err) {
+      console.error("deleteProcessingCaseDocument error:", err);
+      return res.status(500).json({ success: false, error: err.message || "Could not delete document." });
+    }
+  });
+});
+
 exports.sendAgreementEmail = onRequest(async (req, res) => {
   cors(req, res, async () => {
     if (req.method === "OPTIONS") return res.status(204).send("");
