@@ -188,6 +188,10 @@
               <span class="label">Report Pack Status</span>
               <div class="value flex flex-wrap gap-2" id="reportPackBadges">-</div>
             </div>
+            <div>
+              <span class="label">Case Health</span>
+              <div id="caseHealthPanel" class="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">-</div>
+            </div>
           </div>
         </div>
       </section>
@@ -942,6 +946,64 @@
       }
     }
 
+    function dateAgeDays(value) {
+      if (!value) return null;
+      try {
+        const date = value.toDate ? value.toDate() : new Date(value);
+        if (isNaN(date.getTime())) return null;
+        return Math.floor((Date.now() - date.getTime()) / 86400000);
+      } catch {
+        return null;
+      }
+    }
+
+    function isPastDate(value) {
+      if (!value) return false;
+      try {
+        const date = value.toDate ? value.toDate() : new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        return date.getTime() < today.getTime();
+      } catch {
+        return false;
+      }
+    }
+
+    function caseHealthItems(item) {
+      const items = [];
+      const lastAge = dateAgeDays(item.lastActivityAt || item.updatedAt || item.createdAt);
+      if (isPastDate(item.nextActionDate)) items.push({ label: "Next action overdue", level: "red" });
+      if (String(item.priority || "").toLowerCase() === "urgent") items.push({ label: "Marked urgent", level: "red" });
+      if (!item.assignedToUid) items.push({ label: "Unassigned", level: "amber" });
+      if (item.waitingOn === "client") items.push({ label: "Waiting on client", level: "amber" });
+      if (item.waitingOn === "third_party") items.push({ label: "Waiting on third party", level: "amber" });
+      if (lastAge !== null && lastAge >= 7) items.push({ label: `No activity for ${lastAge} days`, level: "amber" });
+      if (!safeString(item.contractUrl)) items.push({ label: "No signed contract linked", level: "slate" });
+      if (!safeString(item.assessmentReportUrl) && !safeString(item.assessmentReportText || item.generatedAssessmentText)) {
+        items.push({ label: "Assessment report not linked", level: "slate" });
+      }
+      if (!items.length) items.push({ label: "On track", level: "green" });
+      return items;
+    }
+
+    function renderCaseHealthPanel() {
+      const panel = document.getElementById("caseHealthPanel");
+      if (!panel) return;
+      const items = caseHealthItems(caseData);
+      const badgeClass = {
+        red: "badge-red",
+        amber: "badge-amber",
+        slate: "badge-slate",
+        green: "badge-green"
+      };
+      panel.innerHTML = `
+        <div class="flex flex-wrap gap-2">
+          ${items.map(item => `<span class="badge ${badgeClass[item.level] || "badge-slate"}">${escapeHtml(item.label)}</span>`).join("")}
+        </div>
+      `;
+    }
+
     function renderCaseHeaderAndFields() {
       document.getElementById("detailTitle").textContent = clientName(caseData);
       document.getElementById("detailSubtitle").textContent = `Case ID: ${caseId}`;
@@ -967,6 +1029,7 @@
       document.getElementById("priorityBadge").innerHTML = priorityBadge(caseData.priority || "normal");
       document.getElementById("waitingOnBadge").innerHTML = waitingOnBadge(caseData.waitingOn || "none");
       document.getElementById("reportPackBadges").innerHTML = reportPackBadges(caseData);
+      renderCaseHealthPanel();
 
       setTextBlock(
         "assessmentSummaryBox",

@@ -133,7 +133,7 @@
           <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
         </div>
         <div class="card p-5">
-          <div class="text-sm text-slate-500">Urgent</div>
+          <div class="text-sm text-slate-500">Case Alerts</div>
           <div id="followUpStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
         </div>
         <div class="card p-5">
@@ -194,6 +194,7 @@
                   <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Health</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -217,6 +218,7 @@
                   <th class="text-left p-3">Campaign</th>
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Health</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -243,6 +245,7 @@
                   <th class="text-left p-3">Claim Type</th>
                   <th class="text-left p-3">Owner</th>
                   <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Health</th>
                   <th class="text-left p-3">Action</th>
                 </tr>
               </thead>
@@ -467,6 +470,42 @@
       return parts.join(" ");
     }
 
+    function isPastDate(value) {
+      if (!value) return false;
+      try {
+        const date = value.toDate ? value.toDate() : new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        return date.getTime() < today.getTime();
+      } catch {
+        return false;
+      }
+    }
+
+    function ageDays(value) {
+      if (!value) return null;
+      try {
+        const date = value.toDate ? value.toDate() : new Date(value);
+        if (isNaN(date.getTime())) return null;
+        return Math.floor((Date.now() - date.getTime()) / 86400000);
+      } catch {
+        return null;
+      }
+    }
+
+    function caseHealthLabel(item) {
+      const lastAge = ageDays(item.lastActivityAt || item.updatedAt || item.createdAt);
+      if (isPastDate(item.nextActionDate)) return `<span class="badge badge-red">Overdue</span>`;
+      if (String(item.priority || "").toLowerCase() === "urgent") return `<span class="badge badge-red">Urgent</span>`;
+      if (!item.assignedToUid) return `<span class="badge badge-amber">Needs owner</span>`;
+      if (item.waitingOn === "client") return `<span class="badge badge-amber">Waiting client</span>`;
+      if (item.waitingOn === "third_party") return `<span class="badge badge-amber">Waiting third party</span>`;
+      if (lastAge !== null && lastAge >= 7) return `<span class="badge badge-amber">Stale ${lastAge}d</span>`;
+      if (!String(item.contractUrl || "").trim()) return `<span class="badge badge-slate">Contract missing</span>`;
+      return `<span class="badge badge-green">On track</span>`;
+    }
+
     function getOpenLink(item) {
       return `/processing-case-detail.html?id=${item.id}`;
     }
@@ -544,7 +583,12 @@
       const awaiting = allCases.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length;
       const partPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "part_paid").length;
       const fullyPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length;
-      const urgentCases = allCases.filter(f => String(f.priority || "").toLowerCase() === "urgent").length;
+      const urgentCases = allCases.filter(f =>
+        isPastDate(f.nextActionDate) ||
+        String(f.priority || "").toLowerCase() === "urgent" ||
+        !f.assignedToUid ||
+        ageDays(f.lastActivityAt || f.updatedAt || f.createdAt) >= 7
+      ).length;
       const withLinks = allCases.filter(f => String(f.paymentLink || "").trim()).length;
       const withReportPack = allCases.filter(f => hasRichAssessmentPack(f)).length;
       const dueNow = allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0);
@@ -579,7 +623,7 @@
       if (!mine.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No cases assigned to you.</td>
+            <td colspan="6" class="p-6 text-center text-slate-500">No cases assigned to you.</td>
           </tr>
         `;
         return;
@@ -596,6 +640,7 @@
           <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
           <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
           <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">${caseHealthLabel(file)}</td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
@@ -621,7 +666,7 @@
       if (!unassigned.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="p-6 text-center text-slate-500">No unassigned cases.</td>
+            <td colspan="6" class="p-6 text-center text-slate-500">No unassigned cases.</td>
           </tr>
         `;
         return;
@@ -638,6 +683,7 @@
           <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
           <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
           <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">${caseHealthLabel(file)}</td>
           <td class="p-3">
             <button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>
           </td>
@@ -667,7 +713,7 @@
       if (!recent.length) {
         body.innerHTML = `
           <tr>
-            <td colspan="6" class="p-6 text-center text-slate-500">No processing cases found.</td>
+            <td colspan="7" class="p-6 text-center text-slate-500">No processing cases found.</td>
           </tr>
         `;
         return;
@@ -685,6 +731,7 @@
           <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
           <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
           <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">${caseHealthLabel(file)}</td>
           <td class="p-3">
             <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
           </td>
