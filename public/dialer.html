@@ -122,6 +122,9 @@
           <div><span class="font-bold text-blue-900">Email:</span> <span id="leadEmail">-</span></div>
           <div><span class="font-bold text-blue-900">Postcode:</span> <span id="leadPostcode">-</span></div>
           <div><span class="font-bold text-blue-900">Campaign:</span> <span id="leadCampaign">-</span></div>
+          <div class="md:col-span-2"><span class="font-bold text-blue-900">Address:</span> <span id="leadAddress">-</span></div>
+          <div><span class="font-bold text-blue-900">Claim Type:</span> <span id="leadClaimType">-</span></div>
+          <div><span class="font-bold text-blue-900">Owner:</span> <span id="leadOwner">-</span></div>
           <div><span class="font-bold text-blue-900">Attempts:</span> <span id="leadAttempts">0</span></div>
           <div><span class="font-bold text-blue-900">Last Call:</span> <span id="leadLastCall">-</span></div>
           <div><span class="font-bold text-blue-900">Callback:</span> <span id="leadCallback">-</span></div>
@@ -248,16 +251,48 @@
       return (value || "").toString().trim();
     }
 
+    function first(...values) {
+      return values.find(value => clean(value)) || "";
+    }
+
+    function formatAddress(lead) {
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5,
+        lead.town,
+        lead.city,
+        lead.county
+      ].map(clean).filter(Boolean).join(", ");
+    }
+
     function clientName(lead) {
-      return clean(lead.clientName || lead.name || lead.fullName || `${clean(lead.firstName)} ${clean(lead.lastName || lead.secondName)}`) || "Unnamed lead";
+      const splitName = [
+        first(lead.forename, lead.firstName, lead.firstname, lead.first_name),
+        first(lead.surname, lead.lastName, lead.lastname, lead.secondName, lead.second_name)
+      ].map(clean).filter(Boolean).join(" ");
+
+      return clean(first(
+        lead.clientName,
+        lead.customerName,
+        lead.contactName,
+        lead.leadName,
+        lead.name,
+        lead.fullName,
+        splitName,
+        lead.companyName
+      )) || "Unnamed lead";
     }
 
     function primaryPhone(lead) {
-      return clean(lead.telephone || lead.landline || lead.phone || lead.homePhone);
+      return clean(first(lead.telephone, lead.landline, lead.phone, lead.homePhone, lead.primaryPhone, lead.clientPhone, lead.phoneNumber));
     }
 
     function mobilePhone(lead) {
-      return clean(lead.mobile || lead.mobileNumber || lead.cell || lead.altPhone);
+      return clean(first(lead.mobile, lead.mobileNumber, lead.cell, lead.altPhone, lead.alternativePhone));
     }
 
     function bestPhone(lead) {
@@ -311,7 +346,15 @@
     }
 
     function leadCampaign(lead) {
-      return clean(lead.sourceCampaign || lead.campaign || lead.campaignName);
+      return clean(first(lead.sourceCampaign, lead.campaign, lead.campaignName, lead.leadCampaign, lead.product));
+    }
+
+    function leadClaimType(lead) {
+      return clean(first(lead.claimType, lead.type, lead.product, lead.category, leadCampaign(lead), "General lead"));
+    }
+
+    function leadOwner(lead) {
+      return clean(first(lead.assignedToName, lead.ownerName, lead.listerName, lead.closerName, lead.assignedToEmail, lead.ownerEmail, lead.listerEmail, lead.closerEmail));
     }
 
     async function createAgendaFollowUp(lead, { date, time = "", nextAction = "Call back", notes = "", source = "dialer" }) {
@@ -367,7 +410,7 @@
       return true;
     }
 
-    async function loadLeads() {
+    async function loadLeads(autoSelectFirst = false) {
       let snap;
       if (currentUserData.role === "staff") {
         snap = await getDocs(query(collection(db, "leadAssignments"), where("assignedToUid", "==", currentUser.uid)));
@@ -389,6 +432,7 @@
 
       populateCampaigns();
       rebuildQueue(false);
+      if (autoSelectFirst && !currentLead) selectFirstLead();
       renderStats();
     }
 
@@ -433,8 +477,13 @@
             mobilePhone(lead),
             lead.email,
             lead.postcode,
+            lead.postCode,
+            lead.zip,
+            formatAddress(lead),
             lead.claimType,
-            lead.type
+            lead.type,
+            lead.forename,
+            lead.surname
           ].some(value => clean(value).toLowerCase().includes(search));
         })
         .sort((a, b) => {
@@ -452,6 +501,18 @@
 
       renderQueue();
       renderStats();
+    }
+
+    function selectFirstLead() {
+      if (!queueLeads.length) {
+        currentLead = null;
+        queueIndex = -1;
+        renderCurrentLead();
+        return;
+      }
+      queueIndex = 0;
+      currentLead = queueLeads[0];
+      renderCurrentLead();
     }
 
     function renderStats() {
@@ -502,13 +563,16 @@
     function renderCurrentLead() {
       const lead = currentLead;
       document.getElementById("leadName").textContent = lead ? clientName(lead) : "No lead selected";
-      document.getElementById("leadMeta").textContent = lead ? `${clean(lead.claimType || lead.type) || "General lead"} - ${clean(lead.sourceCampaign || lead.campaign || lead.campaignName) || "No campaign"}` : "Start the dialer to load the first callable lead.";
+      document.getElementById("leadMeta").textContent = lead ? `${leadClaimType(lead)} - ${leadCampaign(lead) || "No campaign"}` : "Start the dialer to load the first callable lead.";
       document.getElementById("leadStatusBadge").textContent = lead ? (clean(lead.leadStatus) || "new") : "Waiting";
       document.getElementById("primaryPhone").textContent = lead ? (primaryPhone(lead) || "-") : "-";
       document.getElementById("mobilePhone").textContent = lead ? (mobilePhone(lead) || "-") : "-";
-      document.getElementById("leadEmail").textContent = lead ? (clean(lead.email) || "-") : "-";
-      document.getElementById("leadPostcode").textContent = lead ? (clean(lead.postcode) || "-") : "-";
-      document.getElementById("leadCampaign").textContent = lead ? (clean(lead.sourceCampaign || lead.campaign || lead.campaignName) || "-") : "-";
+      document.getElementById("leadEmail").textContent = lead ? (clean(first(lead.email, lead.clientEmail)) || "-") : "-";
+      document.getElementById("leadPostcode").textContent = lead ? (clean(first(lead.postcode, lead.postCode, lead.zip)) || "-") : "-";
+      document.getElementById("leadCampaign").textContent = lead ? (leadCampaign(lead) || "-") : "-";
+      document.getElementById("leadAddress").textContent = lead ? (formatAddress(lead) || "-") : "-";
+      document.getElementById("leadClaimType").textContent = lead ? (leadClaimType(lead) || "-") : "-";
+      document.getElementById("leadOwner").textContent = lead ? (leadOwner(lead) || "-") : "-";
       document.getElementById("leadAttempts").textContent = lead ? String(lead.callAttempts || 0) : "0";
       document.getElementById("leadLastCall").textContent = lead ? timestampToText(lead.lastCallAt) : "-";
       document.getElementById("leadCallback").textContent = lead ? callbackText(lead) : "-";
@@ -517,6 +581,10 @@
       callbackTime.value = lead?.callbackTime || "";
       setCallButton(document.getElementById("primaryCallBtn"), lead ? primaryPhone(lead) : "");
       setCallButton(document.getElementById("mobileCallBtn"), lead ? mobilePhone(lead) : "");
+      const clientFileBtn = document.getElementById("clientFileBtn");
+      clientFileBtn.href = lead ? `/client-file.html?source=leadAssignments&id=${encodeURIComponent(lead.id)}` : "#";
+      clientFileBtn.classList.toggle("opacity-50", !lead);
+      clientFileBtn.classList.toggle("pointer-events-none", !lead);
       renderQueue();
     }
 
@@ -644,7 +712,7 @@
 
     startBtn.addEventListener("click", () => {
       rebuildQueue(true);
-      goNextLead();
+      selectFirstLead();
     });
     nextBtn.addEventListener("click", goNextLead);
     refreshBtn.addEventListener("click", async () => {
@@ -674,7 +742,7 @@
       try {
         const allowed = await checkAccess(user);
         if (!allowed) return;
-        await loadLeads();
+        await loadLeads(true);
         hideLoader();
       } catch (error) {
         console.error(error);
