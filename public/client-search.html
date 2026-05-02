@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Client Search</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 0.85rem 1rem; }
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 800; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    #authLoader { position: fixed; inset: 0; background: rgba(248,250,252,0.92); z-index: 9999; display: flex; align-items: center; justify-content: center; text-align: center; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="authLoader"><div class="card p-8 max-w-sm"><h2 class="text-2xl font-extrabold text-blue-900">Loading client search...</h2><p class="text-slate-500 mt-2">Checking CRM access and client records.</p></div></div>
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200"><div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap"><div><h1 class="text-2xl font-extrabold text-blue-900">Quaerens Client Search</h1><p class="text-sm text-slate-500">Find client records across leads, closer files and processing cases</p></div><div class="flex items-center gap-3 flex-wrap"><a id="dashboardLink" href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a><a href="/agenda.html" class="btn btn-secondary py-2 px-4">Agenda</a><a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a><button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button><button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button></div></div></header>
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="card p-6"><div class="grid md:grid-cols-[1.5fr_0.7fr_0.7fr] gap-4 items-end"><div><label for="searchInput" class="block font-bold text-blue-900 mb-2">Search clients</label><input id="searchInput" class="input" placeholder="Name, phone, email, postcode, claim type..." autocomplete="off"></div><div><label for="sourceFilter" class="block font-bold text-blue-900 mb-2">Record type</label><select id="sourceFilter" class="input"><option value="all">All records</option><option value="leadAssignments">Leads</option><option value="closerAssignments">Closer files</option><option value="processingCases">Processing cases</option><option value="claimSubmissions">Claim submissions</option></select></div><div><button id="searchBtn" class="btn btn-primary w-full" type="button">Search</button></div></div><p class="text-sm text-slate-500 mt-4">Use at least two characters. Search checks names, email addresses, phone numbers, postcodes, campaigns and claim types.</p></section>
+      <section class="grid md:grid-cols-4 gap-4"><div class="card p-5"><p class="text-slate-500">Loaded records</p><p id="loadedCount" class="text-3xl font-extrabold text-blue-900">0</p></div><div class="card p-5"><p class="text-slate-500">Matches</p><p id="matchCount" class="text-3xl font-extrabold text-green-700">0</p></div><div class="card p-5"><p class="text-slate-500">Leads</p><p id="leadCount" class="text-3xl font-extrabold text-blue-900">0</p></div><div class="card p-5"><p class="text-slate-500">Processing cases</p><p id="processingCount" class="text-3xl font-extrabold text-purple-700">0</p></div></section>
+      <section class="card p-6"><div class="flex items-center justify-between gap-4 flex-wrap mb-5"><div><h2 class="text-2xl font-extrabold text-blue-900">Search Results</h2><p id="resultsSummary" class="text-slate-500 mt-1">Enter a search term to find clients.</p></div></div><div id="resultsList" class="space-y-4"></div></section>
+    </main>
+  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA", authDomain: "quaerensclaims.firebaseapp.com", projectId: "quaerensclaims" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const allowedRoles = ["admin", "manager", "staff", "closer", "processing"];
+    const roleDashboards = { admin: "/admin-dashboard.html", manager: "/manager-dashboard.html", staff: "/staff-dashboard.html", closer: "/closer-dashboard.html", processing: "/processing-dashboard.html" };
+    const collectionsToSearch = [
+      { key: "leadAssignments", label: "Lead", openPath: "/manager-leads-overview.html?lead=" },
+      { key: "closerAssignments", label: "Closer File", openPath: "/closer-panel.html?id=" },
+      { key: "processingCases", label: "Processing Case", openPath: "/processing-case-detail.html?id=" },
+      { key: "claimSubmissions", label: "Claim Submission", openPath: "/assessment-detail.html?id=" }
+    ];
+
+    let currentUser = null;
+    let currentUserData = null;
+    let records = [];
+    let filteredRecords = [];
+    const els = {
+      authLoader: document.getElementById("authLoader"), dashboardLink: document.getElementById("dashboardLink"), logoutBtn: document.getElementById("logoutBtn"), refreshBtn: document.getElementById("refreshBtn"), searchInput: document.getElementById("searchInput"), sourceFilter: document.getElementById("sourceFilter"), searchBtn: document.getElementById("searchBtn"), loadedCount: document.getElementById("loadedCount"), matchCount: document.getElementById("matchCount"), leadCount: document.getElementById("leadCount"), processingCount: document.getElementById("processingCount"), resultsSummary: document.getElementById("resultsSummary"), resultsList: document.getElementById("resultsList")
+    };
+
+    function roleOf(userData) { return userData?.admin === true ? "admin" : (userData?.role || ""); }
+    function hideLoader() { els.authLoader.style.display = "none"; }
+    function first(...values) { for (const value of values) { if (value === 0) return "0"; if (value !== undefined && value !== null && String(value).trim() !== "") return String(value).trim(); } return ""; }
+    function valueAt(obj, path) { return path.split(".").reduce((acc, part) => acc && acc[part] !== undefined ? acc[part] : "", obj); }
+    function pick(obj, paths) { return first(...paths.map((fieldPath) => valueAt(obj, fieldPath))); }
+    function formatDate(value) { if (!value) return ""; if (typeof value?.toDate === "function") return value.toDate().toLocaleString("en-GB"); const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("en-GB"); }
+    function escapeHtml(value) { return String(value || "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[char])); }
+    function normalisePhone(value) { return String(value || "").replace(/[^0-9+]/g, ""); }
+    function sourceLabel(source) { return collectionsToSearch.find((item) => item.key === source)?.label || source; }
+    function badgeClass(status) { const lower = String(status || "").toLowerCase(); if (lower.includes("closed") || lower.includes("approved") || lower.includes("complete")) return "badge-green"; if (lower.includes("reject") || lower.includes("not interested") || lower.includes("do not")) return "badge-red"; if (lower.includes("callback") || lower.includes("review") || lower.includes("pending")) return "badge-amber"; return "badge-slate"; }
+
+    function recordFromDoc(source, id, data) {
+      const name = pick(data, ["clientName", "customerName", "name", "fullName", "leadName", "client.name", "client.fullName", "client.clientName", "contact.name", "contact.fullName"]) || [pick(data, ["firstName", "forename", "client.firstName", "client.forename"]), pick(data, ["surname", "lastName", "client.surname", "client.lastName"])].filter(Boolean).join(" ");
+      const phone = pick(data, ["phone", "telephone", "primaryPhone", "clientPhone", "client.phone", "client.telephone", "contact.phone"]);
+      const mobile = pick(data, ["mobile", "mobilePhone", "clientMobile", "client.mobile", "contact.mobile"]);
+      const email = pick(data, ["email", "clientEmail", "client.email", "contact.email"]);
+      const postcode = pick(data, ["postcode", "postCode", "client.postcode", "client.postCode", "address.postcode"]);
+      const claimType = pick(data, ["claimType", "type", "caseType", "serviceType", "client.claimType"]);
+      const campaign = pick(data, ["campaign", "leadCampaign", "sourceCampaign", "client.campaign"]);
+      const status = pick(data, ["status", "leadStatus", "caseStatus", "processingStatus"]);
+      const owner = pick(data, ["ownerName", "assignedToName", "closerName", "listerName", "submittedByName", "ownerEmail", "assignedToEmail"]);
+      const updated = first(data.updatedAt, data.lastActivityAt, data.createdAt, data.submittedAt, data.date);
+      const searchable = [name, phone, mobile, email, postcode, claimType, campaign, status, owner, normalisePhone(phone), normalisePhone(mobile)].join(" ").toLowerCase();
+      return { id, source, name: name || "Unnamed client", phone, mobile, email, postcode, claimType, campaign, status, owner, updated, searchable };
+    }
+
+    async function loadCollection(collectionConfig) {
+      try {
+        const snap = await getDocs(collection(db, collectionConfig.key));
+        return snap.docs.map((documentSnap) => recordFromDoc(collectionConfig.key, documentSnap.id, documentSnap.data()));
+      } catch (error) {
+        console.warn("Could not load " + collectionConfig.key, error);
+        return [];
+      }
+    }
+
+    async function loadRecords() {
+      els.refreshBtn.disabled = true;
+      els.refreshBtn.textContent = "Loading...";
+      const sets = await Promise.all(collectionsToSearch.map(loadCollection));
+      records = sets.flat();
+      els.loadedCount.textContent = records.length.toLocaleString("en-GB");
+      els.leadCount.textContent = records.filter((item) => item.source === "leadAssignments").length.toLocaleString("en-GB");
+      els.processingCount.textContent = records.filter((item) => item.source === "processingCases").length.toLocaleString("en-GB");
+      els.refreshBtn.disabled = false;
+      els.refreshBtn.textContent = "Refresh";
+      runSearch();
+    }
+
+    function resultLinks(record) {
+      const sourceConfig = collectionsToSearch.find((item) => item.key === record.source);
+      const clientFile = `/client-file.html?source=${encodeURIComponent(record.source)}&id=${encodeURIComponent(record.id)}&clientName=${encodeURIComponent(record.name)}`;
+      const sourceLink = sourceConfig ? `${sourceConfig.openPath}${encodeURIComponent(record.id)}` : clientFile;
+      return `<div class="flex gap-2 flex-wrap"><a href="${clientFile}" class="btn btn-primary py-2 px-4">Open Client File</a><a href="${sourceLink}" class="btn btn-secondary py-2 px-4">Open Source Record</a></div>`;
+    }
+
+    function renderResults() {
+      els.matchCount.textContent = filteredRecords.length.toLocaleString("en-GB");
+      els.resultsList.innerHTML = "";
+      if (!filteredRecords.length) {
+        els.resultsSummary.textContent = els.searchInput.value.trim().length < 2 ? "Enter at least two characters to search." : "No matching clients found.";
+        els.resultsList.innerHTML = '<div class="text-slate-500">No results to show.</div>';
+        return;
+      }
+      els.resultsSummary.textContent = `${filteredRecords.length.toLocaleString("en-GB")} matching record${filteredRecords.length === 1 ? "" : "s"} found.`;
+      filteredRecords.slice(0, 80).forEach((record) => {
+        const row = document.createElement("div");
+        row.className = "border border-slate-200 rounded-2xl p-5";
+        row.innerHTML = `<div class="flex items-start justify-between gap-4 flex-wrap"><div><div class="flex gap-2 flex-wrap mb-2"><span class="badge badge-blue">${escapeHtml(sourceLabel(record.source))}</span><span class="badge ${badgeClass(record.status)}">${escapeHtml(record.status || "Open")}</span></div><h3 class="text-xl font-extrabold text-blue-950">${escapeHtml(record.name)}</h3><p class="text-slate-500 mt-1">${escapeHtml([record.claimType, record.campaign].filter(Boolean).join(" - ") || "No claim type recorded")}</p></div>${resultLinks(record)}</div><div class="grid md:grid-cols-4 gap-4 mt-5 text-sm"><div><p class="font-bold text-blue-900">Phone</p><p>${escapeHtml(record.phone || "-")}</p></div><div><p class="font-bold text-blue-900">Mobile</p><p>${escapeHtml(record.mobile || "-")}</p></div><div><p class="font-bold text-blue-900">Email</p><p class="break-all">${escapeHtml(record.email || "-")}</p></div><div><p class="font-bold text-blue-900">Postcode</p><p>${escapeHtml(record.postcode || "-")}</p></div></div><div class="grid md:grid-cols-2 gap-4 mt-4 text-sm text-slate-500"><div><strong>Owner:</strong> ${escapeHtml(record.owner || "-")}</div><div><strong>Updated:</strong> ${escapeHtml(formatDate(record.updated) || "-")}</div></div>`;
+        els.resultsList.appendChild(row);
+      });
+      if (filteredRecords.length > 80) {
+        const note = document.createElement("div");
+        note.className = "text-sm text-slate-500";
+        note.textContent = "Showing the first 80 matches. Add more detail to narrow the search.";
+        els.resultsList.appendChild(note);
+      }
+    }
+
+    function runSearch() {
+      const term = els.searchInput.value.trim().toLowerCase();
+      const source = els.sourceFilter.value;
+      if (term.length < 2) { filteredRecords = []; renderResults(); return; }
+      const phoneTerm = normalisePhone(term);
+      filteredRecords = records.filter((record) => {
+        if (source !== "all" && record.source !== source) return false;
+        return record.searchable.includes(term) || (phoneTerm.length >= 2 && record.searchable.includes(phoneTerm));
+      }).sort((a, b) => String(b.updated || "").localeCompare(String(a.updated || "")));
+      renderResults();
+    }
+
+    function redirectToLogin() { window.location.href = "/login.html"; }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { redirectToLogin(); return; }
+      try {
+        currentUser = user;
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        currentUserData = userSnap.exists() ? userSnap.data() : {};
+        const role = roleOf(currentUserData);
+        if (!allowedRoles.includes(role)) { alert("You do not have access to client search."); redirectToLogin(); return; }
+        els.dashboardLink.href = roleDashboards[role] || "/staff-dashboard.html";
+        els.logoutBtn.classList.remove("hidden");
+        await loadRecords();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        alert(`Could not load client search: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    els.searchBtn.addEventListener("click", runSearch);
+    els.searchInput.addEventListener("input", runSearch);
+    els.sourceFilter.addEventListener("change", runSearch);
+    els.refreshBtn.addEventListener("click", loadRecords);
+    els.logoutBtn.addEventListener("click", async () => { await signOut(auth); redirectToLogin(); });
+  </script>
+</body>
+</html>
