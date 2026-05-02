@@ -279,14 +279,38 @@
       baseEvents().forEach((event) => addUniqueEvent(events, seen, event));
 
       const manual = await collectDocs(query(collection(db, "clientTimeline"), where("clientKey", "==", clientKey)));
-      manual.forEach((item) => addUniqueEvent(events, seen, {
-        key: "clientTimeline:" + item.id,
-        type: item.type || "note",
-        title: item.title || "Timeline note",
-        body: item.body || "",
-        at: item.createdAt,
-        by: item.createdByName || item.createdByEmail || ""
-      }));
+      const manualEmailSubjects = new Set();
+      manual.forEach((item) => {
+        if ((item.type || "").toLowerCase() === "email") {
+          const subject = String(item.title || "").replace(/^Email sent:\s*/i, "").trim().toLowerCase();
+          if (subject) manualEmailSubjects.add(subject);
+        }
+
+        addUniqueEvent(events, seen, {
+          key: "clientTimeline:" + item.id,
+          type: item.type || "note",
+          title: item.title || "Timeline note",
+          body: item.body || "",
+          at: item.createdAt,
+          by: item.createdByName || item.createdByEmail || ""
+        });
+      });
+
+      const sentEmailsByClientKey = await collectDocs(query(collection(db, "sentEmails"), where("clientKey", "==", clientKey)));
+      const sentEmailsBySourceId = await collectDocs(query(collection(db, "sentEmails"), where("sourceId", "==", id)));
+      [...sentEmailsByClientKey, ...sentEmailsBySourceId].forEach((item) => {
+        const subject = String(item.subject || "").trim();
+        if (subject && manualEmailSubjects.has(subject.toLowerCase())) return;
+
+        addUniqueEvent(events, seen, {
+          key: "sentEmails:" + item.id,
+          type: "email",
+          title: subject || "Email sent",
+          body: "To: " + first(item.to, "-") + "\nFrom: " + first(item.from, "-") + (item.attachmentFileName ? "\nAttachment: " + item.attachmentFileName : ""),
+          at: item.createdAt || item.sentAt,
+          by: item.sentByName || item.sentByEmail || item.createdByEmail || ""
+        });
+      });
 
       const agendaByClientKey = await collectDocs(query(collection(db, "agendaItems"), where("clientKey", "==", clientKey)));
       const agendaBySourceId = await collectDocs(query(collection(db, "agendaItems"), where("sourceId", "==", id)));
