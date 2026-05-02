@@ -6,11 +6,11 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { Resend } = require("resend");
 const crypto = require("crypto");
 const cors = require("cors")({ origin: true });
+const STORAGE_BUCKET = "quaerensclaims.firebasestorage.app";
 
-admin.initializeApp();
+admin.initializeApp({ storageBucket: STORAGE_BUCKET });
 
 const db = admin.firestore();
-const STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || "quaerensclaims.appspot.com";
 
 if (!process.env.RESEND_API_KEY) {
   console.error("Missing RESEND_API_KEY");
