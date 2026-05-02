@@ -572,7 +572,6 @@
       getDocs,
       updateDoc,
       addDoc,
-      deleteDoc,
       collection,
       query,
       where,
@@ -1419,29 +1418,6 @@
       if (!confirmed) return;
 
       await deleteDocumentViaFunction(documentItem);
-      await deleteDoc(doc(db, "processingFiles", documentId));
-
-      await addDoc(collection(db, "processingCaseEvents"), {
-        caseId,
-        type: "document_deleted",
-        direction: "internal",
-        targetParty: "internal",
-        subject: "Document deleted",
-        summary: `${documentTypeLabel(documentItem.documentType)} deleted: ${documentItem.fileName || "Document"}`,
-        notes: "Uploaded document removed from the case file.",
-        createdAt: serverTimestamp(),
-        createdBy: {
-          uid: currentUser.uid,
-          name: currentUserData.name || "",
-          email: currentUser.email || ""
-        }
-      });
-
-      await updateDoc(doc(db, "processingCases", caseId), {
-        lastActivityAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
       showToast("Document deleted.");
       await loadCase();
     }

@@ -776,15 +776,53 @@ exports.deleteProcessingCaseDocument = onRequest(async (req, res) => {
 
       const data = req.body || {};
       const caseId = String(data.caseId || "").trim();
-      const storagePath = String(data.storagePath || "").trim();
+      const documentId = String(data.documentId || "").trim();
+      let storagePath = String(data.storagePath || "").trim();
 
       if (!caseId) return res.status(400).json({ success: false, error: "Missing case ID." });
-      if (!storagePath) return res.status(400).json({ success: false, error: "Missing storage path." });
-      if (!storagePath.startsWith(`processing-cases/${caseId}/`)) {
-        return res.status(400).json({ success: false, error: "Storage path does not match this processing case." });
+      if (!documentId) return res.status(400).json({ success: false, error: "Missing document ID." });
+
+      const documentRef = db.collection("processingFiles").doc(documentId);
+      const documentSnap = await documentRef.get();
+      if (!documentSnap.exists) {
+        return res.status(404).json({ success: false, error: "Document record not found." });
       }
 
-      await admin.storage().bucket(STORAGE_BUCKET).file(storagePath).delete({ ignoreNotFound: true });
+      const documentData = documentSnap.data() || {};
+      if (String(documentData.caseId || "") !== caseId) {
+        return res.status(400).json({ success: false, error: "Document record does not belong to this processing case." });
+      }
+
+      storagePath = storagePath || String(documentData.storagePath || "").trim();
+      if (storagePath) {
+        if (!storagePath.startsWith(`processing-cases/${caseId}/`)) {
+          return res.status(400).json({ success: false, error: "Storage path does not match this processing case." });
+        }
+        await admin.storage().bucket(STORAGE_BUCKET).file(storagePath).delete({ ignoreNotFound: true });
+      }
+
+      await documentRef.delete();
+
+      await db.collection("processingCaseEvents").add({
+        caseId,
+        type: "document_deleted",
+        direction: "internal",
+        targetParty: "internal",
+        subject: "Document deleted",
+        summary: `${String(documentData.documentType || "Document")} deleted: ${String(documentData.fileName || "Document")}`,
+        notes: "Uploaded document removed from the case file.",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: {
+          uid: decoded.uid,
+          name: userData.name || "",
+          email: decoded.email || ""
+        }
+      });
+
+      await db.collection("processingCases").doc(caseId).set({
+        lastActivityAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
 
       return res.json({ success: true });
     } catch (err) {
