@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Manager Risk Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .hidden { display: none; }
+    .active-nav { background: #2563eb; color: white; }
+    .active-nav:hover { background: #1d4ed8; color: white; }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .cell-wrap { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    #toast.show { opacity: 1; pointer-events: auto; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="toast"></div>
+  <div id="authLoader" class="fixed inset-0 bg-white/85 z-50 flex items-center justify-center">
+    <div class="card p-6 text-center">
+      <div class="text-xl font-extrabold text-blue-900">Loading risk dashboard...</div>
+      <p class="text-slate-500 mt-2">Checking manager access and processing cases.</p>
+    </div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Risk Dashboard</h1>
+          <p class="text-sm text-slate-500">Processing bottlenecks, overdue actions, unassigned cases and missing case documents</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-risk-dashboard.html" class="btn btn-secondary py-2 px-4">Risk Dashboard</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Processing Cases</a>
+          <a href="/agenda.html" class="btn btn-secondary py-2 px-4">Agenda</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Processing Cases</div>
+          <div id="totalCasesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">High Risk</div>
+          <div id="highRiskStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue Actions</div>
+          <div id="overdueStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Stale 7+ Days</div>
+          <div id="staleStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Open Tasks</div>
+          <div id="openTasksStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid lg:grid-cols-5 gap-4 items-end">
+          <div>
+            <label class="text-sm font-bold text-blue-900" for="riskFilter">Risk View</label>
+            <select id="riskFilter" class="mt-2 w-full border border-blue-200 rounded-xl px-4 py-3">
+              <option value="all">All flagged cases</option>
+              <option value="high">High risk only</option>
+              <option value="overdue">Overdue actions</option>
+              <option value="unassigned">Unassigned</option>
+              <option value="stale">Stale cases</option>
+              <option value="missing_docs">Missing key documents</option>
+              <option value="waiting">Waiting on client / third party</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-bold text-blue-900" for="ownerFilter">Owner</label>
+            <select id="ownerFilter" class="mt-2 w-full border border-blue-200 rounded-xl px-4 py-3">
+              <option value="all">All owners</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-bold text-blue-900" for="claimTypeFilter">Claim Type</label>
+            <select id="claimTypeFilter" class="mt-2 w-full border border-blue-200 rounded-xl px-4 py-3">
+              <option value="all">All claim types</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-bold text-blue-900" for="searchInput">Search</label>
+            <input id="searchInput" class="mt-2 w-full border border-blue-200 rounded-xl px-4 py-3" placeholder="Client, owner, claim type..." />
+          </div>
+          <button id="clearFiltersBtn" class="btn btn-primary" type="button">Clear Filters</button>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-2">Risk Summary</h2>
+          <p class="text-sm text-slate-500 mb-4">The biggest operational issues across processing.</p>
+          <div id="riskSummaryList" class="space-y-3"></div>
+        </section>
+
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-2">Owner Workload</h2>
+          <p class="text-sm text-slate-500 mb-4">Case ownership and alert volume by person.</p>
+          <div id="ownerWorkloadList" class="space-y-3"></div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Cases Needing Attention</h2>
+            <p id="caseSummary" class="text-sm text-slate-500 mt-1">Loading cases...</p>
+          </div>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary">Open Processing Case Dashboard</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Owner</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Stage</th>
+                <th class="text-left p-3">Health</th>
+                <th class="text-left p-3">Open Tasks</th>
+                <th class="text-left p-3">Last Activity</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="riskCasesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const riskFilter = document.getElementById("riskFilter");
+    const ownerFilter = document.getElementById("ownerFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const searchInput = document.getElementById("searchInput");
+    const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let processingCases = [];
+    let processingTasks = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function clean(value) {
+      return String(value || "").trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>'"]/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[char]));
+    }
+
+    function clientName(item) {
+      const first = clean(item.client?.firstName || item.client?.forename || item.firstName);
+      const second = clean(item.client?.secondName || item.client?.surname || item.secondName);
+      return `${first} ${second}`.trim() || clean(item.clientName) || item.caseReference || "Unnamed client";
+    }
+
+    function ownerName(item) {
+      return clean(item.assignedToName || item.assignedToEmail) || "Unassigned";
+    }
+
+    function claimType(item) {
+      return clean(item.claimType || item.campaign || "General");
+    }
+
+    function toMillis(value) {
+      if (!value) return 0;
+      try {
+        if (typeof value.toDate === "function") return value.toDate().getTime();
+        const date = new Date(value);
+        return isNaN(date.getTime()) ? 0 : date.getTime();
+      } catch {
+        return 0;
+      }
+    }
+
+    function formatDate(value) {
+      const millis = toMillis(value);
+      if (!millis) return "-";
+      return new Date(millis).toLocaleDateString("en-GB");
+    }
+
+    function ageDays(value) {
+      const millis = toMillis(value);
+      if (!millis) return null;
+      return Math.floor((Date.now() - millis) / 86400000);
+    }
+
+    function isPastDate(value) {
+      const millis = toMillis(value);
+      if (!millis) return false;
+      const date = new Date(millis);
+      const today = new Date();
+      date.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return date.getTime() < today.getTime();
+    }
+
+    function openTasksForCase(caseId) {
+      return processingTasks.filter(task => task.caseId === caseId && task.completed !== true);
+    }
+
+    function stageLabel(stage) {
+      const labels = {
+        new_case: "New Case",
+        under_review: "Under Review",
+        awaiting_documents: "Awaiting Documents",
+        documents_complete: "Documents Complete",
+        complaint_preparing: "Complaint Preparing",
+        complaint_sent: "Complaint Sent",
+        awaiting_response: "Awaiting Response",
+        follow_up_sent: "Follow-Up Sent",
+        ombudsman_stage: "Ombudsman Stage",
+        settled: "Settled",
+        rejected: "Rejected",
+        closed: "Closed"
+      };
+      return labels[stage] || clean(stage) || "-";
+    }
+
+    function caseRisks(item) {
+      const risks = [];
+      const lastAge = ageDays(item.lastActivityAt || item.updatedAt || item.createdAt);
+      const openTasks = openTasksForCase(item.id);
+
+      if (isPastDate(item.nextActionDate)) risks.push({ key: "overdue", label: "Overdue action", level: "red", score: 40 });
+      if (clean(item.priority).toLowerCase() === "urgent") risks.push({ key: "urgent", label: "Urgent", level: "red", score: 35 });
+      if (!item.assignedToUid) risks.push({ key: "unassigned", label: "Unassigned", level: "amber", score: 30 });
+      if (lastAge !== null && lastAge >= 14) risks.push({ key: "stale", label: `No activity ${lastAge}d`, level: "red", score: 35 });
+      else if (lastAge !== null && lastAge >= 7) risks.push({ key: "stale", label: `No activity ${lastAge}d`, level: "amber", score: 20 });
+      if (item.waitingOn === "client") risks.push({ key: "waiting", label: "Waiting client", level: "amber", score: 15 });
+      if (item.waitingOn === "third_party") risks.push({ key: "waiting", label: "Waiting third party", level: "amber", score: 15 });
+      if (!clean(item.contractUrl)) risks.push({ key: "missing_docs", label: "No contract", level: "slate", score: 10 });
+      if (!clean(item.assessmentReportUrl || item.assessmentReportText || item.generatedAssessmentText)) {
+        risks.push({ key: "missing_docs", label: "No assessment", level: "slate", score: 10 });
+      }
+      if (openTasks.length >= 3) risks.push({ key: "tasks", label: `${openTasks.length} open tasks`, level: "violet", score: 20 });
+
+      return risks;
+    }
+
+    function riskScore(item) {
+      return caseRisks(item).reduce((sum, risk) => sum + risk.score, 0);
+    }
+
+    function riskLevel(item) {
+      const score = riskScore(item);
+      if (score >= 55) return "high";
+      if (score >= 25) return "medium";
+      return "low";
+    }
+
+    function riskBadges(item) {
+      const risks = caseRisks(item);
+      if (!risks.length) return '<span class="badge badge-green">On track</span>';
+      const badgeClass = {
+        red: "badge-red",
+        amber: "badge-amber",
+        slate: "badge-slate",
+        violet: "badge-violet"
+      };
+      return risks.map(risk => `<span class="badge ${badgeClass[risk.level] || "badge-slate"}">${escapeHtml(risk.label)}</span>`).join(" ");
+    }
+
+    function riskMatchesFilter(item) {
+      const filter = riskFilter.value;
+      const risks = caseRisks(item);
+      if (filter === "all") return risks.length > 0;
+      if (filter === "high") return riskLevel(item) === "high";
+      return risks.some(risk => risk.key === filter);
+    }
+
+    function populateFilters() {
+      const currentOwner = ownerFilter.value || "all";
+      const currentType = claimTypeFilter.value || "all";
+
+      const owners = [...new Set(processingCases.map(ownerName).filter(Boolean))].sort();
+      ownerFilter.innerHTML = '<option value="all">All owners</option>';
+      owners.forEach(owner => {
+        const option = document.createElement("option");
+        option.value = owner;
+        option.textContent = owner;
+        ownerFilter.appendChild(option);
+      });
+      if ([...ownerFilter.options].some(option => option.value === currentOwner)) ownerFilter.value = currentOwner;
+
+      const types = [...new Set(processingCases.map(claimType).filter(Boolean))].sort();
+      claimTypeFilter.innerHTML = '<option value="all">All claim types</option>';
+      types.forEach(type => {
+        const option = document.createElement("option");
+        option.value = type;
+        option.textContent = type;
+        claimTypeFilter.appendChild(option);
+      });
+      if ([...claimTypeFilter.options].some(option => option.value === currentType)) claimTypeFilter.value = currentType;
+    }
+
+    function filteredCases() {
+      const owner = ownerFilter.value;
+      const type = claimTypeFilter.value;
+      const term = clean(searchInput.value).toLowerCase();
+
+      return processingCases
+        .filter(riskMatchesFilter)
+        .filter(item => owner === "all" || ownerName(item) === owner)
+        .filter(item => type === "all" || claimType(item) === type)
+        .filter(item => {
+          if (!term) return true;
+          return [
+            clientName(item),
+            ownerName(item),
+            claimType(item),
+            item.caseReference,
+            item.client?.email,
+            item.client?.mobile,
+            item.client?.landline
+          ].join(" ").toLowerCase().includes(term);
+        })
+        .sort((a, b) => riskScore(b) - riskScore(a));
+    }
+
+    function renderStats() {
+      const highRisk = processingCases.filter(item => riskLevel(item) === "high").length;
+      const overdue = processingCases.filter(item => caseRisks(item).some(risk => risk.key === "overdue")).length;
+      const unassigned = processingCases.filter(item => !item.assignedToUid).length;
+      const stale = processingCases.filter(item => caseRisks(item).some(risk => risk.key === "stale")).length;
+      const openTasks = processingTasks.filter(task => task.completed !== true).length;
+
+      document.getElementById("totalCasesStat").textContent = String(processingCases.length);
+      document.getElementById("highRiskStat").textContent = String(highRisk);
+      document.getElementById("overdueStat").textContent = String(overdue);
+      document.getElementById("unassignedStat").textContent = String(unassigned);
+      document.getElementById("staleStat").textContent = String(stale);
+      document.getElementById("openTasksStat").textContent = String(openTasks);
+    }
+
+    function renderRiskSummary() {
+      const rows = [
+        ["High risk cases", processingCases.filter(item => riskLevel(item) === "high").length, "badge-red"],
+        ["Overdue next actions", processingCases.filter(item => caseRisks(item).some(risk => risk.key === "overdue")).length, "badge-red"],
+        ["Unassigned processing cases", processingCases.filter(item => !item.assignedToUid).length, "badge-amber"],
+        ["Cases stale for 7+ days", processingCases.filter(item => caseRisks(item).some(risk => risk.key === "stale")).length, "badge-amber"],
+        ["Missing contract or assessment", processingCases.filter(item => caseRisks(item).some(risk => risk.key === "missing_docs")).length, "badge-slate"],
+        ["Waiting on client or third party", processingCases.filter(item => caseRisks(item).some(risk => risk.key === "waiting")).length, "badge-amber"]
+      ];
+
+      document.getElementById("riskSummaryList").innerHTML = rows.map(([label, count, badge]) => `
+        <div class="flex items-center justify-between gap-4 border border-slate-100 rounded-xl p-3">
+          <span class="font-semibold text-slate-700">${label}</span>
+          <span class="badge ${badge}">${count}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderOwnerWorkload() {
+      const ownerMap = new Map();
+      processingCases.forEach(item => {
+        const owner = ownerName(item);
+        if (!ownerMap.has(owner)) ownerMap.set(owner, { total: 0, alerts: 0, high: 0 });
+        const row = ownerMap.get(owner);
+        row.total += 1;
+        if (caseRisks(item).length) row.alerts += 1;
+        if (riskLevel(item) === "high") row.high += 1;
+      });
+
+      const rows = [...ownerMap.entries()]
+        .sort((a, b) => b[1].alerts - a[1].alerts || b[1].total - a[1].total)
+        .slice(0, 8);
+
+      if (!rows.length) {
+        document.getElementById("ownerWorkloadList").innerHTML = '<div class="text-slate-500">No processing ownership data yet.</div>';
+        return;
+      }
+
+      document.getElementById("ownerWorkloadList").innerHTML = rows.map(([owner, data]) => `
+        <div class="border border-slate-100 rounded-xl p-3">
+          <div class="flex items-center justify-between gap-4">
+            <span class="font-extrabold text-blue-900">${escapeHtml(owner)}</span>
+            <span class="badge ${data.high ? "badge-red" : data.alerts ? "badge-amber" : "badge-green"}">${data.alerts} alert${data.alerts === 1 ? "" : "s"}</span>
+          </div>
+          <div class="text-sm text-slate-500 mt-1">${data.total} case${data.total === 1 ? "" : "s"} assigned · ${data.high} high risk</div>
+        </div>
+      `).join("");
+    }
+
+    function renderRiskCases() {
+      const body = document.getElementById("riskCasesBody");
+      const cases = filteredCases();
+      document.getElementById("caseSummary").textContent = `${cases.length} flagged case${cases.length === 1 ? "" : "s"} shown.`;
+      body.innerHTML = "";
+
+      if (!cases.length) {
+        body.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-500">No cases match this risk view.</td></tr>';
+        return;
+      }
+
+      cases.slice(0, 80).forEach(item => {
+        const openTasks = openTasksForCase(item.id);
+        const lastActivity = item.lastActivityAt || item.updatedAt || item.createdAt;
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">
+            <div class="font-extrabold text-blue-950">${escapeHtml(clientName(item))}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(item.client?.email || item.email || "")}</div>
+          </td>
+          <td class="p-3 cell-wrap">${escapeHtml(ownerName(item))}</td>
+          <td class="p-3 cell-wrap">${escapeHtml(claimType(item))}</td>
+          <td class="p-3 cell-wrap">${escapeHtml(stageLabel(item.caseStage))}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${riskBadges(item)}</div></td>
+          <td class="p-3 cell-wrap">${openTasks.length}</td>
+          <td class="p-3 cell-wrap">${formatDate(lastActivity)}</td>
+          <td class="p-3">
+            <a href="/processing-case-detail.html?id=${encodeURIComponent(item.id)}" class="text-blue-600 font-extrabold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderAll() {
+      populateFilters();
+      renderStats();
+      renderRiskSummary();
+      renderOwnerWorkload();
+      renderRiskCases();
+    }
+
+    async function loadDashboard() {
+      const [casesSnap, tasksSnap] = await Promise.all([
+        getDocs(collection(db, "processingCases")),
+        getDocs(collection(db, "processingCaseTasks"))
+      ]);
+      processingCases = casesSnap.docs.map(entry => ({ id: entry.id, ...entry.data() }));
+      processingTasks = tasksSnap.docs.map(entry => ({ id: entry.id, ...entry.data() }));
+      renderAll();
+    }
+
+    async function checkManagerAccess(user) {
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists()) {
+        alert("No CRM user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userSnap.data();
+      const role = currentUserData.role;
+      if (role !== "manager" && role !== "admin" && currentUserData.admin !== true) {
+        alert("You do not have permission to access the manager risk dashboard.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkManagerAccess(user);
+        if (!allowed) return;
+        await loadDashboard();
+        hideLoader();
+      } catch (error) {
+        console.error("Could not load risk dashboard:", error);
+        hideLoader();
+        alert("Could not load risk dashboard: " + (error.code || error.message || "Unknown error"));
+      }
+    });
+
+    refreshBtn.addEventListener("click", async () => {
+      await loadDashboard();
+      showToast("Risk dashboard refreshed.");
+    });
+
+    clearFiltersBtn.addEventListener("click", () => {
+      riskFilter.value = "all";
+      ownerFilter.value = "all";
+      claimTypeFilter.value = "all";
+      searchInput.value = "";
+      renderRiskCases();
+    });
+
+    riskFilter.addEventListener("change", renderRiskCases);
+    ownerFilter.addEventListener("change", renderRiskCases);
+    claimTypeFilter.addEventListener("change", renderRiskCases);
+    searchInput.addEventListener("input", renderRiskCases);
+
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "/login.html";
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add("active-nav");
+      }
+    });
+  </script>
+</body>
+</html>
