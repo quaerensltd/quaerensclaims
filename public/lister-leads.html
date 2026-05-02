@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -307,9 +307,9 @@
         <section class="card p-5">
           <h4 class="text-lg font-extrabold text-blue-900 mb-4">Priority Actions</h4>
           <div id="priorityActionsWrap" class="grid md:grid-cols-2 gap-3">
-            <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested — Fill Out Intake</button>
-            <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested — Send Intro Email</button>
-            <button id="callbackRequiredBtn" class="btn btn-secondary" type="button">Interested — Call Back</button>
+            <button id="openIntakeBtn" class="btn btn-primary" type="button">Interested â€” Fill Out Intake</button>
+            <button id="sendIntroEmailBtn" class="btn btn-secondary" type="button">Interested â€” Send Intro Email</button>
+            <button id="callbackRequiredBtn" class="btn btn-secondary" type="button">Interested â€” Call Back</button>
             <button id="markQualifiedBtn" class="btn btn-secondary" type="button">Mark Qualified</button>
             <button id="sendToManagerBtn" class="btn btn-secondary" type="button">Send to Manager</button>
             <button id="saveLeadBtn" class="btn btn-secondary" type="button">Save Lead</button>
@@ -337,6 +337,69 @@
               <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
               <input id="callbackTime" type="time" class="input" />
             </div>
+          </div>
+        </section>
+
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-2">Client Support Email</h4>
+          <p class="text-sm text-slate-600 mb-4">Sent from <strong>clientsupport@quaerens.co.uk</strong>. The Quaerens logo, footer and disclaimer are added automatically. Staff can only edit the client name and email address.</p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="staffEmailClientName">Client Name</label>
+              <input id="staffEmailClientName" type="text" class="input" placeholder="Client name" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="staffEmailTo">Client Email</label>
+              <input id="staffEmailTo" type="email" class="input" placeholder="client@example.com" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="staffEmailTemplate">Email Template</label>
+              <select id="staffEmailTemplate" class="input">
+                <option value="solar_information">Solar information email</option>
+                <option value="solar_assessment">Solar assessment report email</option>
+                <option value="general_information">General information email</option>
+                <option value="general_assessment">General assessment report email</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="staffEmailSubjectPreview">Subject</label>
+              <input id="staffEmailSubjectPreview" type="text" class="input bg-slate-50" readonly />
+            </div>
+          </div>
+
+          <label class="block text-sm font-semibold text-blue-900 mt-4 mb-2" for="staffEmailPreview">Email Preview</label>
+          <textarea id="staffEmailPreview" class="input bg-slate-50" rows="12" readonly></textarea>
+          <div class="mt-4 flex gap-3 flex-wrap">
+            <button id="sendStaffClientEmailBtn" class="btn btn-primary" type="button">Send Client Support Email</button>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-2">Appointment Text</h4>
+          <p class="text-sm text-slate-600 mb-4">Create a short appointment confirmation message the staff member can copy and send manually.</p>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentPersonName">Appointment With</label>
+              <input id="appointmentPersonName" type="text" class="input" placeholder="Staff or closer name" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentTextDate">Date</label>
+              <input id="appointmentTextDate" type="date" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="appointmentTextTime">Time</label>
+              <input id="appointmentTextTime" type="time" class="input" />
+            </div>
+          </div>
+
+          <label class="block text-sm font-semibold text-blue-900 mt-4 mb-2" for="appointmentTextPreview">Appointment Message</label>
+          <textarea id="appointmentTextPreview" class="input bg-slate-50" rows="5" readonly></textarea>
+          <div class="mt-4 flex gap-3 flex-wrap">
+            <button id="generateAppointmentTextBtn" class="btn btn-secondary" type="button">Generate Appointment Text</button>
+            <button id="copyAppointmentTextBtn" class="btn btn-primary" type="button">Copy Text</button>
           </div>
         </section>
 
@@ -501,6 +564,18 @@
     const wrongNumberBtn = document.getElementById("wrongNumberBtn");
     const notInterestedBtn = document.getElementById("notInterestedBtn");
     const saveNotesBtn = document.getElementById("saveNotesBtn");
+    const staffEmailClientName = document.getElementById("staffEmailClientName");
+    const staffEmailTo = document.getElementById("staffEmailTo");
+    const staffEmailTemplate = document.getElementById("staffEmailTemplate");
+    const staffEmailSubjectPreview = document.getElementById("staffEmailSubjectPreview");
+    const staffEmailPreview = document.getElementById("staffEmailPreview");
+    const sendStaffClientEmailBtn = document.getElementById("sendStaffClientEmailBtn");
+    const appointmentPersonName = document.getElementById("appointmentPersonName");
+    const appointmentTextDate = document.getElementById("appointmentTextDate");
+    const appointmentTextTime = document.getElementById("appointmentTextTime");
+    const appointmentTextPreview = document.getElementById("appointmentTextPreview");
+    const generateAppointmentTextBtn = document.getElementById("generateAppointmentTextBtn");
+    const copyAppointmentTextBtn = document.getElementById("copyAppointmentTextBtn");
 
     let currentUser = null;
     let currentUserData = null;
@@ -568,6 +643,201 @@
 
     function getLeadClaimType(lead) {
       return cleanValue(lead.claimType || lead.type || lead.intakeClaimType);
+    }
+
+
+    function getLeadClientName(lead) {
+      return (String(lead.title || "") + " " + String(lead.forename || "") + " " + String(lead.surname || "")).trim() || cleanValue(lead.name) || "Client";
+    }
+
+    function isSolarLead(lead) {
+      const source = (getLeadCampaign(lead) + " " + getLeadClaimType(lead) + " " + getClaimTypeLabel(getLeadClaimType(lead))).toLowerCase();
+      return source.includes("solar");
+    }
+
+    function buildStaffEmailTemplate(templateKey, clientName) {
+      const name = cleanValue(clientName) || "Client";
+      const templates = {
+        solar_information: {
+          subject: "Quaerens - solar support information",
+          body: [
+            "Dear " + name + ",",
+            "",
+            "Thank you for your time on the phone today, I appreciate it.",
+            "",
+            "As mentioned on our call today, we are contacting property owners in your area regarding the refunds now available for the purchase of renewable energy products.",
+            "",
+            "We are currently assisting homeowners who have experienced one or more of the following:",
+            "",
+            "- Your solar panels are not generating the expected energy or savings",
+            "- Your inverter or battery system has failed or caused ongoing issues",
+            "- The system was poorly installed or has wiring/electrical faults",
+            "- You have had delays or no proper support when reporting faults",
+            "- Your warranty has been refused, is no longer valid, or has not been honoured",
+            "- You purchased your system from a company that has since gone into liquidation",
+            "- You have had to pay for unexpected repairs or additional costs",
+            "- The system has not delivered the returns promised at the point of sale",
+            "- You were offered finance that may have been unsuitable, unaffordable, or not properly explained",
+            "",
+            "In many of these cases, systems do not meet the required standards of being safe, fully functional, and fit for purpose, which can mean you are entitled to repairs or financial compensation.",
+            "",
+            "Timing can be important, so to carry out a quick check:",
+            "",
+            "Do any of the above apply to your solar system?",
+            "",
+            "A simple yes/no reply is enough for us to carry out a free, no-obligation assessment to confirm where you stand and whether you may be entitled to a claim.",
+            "",
+            "If you would like to learn more about these issues first, you can view a short overview here:",
+            "https://www.quaerens.co.uk/solar-support.html"
+          ].join("\n")
+        },
+        solar_assessment: {
+          subject: "Quaerens - your personalised assessment report",
+          body: [
+            "Dear " + name + ",",
+            "",
+            "As discussed by telephone, we at Client Support were asked to send you your personalised assessment report.",
+            "",
+            "The report is intended to help explain the information reviewed so far, the potential issues identified, and the next steps available to you.",
+            "",
+            "Please take a few moments to review it. If anything is incorrect or if you would like us to clarify any part of it, please reply to this email and we will be happy to help.",
+            "",
+            "We will continue to assist you with the next stage once you are ready to proceed."
+          ].join("\n")
+        },
+        general_information: {
+          subject: "Quaerens - information about your enquiry",
+          body: [
+            "Dear " + name + ",",
+            "",
+            "Thank you for your time on the phone today.",
+            "",
+            "As discussed, we are sending you some information about the matter you raised with Quaerens and the next steps that may be available.",
+            "",
+            "Please reply to this email if you would like us to carry out a free, no-obligation assessment based on the information you have provided."
+          ].join("\n")
+        },
+        general_assessment: {
+          subject: "Quaerens - your assessment report",
+          body: [
+            "Dear " + name + ",",
+            "",
+            "As discussed by telephone, we at Client Support were asked to send you your personalised assessment report.",
+            "",
+            "The report summarises the information reviewed so far and the next steps that may be available to you.",
+            "",
+            "Please review the report and reply to this email if anything needs to be corrected or clarified."
+          ].join("\n")
+        }
+      };
+
+      return templates[templateKey] || templates.general_information;
+    }
+
+    function refreshStaffEmailPreview() {
+      if (!staffEmailPreview || !staffEmailSubjectPreview) return;
+      const template = buildStaffEmailTemplate(staffEmailTemplate.value, staffEmailClientName.value);
+      staffEmailSubjectPreview.value = template.subject;
+      staffEmailPreview.value = template.body;
+    }
+
+    function populateStaffEmailPanel(lead) {
+      if (!staffEmailClientName || !staffEmailTo || !staffEmailTemplate) return;
+      staffEmailClientName.value = getLeadClientName(lead);
+      staffEmailTo.value = getLeadEmail(lead) || "";
+      staffEmailTemplate.value = isSolarLead(lead) ? "solar_information" : "general_information";
+      refreshStaffEmailPreview();
+    }
+
+    function buildAppointmentText() {
+      const clientName = cleanValue(staffEmailClientName.value) || (selectedLead ? getLeadClientName(selectedLead) : "Client");
+      const personName = cleanValue(appointmentPersonName.value) || "Client Support";
+      const date = appointmentTextDate.value || callbackDate.value || "the agreed date";
+      const time = appointmentTextTime.value || callbackTime.value || "the agreed time";
+
+      return [
+        "Hi " + clientName + ", this is Client Support at Quaerens.",
+        "",
+        "We have booked your telephone appointment with " + personName + " for " + date + " at " + time + ".",
+        "",
+        "Please keep your phone available around that time. If you need to change the appointment, please reply to this message."
+      ].join("\n");
+    }
+
+    function populateAppointmentTextPanel(lead) {
+      if (!appointmentTextDate || !appointmentTextTime || !appointmentTextPreview) return;
+      appointmentPersonName.value = (currentUserData && currentUserData.name) || "Client Support";
+      appointmentTextDate.value = lead.callbackDate || callbackDate.value || "";
+      appointmentTextTime.value = lead.callbackTime || callbackTime.value || "";
+      appointmentTextPreview.value = buildAppointmentText();
+    }
+
+    async function sendStaffClientEmail() {
+      if (!selectedLead) return;
+
+      const to = cleanValue(staffEmailTo.value);
+      const clientName = cleanValue(staffEmailClientName.value) || getLeadClientName(selectedLead);
+      const templateKey = staffEmailTemplate.value;
+      const template = buildStaffEmailTemplate(templateKey, clientName);
+
+      if (!to) {
+        showModalMessage("Please enter the client email address.", true);
+        return;
+      }
+
+      try {
+        setButtonDisabled(sendStaffClientEmailBtn, true);
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch("https://us-central1-quaerensclaims.cloudfunctions.net/sendCloserClientEmail", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + idToken
+          },
+          body: JSON.stringify({
+            to,
+            clientName,
+            subject: template.subject,
+            text: template.body,
+            source: "leadAssignments",
+            sourceId: selectedLead.id,
+            clientKey: "leadAssignments:" + selectedLead.id,
+            emailType: "staff_client_email"
+          })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success === false) {
+          throw new Error(result.error || "Email failed.");
+        }
+
+        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+          email: to,
+          emailAddress: to,
+          lastClientEmailTemplate: templateKey,
+          lastClientEmailSubject: template.subject,
+          lastClientEmailAt: serverTimestamp(),
+          lastAction: "staff_client_email",
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: "staff_client_email",
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: "Sent " + template.subject + " to " + to + "."
+          })
+        });
+
+        selectedLead.email = to;
+        selectedLead.emailAddress = to;
+        await refreshSelectedLead();
+        showModalMessage("Client support email sent.");
+      } catch (error) {
+        console.error("Staff client email failed:", error);
+        showModalMessage(error.message || "Could not send client email.", true);
+      } finally {
+        setButtonDisabled(sendStaffClientEmailBtn, false);
+      }
     }
 
     function populateClaimTypeDropdowns() {
@@ -747,6 +1017,7 @@
         voicemail: "Voicemail",
         callback_required: "Callback Required",
         send_intro_email: "Send Intro Email",
+        staff_client_email: "Client Support Email Sent",
         interested_intake_started: "Intake Started",
         intake_submitted: "Intake Submitted",
         intake_draft_saved: "Intake Draft Saved",
@@ -817,7 +1088,10 @@
         voicemailBtn,
         wrongNumberBtn,
         notInterestedBtn,
-        saveNotesBtn
+        saveNotesBtn,
+        sendStaffClientEmailBtn,
+        generateAppointmentTextBtn,
+        copyAppointmentTextBtn
       ].forEach(button => setButtonDisabled(button, false));
 
       if (locked || converted) {
@@ -830,7 +1104,8 @@
           noAnswerBtn,
           voicemailBtn,
           wrongNumberBtn,
-          notInterestedBtn
+          notInterestedBtn,
+          sendStaffClientEmailBtn
         ].forEach(button => setButtonDisabled(button, true));
       }
 
@@ -1012,7 +1287,7 @@
 
         div.innerHTML = `
           <div class="font-semibold text-slate-800">${formatAction(item.action)}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} • ${item.at || "-"}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} â€¢ ${item.at || "-"}</div>
           ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
         `;
 
@@ -1049,6 +1324,8 @@
       notesBox.value = selectedLead.notes || "";
       campaignNameInput.value = getLeadCampaign(selectedLead) || "";
       leadClaimTypeSelect.value = normalizeClaimType(getLeadClaimType(selectedLead)) || "";
+      populateStaffEmailPanel(selectedLead);
+      populateAppointmentTextPanel(selectedLead);
       renderHistory(selectedLead.actionHistory || []);
       updateActionAvailability(selectedLead);
 
@@ -1163,6 +1440,38 @@
         return false;
       }
     }
+
+    [staffEmailClientName, staffEmailTemplate].forEach(input => {
+      input?.addEventListener("input", refreshStaffEmailPreview);
+      input?.addEventListener("change", refreshStaffEmailPreview);
+    });
+
+    [appointmentPersonName, appointmentTextDate, appointmentTextTime, staffEmailClientName].forEach(input => {
+      input?.addEventListener("input", () => {
+        if (appointmentTextPreview) appointmentTextPreview.value = buildAppointmentText();
+      });
+      input?.addEventListener("change", () => {
+        if (appointmentTextPreview) appointmentTextPreview.value = buildAppointmentText();
+      });
+    });
+
+    generateAppointmentTextBtn?.addEventListener("click", () => {
+      appointmentTextPreview.value = buildAppointmentText();
+      showModalMessage("Appointment text generated.");
+    });
+
+    copyAppointmentTextBtn?.addEventListener("click", async () => {
+      try {
+        appointmentTextPreview.value = buildAppointmentText();
+        await navigator.clipboard.writeText(appointmentTextPreview.value);
+        showModalMessage("Appointment text copied.");
+      } catch (error) {
+        console.error("Copy appointment text failed:", error);
+        showModalMessage("Could not copy appointment text.", true);
+      }
+    });
+
+    sendStaffClientEmailBtn?.addEventListener("click", sendStaffClientEmail);
 
     openIntakeBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
@@ -1469,3 +1778,5 @@
   </script>
 </body>
 </html>
+
+

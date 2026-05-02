@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const admin = require("firebase-admin");
 const { onRequest } = require("firebase-functions/v2/https");
@@ -462,7 +462,7 @@ function buildEmail(data) {
 
 const QUAERENS_EMAIL_SIGNATURE = "Best regards,\nQuaerens Ltd\n71-75 Shelton Street\nCovent Garden\nWC2H 9JQ\nLondon\n\nUnited Kingdom\n\nTelephone: 020 8050 0725\nWhatsapp: 07459775812\n\nWebpage: www.quaerens.co.uk\nEmail: admin@quaerens.co.uk";
 
-const QUAERENS_CLIENT_SUPPORT_SIGNATURE = "Best regards,\n\nQuaerens Ltd\n71-75 Shelton Street\nCovent Garden\nWC2H 9JQ\nLondon\n\nUnited Kingdom\n\nTelephone: 020 8050 0725\nWhatsapp: 07459775812\n\nWebpage: www.quaerens.co.uk\nEmail: admin@quaerens.co.uk";
+const QUAERENS_CLIENT_SUPPORT_SIGNATURE = "Best regards,\nClient Support\n\nQuaerens Ltd\n71-75 Shelton Street\nCovent Garden\nWC2H 9JQ\nLondon\n\nUnited Kingdom\n\nTelephone: 020 8050 0725\nWhatsapp: 07459775812\n\nWebpage: www.quaerens.co.uk\nEmail: admin@quaerens.co.uk";
 
 const QUAERENS_PROCESSING_SUPPORT_SIGNATURE = "Best regards,\n\nQuaerens Ltd\n71-75 Shelton Street\nCovent Garden\nWC2H 9JQ\nLondon\n\nUnited Kingdom\n\nTelephone: 020 8050 0725\nWhatsapp: 07459775812\n\nWebpage: www.quaerens.co.uk\nEmail: support@quaerens.co.uk";
 
@@ -493,7 +493,7 @@ exports.sendCloserClientEmail = onRequest(async (req, res) => {
       const userSnap = await db.collection("users").doc(decoded.uid).get();
       const userData = userSnap.exists ? userSnap.data() : {};
       const role = userData.role || (userData.admin === true ? "admin" : "");
-      if (!["admin", "manager", "closer", "processing"].includes(role)) {
+      if (!["admin", "manager", "closer", "processing", "staff"].includes(role)) {
         return res.status(403).json({ success: false, error: "CRM user is not allowed to send client emails." });
       }
 
@@ -503,6 +503,7 @@ exports.sendCloserClientEmail = onRequest(async (req, res) => {
       const subject = String(data.subject || "Quaerens - update regarding your claim").trim();
       const customText = String(data.text || "").trim();
       const attachment = data.attachment && typeof data.attachment === "object" ? data.attachment : null;
+      const emailType = String(data.emailType || "closer_client_email").trim() || "closer_client_email";
 
       if (!to) return res.status(400).json({ success: false, error: "Missing recipient email." });
       if (!customText) return res.status(400).json({ success: false, error: "Email body is empty." });
@@ -534,7 +535,7 @@ exports.sendCloserClientEmail = onRequest(async (req, res) => {
           "</div>"
         ].join(""),
         tags: [
-          { name: "type", value: "closer_client_email" }
+          { name: "type", value: emailType }
         ]
       };
 
@@ -552,7 +553,7 @@ exports.sendCloserClientEmail = onRequest(async (req, res) => {
       }
 
       const sentEmail = {
-        type: "closer_client_email",
+        type: emailType,
         source: data.source || "closerAssignments",
         sourceId: data.sourceId || "",
         clientKey: data.clientKey || "",
@@ -846,7 +847,7 @@ exports.sendAgreementEmail = onRequest(async (req, res) => {
       const userSnap = await db.collection("users").doc(decoded.uid).get();
       const userData = userSnap.exists ? userSnap.data() : {};
       const role = userData.role || (userData.admin === true ? "admin" : "");
-      if (!["admin", "manager", "closer", "processing"].includes(role)) {
+      if (!["admin", "manager", "closer", "processing", "staff"].includes(role)) {
         return res.status(403).json({ success: false, error: "CRM user is not allowed to send agreements." });
       }
 
@@ -944,3 +945,4 @@ exports.resendWebhook = onRequest(async (req, res) => {
     res.status(500).send("error");
   }
 });
+
