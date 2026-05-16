@@ -175,7 +175,53 @@
       </div>
     </div>
   </section>
-<footer style="text-align:center;font-size:.85rem;color:#6b7280;padding:2rem 1rem;max-width:900px;margin:0 auto;">
+  <section class="section-wrap py-6 quaerens-site-callback" data-callback-page="solar-panels-not-working.html">
+    <div class="info-box soft-blue fade-up">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-wide text-blue-700 mb-3">Prefer to speak first?</p>
+          <h2 class="text-3xl font-extrabold text-gray-900 mb-4">Request a call back about Solar Panels Not Working</h2>
+          <p class="text-gray-700 mb-4">If you do not want to complete the full review form yet, leave your details and our intake team can call you back.</p>
+          <p class="text-gray-700">This is useful if you are unsure which documents matter, whether the issue fits, or what the next step should be.</p>
+        </div>
+        <form class="quaerens-callback-form bg-white rounded-2xl shadow-lg border border-blue-100 p-6 space-y-4" data-callback-issue="Solar Panels Not Working" data-callback-page="solar-panels-not-working.html">
+          <input type="hidden" name="issue" value="Solar Panels Not Working">
+          <div>
+            <label class="block font-semibold text-gray-900 mb-2">Name</label>
+            <input name="name" type="text" autocomplete="name" class="w-full border border-gray-300 p-3 rounded-xl" required>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-semibold text-gray-900 mb-2">Phone</label>
+              <input name="phone" type="tel" autocomplete="tel" class="w-full border border-gray-300 p-3 rounded-xl" required>
+            </div>
+            <div>
+              <label class="block font-semibold text-gray-900 mb-2">Email optional</label>
+              <input name="email" type="email" autocomplete="email" class="w-full border border-gray-300 p-3 rounded-xl">
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-900 mb-2">Preferred time</label>
+            <select name="preferred_time" class="w-full border border-gray-300 p-3 rounded-xl">
+              <option>Any time today</option>
+              <option>Morning</option>
+              <option>Afternoon</option>
+              <option>Tomorrow</option>
+              <option>This week</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-900 mb-2">Short message optional</label>
+            <textarea name="message" rows="3" class="w-full border border-gray-300 p-3 rounded-xl" placeholder="A few words about the issue"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full transition">Request Call Back</button>
+          <p class="quaerens-callback-message hidden text-sm font-semibold mt-3"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align:center;font-size:.85rem;color:#6b7280;padding:2rem 1rem;max-width:900px;margin:0 auto;">
     © 2025 Quaerens Ltd. All rights reserved.<br />
     <a href="privacy.html">Privacy Policy</a> |
     <a href="terms.html">Terms of Use</a> |
@@ -206,5 +252,79 @@
     });
   </script>
 <script type="application/ld+json" data-seo-faq="true">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Should I keep screenshots of solar monitoring apps?","acceptedAnswer":{"@type":"Answer","text":"Yes. Monitoring data can be useful evidence when showing performance problems over time."}}],"url":"https://www.quaerens.co.uk/solar-panels-not-working.html"}</script>
+  <script type="module" data-quaerens-callback-script="true">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function setCallbackMessage(form, text, isError) {
+      const message = form.querySelector(".quaerens-callback-message");
+      if (!message) return;
+      message.textContent = text;
+      message.classList.remove("hidden", "text-green-700", "text-red-700");
+      message.classList.add(isError ? "text-red-700" : "text-green-700");
+    }
+
+    document.querySelectorAll(".quaerens-callback-form").forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = form.querySelector('button[type="submit"]');
+        const formData = new FormData(form);
+        const name = String(formData.get("name") || "").trim();
+        const phone = String(formData.get("phone") || "").trim();
+        const email = String(formData.get("email") || "").trim();
+        const issue = String(formData.get("issue") || form.dataset.callbackIssue || "General enquiry").trim();
+        const preferredTime = String(formData.get("preferred_time") || "").trim();
+        const note = String(formData.get("message") || "").trim();
+
+        if (!name || !phone) {
+          setCallbackMessage(form, "Please add your name and phone number so we can call you back.", true);
+          return;
+        }
+
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Sending...";
+        }
+
+        try {
+          await addDoc(collection(db, "internetCallbackRequests"), {
+            name,
+            phone,
+            email,
+            issue,
+            preferredTime,
+            note,
+            status: "new",
+            source: "service_page_callback",
+            sourcePage: form.dataset.callbackPage || window.location.pathname.split("/").pop() || "unknown",
+            sourceUrl: window.location.href,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            userAgent: navigator.userAgent
+          });
+          form.reset();
+          setCallbackMessage(form, "Thank you. Your call back request has been sent to our intake team.", false);
+        } catch (error) {
+          console.error("Callback request failed:", error);
+          setCallbackMessage(form, "Sorry, we could not send this request. Please try again or call us.", true);
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = "Request Call Back";
+          }
+        }
+      });
+    });
+  </script>
+
 </body>
 </html>
