@@ -198,6 +198,16 @@
           </div>
         </div>
       </section>
+      <section id="internetGeneratedSection" class="card p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Internet Generated</h2>
+            <p id="internetGeneratedSummary" class="text-sm text-slate-500 mt-1">Website callback requests waiting to be sent to a lister.</p>
+          </div>
+          <button id="refreshInternetGeneratedBtn" type="button" class="btn btn-secondary py-2 px-4">Refresh Internet Leads</button>
+        </div>
+        <div id="internetGeneratedBody" class="grid gap-4"></div>
+      </section>
 
       <section class="card p-6">
         <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
@@ -351,6 +361,7 @@
       getDoc,
       getDocs,
       updateDoc,
+      addDoc,
       collection,
       query,
       serverTimestamp,
@@ -451,6 +462,9 @@
     const campaignFilter = document.getElementById("campaignFilter");
     const searchInput = document.getElementById("searchInput");
     const submittedByFilter = document.getElementById("submittedByFilter");
+    const internetGeneratedBody = document.getElementById("internetGeneratedBody");
+    const internetGeneratedSummary = document.getElementById("internetGeneratedSummary");
+    const refreshInternetGeneratedBtn = document.getElementById("refreshInternetGeneratedBtn");
     const refreshBtn = document.getElementById("refreshBtn");
 
     const submissionsBody = document.getElementById("submissionsBody");
@@ -480,6 +494,8 @@
     let allSubmissions = [];
     let selectedSubmission = null;
     let selectedLinkedLead = null;
+    let internetRequests = [];
+    let staffUsers = [];
 
     function hideLoader() {
       authLoader.style.display = "none";
@@ -590,7 +606,159 @@
       return true;
     }
 
-    async function loadSubmissions() {
+    ﻿function splitName(fullName) {
+      const parts = cleanValue(fullName).split(/\s+/).filter(Boolean);
+      return {
+        forename: parts.shift() || "",
+        surname: parts.join(" ") || ""
+      };
+    }
+
+    function getStaffLabel(staff) {
+      return staff.name || staff.displayName || staff.email || staff.id || "Lister";
+    }
+
+    async function loadStaffUsers() {
+      const snap = await getDocs(collection(db, "users"));
+      staffUsers = snap.docs
+        .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+        .filter(user => cleanValue(user.role).toLowerCase() === "staff")
+        .sort((a, b) => getStaffLabel(a).localeCompare(getStaffLabel(b)));
+    }
+
+    function renderInternetRequests() {
+      if (!internetGeneratedBody || !internetGeneratedSummary) return;
+      const pending = internetRequests.filter(item => item.status !== "assigned_to_lister");
+      internetGeneratedSummary.textContent = pending.length
+        ? pending.length + " website callback request" + (pending.length === 1 ? "" : "s") + " waiting to be sent to a lister."
+        : "No website callback requests waiting.";
+
+      if (!internetRequests.length) {
+        internetGeneratedBody.innerHTML = '<div class="text-slate-500">No internet generated callback requests yet.</div>';
+        return;
+      }
+
+      internetGeneratedBody.innerHTML = internetRequests.map(item => {
+        const disabled = item.status === "assigned_to_lister";
+        const badgeClass = disabled ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700";
+        const badgeText = disabled ? "Sent to lister" : "New internet lead";
+        const staffOptions = staffUsers.map(staff => '<option value="' + staff.id + '">' + escapeHtml(getStaffLabel(staff)) + '</option>').join("");
+        return `
+          <div class="border border-blue-100 rounded-2xl p-4 bg-white shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                  <span class="px-3 py-1 rounded-full text-xs font-extrabold ${badgeClass}">${badgeText}</span>
+                  <span class="text-sm text-slate-500">${formatDateTime(item.createdAt)}</span>
+                </div>
+                <h3 class="text-xl font-extrabold text-blue-900">${escapeHtml(cleanValue(item.name) || "Website callback")}</h3>
+                <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 mt-2 text-slate-700">
+                  <div><strong>Phone:</strong> ${escapeHtml(cleanValue(item.phone) || "-")}</div>
+                  <div><strong>Email:</strong> ${escapeHtml(cleanValue(item.email) || "-")}</div>
+                  <div><strong>Issue:</strong> ${escapeHtml(cleanValue(item.issue) || "-")}</div>
+                  <div><strong>Preferred time:</strong> ${escapeHtml(cleanValue(item.preferredTime) || "-")}</div>
+                </div>
+              </div>
+              <div class="min-w-[260px] grid gap-2">
+                <select data-internet-lister="${item.id}" class="border border-slate-300 rounded-xl px-3 py-3" ${disabled ? "disabled" : ""}>
+                  <option value="">Choose lister</option>
+                  ${staffOptions}
+                </select>
+                <button data-send-internet="${item.id}" type="button" class="px-5 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-60" ${disabled ? "disabled" : ""}>
+                  ${disabled ? "Already Sent" : "Push to Lister"}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadInternetRequests() {
+      if (!internetGeneratedBody) return;
+      internetGeneratedBody.innerHTML = '<div class="text-slate-500">Loading internet generated leads...</div>';
+      try {
+        if (!staffUsers.length) await loadStaffUsers();
+        const snap = await getDocs(collection(db, "internetCallbackRequests"));
+        internetRequests = snap.docs
+          .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return bTime - aTime;
+          });
+        renderInternetRequests();
+      } catch (error) {
+        console.error("Could not load internet generated leads:", error);
+        internetGeneratedBody.innerHTML = `<div class="text-red-600 font-semibold">Could not load internet generated leads: ${escapeHtml(error.code || error.message || "Unknown error")}</div>`;
+      }
+    }
+
+    async function sendInternetRequestToLister(requestId) {
+      const request = internetRequests.find(item => item.id === requestId);
+      if (!request) return;
+      const select = document.querySelector(`[data-internet-lister="${requestId}"]`);
+      const staffId = select?.value || "";
+      const staff = staffUsers.find(item => item.id === staffId);
+      if (!staff) {
+        showModalMessage("Choose a lister before pushing this internet lead.", true);
+        return;
+      }
+
+      const nameParts = splitName(request.name);
+      const leadPayload = {
+        title: "",
+        forename: nameParts.forename,
+        surname: nameParts.surname,
+        telephone: cleanValue(request.phone),
+        mobile: "",
+        email: cleanValue(request.email),
+        postcode: "",
+        campaign: "internet_generated",
+        claimType: cleanValue(request.issue) || "Internet Generated",
+        source: "internet_callback",
+        sourceRequestId: request.id,
+        sourcePage: cleanValue(request.sourcePage),
+        assignedToUid: staff.id,
+        assignedToName: getStaffLabel(staff),
+        assignedToEmail: cleanValue(staff.email),
+        leadStatus: "new",
+        lastAction: "internet_callback_assigned",
+        notes: `Website callback request. Preferred time: ${cleanValue(request.preferredTime) || "-"}`,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+        actionHistory: arrayUnion({
+          action: "internet_callback_assigned",
+          byUid: currentUser.uid,
+          byName: currentUserData?.name || "",
+          assignedToUid: staff.id,
+          assignedToName: getStaffLabel(staff),
+          at: new Date().toISOString()
+        })
+      };
+
+      try {
+        const leadRef = await addDoc(collection(db, "leadAssignments"), leadPayload);
+        await updateDoc(doc(db, "internetCallbackRequests", request.id), {
+          status: "assigned_to_lister",
+          assignedToUid: staff.id,
+          assignedToName: getStaffLabel(staff),
+          assignedToEmail: cleanValue(staff.email),
+          leadAssignmentId: leadRef.id,
+          assignedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        showModalMessage("Internet generated lead sent to the selected lister.");
+        await loadInternetRequests();
+      } catch (error) {
+        console.error("Could not send internet generated lead:", error);
+        showModalMessage(`Could not send internet generated lead: ${error.code || error.message || "Unknown error"}`, true);
+      }
+    }
+
+    
+async function loadSubmissions() {
       try {
         resultsSummary.textContent = "Loading submissions...";
         const snap = await getDocs(query(collection(db, "claimSubmissions")));
@@ -1058,7 +1226,16 @@
       }
     });
 
-    refreshBtn.addEventListener("click", loadSubmissions);
+    refreshBtn.addEventListener("click", async () => {
+      await loadSubmissions();
+      await loadInternetRequests();
+    });
+    refreshInternetGeneratedBtn?.addEventListener("click", loadInternetRequests);
+    internetGeneratedBody?.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-send-internet]");
+      if (!button) return;
+      await sendInternetRequestToLister(button.getAttribute("data-send-internet"));
+    });
     statusFilter.addEventListener("change", renderSubmissions);
     claimTypeFilter.addEventListener("change", renderSubmissions);
     campaignFilter.addEventListener("change", renderSubmissions);
@@ -1078,6 +1255,7 @@
         if (!allowed) return;
 
         await loadSubmissions();
+        await loadInternetRequests();
         hideLoader();
       } catch (error) {
         console.error(error);
