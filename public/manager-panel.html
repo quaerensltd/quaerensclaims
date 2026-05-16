@@ -362,6 +362,7 @@
       getDocs,
       updateDoc,
       addDoc,
+      deleteDoc,
       collection,
       query,
       serverTimestamp,
@@ -643,6 +644,7 @@
         const badgeClass = disabled ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700";
         const badgeText = disabled ? "Sent to lister" : "New internet lead";
         const staffOptions = staffUsers.map(staff => '<option value="' + staff.id + '">' + escapeHtml(getStaffLabel(staff)) + '</option>').join("");
+        const preferredTime = cleanValue(item.preferredTime || item.preferred_time || item.time);
         return `
           <div class="border border-blue-100 rounded-2xl p-4 bg-white shadow-sm">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -656,7 +658,7 @@
                   <div><strong>Phone:</strong> ${escapeHtml(cleanValue(item.phone) || "-")}</div>
                   <div><strong>Email:</strong> ${escapeHtml(cleanValue(item.email) || "-")}</div>
                   <div><strong>Issue:</strong> ${escapeHtml(cleanValue(item.issue) || "-")}</div>
-                  <div><strong>Preferred time:</strong> ${escapeHtml(cleanValue(item.preferredTime) || "-")}</div>
+                  <div><strong>Preferred time:</strong> ${escapeHtml(preferredTime || "-")}</div>
                 </div>
               </div>
               <div class="min-w-[260px] grid gap-2">
@@ -666,6 +668,9 @@
                 </select>
                 <button data-send-internet="${item.id}" type="button" class="px-5 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-60" ${disabled ? "disabled" : ""}>
                   ${disabled ? "Already Sent" : "Push to Lister"}
+                </button>
+                <button data-delete-internet="${item.id}" type="button" class="px-5 py-3 rounded-xl bg-red-50 text-red-700 font-bold hover:bg-red-100">
+                  Delete False Entry
                 </button>
               </div>
             </div>
@@ -691,6 +696,22 @@
       } catch (error) {
         console.error("Could not load internet generated leads:", error);
         internetGeneratedBody.innerHTML = `<div class="text-red-600 font-semibold">Could not load internet generated leads: ${escapeHtml(error.code || error.message || "Unknown error")}</div>`;
+      }
+    }
+
+    async function deleteInternetRequest(requestId) {
+      const request = internetRequests.find(item => item.id === requestId);
+      if (!request) return;
+      const label = cleanValue(request.name) || cleanValue(request.phone) || "this internet lead";
+      if (!confirm("Delete " + label + "? This removes the website callback request from the manager queue.")) return;
+
+      try {
+        await deleteDoc(doc(db, "internetCallbackRequests", requestId));
+        showModalMessage("Internet generated entry deleted.");
+        await loadInternetRequests();
+      } catch (error) {
+        console.error("Could not delete internet generated entry:", error);
+        showModalMessage(`Could not delete internet generated entry: ${error.code || error.message || "Unknown error"}`, true);
       }
     }
 
@@ -724,7 +745,7 @@
         assignedToEmail: cleanValue(staff.email),
         leadStatus: "new",
         lastAction: "internet_callback_assigned",
-        notes: `Website callback request. Preferred time: ${cleanValue(request.preferredTime) || "-"}`,
+        notes: `Website callback request. Preferred time: ${cleanValue(request.preferredTime || request.preferred_time || request.time) || "-"}`,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastUpdatedAt: serverTimestamp(),
@@ -1232,6 +1253,12 @@ async function loadSubmissions() {
     });
     refreshInternetGeneratedBtn?.addEventListener("click", loadInternetRequests);
     internetGeneratedBody?.addEventListener("click", async (event) => {
+      const deleteButton = event.target.closest("[data-delete-internet]");
+      if (deleteButton) {
+        await deleteInternetRequest(deleteButton.getAttribute("data-delete-internet"));
+        return;
+      }
+
       const button = event.target.closest("[data-send-internet]");
       if (!button) return;
       await sendInternetRequestToLister(button.getAttribute("data-send-internet"));
