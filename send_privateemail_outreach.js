@@ -9,6 +9,9 @@ const args = new Set(process.argv.slice(2));
 const dryRun = !args.has('--send');
 const only = [...args].find(arg => arg.startsWith('--only='))?.slice('--only='.length).toLowerCase();
 const limit = Number([...args].find(arg => arg.startsWith('--limit='))?.slice('--limit='.length) || '5');
+const singleTo = [...args].find(arg => arg.startsWith('--to='))?.slice('--to='.length);
+const singleSubject = [...args].find(arg => arg.startsWith('--subject='))?.slice('--subject='.length);
+const singleBodyFile = [...args].find(arg => arg.startsWith('--body-file='))?.slice('--body-file='.length);
 
 function loadEnv(file) {
   if (!fs.existsSync(file)) return {};
@@ -198,6 +201,21 @@ async function sendSmtp({ to, subject, body }) {
 }
 
 async function main() {
+  if (singleTo || singleSubject || singleBodyFile) {
+    if (!singleTo || !singleSubject || !singleBodyFile) {
+      throw new Error('Single-send mode requires --to=, --subject= and --body-file=');
+    }
+    const bodyPath = path.isAbsolute(singleBodyFile) ? singleBodyFile : path.join(root, singleBodyFile);
+    const body = fs.readFileSync(bodyPath, 'utf8');
+    if (dryRun) {
+      console.log(JSON.stringify({ dryRun, single: true, to: singleTo, subject: singleSubject, bodyFile: bodyPath }, null, 2));
+      return;
+    }
+    await sendSmtp({ to: singleTo, subject: singleSubject, body });
+    console.log(JSON.stringify({ dryRun, sent: 1, to: singleTo, subject: singleSubject }, null, 2));
+    return;
+  }
+
   const { trackerPath, headers, rows } = readTracker();
   const messages = readMessages();
   const today = new Date().toISOString().slice(0, 10);
