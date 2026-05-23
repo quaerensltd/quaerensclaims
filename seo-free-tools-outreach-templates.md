@@ -27,9 +27,9 @@ Hi [Name],
 
 Your page on [parking tickets / local parking issues / consumer help] may be a good place to reference this free Quaerens parking appeal tool:
 
-https://www.quaerens.co.uk/claim-form-parking.html
+https://www.quaerens.co.uk/parking-appeal.html
 
-It helps people organise the key details around a private parking charge, including signs, payment evidence, permit issues and appeal wording. It is designed as a practical starting point, not a guarantee of outcome.
+It helps people understand the key details around a private parking charge, including signs, payment evidence, permit issues and appeal wording, with a free letter tool linked from the page. It is designed as a practical starting point, not a guarantee of outcome.
 
 It may be useful for readers dealing with private parking charges.
 
@@ -44,9 +44,9 @@ Hi [Name],
 
 I found your page about [gym memberships / cancelling contracts / consumer letters] and wanted to share a free tool that may help your readers:
 
-https://www.quaerens.co.uk/claim-form-gym.html
+https://www.quaerens.co.uk/gym-cancellation.html
 
-It helps people prepare a clearer gym cancellation letter by organising membership details, cancellation reasons, notice dates and payment evidence.
+It helps people prepare for a clearer gym cancellation letter by organising membership details, cancellation reasons, notice dates and payment evidence, with a free letter tool linked from the page.
 
 It may be a useful addition to your consumer resources or template links.
 
@@ -61,9 +61,9 @@ Hi [Name],
 
 Your resource on [energy switching / billing complaints / household money] may be a good fit for this free Quaerens tool:
 
-https://www.quaerens.co.uk/claim-form-energy.html
+https://www.quaerens.co.uk/energy-switch.html
 
-It helps people organise supplier details, switch dates, billing issues, meter readings and complaint wording for an energy switch problem.
+It helps people organise supplier details, switch dates, billing issues, meter readings and complaint wording for an energy switch problem, with a free letter tool linked from the page.
 
 If you maintain a consumer help section, it may be worth including.
 
@@ -78,9 +78,9 @@ Hi [Name],
 
 I noticed your travel/transport advice page and thought this free Quaerens tool may be useful:
 
-https://www.quaerens.co.uk/claim-form-traindelay.html
+https://www.quaerens.co.uk/train-delay.html
 
-It helps passengers organise train delay details, journey evidence and complaint wording before contacting the operator.
+It helps passengers organise train delay details, journey evidence and complaint wording before contacting the operator, with a free letter tool linked from the page.
 
 It may be a practical resource for your readers.
 
