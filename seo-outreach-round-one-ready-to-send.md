@@ -109,3 +109,93 @@ It is a plain-English evidence organisation resource, not legal advice and not a
 Kind regards,
 [Your name]
 ```
+
+# Quaerens Outreach Round Two - Ready To Send
+
+Prepared: 2026-05-23
+Suggested follow-up date: 2026-05-30
+
+## The Energy Shop
+
+Contact: help@theenergyshop.com
+Pitch URL: https://www.quaerens.co.uk/energy-switch.html
+Subject: Free energy switch complaint letter resource
+
+```text
+Hi The Energy Shop team,
+
+I noticed your consumer energy switching guidance and wanted to share a free Quaerens resource that may help people when a switch, bill or supplier handover goes wrong:
+
+https://www.quaerens.co.uk/energy-switch.html
+
+It helps people organise supplier details, switch dates, billing issues, meter readings and complaint wording, with a free energy switch complaint letter tool linked from the page.
+
+If you maintain consumer help links or update your energy guides, it may be a practical resource to consider.
+
+Kind regards,
+[Your name]
+```
+
+## Planet Switch
+
+Contact: contactus@planetswitch.co.uk
+Pitch URL: https://www.quaerens.co.uk/energy-switch.html
+Subject: Free resource for energy switching complaints
+
+```text
+Hi Planet Switch team,
+
+I came across your switching service and wanted to share a free Quaerens resource that may help consumers after an energy switch has gone wrong:
+
+https://www.quaerens.co.uk/energy-switch.html
+
+The page helps people organise supplier details, switch dates, meter readings, billing problems and complaint wording, with a free letter tool linked from the page.
+
+If you maintain any consumer support or useful links content, it may be worth reviewing as a practical next-step resource.
+
+Kind regards,
+[Your name]
+```
+
+## UK International Consumer Centre
+
+Contact: UKICC@tsi.org.uk
+Pitch URL: https://www.quaerens.co.uk/category-international.html
+Subject: Cross-border consumer dispute guidance resource
+
+```text
+Hi UKICC team,
+
+I wanted to share a Quaerens guidance route that may be relevant to UK consumers trying to organise cross-border dispute evidence:
+
+https://www.quaerens.co.uk/category-international.html
+
+Quaerens focuses on helping people organise documents, timelines, complaint replies and practical next steps. The page is not legal advice and does not promise any specific outcome.
+
+If you maintain useful consumer resources or signposting pages, it may be worth reviewing.
+
+Kind regards,
+[Your name]
+```
+
+## aclue Legal
+
+Contact: contact@aclue.app
+Pitch URL: https://www.quaerens.co.uk/category-free-tools.html
+Subject: Free consumer complaint tools resource
+
+```text
+Hi aclue team,
+
+I noticed your consumer rights content and wanted to share a free Quaerens resource that may be useful for people preparing complaint evidence:
+
+https://www.quaerens.co.uk/category-free-tools.html
+
+It links to free tools for issues such as flight delays, parking appeals, gym cancellation, energy switching and train delay complaints. The focus is document organisation and clearer complaint wording, without promising any specific result.
+
+If you maintain resource links or consumer guidance content, it may be a useful page to review.
+
+Kind regards,
+[Your name]
+```
+
