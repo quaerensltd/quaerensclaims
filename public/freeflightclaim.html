@@ -88,6 +88,117 @@
       font-weight: 800;
     }
 
+    .flight-lookup-shell {
+      background: linear-gradient(135deg, #eff6ff 0%, #ffffff 58%, #fef9c3 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 22px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .flight-lookup-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+      gap: 0;
+    }
+
+    .flight-lookup-copy,
+    .flight-lookup-card {
+      padding: 1.5rem;
+    }
+
+    .flight-lookup-card {
+      background: #ffffff;
+      border-left: 1px solid #bfdbfe;
+    }
+
+    .flight-lookup-tabs {
+      display: inline-flex;
+      gap: .4rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: .25rem;
+      margin-bottom: 1rem;
+    }
+
+    .flight-lookup-tab {
+      border: 0;
+      border-radius: 999px;
+      padding: .62rem .9rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .flight-lookup-tab.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+    }
+
+    .flight-status-panel {
+      display: none;
+    }
+
+    .flight-status-panel.active {
+      display: block;
+    }
+
+    .flight-lookup-card label {
+      display: block;
+      font-weight: 800;
+      color: #0f172a;
+      margin: .8rem 0 .3rem;
+    }
+
+    .flight-lookup-card input,
+    .flight-lookup-card select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: .82rem .9rem;
+      outline: none;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .flight-lookup-card input:focus,
+    .flight-lookup-card select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
+    .lookup-result {
+      display: none;
+      margin-top: 1rem;
+      border-radius: 16px;
+      border: 1px solid #bfdbfe;
+      background: #f8fbff;
+      padding: 1rem;
+      color: #0f172a;
+    }
+
+    .lookup-result.show {
+      display: block;
+    }
+
+    .lookup-result strong {
+      color: #1d4ed8;
+    }
+
+    @media (max-width: 900px) {
+      .flight-lookup-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flight-lookup-card {
+        border-left: 0;
+        border-top: 1px solid #bfdbfe;
+      }
+    }
+
     .faq-item {
       border: 1px solid #dbeafe;
       border-radius: 14px;
@@ -532,6 +643,70 @@
     </div>
   </section>
 
+  <section id="flight-delay-lookup" class="section-wrap py-8">
+    <div class="flight-lookup-shell">
+      <div class="flight-lookup-grid">
+        <div class="flight-lookup-copy">
+          <p class="text-sm font-semibold uppercase tracking-wide text-blue-700 mb-3">Flight delay evidence checker</p>
+          <h2 class="text-3xl font-extrabold text-blue-950 mb-4">Check the delay before you create your letter</h2>
+          <p class="text-gray-700 mb-4">For compensation claims, the key figure is usually the arrival delay at the final destination, not only the departure delay shown at the airport.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div class="bg-white border border-blue-100 rounded-xl p-4"><strong class="text-blue-900 block mb-1">Past flights</strong>Enter scheduled and actual arrival times to estimate whether the delay reached the 3-hour threshold.</div>
+            <div class="bg-white border border-blue-100 rounded-xl p-4"><strong class="text-blue-900 block mb-1">Live flights</strong>Check the airline or airport status board and keep screenshots while we prepare a direct aviation data connection.</div>
+          </div>
+          <p class="text-sm text-gray-600 mt-4">This checker is for guidance only. Eligibility still depends on the route, airline responsibility, cancellation or rerouting facts, and evidence.</p>
+        </div>
+
+        <div class="flight-lookup-card">
+          <div class="flight-lookup-tabs" role="tablist" aria-label="Flight lookup options">
+            <button class="flight-lookup-tab active" type="button" data-flight-tab="past">Past flight</button>
+            <button class="flight-lookup-tab" type="button" data-flight-tab="live">Live status</button>
+          </div>
+
+          <div class="flight-status-panel active" id="pastFlightPanel">
+            <form id="pastFlightLookupForm">
+              <label for="lookupFlightNumber">Flight number</label>
+              <input id="lookupFlightNumber" type="text" placeholder="Example: BA123" autocomplete="off">
+
+              <label for="lookupFlightDate">Flight date</label>
+              <input id="lookupFlightDate" type="date">
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="scheduledArrival">Scheduled arrival</label>
+                  <input id="scheduledArrival" type="time" required>
+                </div>
+                <div>
+                  <label for="actualArrival">Actual arrival</label>
+                  <input id="actualArrival" type="time" required>
+                </div>
+              </div>
+
+              <label for="arrivalNextDay">Did the flight arrive after midnight?</label>
+              <select id="arrivalNextDay">
+                <option value="no">No, same calendar day</option>
+                <option value="yes">Yes, actual arrival was the next day</option>
+              </select>
+
+              <button class="w-full bg-blue-700 hover:bg-blue-800 text-white font-extrabold py-3 px-4 rounded-xl mt-5" type="submit">Estimate Arrival Delay</button>
+            </form>
+            <div class="lookup-result" id="pastFlightLookupResult"></div>
+          </div>
+
+          <div class="flight-status-panel" id="liveFlightPanel">
+            <label for="liveFlightNumber">Flight number</label>
+            <input id="liveFlightNumber" type="text" placeholder="Example: U2 8065" autocomplete="off">
+            <div class="lookup-result show">
+              <strong>Live data connection coming next.</strong><br>
+              Until an aviation data API is connected, check your airline or airport live board and save screenshots showing flight number, scheduled time, estimated time, cancellation, reroute or gate notices.
+            </div>
+            <a href="/claim-form.html" class="block w-full text-center mt-4 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-extrabold py-3 px-4 rounded-xl">Create My Free Claim Letter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Calculator -->
   <section id="calculator" class="py-16 bg-white">
     <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -696,6 +871,7 @@
       <div class="space-y-4">
         <div class="faq-item"><button class="faq-button" type="button"><span>Is the flight claim tool free?</span><span class="faq-icon">+</span></button><div class="faq-content">Yes. The free flight claim tool helps prepare airline paperwork using the flight and passenger details you provide.</div></div>
         <div class="faq-item"><button class="faq-button" type="button"><span>What evidence should I keep?</span><span class="faq-icon">+</span></button><div class="faq-content">Keep booking confirmations, boarding passes, delay messages, airline replies, receipts and any disruption notes.</div></div>
+        <div class="faq-item"><button class="faq-button" type="button"><span>Can I check a past flight delay?</span><span class="faq-icon">+</span></button><div class="faq-content">Yes. Use the flight delay evidence checker to compare scheduled and actual arrival times. It gives a guidance estimate only; airline responsibility, route and evidence still matter.</div></div>
         <div class="faq-item"><button class="faq-button" type="button"><span>Does the tool submit the claim for me?</span><span class="faq-icon">+</span></button><div class="faq-content">The tool prepares the paperwork so you can send it to the airline and keep proof of submission.</div></div>
       </div>
     </div>
@@ -809,6 +985,57 @@
       datalist.appendChild(option);
     });
 
+    document.querySelectorAll('[data-flight-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.flightTab;
+        document.querySelectorAll('[data-flight-tab]').forEach((tab) => {
+          tab.classList.toggle('active', tab.dataset.flightTab === selected);
+        });
+        document.getElementById('pastFlightPanel').classList.toggle('active', selected === 'past');
+        document.getElementById('liveFlightPanel').classList.toggle('active', selected === 'live');
+      });
+    });
+
+    const pastFlightLookupForm = document.getElementById('pastFlightLookupForm');
+    if (pastFlightLookupForm) {
+      pastFlightLookupForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const scheduled = document.getElementById('scheduledArrival').value;
+        const actual = document.getElementById('actualArrival').value;
+        const nextDay = document.getElementById('arrivalNextDay').value === 'yes';
+        const flightNumber = document.getElementById('lookupFlightNumber').value.trim();
+        const flightDate = document.getElementById('lookupFlightDate').value;
+        const result = document.getElementById('pastFlightLookupResult');
+
+        function minutes(value) {
+          const parts = value.split(':').map(Number);
+          return (parts[0] * 60) + parts[1];
+        }
+
+        let delayMinutes = minutes(actual) - minutes(scheduled);
+        if (nextDay || delayMinutes < -720) delayMinutes += 1440;
+
+        const hours = Math.floor(delayMinutes / 60);
+        const mins = delayMinutes % 60;
+        const delayText = `${hours}h ${String(mins).padStart(2, '0')}m`;
+        const likely = delayMinutes >= 180;
+        const claimUrl = new URL('/claim-form.html', window.location.origin);
+        if (flightNumber) claimUrl.searchParams.set('flight', flightNumber);
+        if (flightDate) claimUrl.searchParams.set('date', flightDate);
+        claimUrl.searchParams.set('delay', String(delayMinutes));
+
+        result.innerHTML = `
+          <strong>Estimated arrival delay: ${delayText}</strong><br>
+          ${likely
+            ? 'This appears to meet the 3-hour arrival delay threshold often used for EC261/UK261 flight compensation checks.'
+            : 'This appears below the usual 3-hour arrival delay threshold for EC261/UK261 compensation, but cancellations, rerouting or missed connections may still need checking.'}
+          <div class="mt-3 text-sm text-gray-700">Keep booking confirmations, boarding passes, airline messages, screenshots and any arrival-time evidence. This estimate does not confirm eligibility by itself.</div>
+          <a href="${claimUrl.pathname + claimUrl.search}" class="inline-block mt-4 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-extrabold py-2.5 px-4 rounded-xl">Create My Free Claim Letter</a>
+        `;
+        result.classList.add('show');
+      });
+    }
+
     document.querySelectorAll('.faq-button').forEach((button) => {
       button.addEventListener('click', () => {
         const item = button.parentElement;
@@ -837,7 +1064,7 @@
     });
   </script>
 
-<script type="application/ld+json" data-seo-faq="true">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the flight claim tool free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The free flight claim tool helps prepare airline paperwork using the flight and passenger details you provide."}},{"@type":"Question","name":"What evidence should I keep?","acceptedAnswer":{"@type":"Answer","text":"Keep booking confirmations, boarding passes, delay messages, airline replies, receipts and any disruption notes."}}],"url":"https://www.quaerens.co.uk/freeflightclaim.html"}</script>
+<script type="application/ld+json" data-seo-faq="true">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the flight claim tool free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The free flight claim tool helps prepare airline paperwork using the flight and passenger details you provide."}},{"@type":"Question","name":"What evidence should I keep?","acceptedAnswer":{"@type":"Answer","text":"Keep booking confirmations, boarding passes, delay messages, airline replies, receipts and any disruption notes."}},{"@type":"Question","name":"Can I check a past flight delay?","acceptedAnswer":{"@type":"Answer","text":"Yes. Use the flight delay evidence checker to compare scheduled and actual arrival times. It gives a guidance estimate only; airline responsibility, route and evidence still matter."}}],"url":"https://www.quaerens.co.uk/freeflightclaim.html"}</script>
   <script type="module" data-quaerens-callback-script="true">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
