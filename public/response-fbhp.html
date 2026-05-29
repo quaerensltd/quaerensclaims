@@ -258,12 +258,22 @@
     </div>
   </footer>
 
-  <script>
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
     const form = document.getElementById("fbHpForm");
     const message = document.getElementById("formMessage");
     const leadConnectorFormId = "mgEVRpqA5hm20hzT7coM";
     const leadConnectorLocationId = "qpn55huu1CHyvAvvVPNY";
-    const sprayFoamProblemFieldId = "RvmaEJHAa9TcgXPB1HRU";
 
     function setMessage(text, type) {
       message.textContent = text;
@@ -300,25 +310,26 @@
       button.textContent = "Sending...";
 
       try {
-        const payload = new FormData();
-        payload.set("formData", JSON.stringify({
-          formId: leadConnectorFormId,
-          locationId: leadConnectorLocationId,
-          full_name: name,
+        await addDoc(collection(db, "leadConnectorCallbackRequests"), {
+          name,
           phone,
           email,
-          [sprayFoamProblemFieldId]: "Holiday Park Facebook Response - " + hpIssue,
-          terms_and_conditions: "on"
-        }));
-
-        const response = await fetch("https://backend.leadconnectorhq.com/forms/submit", {
-          method: "POST",
-          body: payload
+          issue: "Holiday Park Facebook Response",
+          preferredTime: "Facebook response form",
+          note: hpIssue,
+          hpIssue,
+          smsConsent,
+          status: "new",
+          source: "facebook_paid_response",
+          sourcePage: "response-fbhp.html",
+          sourceUrl: window.location.href,
+          intendedDestination: "leadconnector",
+          leadConnectorFormId,
+          leadConnectorLocationId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          userAgent: navigator.userAgent
         });
-
-        if (!response.ok) {
-          throw new Error("LeadConnector submission failed");
-        }
 
         if (window.fbq) {
           window.fbq("track", "Lead", {
