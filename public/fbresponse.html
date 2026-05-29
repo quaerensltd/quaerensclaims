@@ -62,7 +62,7 @@
     .stat{border:1px solid #dbeafe;background:#f8fbff;border-radius:18px;padding:.9rem;text-align:center}
     .stat strong{display:block;font-size:1.45rem;color:#1d4ed8;font-weight:900;line-height:1}
     .stat span{display:block;color:#475569;font-weight:800;font-size:.88rem;margin-top:.25rem}
-    .form-card{padding:1.15rem;position:sticky;top:1rem} .ghl-embed{width:100%;height:760px;min-height:760px;border:0;border-radius:16px;background:#fff;display:block}
+    .form-card{padding:1.15rem;position:sticky;top:1rem}
     .form-card h2{font-size:1.45rem;line-height:1.15;margin:0;font-weight:900}
     .form-card .sub{margin:.35rem 0 1rem;color:#64748b;font-size:.94rem}
     label{display:block;font-size:.86rem;font-weight:900;color:#0f172a;margin:.82rem 0 .32rem}
@@ -115,6 +115,7 @@
   <header class="top">
     <div class="wrap top-inner">
       <a href="/"><img src="/images/quaerens-logo.png" alt="Quaerens" class="logo"></a>
+
     </div>
   </header>
 
@@ -146,23 +147,39 @@
         <aside class="form-card" id="form">
           <h2>I Want To Speak To Someone</h2>
           <p class="sub">Takes less than 1 minute. No obligation.</p>
-          <iframe
-            src="https://api.leadconnectorhq.com/widget/form/mgEVRpqA5hm20hzT7coM?utm_source=facebook&utm_medium=reel&utm_campaign=fbresponse&country=GB&defaultCountry=GB"
-            class="ghl-embed"
-            id="inline-mgEVRpqA5hm20hzT7coM"
-            data-layout='{"id":"INLINE"}'
-            data-trigger-type="alwaysShow"
-            data-trigger-value=""
-            data-activation-type="alwaysActivated"
-            data-activation-value=""
-            data-deactivation-type="neverDeactivate"
-            data-deactivation-value=""
-            data-form-name="Spray Foam Lead Form"
-            data-height="760"
-            data-layout-iframe-id="inline-mgEVRpqA5hm20hzT7coM"
-            data-form-id="mgEVRpqA5hm20hzT7coM"
-            title="Spray Foam Lead Form"></iframe>
-          <p class="ico-note">ICO registered. Your information is handled securely and only used to respond to your spray foam assessment.</p>
+          <form id="fbSprayFoamForm">
+            <input type="hidden" name="issue" value="Spray Foam Facebook Response">
+
+            <label for="name">Full Name *</label>
+            <input id="name" name="name" type="text" autocomplete="name" placeholder="Full Name" required>
+
+            <label for="phone">Phone *</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="Phone" required>
+
+            <label for="email">Email *</label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="Email" required>
+
+            <label for="spray_issue">What issue are you experiencing? *</label>
+            <select id="spray_issue" name="spray_issue" required>
+              <option value="">Select an issue</option>
+              <option>Mortgage or remortgage refused</option>
+              <option>Property value reduced</option>
+              <option>Moisture, damp, or timber damage</option>
+              <option>High removal costs quoted</option>
+              <option>Not informed of risks before installation</option>
+              <option>Other spray foam concern</option>
+            </select>
+
+            <label class="terms">
+              <input id="sms_consent" name="sms_consent" type="checkbox" required>
+              <span>By checking this box, I consent to receive non-marketing text messages from Quaerens Limited about my problem and assessment. Reply STOP to opt out.</span>
+            </label>
+
+            <button class="submit" type="submit">Submit</button>
+            <p id="formMessage" class="message" role="status"></p>
+            <p class="form-note">Free assessment. No obligation.</p>
+            <div class="secure"><span>&#128274;</span><span>Quaerens Ltd is currently registered with the UK Information Commissioner's Office (ICO). Application reference: C1944311 (Official Registration Number publishing shortly). Your details are sent over HTTPS and used only to understand and respond to your enquiry. Case information is treated as confidential and is not sold to third-party marketing brokers.</span></div>
+          </form>
         </aside>
       </div>
       <div class="wrap cred-foam-strip">
@@ -238,57 +255,93 @@
     </div>
   </footer>
 
-  <script>
-    (function () {
-      var redirected = false;
-      function redirectToSprayFoam() {
-        if (redirected) return;
-        redirected = true;
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims"
+    };
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const form = document.getElementById("fbSprayFoamForm");
+    const message = document.getElementById("formMessage");
+
+    function setMessage(text, type) {
+      message.textContent = text;
+      message.className = "message show " + type;
+    }
+
+    function preserveAdParams(target) {
+      const current = new URL(window.location.href);
+      const next = new URL(target, window.location.origin);
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "igshid"].forEach((key) => {
+        const value = current.searchParams.get(key);
+        if (value) next.searchParams.set(key, value);
+      });
+      next.searchParams.set("submitted", "facebook_spray_foam");
+      return next.toString();
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button[type='submit']");
+      const formData = new FormData(form);
+      const name = String(formData.get("name") || "").trim();
+      const phone = String(formData.get("phone") || "").trim();
+      const email = String(formData.get("email") || "").trim();
+      const sprayIssue = String(formData.get("spray_issue") || "").trim();
+      const smsConsent = formData.get("sms_consent") === "on";
+
+      if (!name || !phone || !email || !sprayIssue || !smsConsent) {
+        setMessage("Please complete the required fields and consent box so we can respond properly.", "err");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Sending...";
+
+      try {
+        await addDoc(collection(db, "internetCallbackRequests"), {
+          name,
+          phone,
+          email,
+          issue: "Spray Foam Facebook Response",
+          preferredTime: "Facebook response form",
+          note: sprayIssue,
+          sprayIssue,
+          smsConsent,
+          status: "new",
+          source: "facebook_paid_response",
+          sourcePage: "fbresponse.html",
+          sourceUrl: window.location.href,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          userAgent: navigator.userAgent
+        });
+
         if (window.fbq) {
           window.fbq("track", "Lead", {
             content_name: "Spray Foam Facebook Response",
             content_category: "Spray Foam"
           });
         }
-        setTimeout(function () {
-          window.location.href = "/foam-insulation.html";
-        }, 900);
-      }
 
-      window.addEventListener("message", function (event) {
-        var data = event.data;
-        if (!Array.isArray(data)) return;
-        if (data[0] === "set-sticky-contacts") {
-          redirectToSprayFoam();
-        }
-      });
-    })();
-    (function () {
-      var iframe = document.getElementById("inline-mgEVRpqA5hm20hzT7coM");
-      if (!iframe) return;
-      var current = new URL(window.location.href);
-      var target = new URL(iframe.src);
-      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "country", "defaultCountry"].forEach(function (key) {
-        var value = current.searchParams.get(key);
-        if (value) target.searchParams.set(key, value);
-      });
-      if (!target.searchParams.get("utm_source")) target.searchParams.set("utm_source", "facebook");
-      if (!target.searchParams.get("utm_medium")) target.searchParams.set("utm_medium", "reel");
-      if (!target.searchParams.get("utm_campaign")) target.searchParams.set("utm_campaign", "fbresponse");
-      target.searchParams.set("country", "GB");
-      target.searchParams.set("defaultCountry", "GB");
-      iframe.src = target.toString();
-    })();
+        setMessage("Thank you. Your details have been sent. We are taking you to the spray foam information page now.", "ok");
+        setTimeout(() => {
+          window.location.href = preserveAdParams("/foam-insulation.html");
+        }, 1200);
+      } catch (error) {
+        console.error("Facebook response submission failed:", error);
+        setMessage("Sorry, we could not send this request. Please try again or call +44 (0)20 8050 0725.", "err");
+        button.disabled = false;
+        button.textContent = "Submit";
+      }
+    });
   </script>
-  <script src="https://link.msgsndr.com/js/form_embed.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
 
