@@ -258,22 +258,13 @@
     </div>
   </footer>
 
-  <script type="module">
-    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-      authDomain: "quaerensclaims.firebaseapp.com",
-      projectId: "quaerensclaims"
-    };
-
-    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  <script>
     const form = document.getElementById("fbSolarForm");
     const message = document.getElementById("formMessage");
     const leadConnectorFormId = "mgEVRpqA5hm20hzT7coM";
     const leadConnectorLocationId = "qpn55huu1CHyvAvvVPNY";
+    const sprayFoamProblemFieldId = "RvmaEJHAa9TcgXPB1HRU";
+    const enterpriseRecaptchaSiteKey = "6LeDBFwpAAAAAJe8ux9-imrqZ2ueRsEtdiWoDDpX";
 
     function setMessage(text, type) {
       message.textContent = text;
@@ -289,6 +280,63 @@
       });
       next.searchParams.set("submitted", "facebook_solar_support");
       return next.toString();
+    }
+
+    function loadRecaptcha() {
+      if (window.grecaptchaV3 && window.grecaptchaV3.enterprise) return Promise.resolve(window.grecaptchaV3);
+      if (window.grecaptcha && window.grecaptcha.enterprise) return Promise.resolve(window.grecaptcha);
+      return new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://www.google.com/recaptcha/enterprise.js?render=" + enterpriseRecaptchaSiteKey;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          window.grecaptchaV3 = window.grecaptcha;
+          resolve(window.grecaptchaV3 || null);
+        };
+        script.onerror = () => resolve(null);
+        document.head.appendChild(script);
+      });
+    }
+
+    async function getCaptchaV3Token() {
+      const recaptcha = await loadRecaptcha();
+      if (!recaptcha || !recaptcha.enterprise) return "";
+      return new Promise((resolve) => {
+        try {
+          recaptcha.enterprise.ready(async () => {
+            resolve(await recaptcha.enterprise.execute(enterpriseRecaptchaSiteKey, { action: "LEADGEN_FORM_SUBMIT" }));
+          });
+        } catch (error) {
+          console.warn("LeadConnector captcha token could not be created:", error);
+          resolve("");
+        }
+      });
+    }
+
+    function buildLeadConnectorData(name, phone, email, solarIssue) {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      return {
+        full_name: name,
+        phone,
+        email,
+        [sprayFoamProblemFieldId]: "Solar Facebook Response - " + solarIssue,
+        terms_and_conditions: "on",
+        formId: leadConnectorFormId,
+        locationId: leadConnectorLocationId,
+        location_id: leadConnectorLocationId,
+        source: "facebook_paid_response",
+        eventData: {
+          medium: "form",
+          mediumId: leadConnectorFormId,
+          pageUrl: window.location.href,
+          referrer: document.referrer || "",
+          source: "facebook_paid_response"
+        },
+        Timezone: timezone,
+        medium: "form",
+        mediumId: leadConnectorFormId
+      };
     }
 
     form.addEventListener("submit", async (event) => {
@@ -310,26 +358,31 @@
       button.textContent = "Sending...";
 
       try {
-        await addDoc(collection(db, "leadConnectorCallbackRequests"), {
-          name,
-          phone,
-          email,
-          issue: "Solar Facebook Response",
-          preferredTime: "Facebook response form",
-          note: solarIssue,
-          solarIssue,
-          smsConsent,
-          status: "new",
-          source: "facebook_paid_response",
-          sourcePage: "response-fbsolar.html",
-          sourceUrl: window.location.href,
-          intendedDestination: "leadconnector",
-          leadConnectorFormId,
-          leadConnectorLocationId,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          userAgent: navigator.userAgent
+        const payload = new FormData();
+        payload.set("formData", JSON.stringify(buildLeadConnectorData(name, phone, email, solarIssue)));
+        payload.append("locationId", leadConnectorLocationId);
+        payload.append("formId", leadConnectorFormId);
+        payload.append("captchaV3", await getCaptchaV3Token());
+
+        const endpoint = new URL("https://backend.leadconnectorhq.com/forms/submit");
+        endpoint.searchParams.set("formId", leadConnectorFormId);
+        endpoint.searchParams.set("locationId", leadConnectorLocationId);
+
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        const response = await fetch(endpoint.toString(), {
+          method: "POST",
+          body: payload,
+          headers: {
+            channel: "APP",
+            source: "WEB_USER",
+            version: "2021-04-15",
+            timezone
+          }
         });
+
+        if (!response.ok) {
+          throw new Error("LeadConnector submission failed");
+        }
 
         if (window.fbq) {
           window.fbq("track", "Lead", {
