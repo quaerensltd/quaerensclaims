@@ -147,24 +147,46 @@
         <aside class="form-card" id="form">
           <h2>I Want To Speak To Someone</h2>
           <p class="sub">Takes less than 1 minute. No obligation.</p>
-          <iframe
-            src="https://api.leadconnectorhq.com/widget/form/L6XBSOY7G3uFLvdQizv0"
-            style="width:100%;height:702px;border:none;border-radius:12px"
-            id="inline-L6XBSOY7G3uFLvdQizv0"
-            data-layout='{"id":"INLINE"}'
-            data-trigger-type="alwaysShow"
-            data-trigger-value=""
-            data-activation-type="alwaysActivated"
-            data-activation-value=""
-            data-deactivation-type="neverDeactivate"
-            data-deactivation-value=""
-            data-form-name="Solar Support Lead Form"
-            data-height="702"
-            data-layout-iframe-id="inline-L6XBSOY7G3uFLvdQizv0"
-            data-form-id="L6XBSOY7G3uFLvdQizv0"
-            title="Solar Support Lead Form"
-          ></iframe>
-          <p class="form-note">Free assessment. No obligation.</p>
+          <form id="fbSolarForm">
+            <input type="hidden" name="issue" value="Solar Facebook Response">
+
+            <label for="name">Full Name *</label>
+            <input id="name" name="name" type="text" autocomplete="name" placeholder="Full Name" required>
+
+            <label for="phone">Phone *</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="Phone" required>
+
+            <label for="email">Email *</label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="Email" required>
+
+            <label for="solar_issue">What solar issue are you experiencing? *</label>
+            <select id="solar_issue" name="solar_issue" required>
+              <option value="">Select an issue</option>
+              <option>Faulty panels</option>
+              <option>Inverter or battery failure</option>
+              <option>Faulty wiring or electrical issues</option>
+              <option>Maintenance/service delays</option>
+              <option>Lost or invalid warranty</option>
+            </select>
+
+            <label for="solar_duration">How long has this been a problem? *</label>
+            <select id="solar_duration" name="solar_duration" required>
+              <option value="">Select a duration</option>
+              <option>Less than 6 months</option>
+              <option>6-12 months</option>
+              <option>Over 12 months</option>
+            </select>
+
+            <label class="terms">
+              <input id="sms_consent" name="sms_consent" type="checkbox" required>
+              <span>By checking this box, I consent to receive non-marketing text messages from Quaerens Limited about my problem and assessment. Reply STOP to opt out.</span>
+            </label>
+
+            <button class="submit" type="submit">Submit</button>
+            <p id="formMessage" class="message" role="status"></p>
+            <p class="form-note">Free assessment. No obligation.</p>
+            <div class="secure"><span>&#128274;</span><span>Quaerens Ltd is currently registered with the UK Information Commissioner's Office (ICO). Application reference: C1944311 (Official Registration Number publishing shortly). Your details are sent over HTTPS and used only to understand and respond to your enquiry. Case information is treated as confidential and is not sold to third-party marketing brokers.</span></div>
+          </form>
         </aside>
       </div>
       <div class="wrap cred-solar-strip">
@@ -243,7 +265,157 @@
     </div>
   </footer>
 
-  <script src="https://link.msgsndr.com/js/form_embed.js"></script>
+  <script>
+    const form = document.getElementById("fbSolarForm");
+    const message = document.getElementById("formMessage");
+    const leadConnectorFormId = "L6XBSOY7G3uFLvdQizv0";
+    const leadConnectorLocationId = "qpn55huu1CHyvAvvVPNY";
+    const solarIssueFieldId = "2IRDCnL4SXK4SRihniIN";
+    const solarDurationFieldId = "8axsorEhdTR8igwiINwn";
+    const enterpriseRecaptchaSiteKey = "6LeDBFwpAAAAAJe8ux9-imrqZ2ueRsEtdiWoDDpX";
+
+    function setMessage(text, type) {
+      message.textContent = text;
+      message.className = "message show " + type;
+    }
+
+    function preserveAdParams(target) {
+      const current = new URL(window.location.href);
+      const next = new URL(target, window.location.origin);
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "igshid"].forEach((key) => {
+        const value = current.searchParams.get(key);
+        if (value) next.searchParams.set(key, value);
+      });
+      next.searchParams.set("submitted", "facebook_solar_support");
+      return next.toString();
+    }
+
+    function loadRecaptcha() {
+      if (window.grecaptchaV3 && window.grecaptchaV3.enterprise) return Promise.resolve(window.grecaptchaV3);
+      if (window.grecaptcha && window.grecaptcha.enterprise) return Promise.resolve(window.grecaptcha);
+      return new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://www.google.com/recaptcha/enterprise.js?render=" + enterpriseRecaptchaSiteKey;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          window.grecaptchaV3 = window.grecaptcha;
+          resolve(window.grecaptchaV3 || null);
+        };
+        script.onerror = () => resolve(null);
+        document.head.appendChild(script);
+      });
+    }
+
+    async function getCaptchaV3Token() {
+      const recaptcha = await loadRecaptcha();
+      if (!recaptcha || !recaptcha.enterprise) return "";
+      return new Promise((resolve) => {
+        try {
+          recaptcha.enterprise.ready(async () => {
+            resolve(await recaptcha.enterprise.execute(enterpriseRecaptchaSiteKey, { action: "LEADGEN_FORM_SUBMIT" }));
+          });
+        } catch (error) {
+          console.warn("LeadConnector captcha token could not be created:", error);
+          resolve("");
+        }
+      });
+    }
+
+    function buildLeadConnectorData(name, phone, email, solarIssue, solarDuration) {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      return {
+        full_name: name,
+        phone,
+        email,
+        [solarIssueFieldId]: solarIssue,
+        [solarDurationFieldId]: solarDuration,
+        terms_and_conditions: "on",
+        formId: leadConnectorFormId,
+        formName: "Solar Support Lead Form",
+        form_name: "Solar Support Lead Form",
+        locationId: leadConnectorLocationId,
+        location_id: leadConnectorLocationId,
+        source: "Solar Support Lead Form",
+        eventData: {
+          medium: "form",
+          mediumId: leadConnectorFormId,
+          mediumName: "Solar Support Lead Form",
+          pageUrl: window.location.href,
+          referrer: document.referrer || "",
+          source: "Solar Support Lead Form"
+        },
+        Timezone: timezone,
+        medium: "form",
+        mediumId: leadConnectorFormId
+      };
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button[type='submit']");
+      const formData = new FormData(form);
+      const name = String(formData.get("name") || "").trim();
+      const phone = String(formData.get("phone") || "").trim();
+      const email = String(formData.get("email") || "").trim();
+      const solarIssue = String(formData.get("solar_issue") || "").trim();
+      const solarDuration = String(formData.get("solar_duration") || "").trim();
+      const smsConsent = formData.get("sms_consent") === "on";
+
+      if (!name || !phone || !email || !solarIssue || !solarDuration || !smsConsent) {
+        setMessage("Please complete the required fields and consent box so we can respond properly.", "err");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Sending...";
+
+      try {
+        const payload = new FormData();
+        payload.set("formData", JSON.stringify(buildLeadConnectorData(name, phone, email, solarIssue, solarDuration)));
+        payload.append("locationId", leadConnectorLocationId);
+        payload.append("formId", leadConnectorFormId);
+        payload.append("captchaV3", await getCaptchaV3Token());
+
+        const endpoint = new URL("https://backend.leadconnectorhq.com/forms/submit");
+        endpoint.searchParams.set("formId", leadConnectorFormId);
+        endpoint.searchParams.set("locationId", leadConnectorLocationId);
+
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        const response = await fetch(endpoint.toString(), {
+          method: "POST",
+          body: payload,
+          headers: {
+            channel: "APP",
+            source: "WEB_USER",
+            version: "2021-04-15",
+            timezone
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("LeadConnector submission failed");
+        }
+
+        if (window.fbq) {
+          window.fbq("track", "Lead", {
+            content_name: "Solar Facebook Response",
+            content_category: "Solar Panel Support"
+          });
+        }
+
+        setMessage("Thank you. Your details have been sent. We are taking you to the solar support page now.", "ok");
+        setTimeout(() => {
+          window.location.href = preserveAdParams("/solar-support.html");
+        }, 1200);
+      } catch (error) {
+        console.error("Facebook solar response submission failed:", error);
+        setMessage("Sorry, we could not send this request. Please try again shortly.", "err");
+        button.disabled = false;
+        button.textContent = "Submit";
+      }
+    });
+  </script>
 </body>
 </html>
 
