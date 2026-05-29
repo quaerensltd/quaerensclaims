@@ -162,12 +162,19 @@
             <label for="solar_issue">What solar issue are you experiencing? *</label>
             <select id="solar_issue" name="solar_issue" required>
               <option value="">Select an issue</option>
-              <option>Promised savings not achieved</option>
-              <option>Finance, loan, or payment problem</option>
-              <option>System underperforming or faulty</option>
-              <option>Installer not responding or gone bust</option>
-              <option>Missing MCS, warranty, or paperwork</option>
-              <option>Other solar panel concern</option>
+              <option>Faulty panels</option>
+              <option>Inverter or battery failure</option>
+              <option>Faulty wiring or electrical issues</option>
+              <option>Maintenance/service delays</option>
+              <option>Lost or invalid warranty</option>
+            </select>
+
+            <label for="solar_duration">How long has this been a problem? *</label>
+            <select id="solar_duration" name="solar_duration" required>
+              <option value="">Select a duration</option>
+              <option>Less than 6 months</option>
+              <option>6-12 months</option>
+              <option>Over 12 months</option>
             </select>
 
             <label class="terms">
@@ -261,9 +268,10 @@
   <script>
     const form = document.getElementById("fbSolarForm");
     const message = document.getElementById("formMessage");
-    const leadConnectorFormId = "mgEVRpqA5hm20hzT7coM";
+    const leadConnectorFormId = "L6XBSOY7G3uFLvdQizv0";
     const leadConnectorLocationId = "qpn55huu1CHyvAvvVPNY";
-    const sprayFoamProblemFieldId = "RvmaEJHAa9TcgXPB1HRU";
+    const solarIssueFieldId = "2IRDCnL4SXK4SRihniIN";
+    const solarDurationFieldId = "8axsorEhdTR8igwiINwn";
     const enterpriseRecaptchaSiteKey = "6LeDBFwpAAAAAJe8ux9-imrqZ2ueRsEtdiWoDDpX";
 
     function setMessage(text, type) {
@@ -314,13 +322,14 @@
       });
     }
 
-    function buildLeadConnectorData(name, phone, email, solarIssue) {
+    function buildLeadConnectorData(name, phone, email, solarIssue, solarDuration) {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
       return {
         full_name: name,
         phone,
         email,
-        [sprayFoamProblemFieldId]: "Solar Facebook Response - " + solarIssue,
+        [solarIssueFieldId]: solarIssue,
+        [solarDurationFieldId]: solarDuration,
         terms_and_conditions: "on",
         formId: leadConnectorFormId,
         locationId: leadConnectorLocationId,
@@ -347,9 +356,10 @@
       const phone = String(formData.get("phone") || "").trim();
       const email = String(formData.get("email") || "").trim();
       const solarIssue = String(formData.get("solar_issue") || "").trim();
+      const solarDuration = String(formData.get("solar_duration") || "").trim();
       const smsConsent = formData.get("sms_consent") === "on";
 
-      if (!name || !phone || !email || !solarIssue || !smsConsent) {
+      if (!name || !phone || !email || !solarIssue || !solarDuration || !smsConsent) {
         setMessage("Please complete the required fields and consent box so we can respond properly.", "err");
         return;
       }
@@ -359,7 +369,7 @@
 
       try {
         const payload = new FormData();
-        payload.set("formData", JSON.stringify(buildLeadConnectorData(name, phone, email, solarIssue)));
+        payload.set("formData", JSON.stringify(buildLeadConnectorData(name, phone, email, solarIssue, solarDuration)));
         payload.append("locationId", leadConnectorLocationId);
         payload.append("formId", leadConnectorFormId);
         payload.append("captchaV3", await getCaptchaV3Token());
