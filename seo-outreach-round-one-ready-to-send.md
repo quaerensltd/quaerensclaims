@@ -199,3 +199,111 @@ Kind regards,
 [Your name]
 ```
 
+# Quaerens Outreach Second Wave - Ready To Send
+
+Prepared: 2026-05-30
+
+## Money Saving Central
+
+Contact: editor@moneysavingcentral.co.uk
+Pitch URL: https://www.quaerens.co.uk/category-free-tools.html
+Subject: Free consumer complaint tools for readers
+
+```text
+Hi Money Saving Central team,
+
+I noticed your money-saving and consumer help content and wanted to share a free Quaerens resource that may be useful for readers dealing with everyday disputes:
+
+https://www.quaerens.co.uk/category-free-tools.html
+
+It links to free tools for issues such as flight delays, parking appeals, gym cancellation, energy switching and train delay complaints. The focus is helping people organise evidence and complaint wording before deciding what to do next.
+
+If you update any useful links or consumer resources pages, it may be worth reviewing as a practical free resource.
+
+Kind regards,
+[Your name]
+```
+
+## Fight My Fine
+
+Contact: hello@fightmyfine.com
+Pitch URL: https://www.quaerens.co.uk/parking-appeal.html
+Subject: Free parking appeal evidence checklist
+
+```text
+Hi Fight My Fine team,
+
+I came across your parking appeal guidance and wanted to share a free Quaerens resource that may be useful for people organising a private parking appeal:
+
+https://www.quaerens.co.uk/parking-appeal.html
+
+The page covers evidence such as signs, payment records, permits, ANPR timing and appeal wording, with a free parking appeal letter tool linked from the page.
+
+It is designed as a practical starting point for consumers and does not promise any particular outcome. If you maintain useful parking appeal resources, it may be worth reviewing.
+
+Kind regards,
+[Your name]
+```
+
+## LetterSure
+
+Contact: hello@lettersure.co.uk
+Pitch URL: https://www.quaerens.co.uk/parking-appeal.html
+Subject: Free parking appeal preparation resource
+
+```text
+Hi LetterSure team,
+
+I noticed your letter template content and wanted to share a free Quaerens page that may help readers preparing a private parking appeal:
+
+https://www.quaerens.co.uk/parking-appeal.html
+
+It helps people organise the evidence they may need before writing or sending an appeal, including signage, timing, payment, permit and correspondence details.
+
+If you maintain any parking appeal or complaint letter resources, it may be a practical link to consider.
+
+Kind regards,
+[Your name]
+```
+
+## Paybacker
+
+Contact: hello@paybacker.co.uk
+Pitch URL: https://www.quaerens.co.uk/gym-cancellation.html
+Subject: Free gym cancellation evidence resource
+
+```text
+Hi Paybacker team,
+
+I came across your consumer letter tools and wanted to share a free Quaerens resource that may be useful for people dealing with gym cancellation or membership disputes:
+
+https://www.quaerens.co.uk/gym-cancellation.html
+
+The page helps users organise contract details, cancellation dates, medical or relocation evidence, correspondence and complaint wording before deciding on the next step.
+
+If you update any gym cancellation or consumer complaint resources, it may be worth reviewing as a practical free guide.
+
+Kind regards,
+[Your name]
+```
+
+## MedicalCert
+
+Contact: help@medicalcert.co.uk
+Pitch URL: https://www.quaerens.co.uk/gym-cancellation.html
+Subject: Gym cancellation evidence guide for readers
+
+```text
+Hi MedicalCert team,
+
+I noticed your medical certificate service and wanted to share a free Quaerens guide that may be useful for people trying to organise evidence for a gym membership cancellation:
+
+https://www.quaerens.co.uk/gym-cancellation.html
+
+It explains the sort of contract records, cancellation notices, medical or relocation evidence and gym replies a consumer may need to keep when raising a cancellation issue.
+
+If you maintain any resources for people who need documentation for membership or service cancellation, it may be a useful page to review.
+
+Kind regards,
+[Your name]
+```
