@@ -20,7 +20,7 @@
     if (!form || form.querySelector(".quaerens-trust-shield")) return;
     var shield = document.createElement("div");
     shield.className = "quaerens-trust-shield";
-    shield.innerHTML = "<strong>Data privacy &amp; security</strong><span>Your details are sent over HTTPS and used only to understand and respond to your enquiry. Case information is treated as confidential and is not sold to third-party marketing brokers.</span><span>Quaerens Ltd is currently registered with the UK Information Commissioner's Office (ICO). Application reference: C1944311 (Official Registration Number publishing shortly).</span>";
+    shield.innerHTML = "<strong>Data privacy &amp; security</strong><span>Your details are sent over HTTPS and used only to understand and respond to your enquiry. Case information is treated as confidential and is not sold to third-party marketing brokers.</span><span>Quaerens Ltd is registered with the UK Information Commissioner's Office (ICO). Registration reference: ZC158981.</span>";
     button.insertAdjacentElement("afterend", shield);
     button.dataset.quaerensTrustShield = "true";
   }

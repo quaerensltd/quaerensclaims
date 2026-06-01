@@ -307,3 +307,66 @@ If you maintain any resources for people who need documentation for membership o
 Kind regards,
 [Your name]
 ```
+
+## Resolver
+
+Contact: support@resolver.co.uk
+Pitch URL: https://www.quaerens.co.uk/parking-appeal.html
+Subject: Free parking appeal evidence checklist
+
+```text
+Hi Resolver team,
+
+I wanted to share a free Quaerens resource that may be useful for consumers preparing a private parking appeal:
+
+https://www.quaerens.co.uk/parking-appeal.html
+
+It helps people organise the basics before they complain or appeal, including signage, payment records, permits, ANPR timing, correspondence and appeal wording.
+
+It is a plain-English preparation resource and does not promise any specific result. If you maintain or review consumer help links around parking charge complaints, it may be worth considering.
+
+Kind regards,
+[Your name]
+```
+
+## The Guardian Consumer Champions
+
+Contact: consumer.champions@theguardian.com
+Pitch URL: https://www.quaerens.co.uk/guidance-flight-delay-claim-rejected-next-steps.html
+Subject: Resource for readers with rejected flight delay claims
+
+```text
+Hi Consumer Champions team,
+
+I wanted to share a free Quaerens guide that may be useful for readers dealing with rejected or stalled flight delay compensation claims:
+
+https://www.quaerens.co.uk/guidance-flight-delay-claim-rejected-next-steps.html
+
+It focuses on evidence organisation: airline replies, delay timing, booking records, escalation routes and what consumers should keep before deciding whether to take the issue further.
+
+It is not legal advice and does not promise an outcome, but it may be a practical reference for readers trying to understand what to gather next.
+
+Kind regards,
+[Your name]
+```
+
+## Dad Blog
+
+Contact: thedad@dadblog.co.uk
+Pitch URL: https://www.quaerens.co.uk/category-free-tools.html
+Subject: Free complaint tools for family travel and everyday disputes
+
+```text
+Hi Dad Blog team,
+
+I came across your family and everyday life content and wanted to share a free Quaerens resource that may help readers dealing with travel disruption or common household disputes:
+
+https://www.quaerens.co.uk/category-free-tools.html
+
+It links to free DIY tools for issues such as flight delays, parking appeals, gym cancellation, energy switching and train delay complaints. The focus is helping people organise facts, dates, evidence and complaint wording before deciding what to do next.
+
+If you ever publish practical resources for family travel, budgeting or consumer problems, it may be worth reviewing.
+
+Kind regards,
+[Your name]
+```
