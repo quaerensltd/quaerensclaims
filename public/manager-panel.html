@@ -1000,7 +1000,7 @@ async function loadSubmissions() {
         div.className = "border border-slate-200 rounded-xl p-3";
         div.innerHTML = `
           <div class="font-semibold text-slate-800">${item.action || "Review Action"}</div>
-          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} â€¢ ${item.at || "-"}</div>
+          <div class="text-xs text-slate-500 mt-1">${item.byName || "-"} - ${item.at || "-"}</div>
           ${item.outcome ? `<div class="mt-2"><span class="font-semibold text-blue-900">Outcome:</span> ${item.outcome}</div>` : ""}
           ${item.notes ? `<div class="mt-2 text-slate-700 whitespace-pre-wrap">${item.notes}</div>` : ""}
         `;
@@ -1092,7 +1092,7 @@ async function loadSubmissions() {
 
       const client = selectedSubmission.client || {};
 
-      document.getElementById("modalTitle").textContent = `${getClientName(selectedSubmission)} â€” Review`;
+      document.getElementById("modalTitle").textContent = `${getClientName(selectedSubmission)} - Review`;
       document.getElementById("modalSubtitle").textContent = `Submission ID: ${selectedSubmission.id}`;
 
       setText("summary_submissionId", selectedSubmission.id);
@@ -1258,8 +1258,10 @@ async function loadSubmissions() {
     });
 
     refreshBtn.addEventListener("click", async () => {
-      await loadSubmissions();
-      await loadInternetRequests();
+      await Promise.allSettled([
+        loadInternetRequests(),
+        loadSubmissions()
+      ]);
     });
     refreshInternetGeneratedBtn?.addEventListener("click", loadInternetRequests);
     internetGeneratedBody?.addEventListener("click", async (event) => {
@@ -1291,8 +1293,10 @@ async function loadSubmissions() {
         const allowed = await checkManagerAccess(user);
         if (!allowed) return;
 
-        await loadSubmissions();
-        await loadInternetRequests();
+        await Promise.allSettled([
+          loadInternetRequests(),
+          loadSubmissions()
+        ]);
         hideLoader();
       } catch (error) {
         console.error(error);
