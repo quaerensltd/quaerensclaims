@@ -1,185 +1,62 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
 <head>
-  <title>Quaerens Client Portal Admin</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://www.gstatic.com">
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <title>Client Portal Admin | Quaerens</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
-    :root {
-      --blue: #155eef;
-      --blue-dark: #0b2f6b;
-      --ink: #07142f;
-      --muted: #60708a;
-      --line: #dbe7ff;
-      --soft: #f4f8ff;
-      --green: #089b64;
-      --red: #d92d20;
-      --amber: #b45309;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, Arial, sans-serif;
-      color: var(--ink);
-      background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
-    }
-    a { color: var(--blue); }
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 16px 22px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255,255,255,0.94);
-      backdrop-filter: blur(14px);
-    }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; color: var(--blue-dark); }
-    .brand-logo {
-      display: block;
-      width: 132px;
-      height: auto;
-    }
-    .brand-title {
-      padding-left: 4px;
-      border-left: 1px solid var(--line);
-      line-height: 1;
-    }
-    main { max-width: 1180px; margin: 0 auto; padding: 24px 18px 50px; }
-    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; align-items: start; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fff;
-      box-shadow: 0 18px 45px rgba(15, 35, 80, 0.08);
-      padding: 18px;
-    }
-    .card h1, .card h2, .card h3 { margin: 0 0 10px; color: var(--blue-dark); }
-    .card h1 { font-size: 30px; line-height: 1.05; }
-    .card h2 { font-size: 20px; }
-    .card h3 { font-size: 15px; }
-    .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
-    label { display: block; margin: 11px 0 5px; font-size: 12px; font-weight: 800; color: var(--blue-dark); }
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid #c9d9f4;
-      border-radius: 10px;
-      padding: 11px 12px;
-      font: inherit;
-      background: #fff;
-    }
-    textarea { min-height: 92px; resize: vertical; }
-    button {
-      border: 0;
-      border-radius: 999px;
-      padding: 11px 16px;
-      background: var(--blue);
-      color: #fff;
-      font-weight: 850;
-      cursor: pointer;
-      box-shadow: 0 10px 22px rgba(21, 94, 239, 0.18);
-    }
-    button.secondary { background: #edf4ff; color: var(--blue-dark); box-shadow: none; }
-    button.danger { background: #fff0ef; color: var(--red); box-shadow: none; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .space { justify-content: space-between; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 6px 10px;
-      background: #eef4ff;
-      color: var(--blue-dark);
-      font-size: 12px;
-      font-weight: 850;
-    }
-    .badge.green { background: #e9fbf3; color: var(--green); }
-    .badge.amber { background: #fff7ed; color: var(--amber); }
-    .badge.red { background: #fff0ef; color: var(--red); }
-    .list { display: grid; gap: 10px; margin-top: 10px; }
-    .item {
-      border: 1px solid #e4edff;
-      border-radius: 12px;
-      padding: 12px;
-      background: #fbfdff;
-    }
-    .item strong { color: var(--blue-dark); }
-    .timeline { position: relative; padding-left: 20px; }
-    .timeline .item { position: relative; }
-    .timeline .item::before {
-      content: "";
-      position: absolute;
-      left: -20px;
-      top: 17px;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--blue);
-      box-shadow: 0 0 0 4px #eaf2ff;
-    }
-    .task {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .message {
-      max-width: 84%;
-      border-radius: 14px;
-      padding: 11px 12px;
-      background: #edf4ff;
-    }
-    .message.client { margin-left: auto; background: #0f5eea; color: #fff; }
-    .message .meta { font-size: 11px; opacity: 0.75; margin-top: 5px; }
-    .auth-choice { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
-    .auth-choice button { padding: 10px 12px; border-radius: 12px; }
-    .auth-choice .secondary.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .auth-note { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: #f4f8ff; color: var(--blue-dark); font-size: 12px; line-height: 1.45; }
-    .hide { display: none !important; }
-    .notice {
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 12px;
-      background: #eff6ff;
-      color: #12346f;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .error { border-color: #fecaca; background: #fff1f2; color: #991b1b; }
-    .success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; border-bottom: 1px solid #e4edff; padding: 9px; vertical-align: top; }
-    th { color: var(--blue-dark); background: #f0f6ff; }
-    @media (max-width: 860px) {
-      .grid, .grid-3 { grid-template-columns: 1fr; }
-      .card h1 { font-size: 24px; }
-      .message { max-width: 100%; }
-    }
+    :root { --blue:#155eef; --dark:#08245c; --line:#c9dcff; --bg:#eef6ff; --soft:#f7fbff; --text:#08245c; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, Arial, sans-serif; background:linear-gradient(180deg,#f6fbff,#eef6ff); color:var(--text); }
+    header { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:22px 34px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+    .brand { display:flex; align-items:center; gap:14px; font-weight:900; font-size:22px; color:var(--dark); }
+    .brand img { width:136px; height:auto; display:block; }
+    nav { display:flex; gap:14px; flex-wrap:wrap; }
+    nav a { color:var(--blue); font-weight:800; text-decoration:none; }
+    main { max-width:1220px; margin:24px auto 60px; padding:0 18px; }
+    .notice { background:#eaf3ff; border:1px solid #a9c9ff; border-radius:10px; padding:14px 16px; margin-bottom:18px; }
+    .grid { display:grid; grid-template-columns:1.1fr .9fr; gap:18px; align-items:start; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 36px rgba(8,36,92,.07); padding:20px; }
+    h1,h2,h3 { margin:0 0 14px; color:var(--dark); }
+    label { display:block; font-weight:900; margin:13px 0 6px; color:var(--dark); }
+    input,select,textarea { width:100%; border:1px solid #b8cff8; border-radius:9px; padding:12px 13px; font:inherit; background:#fff; }
+    textarea { min-height:100px; resize:vertical; }
+    button { border:0; border-radius:999px; padding:12px 18px; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
+    button.secondary { background:#eaf3ff; color:var(--dark); }
+    button.danger { background:#ffe8e8; color:#a50000; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .space { justify-content:space-between; }
+    .muted { color:#52709f; font-size:14px; }
+    .list { display:grid; gap:10px; margin-top:14px; }
+    .item { border:1px solid #d8e6ff; background:#fbfdff; border-radius:12px; padding:13px; }
+    .badge { display:inline-flex; align-items:center; border-radius:999px; padding:6px 10px; background:#e8edff; color:#3043a5; font-weight:900; font-size:12px; }
+    .badge.green { background:#e4faef; color:#087a3d; }
+    .badge.amber { background:#fff3d6; color:#986500; }
+    .badge.red { background:#ffe2e2; color:#a90000; }
+    .hide { display:none; }
+    .message { border-radius:12px; padding:11px 12px; background:#eef5ff; margin:8px 0; }
+    .message.client { background:#fff8e4; }
+    .message .meta { color:#52709f; font-size:12px; margin-top:6px; }
+    .actions { margin-top:16px; }
+    @media (max-width:900px) { .grid { grid-template-columns:1fr; } header { align-items:flex-start; flex-direction:column; } }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><img class="brand-logo" src="/images/quaerens-logo.png" alt="Quaerens"><span class="brand-title">Client Portal Admin</span></div>
-    <div class="row">
-      <a href="admin-centre.html">CRM admin</a>
-      <a href="client-portal.html" target="_blank">Client portal</a>
-    </div>
+  <header>
+    <div class="brand"><img src="/images/quaerens-logo.png" alt="Quaerens"><span>Client Portal Admin</span></div>
+    <nav>
+      <a href="/admin-centre.html">CRM admin</a>
+      <a href="/client-portal.html">Client portal</a>
+    </nav>
   </header>
   <main>
     <div class="notice">Admin area for creating and updating client portal cases. Do not share this page link with clients. Client-facing access is via <strong>client-portal.html</strong>.</div>
-    <div class="grid" style="margin-top:18px">
+
+    <div class="grid">
       <form id="caseForm" class="card">
-        <h2>Create / update portal case</h2>
+        <h1>Create / update portal case</h1>
         <input id="caseId" type="hidden">
         <label>Client name</label>
         <input id="clientName" required placeholder="Mr Example Client">
@@ -190,21 +67,18 @@
         <label>Claim type</label>
         <select id="claimType">
           <option>Spray Foam</option>
-          <option>Solar PV</option>
+          <option>Solar</option>
           <option>Holiday Park</option>
-          <option>Car Finance</option>
-          <option>Free Flight</option>
+          <option>Finance</option>
           <option>Other</option>
         </select>
         <label>Status</label>
         <select id="status">
           <option>New</option>
-          <option>Docs Requested</option>
-          <option>Under Review</option>
-          <option>Assessment Sent</option>
-          <option>Letters Sent</option>
-          <option>Awaiting Response</option>
-          <option>Escalation</option>
+          <option>Awaiting documents</option>
+          <option>In review</option>
+          <option>Letter pack being prepared</option>
+          <option>Sent to admin</option>
           <option>Closed</option>
         </select>
         <label>Access code</label>
@@ -218,8 +92,10 @@
         <input id="nextStep" placeholder="Example: Upload finance agreement">
         <label>Summary visible to client</label>
         <textarea id="summary" placeholder="Short client-friendly case summary"></textarea>
-        <button type="submit">Save portal case</button>
-        <button id="clearFormBtn" type="button" class="secondary">Clear</button>
+        <div class="row actions">
+          <button type="submit">Save portal case</button>
+          <button id="clearFormBtn" type="button" class="secondary">Clear</button>
+        </div>
         <p id="caseMsg" class="muted"></p>
       </form>
 
@@ -230,7 +106,7 @@
         </div>
         <label>Search</label>
         <input id="caseSearch" placeholder="Client, email, claim type">
-        <div id="caseList" class="list"></div>
+        <div id="caseList" class="list"><p class="muted">Loading portal cases...</p></div>
       </div>
     </div>
 
@@ -241,7 +117,7 @@
           <p id="detailMeta" class="muted"></p>
           <h3>Tasks</h3>
           <div id="adminTaskList" class="list"></div>
-          <div class="grid-3">
+          <div class="grid" style="grid-template-columns:1fr 180px 130px">
             <input id="taskTitle" placeholder="Task title">
             <select id="taskStatus">
               <option>Pending</option>
@@ -278,11 +154,11 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-  authDomain: "quaerensclaims.firebaseapp.com",
-  projectId: "quaerensclaims",
-  storageBucket: "quaerensclaims.firebasestorage.app"
-};
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.firebasestorage.app"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let cases = [];
@@ -307,33 +183,36 @@
       for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
       return out;
     }
-    el("makeCodeBtn").addEventListener("click", () => el("portalCode").value = makeCode());
-    el("clearFormBtn").addEventListener("click", () => {
-      el("caseForm").reset();
-      el("caseId").value = "";
-      el("portalCode").value = makeCode();
-    });
-    async function loadCases() {
-      const snap = await db.collection("clientPortalCases").get();
-      cases = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => String(a.clientName||"").localeCompare(String(b.clientName||"")));
-      renderCases();
+    function setCaseMsg(message, isError) {
+      el("caseMsg").textContent = message || "";
+      el("caseMsg").style.color = isError ? "#a90000" : "#087a3d";
     }
     function renderCases() {
       const q = el("caseSearch").value.trim().toLowerCase();
       const filtered = cases.filter(c => !q || [c.clientName, c.clientEmail, c.claimType, c.status, c.caseRef].some(v => String(v || "").toLowerCase().includes(q)));
-      el("caseList").innerHTML = filtered.length ? filtered.map(c => 
-        <div class="item">
-          <div class="row space">
-            <div>
-              <strong>${safe(c.clientName)}</strong>
-              <p class="muted">${safe(c.claimType)} - ${safe(c.clientEmail)} - code: ${safe(c.portalCode)}</p>
-            </div>
-            <span class="badge ${statusClass(c.status)}">${safe(c.status || "New")}</span>
-          </div>
-          <button type="button" class="secondary" onclick="openCase('${c.id}')">Open</button>
-          <button type="button" class="secondary" onclick="editCase('${c.id}')">Edit</button>
-        </div>
-      ).join("") : <p class="muted">No portal cases found.</p>;
+      if (!filtered.length) {
+        el("caseList").innerHTML = '<p class="muted">No portal cases found.</p>';
+        return;
+      }
+      el("caseList").innerHTML = filtered.map(c =>
+        '<div class="item">' +
+          '<div class="row space">' +
+            '<div><strong>' + safe(c.clientName) + '</strong>' +
+            '<p class="muted">' + safe(c.claimType) + ' - ' + safe(c.clientEmail) + ' - code: ' + safe(c.portalCode) + '</p></div>' +
+            '<span class="badge ' + statusClass(c.status) + '">' + safe(c.status || "New") + '</span>' +
+          '</div>' +
+          '<div class="row actions">' +
+            '<button type="button" class="secondary" onclick="openCase(&quot;' + safe(c.id) + '&quot;)">Open</button>' +
+            '<button type="button" class="secondary" onclick="editCase(&quot;' + safe(c.id) + '&quot;)">Edit</button>' +
+          '</div>' +
+        '</div>'
+      ).join("");
+    }
+    async function loadCases() {
+      el("caseList").innerHTML = '<p class="muted">Loading portal cases...</p>';
+      const snap = await db.collection("clientPortalCases").get();
+      cases = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => String(a.clientName||"").localeCompare(String(b.clientName||"")));
+      renderCases();
     }
     window.editCase = id => {
       const c = cases.find(x => x.id === id);
@@ -348,6 +227,7 @@
       el("caseRef").value = c.caseRef || "";
       el("nextStep").value = c.nextStep || "";
       el("summary").value = c.summary || "";
+      setCaseMsg("Editing " + (c.clientName || "case") + ". Click Save portal case when ready.", false);
       window.scrollTo({ top:0, behavior:"smooth" });
     };
     window.openCase = async id => {
@@ -356,19 +236,18 @@
       activeCase = { id:snap.id, ...snap.data() };
       el("caseDetail").classList.remove("hide");
       el("detailTitle").textContent = activeCase.clientName || "Case detail";
-      el("detailMeta").textContent = ${activeCase.claimType || ""} - ${activeCase.status || ""} - ${activeCase.clientEmail || ""};
+      el("detailMeta").textContent = (activeCase.claimType || "") + " - " + (activeCase.status || "") + " - " + (activeCase.clientEmail || "");
       renderAdminTasks();
       await Promise.all([loadAdminDocs(), loadAdminMessages()]);
       el("caseDetail").scrollIntoView({ behavior:"smooth" });
     };
     function renderAdminTasks() {
       const tasks = Array.isArray(activeCase.tasks) ? activeCase.tasks : [];
-      el("adminTaskList").innerHTML = tasks.length ? tasks.map((t,i) => 
-        <div class="item task">
-          <div><strong>${safe(t.title)}</strong><p class="muted">${safe(t.note || "")}</p></div>
-          <div class="row"><span class="badge ${statusClass(t.status)}">${safe(t.status || "Pending")}</span><button class="danger" onclick="removeTask(${i})">Remove</button></div>
-        </div>
-      ).join("") : <p class="muted">No tasks yet.</p>;
+      el("adminTaskList").innerHTML = tasks.length ? tasks.map((t,i) =>
+        '<div class="item row space"><div><strong>' + safe(t.title) + '</strong><p class="muted">' + safe(t.note || "") + '</p></div>' +
+        '<div class="row"><span class="badge ' + statusClass(t.status) + '">' + safe(t.status || "Pending") + '</span>' +
+        '<button class="danger" onclick="removeTask(' + i + ')">Remove</button></div></div>'
+      ).join("") : '<p class="muted">No tasks yet.</p>';
     }
     window.removeTask = async index => {
       activeCase.tasks.splice(index, 1);
@@ -378,18 +257,27 @@
     };
     async function loadAdminDocs() {
       const snap = await db.collection("clientPortalDocuments").where("caseId", "==", activeCase.id).get();
-      const docs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.uploadedAt?.toMillis?.() || 0) - (a.uploadedAt?.toMillis?.() || 0));
-      el("adminDocList").innerHTML = docs.length ? docs.map(doc => <div class="item"><strong>${safe(doc.name)}</strong><p class="muted">${safe(doc.category)} - ${fmtDate(doc.uploadedAt)}</p>${doc.url ? <a href="${safe(doc.url)}" target="_blank" rel="noopener">Open document</a> : ""}</div>).join("") : <p class="muted">No client documents yet.</p>;
+      const docs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.uploadedAt && b.uploadedAt.toMillis ? b.uploadedAt.toMillis() : 0) - (a.uploadedAt && a.uploadedAt.toMillis ? a.uploadedAt.toMillis() : 0));
+      el("adminDocList").innerHTML = docs.length ? docs.map(doc =>
+        '<div class="item"><strong>' + safe(doc.name) + '</strong><p class="muted">' + safe(doc.category) + ' - ' + fmtDate(doc.uploadedAt) + '</p>' +
+        (doc.url ? '<a href="' + safe(doc.url) + '" target="_blank" rel="noopener">Open document</a>' : '') + '</div>'
+      ).join("") : '<p class="muted">No client documents yet.</p>';
     }
     async function loadAdminMessages() {
       const snap = await db.collection("clientPortalMessages").where("caseId", "==", activeCase.id).get();
-      const msgs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-      el("adminMessageList").innerHTML = msgs.length ? msgs.map(msg => <div class="message ${msg.senderType === "client" ? "client" : ""}"><div>${safe(msg.body)}</div><div class="meta">${safe(msg.senderName || msg.senderType)} - ${fmtDate(msg.createdAt)}</div></div>).join("") : <p class="muted">No messages yet.</p>;
+      const msgs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0) - (b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0));
+      el("adminMessageList").innerHTML = msgs.length ? msgs.map(msg =>
+        '<div class="message ' + (msg.senderType === "client" ? "client" : "") + '"><div>' + safe(msg.body) + '</div><div class="meta">' + safe(msg.senderName || msg.senderType) + ' - ' + fmtDate(msg.createdAt) + '</div></div>'
+      ).join("") : '<p class="muted">No messages yet.</p>';
       el("adminMessageList").scrollTop = el("adminMessageList").scrollHeight;
     }
     el("caseForm").addEventListener("submit", async event => {
       event.preventDefault();
       const email = el("clientEmail").value.trim();
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+        setCaseMsg("Please enter a real client email address. The client needs this for portal login.", true);
+        return;
+      }
       const data = {
         clientName: el("clientName").value.trim(),
         clientEmail: email,
@@ -404,9 +292,10 @@
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       try {
+        setCaseMsg("Saving portal case...", false);
         if (el("caseId").value) {
           await db.collection("clientPortalCases").doc(el("caseId").value).update(data);
-          el("caseMsg").textContent = "Portal case updated.";
+          setCaseMsg("Portal case updated.", false);
         } else {
           data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
           data.tasks = [
@@ -415,25 +304,33 @@
           ];
           data.timeline = [{ date: new Date().toLocaleDateString("en-GB"), title:"Portal created", detail:"Your Quaerens client portal has been opened." }];
           await db.collection("clientPortalCases").add(data);
-          el("caseMsg").textContent = "Portal case created.";
+          setCaseMsg("Portal case created. It should now appear in Portal cases.", false);
         }
         el("caseForm").reset();
         el("portalCode").value = makeCode();
         el("caseId").value = "";
         await loadCases();
       } catch (error) {
-        el("caseMsg").textContent = error.message || "Could not save case.";
+        setCaseMsg(error.message || "Could not save portal case.", true);
       }
     });
-    el("refreshCasesBtn").addEventListener("click", loadCases);
+    el("refreshCasesBtn").addEventListener("click", () => loadCases().catch(error => el("caseList").innerHTML = '<div class="notice">' + safe(error.message || error) + '</div>'));
     el("caseSearch").addEventListener("input", renderCases);
+    el("makeCodeBtn").addEventListener("click", () => el("portalCode").value = makeCode());
+    el("clearFormBtn").addEventListener("click", () => {
+      el("caseForm").reset();
+      el("caseId").value = "";
+      el("portalCode").value = makeCode();
+      setCaseMsg("", false);
+    });
     el("addTaskBtn").addEventListener("click", async () => {
       if (!activeCase) return;
       const title = el("taskTitle").value.trim();
       if (!title) return;
-      activeCase.tasks = Array.isArray(activeCase.tasks) ? activeCase.tasks : [];
-      activeCase.tasks.push({ title, status: el("taskStatus").value, note: el("taskNote").value.trim() });
-      await db.collection("clientPortalCases").doc(activeCase.id).update({ tasks: activeCase.tasks, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      const tasks = Array.isArray(activeCase.tasks) ? activeCase.tasks : [];
+      tasks.push({ title, status:el("taskStatus").value, note:el("taskNote").value.trim() });
+      await db.collection("clientPortalCases").doc(activeCase.id).update({ tasks, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      activeCase.tasks = tasks;
       el("taskTitle").value = "";
       el("taskNote").value = "";
       renderAdminTasks();
@@ -442,14 +339,15 @@
     el("addTimelineBtn").addEventListener("click", async () => {
       if (!activeCase) return;
       const title = el("timelineTitle").value.trim();
-      if (!title) return;
-      activeCase.timeline = Array.isArray(activeCase.timeline) ? activeCase.timeline : [];
-      activeCase.timeline.push({ date: new Date().toLocaleDateString("en-GB"), title, detail: el("timelineDetail").value.trim(), visibleToClient: true });
-      await db.collection("clientPortalCases").doc(activeCase.id).update({ timeline: activeCase.timeline, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      const detail = el("timelineDetail").value.trim();
+      if (!title && !detail) return;
+      const timeline = Array.isArray(activeCase.timeline) ? activeCase.timeline : [];
+      timeline.push({ date:new Date().toLocaleDateString("en-GB"), title:title || "Case update", detail });
+      await db.collection("clientPortalCases").doc(activeCase.id).update({ timeline, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      activeCase.timeline = timeline;
       el("timelineTitle").value = "";
       el("timelineDetail").value = "";
-      el("detailMsg").textContent = "Timeline updated.";
-      await loadCases();
+      el("detailMsg").textContent = "Timeline update added.";
     });
     el("sendSupportBtn").addEventListener("click", async () => {
       if (!activeCase) return;
@@ -457,18 +355,19 @@
       if (!body) return;
       await db.collection("clientPortalMessages").add({
         caseId: activeCase.id,
-        body,
         senderType: "support",
-        senderName: "Quaerens support",
-        visibleToClient: true,
-        readByClient: false,
+        senderName: "Quaerens Support",
+        body,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       el("supportMessage").value = "";
+      el("detailMsg").textContent = "Support message sent.";
       await loadAdminMessages();
     });
     el("portalCode").value = makeCode();
-    loadCases().catch(error => el("caseList").innerHTML = <div class="notice error">${safe(error.message || error)}</div>);
+    loadCases().catch(error => {
+      el("caseList").innerHTML = '<div class="notice">' + safe(error.message || error) + '</div>';
+    });
   </script>
 </body>
 </html>
