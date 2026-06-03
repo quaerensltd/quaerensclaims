@@ -1,0 +1,478 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Quaerens Client Portal Admin</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://www.gstatic.com">
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <style>
+    :root {
+      --blue: #155eef;
+      --blue-dark: #0b2f6b;
+      --ink: #07142f;
+      --muted: #60708a;
+      --line: #dbe7ff;
+      --soft: #f4f8ff;
+      --green: #089b64;
+      --red: #d92d20;
+      --amber: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+    }
+    a { color: var(--blue); }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(14px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; color: var(--blue-dark); }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border: 4px solid #0b84e5;
+      border-radius: 50%;
+      position: relative;
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      right: -9px;
+      top: 5px;
+      width: 13px;
+      height: 13px;
+      border: 4px solid #0b84e5;
+      border-left: 0;
+      border-bottom: 0;
+      transform: rotate(45deg);
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px 18px 50px; }
+    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 18px 45px rgba(15, 35, 80, 0.08);
+      padding: 18px;
+    }
+    .card h1, .card h2, .card h3 { margin: 0 0 10px; color: var(--blue-dark); }
+    .card h1 { font-size: 30px; line-height: 1.05; }
+    .card h2 { font-size: 20px; }
+    .card h3 { font-size: 15px; }
+    .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    label { display: block; margin: 11px 0 5px; font-size: 12px; font-weight: 800; color: var(--blue-dark); }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #c9d9f4;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font: inherit;
+      background: #fff;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(21, 94, 239, 0.18);
+    }
+    button.secondary { background: #edf4ff; color: var(--blue-dark); box-shadow: none; }
+    button.danger { background: #fff0ef; color: var(--red); box-shadow: none; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .space { justify-content: space-between; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #eef4ff;
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .badge.green { background: #e9fbf3; color: var(--green); }
+    .badge.amber { background: #fff7ed; color: var(--amber); }
+    .badge.red { background: #fff0ef; color: var(--red); }
+    .list { display: grid; gap: 10px; margin-top: 10px; }
+    .item {
+      border: 1px solid #e4edff;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fbfdff;
+    }
+    .item strong { color: var(--blue-dark); }
+    .timeline { position: relative; padding-left: 20px; }
+    .timeline .item { position: relative; }
+    .timeline .item::before {
+      content: "";
+      position: absolute;
+      left: -20px;
+      top: 17px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 0 4px #eaf2ff;
+    }
+    .task {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .message {
+      max-width: 84%;
+      border-radius: 14px;
+      padding: 11px 12px;
+      background: #edf4ff;
+    }
+    .message.client { margin-left: auto; background: #0f5eea; color: #fff; }
+    .message .meta { font-size: 11px; opacity: 0.75; margin-top: 5px; }
+    .hide { display: none !important; }
+    .notice {
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px;
+      background: #eff6ff;
+      color: #12346f;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .error { border-color: #fecaca; background: #fff1f2; color: #991b1b; }
+    .success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; border-bottom: 1px solid #e4edff; padding: 9px; vertical-align: top; }
+    th { color: var(--blue-dark); background: #f0f6ff; }
+    @media (max-width: 860px) {
+      .grid, .grid-3 { grid-template-columns: 1fr; }
+      .card h1 { font-size: 24px; }
+      .message { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark"></span><span>Client Portal Admin</span></div>
+    <div class="row">
+      <a href="manager-dashboard.html">Manager dashboard</a>
+      <a href="client-portal.html" target="_blank">Client portal</a>
+    </div>
+  </header>
+  <main>
+    <div class="notice">Admin area for creating and updating client portal cases. Do not share this page link with clients. Client-facing access is via <strong>client-portal.html</strong>.</div>
+    <div class="grid" style="margin-top:18px">
+      <form id="caseForm" class="card">
+        <h2>Create / update portal case</h2>
+        <input id="caseId" type="hidden">
+        <label>Client name</label>
+        <input id="clientName" required placeholder="Mr Example Client">
+        <label>Client email</label>
+        <input id="clientEmail" type="email" required placeholder="client@example.com">
+        <label>Phone</label>
+        <input id="clientPhone" placeholder="Phone">
+        <label>Claim type</label>
+        <select id="claimType">
+          <option>Spray Foam</option>
+          <option>Solar PV</option>
+          <option>Holiday Park</option>
+          <option>Car Finance</option>
+          <option>Free Flight</option>
+          <option>Other</option>
+        </select>
+        <label>Status</label>
+        <select id="status">
+          <option>New</option>
+          <option>Docs Requested</option>
+          <option>Under Review</option>
+          <option>Assessment Sent</option>
+          <option>Letters Sent</option>
+          <option>Awaiting Response</option>
+          <option>Escalation</option>
+          <option>Closed</option>
+        </select>
+        <label>Access code</label>
+        <div class="row">
+          <input id="portalCode" required placeholder="AB1234" style="flex:1">
+          <button id="makeCodeBtn" type="button" class="secondary">Generate</button>
+        </div>
+        <label>Case reference</label>
+        <input id="caseRef" placeholder="Optional internal reference">
+        <label>Next step visible to client</label>
+        <input id="nextStep" placeholder="Example: Upload finance agreement">
+        <label>Summary visible to client</label>
+        <textarea id="summary" placeholder="Short client-friendly case summary"></textarea>
+        <button type="submit">Save portal case</button>
+        <button id="clearFormBtn" type="button" class="secondary">Clear</button>
+        <p id="caseMsg" class="muted"></p>
+      </form>
+
+      <div class="card">
+        <div class="row space">
+          <h2>Portal cases</h2>
+          <button id="refreshCasesBtn" type="button" class="secondary">Refresh</button>
+        </div>
+        <label>Search</label>
+        <input id="caseSearch" placeholder="Client, email, claim type">
+        <div id="caseList" class="list"></div>
+      </div>
+    </div>
+
+    <section id="caseDetail" class="hide" style="margin-top:18px">
+      <div class="grid">
+        <div class="card">
+          <h2 id="detailTitle">Case detail</h2>
+          <p id="detailMeta" class="muted"></p>
+          <h3>Tasks</h3>
+          <div id="adminTaskList" class="list"></div>
+          <div class="grid-3">
+            <input id="taskTitle" placeholder="Task title">
+            <select id="taskStatus">
+              <option>Pending</option>
+              <option>Received</option>
+              <option>Reviewed</option>
+              <option>Missing</option>
+              <option>Not needed</option>
+            </select>
+            <button id="addTaskBtn" type="button">Add task</button>
+          </div>
+          <label>Task note</label>
+          <input id="taskNote" placeholder="Optional task note">
+          <h3>Timeline update</h3>
+          <input id="timelineTitle" placeholder="Update title">
+          <label>Timeline detail</label>
+          <textarea id="timelineDetail" placeholder="Client-visible update"></textarea>
+          <button id="addTimelineBtn" type="button">Add timeline update</button>
+        </div>
+
+        <div class="card">
+          <h2>Messages and documents</h2>
+          <h3>Client documents</h3>
+          <div id="adminDocList" class="list"></div>
+          <h3>Messages</h3>
+          <div id="adminMessageList" class="list" style="max-height:300px;overflow:auto"></div>
+          <label>Support reply</label>
+          <textarea id="supportMessage" placeholder="Write a message visible to the client"></textarea>
+          <button id="sendSupportBtn" type="button">Send support message</button>
+          <p id="detailMsg" class="muted"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+  authDomain: "quaerensclaims.firebaseapp.com",
+  projectId: "quaerensclaims",
+  storageBucket: "quaerensclaims.firebasestorage.app"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let cases = [];
+    let activeCase = null;
+    const el = id => document.getElementById(id);
+    const safe = value => String(value || "").replace(/[&<>"']/g, s => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[s]));
+    const fmtDate = value => {
+      if (!value) return "";
+      const d = value.toDate ? value.toDate() : new Date(value);
+      return d.toLocaleString("en-GB", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    };
+    const statusClass = status => {
+      const s = String(status || "").toLowerCase();
+      if (s.includes("closed") || s.includes("sent") || s.includes("reviewed")) return "green";
+      if (s.includes("missing")) return "red";
+      if (s.includes("await") || s.includes("review")) return "amber";
+      return "";
+    };
+    function makeCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let out = "";
+      for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      return out;
+    }
+    el("makeCodeBtn").addEventListener("click", () => el("portalCode").value = makeCode());
+    el("clearFormBtn").addEventListener("click", () => {
+      el("caseForm").reset();
+      el("caseId").value = "";
+      el("portalCode").value = makeCode();
+    });
+    async function loadCases() {
+      const snap = await db.collection("clientPortalCases").get();
+      cases = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => String(a.clientName||"").localeCompare(String(b.clientName||"")));
+      renderCases();
+    }
+    function renderCases() {
+      const q = el("caseSearch").value.trim().toLowerCase();
+      const filtered = cases.filter(c => !q || [c.clientName, c.clientEmail, c.claimType, c.status, c.caseRef].some(v => String(v || "").toLowerCase().includes(q)));
+      el("caseList").innerHTML = filtered.length ? filtered.map(c => 
+        <div class="item">
+          <div class="row space">
+            <div>
+              <strong>${safe(c.clientName)}</strong>
+              <p class="muted">${safe(c.claimType)} - ${safe(c.clientEmail)} - code: ${safe(c.portalCode)}</p>
+            </div>
+            <span class="badge ${statusClass(c.status)}">${safe(c.status || "New")}</span>
+          </div>
+          <button type="button" class="secondary" onclick="openCase('${c.id}')">Open</button>
+          <button type="button" class="secondary" onclick="editCase('${c.id}')">Edit</button>
+        </div>
+      ).join("") : <p class="muted">No portal cases found.</p>;
+    }
+    window.editCase = id => {
+      const c = cases.find(x => x.id === id);
+      if (!c) return;
+      el("caseId").value = c.id;
+      el("clientName").value = c.clientName || "";
+      el("clientEmail").value = c.clientEmail || "";
+      el("clientPhone").value = c.clientPhone || "";
+      el("claimType").value = c.claimType || "Spray Foam";
+      el("status").value = c.status || "New";
+      el("portalCode").value = c.portalCode || makeCode();
+      el("caseRef").value = c.caseRef || "";
+      el("nextStep").value = c.nextStep || "";
+      el("summary").value = c.summary || "";
+      window.scrollTo({ top:0, behavior:"smooth" });
+    };
+    window.openCase = async id => {
+      const snap = await db.collection("clientPortalCases").doc(id).get();
+      if (!snap.exists) return;
+      activeCase = { id:snap.id, ...snap.data() };
+      el("caseDetail").classList.remove("hide");
+      el("detailTitle").textContent = activeCase.clientName || "Case detail";
+      el("detailMeta").textContent = ${activeCase.claimType || ""} - ${activeCase.status || ""} - ${activeCase.clientEmail || ""};
+      renderAdminTasks();
+      await Promise.all([loadAdminDocs(), loadAdminMessages()]);
+      el("caseDetail").scrollIntoView({ behavior:"smooth" });
+    };
+    function renderAdminTasks() {
+      const tasks = Array.isArray(activeCase.tasks) ? activeCase.tasks : [];
+      el("adminTaskList").innerHTML = tasks.length ? tasks.map((t,i) => 
+        <div class="item task">
+          <div><strong>${safe(t.title)}</strong><p class="muted">${safe(t.note || "")}</p></div>
+          <div class="row"><span class="badge ${statusClass(t.status)}">${safe(t.status || "Pending")}</span><button class="danger" onclick="removeTask(${i})">Remove</button></div>
+        </div>
+      ).join("") : <p class="muted">No tasks yet.</p>;
+    }
+    window.removeTask = async index => {
+      activeCase.tasks.splice(index, 1);
+      await db.collection("clientPortalCases").doc(activeCase.id).update({ tasks: activeCase.tasks, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      renderAdminTasks();
+      await loadCases();
+    };
+    async function loadAdminDocs() {
+      const snap = await db.collection("clientPortalDocuments").where("caseId", "==", activeCase.id).get();
+      const docs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.uploadedAt?.toMillis?.() || 0) - (a.uploadedAt?.toMillis?.() || 0));
+      el("adminDocList").innerHTML = docs.length ? docs.map(doc => <div class="item"><strong>${safe(doc.name)}</strong><p class="muted">${safe(doc.category)} - ${fmtDate(doc.uploadedAt)}</p>${doc.url ? <a href="${safe(doc.url)}" target="_blank" rel="noopener">Open document</a> : ""}</div>).join("") : <p class="muted">No client documents yet.</p>;
+    }
+    async function loadAdminMessages() {
+      const snap = await db.collection("clientPortalMessages").where("caseId", "==", activeCase.id).get();
+      const msgs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+      el("adminMessageList").innerHTML = msgs.length ? msgs.map(msg => <div class="message ${msg.senderType === "client" ? "client" : ""}"><div>${safe(msg.body)}</div><div class="meta">${safe(msg.senderName || msg.senderType)} - ${fmtDate(msg.createdAt)}</div></div>).join("") : <p class="muted">No messages yet.</p>;
+      el("adminMessageList").scrollTop = el("adminMessageList").scrollHeight;
+    }
+    el("caseForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const email = el("clientEmail").value.trim();
+      const data = {
+        clientName: el("clientName").value.trim(),
+        clientEmail: email,
+        clientEmailLower: email.toLowerCase(),
+        clientPhone: el("clientPhone").value.trim(),
+        claimType: el("claimType").value,
+        status: el("status").value,
+        portalCode: el("portalCode").value.trim() || makeCode(),
+        caseRef: el("caseRef").value.trim(),
+        nextStep: el("nextStep").value.trim(),
+        summary: el("summary").value.trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      try {
+        if (el("caseId").value) {
+          await db.collection("clientPortalCases").doc(el("caseId").value).update(data);
+          el("caseMsg").textContent = "Portal case updated.";
+        } else {
+          data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          data.tasks = [
+            { title:"Upload contract or invoice", status:"Pending", note:"The original sale paperwork helps us verify the claim." },
+            { title:"Upload photos or reports", status:"Pending", note:"Photos, surveys, or expert reports strengthen the review." }
+          ];
+          data.timeline = [{ date: new Date().toLocaleDateString("en-GB"), title:"Portal created", detail:"Your Quaerens client portal has been opened." }];
+          await db.collection("clientPortalCases").add(data);
+          el("caseMsg").textContent = "Portal case created.";
+        }
+        el("caseForm").reset();
+        el("portalCode").value = makeCode();
+        el("caseId").value = "";
+        await loadCases();
+      } catch (error) {
+        el("caseMsg").textContent = error.message || "Could not save case.";
+      }
+    });
+    el("refreshCasesBtn").addEventListener("click", loadCases);
+    el("caseSearch").addEventListener("input", renderCases);
+    el("addTaskBtn").addEventListener("click", async () => {
+      if (!activeCase) return;
+      const title = el("taskTitle").value.trim();
+      if (!title) return;
+      activeCase.tasks = Array.isArray(activeCase.tasks) ? activeCase.tasks : [];
+      activeCase.tasks.push({ title, status: el("taskStatus").value, note: el("taskNote").value.trim() });
+      await db.collection("clientPortalCases").doc(activeCase.id).update({ tasks: activeCase.tasks, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      el("taskTitle").value = "";
+      el("taskNote").value = "";
+      renderAdminTasks();
+      await loadCases();
+    });
+    el("addTimelineBtn").addEventListener("click", async () => {
+      if (!activeCase) return;
+      const title = el("timelineTitle").value.trim();
+      if (!title) return;
+      activeCase.timeline = Array.isArray(activeCase.timeline) ? activeCase.timeline : [];
+      activeCase.timeline.push({ date: new Date().toLocaleDateString("en-GB"), title, detail: el("timelineDetail").value.trim(), visibleToClient: true });
+      await db.collection("clientPortalCases").doc(activeCase.id).update({ timeline: activeCase.timeline, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      el("timelineTitle").value = "";
+      el("timelineDetail").value = "";
+      el("detailMsg").textContent = "Timeline updated.";
+      await loadCases();
+    });
+    el("sendSupportBtn").addEventListener("click", async () => {
+      if (!activeCase) return;
+      const body = el("supportMessage").value.trim();
+      if (!body) return;
+      await db.collection("clientPortalMessages").add({
+        caseId: activeCase.id,
+        body,
+        senderType: "support",
+        senderName: "Quaerens support",
+        visibleToClient: true,
+        readByClient: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      el("supportMessage").value = "";
+      await loadAdminMessages();
+    });
+    el("portalCode").value = makeCode();
+    loadCases().catch(error => el("caseList").innerHTML = <div class="notice error">${safe(error.message || error)}</div>);
+  </script>
+</body>
+</html>
