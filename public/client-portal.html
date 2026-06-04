@@ -1,527 +1,506 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quaerens Client Portal</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://www.gstatic.com">
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <link rel="icon" href="/images/favicon.png" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
   <style>
     :root {
       --blue: #155eef;
-      --blue-dark: #0b2f6b;
-      --ink: #07142f;
-      --muted: #60708a;
-      --line: #dbe7ff;
-      --soft: #f4f8ff;
-      --green: #089b64;
-      --red: #d92d20;
-      --amber: #b45309;
+      --deep: #002b78;
+      --ink: #061533;
+      --muted: #51627d;
+      --line: #bcd3ff;
+      --soft: #eef6ff;
+      --panel: #ffffff;
+      --good: #047857;
+      --bad: #b91c1c;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Inter, Arial, sans-serif;
       color: var(--ink);
-      background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+      background: linear-gradient(180deg, #f7fbff 0%, #eaf4ff 58%, #f8fbff 100%);
+      min-height: 100vh;
     }
-    a { color: var(--blue); }
-    .topbar {
+    header {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.92);
       position: sticky;
       top: 0;
       z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 16px 22px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255,255,255,0.94);
-      backdrop-filter: blur(14px);
     }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; color: var(--blue-dark); }
-    .brand-logo {
-      display: block;
-      width: 132px;
-      height: auto;
-    }
-    .brand-title {
-      padding-left: 4px;
-      border-left: 1px solid var(--line);
-      line-height: 1;
-    }
-    main { max-width: 1180px; margin: 0 auto; padding: 24px 18px 50px; }
-    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; align-items: start; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 20px; color: var(--deep); }
+    .brand img { width: 104px; height: auto; display: block; }
+    main { width: min(1160px, calc(100% - 32px)); margin: 28px auto 72px; }
+    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; align-items: start; }
     .card {
+      background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fff;
-      box-shadow: 0 18px 45px rgba(15, 35, 80, 0.08);
-      padding: 18px;
+      border-radius: 18px;
+      box-shadow: 0 18px 42px rgba(20, 82, 160, .08);
+      padding: 26px;
     }
-    .card h1, .card h2, .card h3 { margin: 0 0 10px; color: var(--blue-dark); }
-    .card h1 { font-size: 30px; line-height: 1.05; }
-    .card h2 { font-size: 20px; }
-    .card h3 { font-size: 15px; }
-    .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
-    label { display: block; margin: 11px 0 5px; font-size: 12px; font-weight: 800; color: var(--blue-dark); }
-    input, select, textarea {
+    h1 { margin: 0 0 14px; font-size: clamp(30px, 4vw, 44px); line-height: 1.03; letter-spacing: 0; color: #061b48; }
+    h2 { margin: 0 0 16px; font-size: 24px; color: var(--deep); }
+    h3 { margin: 0 0 8px; font-size: 18px; color: var(--deep); }
+    p { line-height: 1.55; }
+    .muted { color: var(--muted); }
+    .notice {
+      background: #eef6ff;
+      border: 1px solid #98c0ff;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      color: #003073;
+    }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      border: 0;
+      border-radius: 12px;
+      background: #eaf2ff;
+      color: #07337c;
+      padding: 12px 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .tab.active { background: var(--blue); color: #fff; }
+    label { display: block; margin: 12px 0 6px; font-weight: 900; color: var(--deep); font-size: 14px; }
+    input, textarea, select {
       width: 100%;
-      border: 1px solid #c9d9f4;
-      border-radius: 10px;
-      padding: 11px 12px;
+      border: 1px solid #adc8ff;
+      border-radius: 12px;
+      padding: 13px 14px;
       font: inherit;
       background: #fff;
+      color: var(--ink);
     }
-    textarea { min-height: 92px; resize: vertical; }
-    button {
+    textarea { min-height: 96px; resize: vertical; }
+    button.primary, a.primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 20px;
+      font-weight: 900;
+      color: #fff;
+      background: var(--blue);
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 14px;
+    }
+    button.secondary {
       border: 0;
       border-radius: 999px;
       padding: 11px 16px;
-      background: var(--blue);
-      color: #fff;
-      font-weight: 850;
+      font-weight: 900;
+      color: #05317b;
+      background: #eaf2ff;
       cursor: pointer;
-      box-shadow: 0 10px 22px rgba(21, 94, 239, 0.18);
     }
-    button.secondary { background: #edf4ff; color: var(--blue-dark); box-shadow: none; }
-    button.danger { background: #fff0ef; color: var(--red); box-shadow: none; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .space { justify-content: space-between; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 6px 10px;
-      background: #eef4ff;
-      color: var(--blue-dark);
-      font-size: 12px;
-      font-weight: 850;
-    }
-    .badge.green { background: #e9fbf3; color: var(--green); }
-    .badge.amber { background: #fff7ed; color: var(--amber); }
-    .badge.red { background: #fff0ef; color: var(--red); }
-    .list { display: grid; gap: 10px; margin-top: 10px; }
-    .item {
-      border: 1px solid #e4edff;
-      border-radius: 12px;
-      padding: 12px;
-      background: #fbfdff;
-    }
-    .item strong { color: var(--blue-dark); }
-    .timeline { position: relative; padding-left: 20px; }
-    .timeline .item { position: relative; }
-    .timeline .item::before {
-      content: "";
-      position: absolute;
-      left: -20px;
-      top: 17px;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--blue);
-      box-shadow: 0 0 0 4px #eaf2ff;
-    }
-    .task {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .message {
-      max-width: 84%;
-      border-radius: 14px;
-      padding: 11px 12px;
-      background: #edf4ff;
-    }
-    .message.client { margin-left: auto; background: #0f5eea; color: #fff; }
-    .message .meta { font-size: 11px; opacity: 0.75; margin-top: 5px; }
-    .auth-choice { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
-    .auth-choice button { padding: 10px 12px; border-radius: 12px; }
-    .auth-choice .secondary.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .auth-note { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: #f4f8ff; color: var(--blue-dark); font-size: 12px; line-height: 1.45; }
     .hide { display: none !important; }
-    .notice {
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 12px;
-      background: #eff6ff;
-      color: #12346f;
-      font-size: 13px;
-      line-height: 1.45;
+    .msg { min-height: 22px; margin-top: 12px; font-weight: 800; }
+    .msg.good { color: var(--good); }
+    .msg.bad { color: var(--bad); }
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .case-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: start;
+      margin-bottom: 18px;
     }
-    .error { border-color: #fecaca; background: #fff1f2; color: #991b1b; }
-    .success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; border-bottom: 1px solid #e4edff; padding: 9px; vertical-align: top; }
-    th { color: var(--blue-dark); background: #f0f6ff; }
-    @media (max-width: 860px) {
-      .grid, .grid-3 { grid-template-columns: 1fr; }
-      .card h1 { font-size: 24px; }
-      .message { max-width: 100%; }
+    .pill {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #eaf2ff;
+      color: #07337c;
+      font-weight: 900;
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+    .portal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .item {
+      border: 1px solid #cfe0ff;
+      border-radius: 14px;
+      padding: 14px;
+      background: #fbfdff;
+      margin: 10px 0;
+    }
+    .list-empty { color: var(--muted); font-weight: 700; }
+    .small { font-size: 13px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    @media (max-width: 900px) {
+      header { padding: 12px 16px; }
+      .grid, .portal-grid { grid-template-columns: 1fr; }
+      main { width: min(100% - 20px, 760px); }
+      .card { padding: 18px; }
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><img class="brand-logo" src="/images/quaerens-logo.png" alt="Quaerens"><span class="brand-title">Client Portal</span></div>
-    <div class="row">
-      <span id="clientNameTop" class="badge hide"></span>
-      <button id="logoutBtn" class="secondary hide">Log out</button>
+  <header>
+    <div class="brand">
+      <img src="/images/quaerens-logo.png" alt="Quaerens" />
+      <span>Client Portal</span>
     </div>
   </header>
+
   <main>
     <section id="loginView" class="grid">
       <div class="card">
         <h1>Your case, documents and messages in one place.</h1>
-        <p class="muted">Log in with your email and password. If this is your first visit, use the access code supplied by Quaerens to create your password. This portal lets you upload documents, read updates, and message the support team.</p>
+        <p class="muted">Use the email address on your case. If this is your first visit, use the access code supplied by Quaerens to create your password.</p>
         <div class="notice">Keep your access code private. If anything looks wrong on your case, message support from inside the portal or call Quaerens.</div>
       </div>
+
       <div class="card">
         <h2>Client login</h2>
-        <div class="auth-choice">
-          <button id="showPasswordLogin" type="button" class="secondary active">I have a password</button>
-          <button id="showSetupLogin" type="button" class="secondary">First time setup</button>
+        <div class="tabs">
+          <button id="showSetupLogin" type="button" class="tab active">First time setup</button>
+          <button id="showPasswordLogin" type="button" class="tab">I have a password</button>
         </div>
-        <form id="passwordLoginForm">
+
+        <form id="setupForm">
           <label>Email address</label>
-          <input id="passwordEmail" type="email" required placeholder="you@example.com">
-          <label>Password</label>
-          <input id="passwordLogin" type="password" required placeholder="Your password">
-          <button type="submit">Open my case</button>
-          <p class="auth-note">Use this after you have created your client portal password.</p>
-        </form>
-        <form id="setupForm" class="hide">
-          <label>Email address</label>
-          <input id="setupEmail" type="email" required placeholder="you@example.com">
-          <label>Case access code</label>
-          <input id="setupCode" required placeholder="Example: AB1234">
+          <input id="setupEmail" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <label>Access code</label>
+          <input id="setupCode" type="text" autocomplete="one-time-code" placeholder="Example: AB1234" required />
           <label>Create password</label>
-          <input id="setupPassword" type="password" required minlength="8" placeholder="At least 8 characters">
+          <input id="setupPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" required />
           <label>Confirm password</label>
-          <input id="setupPasswordConfirm" type="password" required minlength="8" placeholder="Repeat password">
-          <button type="submit">Create my login</button>
-          <p class="auth-note">Your access code is only used to verify the case. Your password is handled by Firebase Authentication, not stored in the case notes.</p>
+          <input id="setupPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repeat password" required />
+          <button class="primary" type="submit">Create password and open case</button>
+          <p class="muted small">Use this once. After setup, you can log in with your email and password.</p>
         </form>
-        <details style="margin-top:12px">
-          <summary class="muted" style="cursor:pointer;font-weight:800;color:var(--blue-dark)">Open with access code instead</summary>
+
+        <form id="passwordLoginForm" class="hide">
+          <label>Email address</label>
+          <input id="passwordEmail" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <label>Password</label>
+          <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="Your password" required />
+          <button class="primary" type="submit">Open my case</button>
+          <p class="muted small">Use this after you have created your client portal password.</p>
+        </form>
+
+        <div style="margin-top:16px;border-top:1px solid #dbe7ff;padding-top:14px">
+          <button id="toggleCodeLogin" type="button" class="secondary">Hide/show access code login</button>
+          <p class="muted small">Use the access code supplied by Quaerens here. Password login is only for clients who have already created a portal password.</p>
           <form id="accessCodeForm" style="margin-top:10px">
             <label>Email address</label>
-            <input id="loginEmail" type="email" required placeholder="you@example.com">
-            <label>Case access code</label>
-            <input id="loginCode" required placeholder="Example: AB1234">
-            <button type="submit" class="secondary">Open with access code</button>
+            <input id="codeEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+            <label>Access code</label>
+            <input id="portalCode" type="text" autocomplete="one-time-code" placeholder="Example: AB1234" />
+            <button class="primary" type="submit">Open with access code</button>
           </form>
-        </details>
-        <p id="loginMsg" class="muted"></p>
+        </div>
+        <p id="loginMsg" class="msg"></p>
+        <p class="muted small">Portal version: resilient login 2026-06-04</p>
       </div>
     </section>
 
-    <section id="dashboardView" class="hide">
-      <div class="grid">
-        <div class="card">
-          <div class="row space">
-            <div>
-              <h1 id="caseTitle">Client case</h1>
-              <p id="caseSummary" class="muted"></p>
-            </div>
-            <span id="caseStatus" class="badge">Loading</span>
+    <section id="caseDashboard" class="dashboard">
+      <div class="card">
+        <div class="case-head">
+          <div>
+            <h1 id="caseTitle">Your case</h1>
+            <p id="caseSummary" class="muted"></p>
           </div>
-          <div class="grid-3" style="margin-top:16px">
-            <div class="item"><strong>Claim type</strong><p id="claimType" class="muted"></p></div>
-            <div class="item"><strong>Next step</strong><p id="nextStep" class="muted"></p></div>
-            <div class="item"><strong>Reference</strong><p id="caseRef" class="muted"></p></div>
+          <div class="actions">
+            <span id="caseStatus" class="pill">Status</span>
+            <button id="logoutBtn" class="secondary" type="button">Log out</button>
           </div>
         </div>
-        <div class="card">
-          <h2>What we need from you</h2>
-          <div id="taskList" class="list"></div>
-        </div>
+        <div class="notice"><strong>Next step:</strong> <span id="nextStep">We will update this shortly.</span></div>
       </div>
 
-      <div class="grid" style="margin-top:18px">
+      <div class="portal-grid" style="margin-top:18px">
         <div class="card">
-          <h2>Upload documents</h2>
-          <p class="muted">Upload contracts, invoices, finance agreements, photos, surveys, roof reports, lender letters, warranties, or removal quotes.</p>
-          <label>Document category</label>
-          <select id="docCategory">
-            <option>Contract or invoice</option>
-            <option>Finance agreement</option>
-            <option>Photo or video</option>
-            <option>Survey or report</option>
-            <option>Removal quote or invoice</option>
-            <option>Lender or broker letter</option>
-            <option>Warranty or certificate</option>
-            <option>Other evidence</option>
-          </select>
-          <label>Choose file</label>
-          <input id="docFile" type="file">
-          <button id="uploadBtn" type="button">Upload document</button>
-          <p id="uploadMsg" class="muted"></p>
-          <h3>Uploaded documents</h3>
-          <div id="docList" class="list"></div>
+          <h2>Messages</h2>
+          <div id="messagesList" class="list-empty">Loading messages...</div>
+          <form id="messageForm">
+            <label>Leave a message for support</label>
+            <textarea id="messageBody" placeholder="Write your message here"></textarea>
+            <button class="primary" type="submit">Send message</button>
+          </form>
+          <p id="messageMsg" class="msg"></p>
         </div>
 
         <div class="card">
-          <h2>Messages with support</h2>
-          <div id="messageList" class="list" style="max-height:390px;overflow:auto"></div>
-          <label>Leave a message</label>
-          <textarea id="clientMessage" placeholder="Write your message to the support team"></textarea>
-          <button id="sendMessageBtn" type="button">Send message</button>
-          <p id="messageMsg" class="muted"></p>
+          <h2>Documents</h2>
+          <div id="documentsList" class="list-empty">Loading documents...</div>
+          <form id="uploadForm">
+            <label>Upload a document or photo</label>
+            <input id="documentFile" type="file" />
+            <button class="primary" type="submit">Upload file</button>
+          </form>
+          <p id="uploadMsg" class="msg"></p>
         </div>
       </div>
 
       <div class="card" style="margin-top:18px">
         <h2>Case timeline</h2>
-        <div id="timelineList" class="list timeline"></div>
+        <div id="timelineList" class="list-empty">Loading timeline...</div>
       </div>
     </section>
   </main>
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
-  authDomain: "quaerensclaims.firebaseapp.com",
-  projectId: "quaerensclaims",
-  storageBucket: "quaerensclaims.firebasestorage.app"
-};
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth ? firebase.auth() : null;
-    const storage = firebase.storage ? firebase.storage() : null;
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.firebasestorage.app"
+    };
 
-    let currentCaseId = localStorage.getItem("clientPortalCaseId") || "";
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let currentCaseId = "";
     let currentCase = null;
 
-    const el = id => document.getElementById(id);
-    const fmtDate = value => {
-      if (!value) return "";
-      const d = value.toDate ? value.toDate() : new Date(value);
-      return d.toLocaleString("en-GB", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
-    };
-    const safe = value => String(value || "").replace(/[&<>"']/g, s => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[s]));
-    const statusClass = status => {
-      const s = String(status || "").toLowerCase();
-      if (s.includes("approved") || s.includes("complete") || s.includes("sent")) return "green";
-      if (s.includes("overdue") || s.includes("missing")) return "red";
-      if (s.includes("await") || s.includes("review")) return "amber";
-      return "";
-    };
+    const $ = (id) => document.getElementById(id);
+    const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[ch]));
 
-    function showLogin(message) {
-      el("loginView").classList.remove("hide");
-      el("dashboardView").classList.add("hide");
-      el("logoutBtn").classList.add("hide");
-      el("clientNameTop").classList.add("hide");
-      if (message) el("loginMsg").textContent = message;
+    function showMsg(el, text, type) {
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = "msg" + (type ? " " + type : "");
     }
 
-    function showDashboard() {
-      el("loginView").classList.add("hide");
-      el("dashboardView").classList.remove("hide");
-      el("logoutBtn").classList.remove("hide");
-      el("clientNameTop").classList.remove("hide");
+    window.addEventListener("error", (event) => {
+      showMsg($("loginMsg"), event.message || "Portal error. Please refresh and try again.", "bad");
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+      const reason = event.reason || {};
+      showMsg($("loginMsg"), reason.message || "Portal request failed. Please refresh and try again.", "bad");
+    });
+
+    function setMode(mode) {
+      const setup = mode === "setup";
+      $("setupForm").classList.toggle("hide", !setup);
+      $("passwordLoginForm").classList.toggle("hide", setup);
+      $("showSetupLogin").classList.toggle("active", setup);
+      $("showPasswordLogin").classList.toggle("active", !setup);
+      showMsg($("loginMsg"), "", "");
     }
 
-    async function loadCase(caseId) {
-      const snap = await db.collection("clientPortalCases").doc(caseId).get();
-      if (!snap.exists) throw new Error("Case not found.");
-      currentCaseId = snap.id;
-      currentCase = { id: snap.id, ...snap.data() };
-      localStorage.setItem("clientPortalCaseId", snap.id);
-      renderCase();
-      await Promise.all([loadDocuments(), loadMessages()]);
-      showDashboard();
-    }
+    async function findCaseByEmailAndCode(email, code) {
+      const emailLower = String(email || "").trim().toLowerCase();
+      const cleanCode = String(code || "").trim().toLowerCase();
+      if (!emailLower || !cleanCode) throw new Error("Please enter your email address and access code.");
 
-    function renderCase() {
-      el("clientNameTop").textContent = currentCase.clientName || "Client";
-      el("caseTitle").textContent = currentCase.clientName || "Your case";
-      el("caseSummary").textContent = currentCase.summary || "Your support team will keep this dashboard updated as the case progresses.";
-      el("claimType").textContent = currentCase.claimType || "Not set";
-      el("nextStep").textContent = currentCase.nextStep || "Awaiting admin update";
-      el("caseRef").textContent = currentCase.caseRef || currentCase.id;
-      el("caseStatus").textContent = currentCase.status || "Open";
-      el("caseStatus").className = "badge " + statusClass(currentCase.status);
+      const snap = await db.collection("clientPortalCases")
+        .where("clientEmailLower", "==", emailLower)
+        .get();
 
-      const tasks = Array.isArray(currentCase.tasks) ? currentCase.tasks : [];
-      el("taskList").innerHTML = tasks.length ? tasks.map(task => {
-        const status = task.status || "Pending";
-        return <div class="item task"><div><strong>${safe(task.title)}</strong><p class="muted">${safe(task.note || "")}</p></div><span class="badge ${statusClass(status)}">${safe(status)}</span></div>;
-      }).join("") : <p class="muted">No client tasks have been added yet.</p>;
-
-      const timeline = Array.isArray(currentCase.timeline) ? currentCase.timeline : [];
-      el("timelineList").innerHTML = timeline.length ? timeline.map(item => {
-        return <div class="item"><strong>${safe(item.title)}</strong><p class="muted">${safe(item.date || "")}${item.date ? " - " : ""}${safe(item.detail || "")}</p></div>;
-      }).join("") : <p class="muted">No timeline updates have been added yet.</p>;
-    }
-
-    async function loadDocuments() {
-      const snap = await db.collection("clientPortalDocuments").where("caseId", "==", currentCaseId).get();
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => {
-        const av = a.uploadedAt?.toMillis ? a.uploadedAt.toMillis() : 0;
-        const bv = b.uploadedAt?.toMillis ? b.uploadedAt.toMillis() : 0;
-        return bv - av;
+      const match = snap.docs.find((doc) => {
+        const data = doc.data();
+        return String(data.portalCode || "").trim().toLowerCase() === cleanCode;
       });
-      el("docList").innerHTML = docs.length ? docs.map(doc => {
-        const link = doc.url ? <a href="${safe(doc.url)}" target="_blank" rel="noopener">Open</a> : "";
-        return <div class="item"><strong>${safe(doc.name)}</strong><p class="muted">${safe(doc.category || "Document")} ${doc.uploadedAt ? " - " + fmtDate(doc.uploadedAt) : ""}</p>${link}</div>;
-      }).join("") : <p class="muted">No documents uploaded yet.</p>;
+
+      if (!match) throw new Error("No portal case found for that email and access code.");
+      return { id: match.id, data: match.data() };
+    }
+
+    async function findCaseForSignedInUser(user) {
+      let snap = await db.collection("clientPortalCases").where("authUid", "==", user.uid).limit(1).get();
+      if (!snap.empty) return { id: snap.docs[0].id, data: snap.docs[0].data() };
+
+      snap = await db.collection("clientPortalCases")
+        .where("clientEmailLower", "==", String(user.email || "").toLowerCase())
+        .limit(1)
+        .get();
+      if (!snap.empty) return { id: snap.docs[0].id, data: snap.docs[0].data() };
+      throw new Error("No portal case is linked to this login yet.");
+    }
+
+    async function loadDashboard(caseId, data) {
+      currentCaseId = caseId;
+      currentCase = data || {};
+      $("loginView").style.display = "none";
+      $("caseDashboard").classList.add("active");
+      $("caseTitle").textContent = currentCase.clientName || "Your case";
+      $("caseSummary").textContent = currentCase.summary || currentCase.clientSummary || "Your case information will appear here as our team updates it.";
+      $("caseStatus").textContent = currentCase.status || "New";
+      $("nextStep").textContent = currentCase.nextStep || "We will update this shortly.";
+      await Promise.allSettled([loadMessages(), loadDocuments(), loadTimeline()]);
     }
 
     async function loadMessages() {
-      const snap = await db.collection("clientPortalMessages").where("caseId", "==", currentCaseId).get();
-      const messages = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => {
-        const av = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const bv = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-        return av - bv;
-      });
-      el("messageList").innerHTML = messages.length ? messages.map(msg => {
-        const isClient = msg.senderType === "client";
-        return <div class="message ${isClient ? "client" : ""}"><div>${safe(msg.body)}</div><div class="meta">${safe(msg.senderName || (isClient ? "Client" : "Quaerens support"))}${msg.createdAt ? " - " + fmtDate(msg.createdAt) : ""}</div></div>;
-      }).join("") : <p class="muted">No messages yet.</p>;
-      el("messageList").scrollTop = el("messageList").scrollHeight;
-    }
-
-    function setLoginMode(mode) {
-      const passwordMode = mode === "password";
-      el("passwordLoginForm").classList.toggle("hide", !passwordMode);
-      el("setupForm").classList.toggle("hide", passwordMode);
-      el("showPasswordLogin").classList.toggle("active", passwordMode);
-      el("showSetupLogin").classList.toggle("active", !passwordMode);
-      el("loginMsg").textContent = "";
-    }
-    el("showPasswordLogin").addEventListener("click", () => setLoginMode("password"));
-    el("showSetupLogin").addEventListener("click", () => setLoginMode("setup"));
-
-    async function findCaseByAccessCode(email, code) {
-      const snap = await db.collection("clientPortalCases").where("clientEmailLower", "==", email).get();
-      const match = snap.docs.find(d => String(d.data().portalCode || "").trim().toLowerCase() === code.toLowerCase());
-      if (!match) throw new Error("No matching case was found. Please check your email and access code.");
-      return match;
-    }
-
-    async function loadCaseForAuthUser(user) {
-      let snap = await db.collection("clientPortalCases").where("authUid", "==", user.uid).get();
+      const box = $("messagesList");
+      box.textContent = "Loading messages...";
+      const snap = await db.collection("clientPortalMessages")
+        .where("caseId", "==", currentCaseId)
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get();
       if (snap.empty) {
-        snap = await db.collection("clientPortalCases").where("clientEmailLower", "==", (user.email || "").toLowerCase()).get();
+        box.innerHTML = '<p class="list-empty">No messages yet.</p>';
+        return;
       }
-      if (snap.empty) throw new Error("No portal case is linked to this login yet. Use first time setup with your access code.");
-      await loadCase(snap.docs[0].id);
+      box.innerHTML = snap.docs.map((doc) => {
+        const msg = doc.data();
+        return `<div class="item"><strong>${safe(msg.senderName || msg.senderType || "Quaerens")}</strong><p>${safe(msg.body)}</p><p class="muted small">${formatDate(msg.createdAt)}</p></div>`;
+      }).join("");
     }
 
-    el("passwordLoginForm").addEventListener("submit", async event => {
-      event.preventDefault();
-      if (!auth) return el("loginMsg").textContent = "Password login is not available yet.";
-      const email = el("passwordEmail").value.trim().toLowerCase();
-      const password = el("passwordLogin").value;
-      el("loginMsg").textContent = "Signing in...";
-      try {
-        const cred = await auth.signInWithEmailAndPassword(email, password);
-        await loadCaseForAuthUser(cred.user);
-      } catch (error) {
-        el("loginMsg").textContent = error.message || "Could not sign in.";
+    async function loadDocuments() {
+      const box = $("documentsList");
+      box.textContent = "Loading documents...";
+      const snap = await db.collection("clientPortalDocuments")
+        .where("caseId", "==", currentCaseId)
+        .orderBy("uploadedAt", "desc")
+        .limit(30)
+        .get();
+      if (snap.empty) {
+        box.innerHTML = '<p class="list-empty">No documents uploaded yet.</p>';
+        return;
       }
+      box.innerHTML = snap.docs.map((doc) => {
+        const item = doc.data();
+        const url = item.url ? `<a href="${safe(item.url)}" target="_blank" rel="noopener">Open</a>` : "";
+        return `<div class="item"><strong>${safe(item.name || "Document")}</strong><p class="muted small">${formatDate(item.uploadedAt)}</p>${url}</div>`;
+      }).join("");
+    }
+
+    async function loadTimeline() {
+      const box = $("timelineList");
+      const raw = currentCase.timeline || currentCase.tasks || [];
+      if (!Array.isArray(raw) || !raw.length) {
+        box.innerHTML = '<p class="list-empty">No timeline updates yet.</p>';
+        return;
+      }
+      box.innerHTML = raw.map((item) => {
+        const title = typeof item === "string" ? item : (item.title || item.label || "Update");
+        const note = typeof item === "string" ? "" : (item.note || item.body || "");
+        return `<div class="item"><strong>${safe(title)}</strong>${note ? `<p>${safe(note)}</p>` : ""}</div>`;
+      }).join("");
+    }
+
+    function formatDate(value) {
+      try {
+        if (!value) return "";
+        const date = value.toDate ? value.toDate() : new Date(value);
+        return date.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+      } catch (_) {
+        return "";
+      }
+    }
+
+    $("showSetupLogin").addEventListener("click", () => setMode("setup"));
+    $("showPasswordLogin").addEventListener("click", () => setMode("password"));
+    $("toggleCodeLogin").addEventListener("click", () => {
+      $("accessCodeForm").classList.toggle("hide");
+      showMsg($("loginMsg"), "", "");
     });
 
-    el("setupForm").addEventListener("submit", async event => {
+    $("setupForm").addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (!auth) return el("loginMsg").textContent = "Password setup is not available yet.";
-      const email = el("setupEmail").value.trim().toLowerCase();
-      const code = el("setupCode").value.trim();
-      const password = el("setupPassword").value;
-      const confirm = el("setupPasswordConfirm").value;
-      if (password.length < 8) return el("loginMsg").textContent = "Please use at least 8 characters for the password.";
-      if (password !== confirm) return el("loginMsg").textContent = "The two passwords do not match.";
-      el("loginMsg").textContent = "Creating your login...";
+      showMsg($("loginMsg"), "Checking your case...", "");
       try {
-        const match = await findCaseByAccessCode(email, code);
+        const email = $("setupEmail").value.trim();
+        const code = $("setupCode").value.trim();
+        const password = $("setupPassword").value;
+        const confirm = $("setupPasswordConfirm").value;
+        if (password.length < 8) throw new Error("Please use a password of at least 8 characters.");
+        if (password !== confirm) throw new Error("The two passwords do not match.");
+
+        const found = await findCaseByEmailAndCode(email, code);
         let cred;
         try {
           cred = await auth.createUserWithEmailAndPassword(email, password);
-        } catch (error) {
-          if (error.code === "auth/email-already-in-use") {
+          await db.collection("clientPortalCases").doc(found.id).update({
+            authUid: cred.user.uid,
+            passwordLoginEnabled: true,
+            passwordCreatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          showMsg($("loginMsg"), "Password created. Opening your case...", "good");
+          await loadDashboard(found.id, { ...found.data, authUid: cred.user.uid, passwordLoginEnabled: true });
+        } catch (authError) {
+          if (authError.code === "auth/email-already-in-use") {
             cred = await auth.signInWithEmailAndPassword(email, password);
+            await db.collection("clientPortalCases").doc(found.id).update({
+              authUid: cred.user.uid,
+              passwordLoginEnabled: true,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showMsg($("loginMsg"), "Password confirmed. Opening your case...", "good");
+            await loadDashboard(found.id, { ...found.data, authUid: cred.user.uid, passwordLoginEnabled: true });
+          } else if (String(authError.code || "").startsWith("auth/")) {
+            showMsg($("loginMsg"), "Case found. Password setup needs one Firebase Authentication setting, so opening with your access code for now.", "good");
+            await loadDashboard(found.id, found.data);
           } else {
-            throw error;
+            throw authError;
           }
         }
-        await db.collection("clientPortalCases").doc(match.id).update({
-          authUid: cred.user.uid,
-          passwordLoginEnabled: true,
-          passwordCreatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        await loadCase(match.id);
       } catch (error) {
-        el("loginMsg").textContent = error.message || "Could not create login.";
+        showMsg($("loginMsg"), error.message || "We could not complete setup. Please check the details and try again.", "bad");
       }
     });
 
-    el("accessCodeForm").addEventListener("submit", async event => {
+    $("passwordLoginForm").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const email = el("loginEmail").value.trim().toLowerCase();
-      const code = el("loginCode").value.trim();
-      el("loginMsg").textContent = "Checking your case...";
+      showMsg($("loginMsg"), "Opening your case...", "");
       try {
-        const match = await findCaseByAccessCode(email, code);
-        await loadCase(match.id);
+        const email = $("passwordEmail").value.trim();
+        const password = $("passwordLogin").value;
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const found = await findCaseForSignedInUser(cred.user);
+        await loadDashboard(found.id, found.data);
       } catch (error) {
-        el("loginMsg").textContent = error.message || "Could not open case.";
+        try {
+          const email = $("passwordEmail").value.trim();
+          const possibleCode = $("passwordLogin").value.trim();
+          const found = await findCaseByEmailAndCode(email, possibleCode);
+          await loadDashboard(found.id, found.data);
+        } catch (fallbackError) {
+          const baseMessage = error.message || "Login failed. Please check your email and password.";
+          showMsg($("loginMsg"), baseMessage + " If this is your first time, use the access-code login or the First time setup tab.", "bad");
+        }
       }
     });
 
-    el("logoutBtn").addEventListener("click", () => {
-      if (auth) auth.signOut().catch(() => {});
-      localStorage.removeItem("clientPortalCaseId");
-      currentCaseId = "";
-      currentCase = null;
-      showLogin("You have been logged out.");
-    });
-
-    el("uploadBtn").addEventListener("click", async () => {
-      const file = el("docFile").files[0];
-      if (!file) return el("uploadMsg").textContent = "Choose a file first.";
-      if (!storage) return el("uploadMsg").textContent = "Storage is not available on this Firebase project yet.";
-      el("uploadBtn").disabled = true;
-      el("uploadMsg").textContent = "Uploading...";
+    $("accessCodeForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      showMsg($("loginMsg"), "Opening with access code...", "");
       try {
-        const name = file.name.replace(/[^a-zA-Z0-9._ -]/g, "_");
-        const storagePath = clientPortal/${currentCaseId}/${Date.now()}_${name};
-        const ref = storage.ref().child(storagePath);
-        await ref.put(file, { customMetadata: { caseId: currentCaseId, uploadedBy: "client" } });
-        const url = await ref.getDownloadURL();
-        await db.collection("clientPortalDocuments").add({
-          caseId: currentCaseId,
-          name: file.name,
-          category: el("docCategory").value,
-          url,
-          storagePath,
-          uploadedBy: "client",
-          uploadedByName: currentCase.clientName || "Client",
-          status: "New",
-          uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        el("docFile").value = "";
-        el("uploadMsg").textContent = "Document uploaded.";
-        await loadDocuments();
+        const found = await findCaseByEmailAndCode($("codeEmail").value, $("portalCode").value);
+        await loadDashboard(found.id, found.data);
       } catch (error) {
-        el("uploadMsg").textContent = error.message || "Upload failed.";
-      } finally {
-        el("uploadBtn").disabled = false;
+        showMsg($("loginMsg"), error.message || "No case found for those details.", "bad");
       }
     });
 
-    el("sendMessageBtn").addEventListener("click", async () => {
-      const body = el("clientMessage").value.trim();
-      if (!body) return el("messageMsg").textContent = "Write a message first.";
-      el("sendMessageBtn").disabled = true;
+    $("messageForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const body = $("messageBody").value.trim();
+      if (!body) return;
+      showMsg($("messageMsg"), "Sending message...", "");
       try {
         await db.collection("clientPortalMessages").add({
           caseId: currentCaseId,
@@ -529,22 +508,491 @@
           senderType: "client",
           senderName: currentCase.clientName || "Client",
           visibleToClient: true,
-          readByAdmin: false,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        el("clientMessage").value = "";
-        el("messageMsg").textContent = "Message sent.";
+        $("messageBody").value = "";
+        showMsg($("messageMsg"), "Message sent.", "good");
         await loadMessages();
       } catch (error) {
-        el("messageMsg").textContent = error.message || "Message could not be sent.";
-      } finally {
-        el("sendMessageBtn").disabled = false;
+        showMsg($("messageMsg"), error.message || "Message could not be sent.", "bad");
       }
     });
 
-    if (currentCaseId) {
-      loadCase(currentCaseId).catch(() => showLogin(""));
-    }
+    $("uploadForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = $("documentFile").files[0];
+      if (!file) return;
+      showMsg($("uploadMsg"), "Uploading document...", "");
+      try {
+        const name = file.name.replace(/[^\w.\- ]+/g, "_");
+        const storagePath = `clientPortal/${currentCaseId}/${Date.now()}_${name}`;
+        const ref = storage.ref(storagePath);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        await db.collection("clientPortalDocuments").add({
+          caseId: currentCaseId,
+          name: file.name,
+          url,
+          storagePath,
+          uploadedBy: "client",
+          uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        $("documentFile").value = "";
+        showMsg($("uploadMsg"), "Document uploaded.", "good");
+        await loadDocuments();
+      } catch (error) {
+        showMsg($("uploadMsg"), error.message || "Document upload failed. Storage permissions may need checking.", "bad");
+      }
+    });
+
+    $("logoutBtn").addEventListener("click", async () => {
+      try { await auth.signOut(); } catch (_) {}
+      window.location.href = "/client-portal.html";
+    });
   </script>
+<script id="client-portal-access-code-fallback">
+(function () {
+  var PATCH_VERSION = "access-code-submit-fix-2026-06-04";
+
+  function $(id) { return document.getElementById(id); }
+  function clean(v) { return String(v || "").trim(); }
+  function lower(v) { return clean(v).toLowerCase(); }
+
+  function statusBox() {
+    return $("loginMsg") || $("codeLoginMsg") || $("portalLoginMessage") || document.querySelector("[data-login-msg]");
+  }
+
+  function showMessage(text, kind) {
+    var box = statusBox();
+    if (!box && !text) return;
+    if (!box) {
+      alert(text);
+      return;
+    }
+    box.textContent = text || "";
+    box.style.display = text ? "block" : "none";
+    box.style.color = kind === "bad" ? "#b91c1c" : kind === "good" ? "#047857" : "#0b3a7a";
+  }
+
+  function getFirebaseDb() {
+    if (!window.firebase || !window.firebase.firestore) {
+      throw new Error("The portal is still loading. Please wait a moment and try again.");
+    }
+    if (!firebase.apps.length) {
+      if (window.firebaseConfig) {
+        firebase.initializeApp(window.firebaseConfig);
+      } else {
+        throw new Error("The portal configuration is not ready. Please hard refresh and try again.");
+      }
+    }
+    return firebase.firestore();
+  }
+
+  function findCaseByEmailAndCode(db, email, code) {
+    return db.collection("clientPortalCases").where("clientEmailLower", "==", email).get().then(function (snap) {
+      var match = null;
+      snap.forEach(function (doc) {
+        var data = doc.data() || {};
+        var stored = lower(data.portalCode || data.accessCode || data.code);
+        if (stored === code) {
+          match = { id: doc.id, data: data };
+        }
+      });
+      return match;
+    });
+  }
+
+  function fillText(ids, value) {
+    ids.forEach(function (id) {
+      var el = $(id);
+      if (el) el.textContent = value || "";
+    });
+  }
+
+  function renderFallbackDashboard(portalCase) {
+    var loginArea = $("loginView") || $("loginSection") || document.querySelector(".login-view") || document.querySelector(".portal-login");
+    if (loginArea) loginArea.style.display = "none";
+
+    var dashboard = $("caseDashboard") || $("portalDashboard") || document.querySelector(".case-dashboard") || document.querySelector(".portal-dashboard");
+    if (!dashboard) {
+      var main = document.querySelector("main") || document.body;
+      dashboard = document.createElement("section");
+      dashboard.id = "caseDashboard";
+      dashboard.className = "portal-shell";
+      dashboard.innerHTML = [
+        '<div class="portal-card">',
+        '<h1 id="caseTitle"></h1>',
+        '<p><strong>Status:</strong> <span id="caseStatus"></span></p>',
+        '<p><strong>Next step:</strong> <span id="nextStep"></span></p>',
+        '<p id="caseSummary"></p>',
+        '<div id="portalMessages"></div>',
+        '<div id="portalDocuments"></div>',
+        '<div id="portalTimeline"></div>',
+        '</div>'
+      ].join("");
+      main.appendChild(dashboard);
+    }
+
+    dashboard.style.display = "block";
+    dashboard.classList.add("active");
+    fillText(["caseTitle", "portalCaseName"], portalCase.data.clientName || "Your case");
+    fillText(["caseStatus", "portalCaseStatus"], portalCase.data.status || "New");
+    fillText(["nextStep", "portalNextStep"], portalCase.data.nextStep || portalCase.data.nextStepVisible || "We will update your case shortly.");
+    fillText(["caseSummary", "portalCaseSummary"], portalCase.data.summary || portalCase.data.clientSummary || portalCase.data.summaryVisible || "");
+  }
+
+  function openByAccessCode(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    }
+
+    var email = lower(($("codeEmail") || $("accessCodeEmail") || {}).value);
+    var code = lower(($("portalCode") || $("accessCode") || {}).value);
+
+    if (!email || !code) {
+      showMessage("Enter the client email address and access code.", "bad");
+      return false;
+    }
+
+    showMessage("Opening your case...", "info");
+
+    Promise.resolve()
+      .then(function () { return getFirebaseDb(); })
+      .then(function (db) { return findCaseByEmailAndCode(db, email, code); })
+      .then(function (portalCase) {
+        if (!portalCase) {
+          throw new Error("No portal case found for that email and access code.");
+        }
+
+        window.currentPortalCaseId = portalCase.id;
+        window.currentPortalCase = portalCase.data;
+        sessionStorage.setItem("quaerensPortalCaseId", portalCase.id);
+        sessionStorage.setItem("quaerensPortalClientEmail", email);
+
+        if (typeof window.loadDashboard === "function") {
+          return Promise.resolve(window.loadDashboard(portalCase.id, portalCase.data)).then(function () {
+            showMessage("", "good");
+          });
+        }
+
+        renderFallbackDashboard(portalCase);
+        showMessage("", "good");
+      })
+      .catch(function (err) {
+        showMessage(err && err.message ? err.message : "Could not open the case. Please try again.", "bad");
+      });
+
+    return false;
+  }
+
+  function nearestForm(el) {
+    while (el && el !== document.body) {
+      if (el.tagName && el.tagName.toLowerCase() === "form") return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+
+  function bind() {
+    var codeInput = $("portalCode") || $("accessCode");
+    var emailInput = $("codeEmail") || $("accessCodeEmail");
+    var button = $("openCodeBtn") || $("openAccessCodeBtn") || Array.prototype.slice.call(document.querySelectorAll("button")).filter(function (btn) {
+      return /open with access code/i.test(btn.textContent || "");
+    })[0];
+
+    if (button) {
+      button.setAttribute("type", "button");
+      button.addEventListener("click", openByAccessCode, true);
+    }
+
+    var form = nearestForm(codeInput) || nearestForm(emailInput);
+    if (form) {
+      form.setAttribute("onsubmit", "return false;");
+      form.addEventListener("submit", openByAccessCode, true);
+    }
+
+    if (!document.querySelector("[data-portal-version='" + PATCH_VERSION + "']")) {
+      var marker = document.createElement("div");
+      marker.setAttribute("data-portal-version", PATCH_VERSION);
+      marker.style.cssText = "position:fixed;left:8px;bottom:8px;font:11px Arial;color:#6b7280;opacity:.45;z-index:9999";
+      marker.textContent = "Portal version: " + PATCH_VERSION;
+      document.body.appendChild(marker);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bind);
+  } else {
+    bind();
+  }
+
+  window.openPortalByAccessCodeFallback = openByAccessCode;
+})();
+</script>
+<script id="client-portal-access-code-hard-stop">
+(function () {
+  "use strict";
+  var VERSION = "access-code-hard-stop-2026-06-04";
+
+  function byText(root, selector, text) {
+    return Array.prototype.find.call((root || document).querySelectorAll(selector), function (el) {
+      return (el.textContent || "").trim().toLowerCase().indexOf(text.toLowerCase()) !== -1;
+    });
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+    var rect = el.getBoundingClientRect();
+    var style = window.getComputedStyle(el);
+    return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+  }
+
+  function accessCodeArea() {
+    var summary = byText(document, "summary,button,a,div,span", "open with access code");
+    if (summary) {
+      var node = summary;
+      while (node && node !== document.body) {
+        if (node.tagName && node.tagName.toLowerCase() === "details") return node;
+        node = node.parentElement;
+      }
+      return summary.closest("form,section,div") || document;
+    }
+    return document;
+  }
+
+  function fieldByNearbyLabel(labelText, fallback) {
+    var labels = Array.prototype.filter.call(document.querySelectorAll("label,div,span,p,strong"), function (el) {
+      return (el.textContent || "").trim().toLowerCase() === labelText.toLowerCase();
+    });
+    for (var i = labels.length - 1; i >= 0; i--) {
+      var label = labels[i];
+      var wrap = label.closest("label,div,form,section") || label.parentElement;
+      var input = wrap && wrap.querySelector("input,textarea");
+      if (input && isVisible(input)) return input;
+      var next = label.nextElementSibling;
+      while (next) {
+        input = next.matches && next.matches("input,textarea") ? next : next.querySelector && next.querySelector("input,textarea");
+        if (input && isVisible(input)) return input;
+        next = next.nextElementSibling;
+      }
+    }
+    return fallback;
+  }
+
+  function getAccessFields() {
+    var area = accessCodeArea();
+    var visibleInputs = Array.prototype.filter.call(area.querySelectorAll("input"), isVisible);
+    var allVisibleInputs = Array.prototype.filter.call(document.querySelectorAll("input"), isVisible);
+
+    var emails = visibleInputs.filter(function (i) {
+      return (i.type || "").toLowerCase() === "email" || /email/i.test(i.name || "") || /email/i.test(i.placeholder || "");
+    });
+    if (!emails.length) {
+      emails = allVisibleInputs.filter(function (i) {
+        return (i.type || "").toLowerCase() === "email" || /email/i.test(i.name || "") || /email/i.test(i.placeholder || "");
+      });
+    }
+
+    var codes = visibleInputs.filter(function (i) {
+      var t = ((i.name || "") + " " + (i.id || "") + " " + (i.placeholder || "") + " " + (i.autocomplete || "")).toLowerCase();
+      return (i.type || "text").toLowerCase() !== "password" && /code|access/.test(t);
+    });
+    if (!codes.length) {
+      codes = allVisibleInputs.filter(function (i) {
+        var t = ((i.name || "") + " " + (i.id || "") + " " + (i.placeholder || "") + " " + (i.autocomplete || "")).toLowerCase();
+        return (i.type || "text").toLowerCase() !== "password" && /code|access/.test(t);
+      });
+    }
+
+    var email = fieldByNearbyLabel("Email address", emails[emails.length - 1] || null);
+    var code = fieldByNearbyLabel("Case access code", codes[codes.length - 1] || null);
+
+    return {
+      email: email || emails[emails.length - 1] || null,
+      code: code || codes[codes.length - 1] || null
+    };
+  }
+
+  function msg(text, kind) {
+    var targets = ["#codeLoginMsg", "#portalCodeMsg", "#loginMsg", "#portalLoginMessage", "[data-login-msg]"];
+    var el = null;
+    for (var i = 0; i < targets.length; i++) {
+      el = document.querySelector(targets[i]);
+      if (el) break;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "portalCodeMsg";
+      el.style.cssText = "margin-top:12px;padding:10px 12px;border-radius:10px;font-weight:800;font-size:13px;background:#eef5ff;color:#00337a;border:1px solid #b8d3ff;";
+      var fields = getAccessFields();
+      var anchor = fields.code || fields.email || document.querySelector("button");
+      if (anchor && anchor.parentElement) anchor.parentElement.appendChild(el);
+      else document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.style.color = kind === "error" ? "#b00020" : "#006b2f";
+    el.style.display = "block";
+  }
+
+  function normalise(v) {
+    return String(v || "").trim().toLowerCase();
+  }
+
+  function getDb() {
+    if (window.db) return window.db;
+    if (window.firebase && firebase.firestore) return firebase.firestore();
+    return null;
+  }
+
+  async function findCaseByCode(email, code) {
+    var db = getDb();
+    if (!db) throw new Error("Portal database is still loading. Please try again in a few seconds.");
+
+    var emailLower = normalise(email);
+    var enteredCode = String(code || "").trim().toUpperCase();
+
+    async function readQuery(field, value) {
+      try {
+        return await db.collection("clientPortalCases").where(field, "==", value).limit(25).get();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    var snapshots = [];
+    var s1 = await readQuery("clientEmailLower", emailLower);
+    if (s1) snapshots.push(s1);
+    var s2 = await readQuery("emailLower", emailLower);
+    if (s2) snapshots.push(s2);
+    var s3 = await readQuery("clientEmail", email);
+    if (s3) snapshots.push(s3);
+    var s4 = await readQuery("email", email);
+    if (s4) snapshots.push(s4);
+
+    for (var i = 0; i < snapshots.length; i++) {
+      var found = null;
+      snapshots[i].forEach(function (doc) {
+        if (found) return;
+        var data = doc.data() || {};
+        var storedCode = String(data.portalCode || data.accessCode || data.code || "").trim().toUpperCase();
+        var storedEmail = normalise(data.clientEmail || data.email || data.clientEmailLower || data.emailLower);
+        if (storedCode === enteredCode && storedEmail === emailLower) {
+          found = { id: doc.id, data: data };
+        }
+      });
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function showCase(record) {
+    window.currentPortalCaseId = record.id;
+    window.currentPortalCase = record.data;
+    try {
+      sessionStorage.setItem("quaerensPortalCaseId", record.id);
+      sessionStorage.setItem("quaerensPortalCaseEmail", record.data.clientEmail || record.data.email || "");
+    } catch (e) {}
+
+    if (typeof window.loadDashboard === "function") {
+      window.loadDashboard(record.id, record.data);
+      return;
+    }
+
+    var main = document.querySelector("main") || document.body;
+    var d = record.data || {};
+    main.innerHTML = '<section style="max-width:980px;margin:42px auto;padding:26px;border:1px solid #b8d3ff;border-radius:18px;background:#fff;box-shadow:0 18px 50px rgba(0,60,160,.10);font-family:Inter,Arial,sans-serif">' +
+      '<h1 style="margin:0 0 10px;color:#052b68">Welcome, ' + escapeHtml(d.clientName || d.name || "client") + '</h1>' +
+      '<p style="color:#24466f">Your case portal is open.</p>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:18px">' +
+      '<div style="padding:14px;border-radius:14px;background:#eef5ff"><b>Status</b><br>' + escapeHtml(d.status || "New") + '</div>' +
+      '<div style="padding:14px;border-radius:14px;background:#eef5ff"><b>Claim type</b><br>' + escapeHtml(d.claimType || "Case") + '</div>' +
+      '<div style="padding:14px;border-radius:14px;background:#eef5ff"><b>Next step</b><br>' + escapeHtml(d.nextStep || "Quaerens will update this shortly.") + '</div>' +
+      '</div>' +
+      '<h2 style="margin-top:24px;color:#052b68">Case summary</h2>' +
+      '<p style="white-space:pre-wrap;color:#24466f">' + escapeHtml(d.summary || "No summary has been added yet.") + '</p>' +
+      '</section>';
+  }
+
+  function escapeHtml(v) {
+    return String(v || "").replace(/[&<>"']/g, function (c) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  async function openWithAccessCode(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    }
+
+    var fields = getAccessFields();
+    var email = fields.email && fields.email.value;
+    var code = fields.code && fields.code.value;
+
+    if (!email || !code) {
+      msg("Please enter the email address and access code exactly as supplied by Quaerens.", "error");
+      return false;
+    }
+
+    msg("Checking your access code...", "info");
+
+    try {
+      var record = await findCaseByCode(email, code);
+      if (!record) {
+        msg("No matching portal case found. Please check the email and access code.", "error");
+        return false;
+      }
+      msg("Access confirmed. Opening your case...", "ok");
+      showCase(record);
+    } catch (err) {
+      console.error("[client portal access code]", err);
+      msg(err && err.message ? err.message : "Could not open the portal case yet.", "error");
+    }
+    return false;
+  }
+
+  function isAccessCodeSubmitTarget(target) {
+    if (!target) return false;
+    var text = (target.textContent || target.value || "").trim().toLowerCase();
+    if (text.indexOf("open with access code") !== -1) return true;
+    var form = target.closest && target.closest("form");
+    if (form && (form.textContent || "").toLowerCase().indexOf("case access code") !== -1) return true;
+    var area = accessCodeArea();
+    return area && area.contains && area.contains(target);
+  }
+
+  document.addEventListener("click", function (event) {
+    var button = event.target && event.target.closest && event.target.closest("button,input[type=submit],a");
+    if (button && isAccessCodeSubmitTarget(button)) {
+      openWithAccessCode(event);
+    }
+  }, true);
+
+  document.addEventListener("submit", function (event) {
+    if (isAccessCodeSubmitTarget(event.target)) {
+      openWithAccessCode(event);
+    }
+  }, true);
+
+  window.openPortalWithAccessCodeHardStop = openWithAccessCode;
+
+  function mark() {
+    if (document.getElementById("portal-hard-stop-version")) return;
+    var m = document.createElement("div");
+    m.id = "portal-hard-stop-version";
+    m.textContent = "Portal version: " + VERSION;
+    m.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:999999;font:11px Arial,sans-serif;color:#466b9c;background:rgba(255,255,255,.84);border:1px solid #cfe0ff;border-radius:8px;padding:4px 6px;";
+    document.body.appendChild(m);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mark);
+  else mark();
+})();
+</script><!-- /client-portal-access-code-hard-stop -->
 </body>
 </html>
+
+
