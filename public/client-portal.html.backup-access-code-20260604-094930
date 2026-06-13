@@ -1,0 +1,555 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quaerens Client Portal</title>
+  <link rel="icon" href="/images/favicon.png" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <style>
+    :root {
+      --blue: #155eef;
+      --deep: #002b78;
+      --ink: #061533;
+      --muted: #51627d;
+      --line: #bcd3ff;
+      --soft: #eef6ff;
+      --panel: #ffffff;
+      --good: #047857;
+      --bad: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f7fbff 0%, #eaf4ff 58%, #f8fbff 100%);
+      min-height: 100vh;
+    }
+    header {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.92);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 20px; color: var(--deep); }
+    .brand img { width: 104px; height: auto; display: block; }
+    main { width: min(1160px, calc(100% - 32px)); margin: 28px auto 72px; }
+    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; align-items: start; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 42px rgba(20, 82, 160, .08);
+      padding: 26px;
+    }
+    h1 { margin: 0 0 14px; font-size: clamp(30px, 4vw, 44px); line-height: 1.03; letter-spacing: 0; color: #061b48; }
+    h2 { margin: 0 0 16px; font-size: 24px; color: var(--deep); }
+    h3 { margin: 0 0 8px; font-size: 18px; color: var(--deep); }
+    p { line-height: 1.55; }
+    .muted { color: var(--muted); }
+    .notice {
+      background: #eef6ff;
+      border: 1px solid #98c0ff;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      color: #003073;
+    }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      border: 0;
+      border-radius: 12px;
+      background: #eaf2ff;
+      color: #07337c;
+      padding: 12px 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .tab.active { background: var(--blue); color: #fff; }
+    label { display: block; margin: 12px 0 6px; font-weight: 900; color: var(--deep); font-size: 14px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #adc8ff;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 96px; resize: vertical; }
+    button.primary, a.primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 20px;
+      font-weight: 900;
+      color: #fff;
+      background: var(--blue);
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 14px;
+    }
+    button.secondary {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 900;
+      color: #05317b;
+      background: #eaf2ff;
+      cursor: pointer;
+    }
+    .hide { display: none !important; }
+    .msg { min-height: 22px; margin-top: 12px; font-weight: 800; }
+    .msg.good { color: var(--good); }
+    .msg.bad { color: var(--bad); }
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .case-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+    .pill {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #eaf2ff;
+      color: #07337c;
+      font-weight: 900;
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+    .portal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .item {
+      border: 1px solid #cfe0ff;
+      border-radius: 14px;
+      padding: 14px;
+      background: #fbfdff;
+      margin: 10px 0;
+    }
+    .list-empty { color: var(--muted); font-weight: 700; }
+    .small { font-size: 13px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    @media (max-width: 900px) {
+      header { padding: 12px 16px; }
+      .grid, .portal-grid { grid-template-columns: 1fr; }
+      main { width: min(100% - 20px, 760px); }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="/images/quaerens-logo.png" alt="Quaerens" />
+      <span>Client Portal</span>
+    </div>
+  </header>
+
+  <main>
+    <section id="loginView" class="grid">
+      <div class="card">
+        <h1>Your case, documents and messages in one place.</h1>
+        <p class="muted">Use the email address on your case. If this is your first visit, use the access code supplied by Quaerens to create your password.</p>
+        <div class="notice">Keep your access code private. If anything looks wrong on your case, message support from inside the portal or call Quaerens.</div>
+      </div>
+
+      <div class="card">
+        <h2>Client login</h2>
+        <div class="tabs">
+          <button id="showSetupLogin" type="button" class="tab active">First time setup</button>
+          <button id="showPasswordLogin" type="button" class="tab">I have a password</button>
+        </div>
+
+        <form id="setupForm">
+          <label>Email address</label>
+          <input id="setupEmail" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <label>Access code</label>
+          <input id="setupCode" type="text" autocomplete="one-time-code" placeholder="Example: AB1234" required />
+          <label>Create password</label>
+          <input id="setupPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" required />
+          <label>Confirm password</label>
+          <input id="setupPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repeat password" required />
+          <button class="primary" type="submit">Create password and open case</button>
+          <p class="muted small">Use this once. After setup, you can log in with your email and password.</p>
+        </form>
+
+        <form id="passwordLoginForm" class="hide">
+          <label>Email address</label>
+          <input id="passwordEmail" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <label>Password</label>
+          <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="Your password" required />
+          <button class="primary" type="submit">Open my case</button>
+          <p class="muted small">Use this after you have created your client portal password.</p>
+        </form>
+
+        <div style="margin-top:16px;border-top:1px solid #dbe7ff;padding-top:14px">
+          <button id="toggleCodeLogin" type="button" class="secondary">Hide/show access code login</button>
+          <p class="muted small">Use the access code supplied by Quaerens here. Password login is only for clients who have already created a portal password.</p>
+          <form id="accessCodeForm" style="margin-top:10px">
+            <label>Email address</label>
+            <input id="codeEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+            <label>Access code</label>
+            <input id="portalCode" type="text" autocomplete="one-time-code" placeholder="Example: AB1234" />
+            <button class="primary" type="submit">Open with access code</button>
+          </form>
+        </div>
+        <p id="loginMsg" class="msg"></p>
+        <p class="muted small">Portal version: resilient login 2026-06-04</p>
+      </div>
+    </section>
+
+    <section id="caseDashboard" class="dashboard">
+      <div class="card">
+        <div class="case-head">
+          <div>
+            <h1 id="caseTitle">Your case</h1>
+            <p id="caseSummary" class="muted"></p>
+          </div>
+          <div class="actions">
+            <span id="caseStatus" class="pill">Status</span>
+            <button id="logoutBtn" class="secondary" type="button">Log out</button>
+          </div>
+        </div>
+        <div class="notice"><strong>Next step:</strong> <span id="nextStep">We will update this shortly.</span></div>
+      </div>
+
+      <div class="portal-grid" style="margin-top:18px">
+        <div class="card">
+          <h2>Messages</h2>
+          <div id="messagesList" class="list-empty">Loading messages...</div>
+          <form id="messageForm">
+            <label>Leave a message for support</label>
+            <textarea id="messageBody" placeholder="Write your message here"></textarea>
+            <button class="primary" type="submit">Send message</button>
+          </form>
+          <p id="messageMsg" class="msg"></p>
+        </div>
+
+        <div class="card">
+          <h2>Documents</h2>
+          <div id="documentsList" class="list-empty">Loading documents...</div>
+          <form id="uploadForm">
+            <label>Upload a document or photo</label>
+            <input id="documentFile" type="file" />
+            <button class="primary" type="submit">Upload file</button>
+          </form>
+          <p id="uploadMsg" class="msg"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2>Case timeline</h2>
+        <div id="timelineList" class="list-empty">Loading timeline...</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.firebasestorage.app"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let currentCaseId = "";
+    let currentCase = null;
+
+    const $ = (id) => document.getElementById(id);
+    const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[ch]));
+
+    function showMsg(el, text, type) {
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = "msg" + (type ? " " + type : "");
+    }
+
+    window.addEventListener("error", (event) => {
+      showMsg($("loginMsg"), event.message || "Portal error. Please refresh and try again.", "bad");
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+      const reason = event.reason || {};
+      showMsg($("loginMsg"), reason.message || "Portal request failed. Please refresh and try again.", "bad");
+    });
+
+    function setMode(mode) {
+      const setup = mode === "setup";
+      $("setupForm").classList.toggle("hide", !setup);
+      $("passwordLoginForm").classList.toggle("hide", setup);
+      $("showSetupLogin").classList.toggle("active", setup);
+      $("showPasswordLogin").classList.toggle("active", !setup);
+      showMsg($("loginMsg"), "", "");
+    }
+
+    async function findCaseByEmailAndCode(email, code) {
+      const emailLower = String(email || "").trim().toLowerCase();
+      const cleanCode = String(code || "").trim().toLowerCase();
+      if (!emailLower || !cleanCode) throw new Error("Please enter your email address and access code.");
+
+      const snap = await db.collection("clientPortalCases")
+        .where("clientEmailLower", "==", emailLower)
+        .get();
+
+      const match = snap.docs.find((doc) => {
+        const data = doc.data();
+        return String(data.portalCode || "").trim().toLowerCase() === cleanCode;
+      });
+
+      if (!match) throw new Error("No portal case found for that email and access code.");
+      return { id: match.id, data: match.data() };
+    }
+
+    async function findCaseForSignedInUser(user) {
+      let snap = await db.collection("clientPortalCases").where("authUid", "==", user.uid).limit(1).get();
+      if (!snap.empty) return { id: snap.docs[0].id, data: snap.docs[0].data() };
+
+      snap = await db.collection("clientPortalCases")
+        .where("clientEmailLower", "==", String(user.email || "").toLowerCase())
+        .limit(1)
+        .get();
+      if (!snap.empty) return { id: snap.docs[0].id, data: snap.docs[0].data() };
+      throw new Error("No portal case is linked to this login yet.");
+    }
+
+    async function loadDashboard(caseId, data) {
+      currentCaseId = caseId;
+      currentCase = data || {};
+      $("loginView").style.display = "none";
+      $("caseDashboard").classList.add("active");
+      $("caseTitle").textContent = currentCase.clientName || "Your case";
+      $("caseSummary").textContent = currentCase.summary || currentCase.clientSummary || "Your case information will appear here as our team updates it.";
+      $("caseStatus").textContent = currentCase.status || "New";
+      $("nextStep").textContent = currentCase.nextStep || "We will update this shortly.";
+      await Promise.allSettled([loadMessages(), loadDocuments(), loadTimeline()]);
+    }
+
+    async function loadMessages() {
+      const box = $("messagesList");
+      box.textContent = "Loading messages...";
+      const snap = await db.collection("clientPortalMessages")
+        .where("caseId", "==", currentCaseId)
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get();
+      if (snap.empty) {
+        box.innerHTML = '<p class="list-empty">No messages yet.</p>';
+        return;
+      }
+      box.innerHTML = snap.docs.map((doc) => {
+        const msg = doc.data();
+        return `<div class="item"><strong>${safe(msg.senderName || msg.senderType || "Quaerens")}</strong><p>${safe(msg.body)}</p><p class="muted small">${formatDate(msg.createdAt)}</p></div>`;
+      }).join("");
+    }
+
+    async function loadDocuments() {
+      const box = $("documentsList");
+      box.textContent = "Loading documents...";
+      const snap = await db.collection("clientPortalDocuments")
+        .where("caseId", "==", currentCaseId)
+        .orderBy("uploadedAt", "desc")
+        .limit(30)
+        .get();
+      if (snap.empty) {
+        box.innerHTML = '<p class="list-empty">No documents uploaded yet.</p>';
+        return;
+      }
+      box.innerHTML = snap.docs.map((doc) => {
+        const item = doc.data();
+        const url = item.url ? `<a href="${safe(item.url)}" target="_blank" rel="noopener">Open</a>` : "";
+        return `<div class="item"><strong>${safe(item.name || "Document")}</strong><p class="muted small">${formatDate(item.uploadedAt)}</p>${url}</div>`;
+      }).join("");
+    }
+
+    async function loadTimeline() {
+      const box = $("timelineList");
+      const raw = currentCase.timeline || currentCase.tasks || [];
+      if (!Array.isArray(raw) || !raw.length) {
+        box.innerHTML = '<p class="list-empty">No timeline updates yet.</p>';
+        return;
+      }
+      box.innerHTML = raw.map((item) => {
+        const title = typeof item === "string" ? item : (item.title || item.label || "Update");
+        const note = typeof item === "string" ? "" : (item.note || item.body || "");
+        return `<div class="item"><strong>${safe(title)}</strong>${note ? `<p>${safe(note)}</p>` : ""}</div>`;
+      }).join("");
+    }
+
+    function formatDate(value) {
+      try {
+        if (!value) return "";
+        const date = value.toDate ? value.toDate() : new Date(value);
+        return date.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+      } catch (_) {
+        return "";
+      }
+    }
+
+    $("showSetupLogin").addEventListener("click", () => setMode("setup"));
+    $("showPasswordLogin").addEventListener("click", () => setMode("password"));
+    $("toggleCodeLogin").addEventListener("click", () => {
+      $("accessCodeForm").classList.toggle("hide");
+      showMsg($("loginMsg"), "", "");
+    });
+
+    $("setupForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      showMsg($("loginMsg"), "Checking your case...", "");
+      try {
+        const email = $("setupEmail").value.trim();
+        const code = $("setupCode").value.trim();
+        const password = $("setupPassword").value;
+        const confirm = $("setupPasswordConfirm").value;
+        if (password.length < 8) throw new Error("Please use a password of at least 8 characters.");
+        if (password !== confirm) throw new Error("The two passwords do not match.");
+
+        const found = await findCaseByEmailAndCode(email, code);
+        let cred;
+        try {
+          cred = await auth.createUserWithEmailAndPassword(email, password);
+          await db.collection("clientPortalCases").doc(found.id).update({
+            authUid: cred.user.uid,
+            passwordLoginEnabled: true,
+            passwordCreatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          showMsg($("loginMsg"), "Password created. Opening your case...", "good");
+          await loadDashboard(found.id, { ...found.data, authUid: cred.user.uid, passwordLoginEnabled: true });
+        } catch (authError) {
+          if (authError.code === "auth/email-already-in-use") {
+            cred = await auth.signInWithEmailAndPassword(email, password);
+            await db.collection("clientPortalCases").doc(found.id).update({
+              authUid: cred.user.uid,
+              passwordLoginEnabled: true,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showMsg($("loginMsg"), "Password confirmed. Opening your case...", "good");
+            await loadDashboard(found.id, { ...found.data, authUid: cred.user.uid, passwordLoginEnabled: true });
+          } else if (String(authError.code || "").startsWith("auth/")) {
+            showMsg($("loginMsg"), "Case found. Password setup needs one Firebase Authentication setting, so opening with your access code for now.", "good");
+            await loadDashboard(found.id, found.data);
+          } else {
+            throw authError;
+          }
+        }
+      } catch (error) {
+        showMsg($("loginMsg"), error.message || "We could not complete setup. Please check the details and try again.", "bad");
+      }
+    });
+
+    $("passwordLoginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      showMsg($("loginMsg"), "Opening your case...", "");
+      try {
+        const email = $("passwordEmail").value.trim();
+        const password = $("passwordLogin").value;
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const found = await findCaseForSignedInUser(cred.user);
+        await loadDashboard(found.id, found.data);
+      } catch (error) {
+        try {
+          const email = $("passwordEmail").value.trim();
+          const possibleCode = $("passwordLogin").value.trim();
+          const found = await findCaseByEmailAndCode(email, possibleCode);
+          await loadDashboard(found.id, found.data);
+        } catch (fallbackError) {
+          const baseMessage = error.message || "Login failed. Please check your email and password.";
+          showMsg($("loginMsg"), baseMessage + " If this is your first time, use the access-code login or the First time setup tab.", "bad");
+        }
+      }
+    });
+
+    $("accessCodeForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      showMsg($("loginMsg"), "Opening with access code...", "");
+      try {
+        const found = await findCaseByEmailAndCode($("codeEmail").value, $("portalCode").value);
+        await loadDashboard(found.id, found.data);
+      } catch (error) {
+        showMsg($("loginMsg"), error.message || "No case found for those details.", "bad");
+      }
+    });
+
+    $("messageForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const body = $("messageBody").value.trim();
+      if (!body) return;
+      showMsg($("messageMsg"), "Sending message...", "");
+      try {
+        await db.collection("clientPortalMessages").add({
+          caseId: currentCaseId,
+          body,
+          senderType: "client",
+          senderName: currentCase.clientName || "Client",
+          visibleToClient: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        $("messageBody").value = "";
+        showMsg($("messageMsg"), "Message sent.", "good");
+        await loadMessages();
+      } catch (error) {
+        showMsg($("messageMsg"), error.message || "Message could not be sent.", "bad");
+      }
+    });
+
+    $("uploadForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = $("documentFile").files[0];
+      if (!file) return;
+      showMsg($("uploadMsg"), "Uploading document...", "");
+      try {
+        const name = file.name.replace(/[^\w.\- ]+/g, "_");
+        const storagePath = `clientPortal/${currentCaseId}/${Date.now()}_${name}`;
+        const ref = storage.ref(storagePath);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        await db.collection("clientPortalDocuments").add({
+          caseId: currentCaseId,
+          name: file.name,
+          url,
+          storagePath,
+          uploadedBy: "client",
+          uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        $("documentFile").value = "";
+        showMsg($("uploadMsg"), "Document uploaded.", "good");
+        await loadDocuments();
+      } catch (error) {
+        showMsg($("uploadMsg"), error.message || "Document upload failed. Storage permissions may need checking.", "bad");
+      }
+    });
+
+    $("logoutBtn").addEventListener("click", async () => {
+      try { await auth.signOut(); } catch (_) {}
+      window.location.href = "/client-portal.html";
+    });
+  </script>
+</body>
+</html>
+

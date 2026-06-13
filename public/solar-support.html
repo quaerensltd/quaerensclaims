@@ -774,7 +774,7 @@ fbq('track', 'PageView');
           <p class="quaerens-save-number-note text-sm font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-2xl p-3">Save +44 (0)20 8050 0725 as Quaerens before submitting, so you recognise our callback.</p>
           <p class="quaerens-secure-note text-xs text-gray-600 mt-3">&#128274; Your details are encrypted in transit and handled securely.</p>
           <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full transition">Request Call Back</button>
-          <p class="quaerens-callback-message hidden text-sm font-semibold mt-3"></p>
+          <p class="quaerens-callback-message hidden text-sm font-semibold mt-3 rounded-2xl border px-4 py-3" role="status" aria-live="polite" tabindex="-1"></p>
         </form>
       </div>
     </div>
@@ -808,12 +808,24 @@ fbq('track', 'PageView');
     const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    function trackCallbackState(name) {
+      if (typeof window.clarity === "function") {
+        window.clarity("event", name);
+      }
+    }
+
     function setCallbackMessage(form, text, isError) {
       const message = form.querySelector(".quaerens-callback-message");
       if (!message) return;
       message.textContent = text;
-      message.classList.remove("hidden", "text-green-700", "text-red-700");
-      message.classList.add(isError ? "text-red-700" : "text-green-700");
+      message.classList.remove("hidden", "text-green-700", "text-red-700", "bg-green-50", "bg-red-50", "border-green-200", "border-red-200");
+      message.classList.add(
+        isError ? "text-red-700" : "text-green-700",
+        isError ? "bg-red-50" : "bg-green-50",
+        isError ? "border-red-200" : "border-green-200"
+      );
+      message.scrollIntoView({ behavior: "smooth", block: "center" });
+      message.focus({ preventScroll: true });
     }
 
     document.querySelectorAll(".quaerens-callback-form").forEach((form) => {
@@ -829,6 +841,7 @@ fbq('track', 'PageView');
         const note = String(formData.get("message") || "").trim();
 
         if (!name || !phone) {
+          trackCallbackState("callback_validation_error");
           setCallbackMessage(form, "Please add your name and phone number so we can call you back.", true);
           return;
         }
@@ -836,6 +849,8 @@ fbq('track', 'PageView');
         if (button) {
           button.disabled = true;
           button.textContent = "Sending...";
+          form.dataset.callbackState = "sending";
+          trackCallbackState("callback_submit_attempt");
         }
 
         try {
@@ -855,10 +870,14 @@ fbq('track', 'PageView');
             userAgent: navigator.userAgent
           });
           form.reset();
-          setCallbackMessage(form, "Thank you. Your call back request has been sent to our intake team. Please save +44 (0)20 8050 0725 as Quaerens so you recognise our call.", false);
+          form.dataset.callbackState = "sent";
+          trackCallbackState("callback_submit_success");
+          setCallbackMessage(form, "Request received. Thank you - your call back request has been sent to our intake team. Please save +44 (0)20 8050 0725 as Quaerens so you recognise our call.", false);
         } catch (error) {
           console.error("Callback request failed:", error);
-          setCallbackMessage(form, "Sorry, we could not send this request. Please try again or call us.", true);
+          form.dataset.callbackState = "failed";
+          trackCallbackState("callback_submit_failed");
+          setCallbackMessage(form, "Sorry, we could not send this request. Please try again or call +44 (0)20 8050 0725.", true);
         } finally {
           if (button) {
             button.disabled = false;

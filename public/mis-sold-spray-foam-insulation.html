@@ -101,6 +101,17 @@
     .cta-primary { background:#2563eb; color:white; box-shadow:0 10px 24px rgba(37,99,235,.25); }
     .cta-primary:hover { background:#1d4ed8; transform:translateY(-2px); }
     .cta-secondary { background:rgba(255,255,255,.12); color:white; border:1px solid rgba(255,255,255,.35); }
+    .speak-strip { display:flex; align-items:center; justify-content:space-between; gap:1.25rem; background:white; border:1px solid #bfdbfe; border-radius:18px; padding:1.35rem 1.65rem; margin:1rem auto 0; box-shadow:0 12px 30px rgba(15,23,42,.07); }
+    .speak-copy { display:flex; align-items:center; gap:1rem; color:#1e3a8a; }
+    .speak-icon { width:72px; height:72px; border-radius:999px; background:#eff6ff; border:1px solid #bfdbfe; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; overflow:hidden; }
+    .speak-icon img { width:100%; height:100%; object-fit:cover; }
+    .speak-copy strong { color:#0f172a; font-size:1rem; }
+    .speak-copy span { display:block; color:#475569; font-size:.92rem; line-height:1.45; }
+    .speak-copy .phone-save-note { color:#1e40af; font-weight:700; margin-top:.25rem; }
+    .speak-actions { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:flex-end; }
+    .speak-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:.72rem 1rem; border-radius:999px; font-weight:800; text-decoration:none; border:1px solid #2563eb; }
+    .speak-call { background:#2563eb; color:white; }
+    .speak-secondary { background:white; color:#1d4ed8; }
     .faq-item { border:1px solid #dbeafe; border-radius:14px; background:white; overflow:hidden; }
     .faq-button { width:100%; text-align:left; padding:1rem 1.1rem; font-weight:700; background:white; border:0; cursor:pointer; display:flex; align-items:center; justify-content:space-between; color:#0f172a; }
     .faq-content { display:none; padding:0 1.1rem 1rem; color:#374151; line-height:1.7; }
@@ -108,7 +119,7 @@
     .faq-icon { font-size:1.25rem; color:#2563eb; margin-left:1rem; flex-shrink:0; }
     footer a { color:#2563eb; text-decoration:none; margin:0 .5rem; }
     footer a:hover { text-decoration:underline; }
-    @media (max-width:768px){ .hero-section{min-height:720px;} .hero-overlay{background:linear-gradient(180deg,rgba(7,19,39,.88),rgba(15,23,42,.84));} }
+    @media (max-width:768px){ .hero-section{min-height:720px;} .hero-overlay{background:linear-gradient(180deg,rgba(7,19,39,.88),rgba(15,23,42,.84));} .speak-strip{align-items:flex-start; flex-direction:column; padding:1.2rem;} .speak-copy{align-items:flex-start;} .speak-icon{width:58px; height:58px;} .speak-actions{width:100%; justify-content:flex-start;} .speak-actions a{width:100%;} }
   </style>
 
 <style>
@@ -189,6 +200,21 @@
           <div class="feature-card"><h2 class="text-xl font-bold text-blue-900 mb-2">Sales claims</h2><p class="text-gray-700">Review what was promised about savings, safety, roof protection or property value.</p></div>
           <div class="feature-card"><h2 class="text-xl font-bold text-blue-900 mb-2">Missing warnings</h2><p class="text-gray-700">Check whether mortgage, survey or removal risks were properly explained.</p></div>
           <div class="feature-card"><h2 class="text-xl font-bold text-blue-900 mb-2">Finance review</h2><p class="text-gray-700">If finance was used, the way it was explained may also be relevant.</p></div>
+        </div>
+      </div>
+      <div class="speak-strip" aria-label="Contact Quaerens about spray foam">
+        <div class="speak-copy">
+          <span class="speak-icon" aria-hidden="true"><img src="/images/ptsts.png" alt="" loading="lazy" decoding="async"></span>
+          <div>
+            <strong>Prefer to speak to someone? Call or WhatsApp: +44 (0)20 8050 0725</strong>
+            <span>Talk to our intake team before choosing the right spray foam review route.</span>
+            <span class="phone-save-note">Save the number as "Quaerens" so you recognise our calls.</span>
+          </div>
+        </div>
+        <div class="speak-actions">
+          <a class="speak-call" href="tel:+442080500725">Call +44 (0)20 8050 0725</a>
+          <a class="speak-secondary" href="https://wa.me/442080500725" target="_blank" rel="noopener">WhatsApp us</a>
+          <a class="speak-secondary" href="#request-callback">Request a callback</a>
         </div>
       </div>
     </section>
@@ -286,7 +312,7 @@
       </div>
     </div>
   </section>
-  <section class="section-wrap py-6 quaerens-site-callback" data-callback-page="mis-sold-spray-foam-insulation.html">
+  <section id="request-callback" class="section-wrap py-6 quaerens-site-callback" data-callback-page="mis-sold-spray-foam-insulation.html">
     <div class="info-box soft-blue fade-up">
       <div class="grid md:grid-cols-2 gap-8 items-start">
         <div>
@@ -329,7 +355,7 @@
           </div>
           <p class="quaerens-secure-note text-xs text-gray-600 mt-3">&#128274; Your details are encrypted in transit and handled securely.</p>
           <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full transition">Request Call Back</button>
-          <p class="quaerens-callback-message hidden text-sm font-semibold mt-3"></p>
+          <p class="quaerens-callback-message hidden text-sm font-semibold mt-3 rounded-2xl border px-4 py-3" role="status" aria-live="polite" tabindex="-1"></p>
         </form>
       </div>
     </div>
@@ -377,12 +403,24 @@
     const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    function trackCallbackState(name) {
+      if (typeof window.clarity === "function") {
+        window.clarity("event", name);
+      }
+    }
+
     function setCallbackMessage(form, text, isError) {
       const message = form.querySelector(".quaerens-callback-message");
       if (!message) return;
       message.textContent = text;
-      message.classList.remove("hidden", "text-green-700", "text-red-700");
-      message.classList.add(isError ? "text-red-700" : "text-green-700");
+      message.classList.remove("hidden", "text-green-700", "text-red-700", "bg-green-50", "bg-red-50", "border-green-200", "border-red-200");
+      message.classList.add(
+        isError ? "text-red-700" : "text-green-700",
+        isError ? "bg-red-50" : "bg-green-50",
+        isError ? "border-red-200" : "border-green-200"
+      );
+      message.scrollIntoView({ behavior: "smooth", block: "center" });
+      message.focus({ preventScroll: true });
     }
 
     document.querySelectorAll(".quaerens-callback-form").forEach((form) => {
@@ -398,6 +436,7 @@
         const note = String(formData.get("message") || "").trim();
 
         if (!name || !phone) {
+          trackCallbackState("callback_validation_error");
           setCallbackMessage(form, "Please add your name and phone number so we can call you back.", true);
           return;
         }
@@ -405,6 +444,8 @@
         if (button) {
           button.disabled = true;
           button.textContent = "Sending...";
+          form.dataset.callbackState = "sending";
+          trackCallbackState("callback_submit_attempt");
         }
 
         try {
@@ -424,10 +465,14 @@
             userAgent: navigator.userAgent
           });
           form.reset();
-          setCallbackMessage(form, "Thank you. Your call back request has been sent to our intake team.", false);
+          form.dataset.callbackState = "sent";
+          trackCallbackState("callback_submit_success");
+          setCallbackMessage(form, "Request received. Thank you - your call back request has been sent to our intake team.", false);
         } catch (error) {
           console.error("Callback request failed:", error);
-          setCallbackMessage(form, "Sorry, we could not send this request. Please try again or call us.", true);
+          form.dataset.callbackState = "failed";
+          trackCallbackState("callback_submit_failed");
+          setCallbackMessage(form, "Sorry, we could not send this request. Please try again or call +44 (0)20 8050 0725.", true);
         } finally {
           if (button) {
             button.disabled = false;
