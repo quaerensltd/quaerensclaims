@@ -103,10 +103,12 @@
     .callback-message{display:none;margin-top:1rem;border-radius:14px;padding:1rem;font-weight:800}
     .callback-message.ok{display:block;background:#ecfdf5;color:#065f46;border:1px solid #86efac}
     .callback-message.bad{display:block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
-    .calculator-panel{background:#fff;border:1px solid #bfdbfe;border-radius:24px;padding:1.5rem;box-shadow:0 18px 44px rgba(15,23,42,.08)}
-    .calculator-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .calculator-panel{background:#fff;border:1px solid #bfdbfe;border-radius:24px;padding:1.5rem;box-shadow:0 18px 44px rgba(15,23,42,.08);overflow:hidden}
+    .calculator-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem}
     .calculator-panel label{display:block;font-weight:900;color:#12307a;margin:0 0 .45rem}
-    .calculator-panel input,.calculator-panel select{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:.9rem 1rem;font:inherit;background:#fff;color:#0f172a}
+    .calculator-panel input,.calculator-panel select{width:100%;max-width:100%;border:1px solid #cbd5e1;border-radius:14px;padding:1rem 1.05rem;font:inherit;font-size:1.08rem;background:#fff;color:#0f172a}
+    .calculator-panel input:focus,.callback-form input:focus,.callback-form select:focus,.callback-form textarea:focus{outline:3px solid rgba(37,99,235,.18);border-color:#2563eb}
+    .calculator-help{margin:.7rem 0 1.15rem;color:#475569;line-height:1.6}
     .calc-result{display:none;margin-top:1.25rem;border-radius:20px;border:1px solid #bfdbfe;background:#eff6ff;padding:1.2rem}
     .calc-result.show{display:block}
     .calc-result strong{display:block;color:#0f172a;font-size:1.1rem;margin-bottom:.45rem}
@@ -119,6 +121,11 @@
     .qualify-check input{width:20px;height:20px;margin-top:.1rem;accent-color:#16a34a}
     .qualify-result{display:none;margin-top:1.1rem;border-radius:18px;padding:1rem;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-weight:800;line-height:1.55}
     .qualify-result.show{display:block}
+    .timeline{display:grid;gap:.8rem;counter-reset:timeline}
+    .timeline-item{display:grid;grid-template-columns:44px minmax(0,1fr);gap:.8rem;align-items:start;background:#fff;border:1px solid #dbeafe;border-radius:16px;padding:1rem}
+    .timeline-item::before{counter-increment:timeline;content:counter(timeline);width:36px;height:36px;border-radius:999px;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-weight:900}
+    .timeline-item strong{display:block;color:#0f172a;margin-bottom:.2rem}
+    .mini-note{border-left:4px solid #2563eb;background:#eff6ff;border-radius:14px;padding:1rem;color:#1e3a8a;font-weight:800;line-height:1.55}
     .final-cta{background:#2446b7;color:#fff;border-radius:24px;text-align:center;padding:3rem 1.5rem;box-shadow:0 18px 44px rgba(15,23,42,.14)}
     .final-cta .kicker{color:#bfdbfe}
     .final-cta h2{color:#fff;margin:.5rem 0 1rem}
@@ -130,7 +137,7 @@
     .footer{border-top:1px solid #e5e7eb;background:#fff;padding:2rem 0;color:#64748b;font-size:.92rem}
     .footer a{color:#2563eb;text-decoration:none;font-weight:800}
     @media(max-width:980px){.hero-inner,.grid-2,.callback-panel{grid-template-columns:1fr}.trust-row,.grid-3{grid-template-columns:repeat(2,1fr)}.nav{display:flex}.nav-link:not(:first-child){display:none}.nav .btn{padding:.75rem 1rem}.hero-inner{min-height:auto;padding:3.5rem 0 5rem}}
-    @media(max-width:640px){.header-inner{min-height:78px}.logo{height:52px}.trust-row,.grid-3,.cred-grid,.form-grid,.calculator-grid,.qualify-checks{grid-template-columns:1fr}.trust-card{grid-template-columns:42px minmax(0,1fr)}.trust-emoji{width:42px;height:42px}.section{padding:3.2rem 0}.soft-contact-copy{align-items:flex-start}.soft-contact-icon{width:76px;height:52px;flex-basis:76px}.soft-contact-actions,.soft-contact-actions .btn{width:100%}.hero-actions .btn{width:100%}.field-full{grid-column:auto}}
+    @media(max-width:640px){html,body{overflow-x:hidden}.header-inner{min-height:78px}.logo{height:52px}.trust-row,.grid-3,.cred-grid,.form-grid,.calculator-grid,.qualify-checks{grid-template-columns:1fr}.trust-card{grid-template-columns:42px minmax(0,1fr)}.trust-emoji{width:42px;height:42px}.section{padding:3.2rem 0}.soft-contact-copy{align-items:flex-start}.soft-contact-icon{width:76px;height:52px;flex-basis:76px}.soft-contact-actions,.soft-contact-actions .btn{width:100%}.calculator-panel .soft-contact-actions{display:grid}.calculator-panel .soft-contact-actions .btn{width:100%}.hero-actions .btn{width:100%}.field-full{grid-column:auto}}
   </style>
 </head>
 <body>
@@ -237,6 +244,19 @@
           <div class="panel"><h3>Advice and pressure</h3><p>Were you facing arrears or repossession? Were alternatives discussed? Did a broker, lender, adviser or sale and rent back company recommend the route?</p></div>
           <div class="panel"><h3>What happened after</h3><p>Were you promised long-term security? Did rent increase? Were you evicted, asked to leave, or left with a major loss of equity?</p></div>
         </div>
+        <div class="qualify-panel" style="margin-top:1.5rem;">
+          <p class="kicker">Do I qualify?</p>
+          <h3>Quick review checklist</h3>
+          <p class="calculator-help">Tick any that apply. This does not decide the case, but it helps show whether a free first review may be worthwhile.</p>
+          <div class="qualify-checks" id="qualify-checks">
+            <label class="qualify-check"><input type="checkbox" value="sold_below_value">Sold below market value</label>
+            <label class="qualify-check"><input type="checkbox" value="repossession_pressure">Was under repossession pressure</label>
+            <label class="qualify-check"><input type="checkbox" value="long_term_security">Promised long-term security</label>
+            <label class="qualify-check"><input type="checkbox" value="rent_or_eviction">Later evicted or rent increased</label>
+            <label class="qualify-check"><input type="checkbox" value="adviser_involved">Lender, broker or adviser involved</label>
+          </div>
+          <div id="qualify-result" class="qualify-result" aria-live="polite">Tick the points that apply and we will show a simple review prompt here.</div>
+        </div>
       </div>
     </section>
 
@@ -248,6 +268,7 @@
           <p class="lead">Use this simple tool to estimate the possible equity shortfall where a home was sold below market value. It is not a valuation, legal opinion or sale and rent back compensation promise, but it can help show whether the case deserves closer review.</p>
         </div>
         <div class="calculator-panel">
+          <p class="calculator-help">Only complete the boxes you know. Approximate figures are fine for a first conversation.</p>
           <div class="calculator-grid">
             <div>
               <label for="market-value">Estimated market value at the time</label>
@@ -311,10 +332,62 @@
             <p>Potential losses may include the difference between market value and sale price, avoidable fees, rent pressure, moving costs, loss of security, and wider financial harm. Sale and leaseback complaints are usually strongest where there is clear evidence of value, advice, pressure and the eventual outcome.</p>
           </div>
         </div>
+        <div class="mini-note" style="margin-top:1rem;">Before you submit, gather any sale agreement, tenancy agreement, valuation evidence, lender letters, adviser emails, rent increase notices or eviction paperwork you have. You do not need everything before asking for a review.</div>
+        <div class="mini-note" style="margin-top:1rem;">Need a simpler document list? Read the <a href="guidance-sale-and-rent-back-evidence.html" style="color:#1d4ed8;font-weight:900;">Sale and Rent Back evidence checklist</a>.</div>
         <figure class="cred-visual">
           <img src="/images/cred-salerent3.png" alt="Documents homeowners should keep for a sale and rent back review" loading="lazy" decoding="async">
           <figcaption>Sale agreements, valuations, tenancy documents, rent records and lender correspondence can all help establish what happened.</figcaption>
         </figure>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Timeline</p>
+          <h2>A simple timeline helps explain historic cases.</h2>
+          <p class="lead">Sale and rent back cases often depend on the order of events, who was involved, and what was promised at each stage.</p>
+        </div>
+        <div class="timeline">
+          <div class="timeline-item"><div><strong>Financial pressure started</strong><span>Arrears, repossession pressure, debt or urgent need for cash began.</span></div></div>
+          <div class="timeline-item"><div><strong>Sale arranged</strong><span>A broker, adviser, lender, operator or introducer became involved.</span></div></div>
+          <div class="timeline-item"><div><strong>Property sold</strong><span>The sale price, valuation and completion documents need to be compared.</span></div></div>
+          <div class="timeline-item"><div><strong>Tenancy began</strong><span>The promise about staying long-term should be checked against the written tenancy.</span></div></div>
+          <div class="timeline-item"><div><strong>Rent increased, eviction or loss happened</strong><span>Later events can show whether the arrangement caused avoidable harm.</span></div></div>
+          <div class="timeline-item"><div><strong>Review requested</strong><span>The case can then be assessed against documents, dates and possible responsible parties.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Responsibility</p>
+          <h2>Who may need to be reviewed?</h2>
+          <p class="lead">Responsibility depends on the documents and facts. A first review checks whether any route appears realistic.</p>
+        </div>
+        <div class="grid-3">
+          <div class="panel"><h3>Lender</h3><p>Where lending, repossession, arrears handling or mortgage correspondence is relevant.</p></div>
+          <div class="panel"><h3>Broker or adviser</h3><p>Where advice, pressure, options or suitability of the route need to be checked.</p></div>
+          <div class="panel"><h3>Sale and rent back operator</h3><p>Where the sale terms, promises, valuation or tenancy arrangement caused concern.</p></div>
+          <div class="panel"><h3>Solicitor or conveyancer</h3><p>Where legal paperwork, explanation of terms or independent advice may matter.</p></div>
+          <div class="panel"><h3>Scheme introducer</h3><p>Where another person or business introduced the homeowner to the arrangement.</p></div>
+          <div class="panel warning"><h3>Older case warning</h3><p>Older cases can still be reviewed, but dates and evidence matter. The earlier the paperwork is gathered, the easier it is to assess the route.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Example situations</p>
+          <h2>Fictional examples of issues that may deserve a review.</h2>
+        </div>
+        <div class="grid-3">
+          <div class="panel"><h3>Undervalued sale</h3><p>A homeowner sold a property worth around GBP 250,000 for GBP 175,000 while under financial pressure and later discovered the loss of equity was much larger than expected.</p></div>
+          <div class="panel"><h3>Security promise failed</h3><p>A homeowner believed they could remain long-term, but rent rose and they were later asked to leave the property.</p></div>
+          <div class="panel"><h3>No alternatives explained</h3><p>A homeowner in arrears was not clearly told about repayment plans, mortgage support, downsizing, regulated advice or other possible options before the sale.</p></div>
+        </div>
       </div>
     </section>
 
@@ -511,6 +584,24 @@
         priority.textContent = label;
         note.textContent = message + " This is only an estimate and is not a valuation, legal opinion or compensation promise.";
       });
+    }
+
+    const qualifyChecks = document.querySelectorAll("#qualify-checks input");
+    const qualifyResult = document.getElementById("qualify-result");
+    if (qualifyChecks.length && qualifyResult) {
+      const updateQualifyResult = () => {
+        const checkedCount = Array.from(qualifyChecks).filter((input) => input.checked).length;
+        qualifyResult.classList.add("show");
+        if (!checkedCount) {
+          qualifyResult.textContent = "Tick the points that apply and we will show a simple review prompt here.";
+        } else if (checkedCount === 1) {
+          qualifyResult.textContent = "This may be worth a review, especially if you have documents showing what was promised or what the property was worth.";
+        } else {
+          qualifyResult.textContent = "This looks worth a free first review. Gather any sale, tenancy, valuation, lender or adviser paperwork before you submit.";
+        }
+      };
+      qualifyChecks.forEach((input) => input.addEventListener("change", updateQualifyResult));
+      updateQualifyResult();
     }
 
     function setCallbackMessage(form, text, isError) {
