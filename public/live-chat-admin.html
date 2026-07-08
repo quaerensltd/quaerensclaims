@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quaerens Live Chat Inbox</title>
+  <style>
+    :root { color-scheme: light; --blue:#2563eb; --navy:#071735; --muted:#64748b; --line:#dbeafe; --bg:#f5f8ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, Arial, sans-serif; color: var(--navy); background: var(--bg); }
+    header { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 0; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 20px; }
+    .brand img { width: 48px; height: 48px; object-fit: contain; }
+    .top a { color: var(--blue); font-weight: 800; text-decoration: none; }
+    main { padding: 26px 0 46px; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 44px); }
+    .lead { margin: 0 0 22px; color: var(--muted); font-size: 16px; }
+    .layout { display: grid; grid-template-columns: 390px 1fr; gap: 18px; align-items: start; }
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 16px 45px rgba(15,23,42,.08); overflow: hidden; }
+    .list { max-height: calc(100vh - 210px); overflow: auto; }
+    .chat-card { display: grid; gap: 7px; width: 100%; padding: 15px; border: 0; border-bottom: 1px solid #e2e8f0; background: #fff; text-align: left; cursor: pointer; }
+    .chat-card:hover, .chat-card.active { background: #eff6ff; }
+    .chat-card strong { font-size: 15px; }
+    .chat-card span { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .badge { display: inline-flex; width: max-content; border-radius: 999px; background: #dcfce7; color: #166534; padding: 4px 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+    .detail { padding: 20px; min-height: 420px; }
+    .empty { color: var(--muted); padding: 36px; text-align: center; }
+    dl { display: grid; grid-template-columns: 130px 1fr; gap: 9px 14px; margin: 0 0 20px; }
+    dt { color: var(--muted); font-weight: 800; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    .message { border-radius: 14px; padding: 14px; background: #f8fbff; border: 1px solid #e2e8f0; white-space: pre-wrap; line-height: 1.5; }
+    .reply-list { display: grid; gap: 10px; margin: 18px 0; }
+    .reply { border-radius: 14px; padding: 12px; background: #0f2f7a; color: #fff; }
+    textarea { width: 100%; min-height: 110px; border: 1px solid #cbd5e1; border-radius: 14px; padding: 12px; font: inherit; resize: vertical; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    button, .button { border: 0; border-radius: 999px; background: var(--blue); color: #fff; padding: 12px 16px; font-weight: 900; cursor: pointer; text-decoration: none; }
+    button.secondary { background: #e0edff; color: #0f4bd8; }
+    button:disabled { opacity: .65; cursor: wait; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .list { max-height: 360px; } dl { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-disable-live-chat="true">
+  <header>
+    <div class="wrap top">
+      <div class="brand"><img src="/images/logo.png" alt="">Quaerens Live Chat</div>
+      <a href="/admin-centre.html">Admin centre</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <h1>Live chat inbox</h1>
+    <p class="lead">Website chat enquiries captured from the floating Quaerens helper widget.</p>
+    <section class="layout">
+      <aside class="panel">
+        <div id="chatList" class="list"><p class="empty">Loading messages...</p></div>
+      </aside>
+      <section class="panel">
+        <div id="chatDetail" class="detail"><p class="empty">Select a message to view details and add a reply.</p></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      addDoc,
+      collection,
+      doc,
+      getFirestore,
+      limit,
+      onSnapshot,
+      orderBy,
+      query,
+      serverTimestamp,
+      updateDoc,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvB3_HCvt7s3QBILj9BPH1afofE3PqGhE",
+      authDomain: "quaerensclaims.firebaseapp.com",
+      projectId: "quaerensclaims",
+      storageBucket: "quaerensclaims.firebasestorage.app",
+      messagingSenderId: "577982936989",
+      appId: "1:577982936989:web:ab0b4b5a0c3ad8e0d2f7f8"
+    };
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const chatList = document.getElementById("chatList");
+    const chatDetail = document.getElementById("chatDetail");
+    let selectedId = "";
+    let messages = [];
+    let unsubscribeReplies = null;
+
+    const chatQuery = query(collection(db, "siteChatMessages"), orderBy("createdAt", "desc"), limit(80));
+    onSnapshot(chatQuery, (snapshot) => {
+      messages = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+      renderList();
+      if (selectedId) {
+        const selected = messages.find((item) => item.id === selectedId);
+        if (selected) renderDetail(selected);
+      }
+    });
+
+    function renderList() {
+      if (!messages.length) {
+        chatList.innerHTML = '<p class="empty">No chat messages yet.</p>';
+        return;
+      }
+
+      chatList.innerHTML = messages.map((item) => `
+        <button class="chat-card ${item.id === selectedId ? "active" : ""}" data-id="${item.id}">
+          <span class="badge">${escapeHtml(item.status || "new")}</span>
+          <strong>${escapeHtml(item.name || "Unknown visitor")}</strong>
+          <span>${escapeHtml(item.topic || "Website enquiry")}</span>
+          <span>${escapeHtml(shorten(item.message || "", 96))}</span>
+        </button>
+      `).join("");
+
+      chatList.querySelectorAll(".chat-card").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedId = button.dataset.id;
+          const selected = messages.find((item) => item.id === selectedId);
+          if (selected) renderDetail(selected);
+          renderList();
+        });
+      });
+    }
+
+    function renderDetail(item) {
+      if (unsubscribeReplies) unsubscribeReplies();
+      chatDetail.innerHTML = `
+        <dl>
+          <dt>Status</dt><dd><span class="badge">${escapeHtml(item.status || "new")}</span></dd>
+          <dt>Name</dt><dd>${escapeHtml(item.name)}</dd>
+          <dt>Contact</dt><dd>${escapeHtml(item.contact)}</dd>
+          <dt>Topic</dt><dd>${escapeHtml(item.topic)}</dd>
+          <dt>Page</dt><dd><a href="${escapeAttr(item.pageUrl)}" target="_blank" rel="noopener">${escapeHtml(item.pageTitle || item.pageUrl)}</a></dd>
+          <dt>Received</dt><dd>${formatDate(item.createdAt)}</dd>
+        </dl>
+        <h2>Message</h2>
+        <div class="message">${escapeHtml(item.message)}</div>
+        <div class="reply-list" id="replyList"></div>
+        <h2>Reply / note</h2>
+        <textarea id="replyText" placeholder="Type a reply or internal handling note..."></textarea>
+        <div class="actions">
+          <button id="sendReply">Add reply</button>
+          <button id="markHandled" class="secondary">Mark handled</button>
+          <a class="button secondary" href="mailto:${encodeURIComponent(item.contact || "")}">Email visitor</a>
+        </div>
+      `;
+
+      document.getElementById("sendReply").addEventListener("click", () => sendReply(item.id));
+      document.getElementById("markHandled").addEventListener("click", () => markHandled(item.id));
+
+      const replyList = document.getElementById("replyList");
+      const repliesQuery = query(collection(db, "siteChatReplies"), where("messageId", "==", item.id));
+      unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
+        const replies = snapshot.docs
+          .map((replyDoc) => replyDoc.data())
+          .sort((a, b) => {
+            const first = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const second = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return first - second;
+          });
+        replyList.innerHTML = replies.length ? replies.map((data) => {
+          return `<div class="reply">${escapeHtml(data.message || "")}<br><small>${formatDate(data.createdAt)}</small></div>`;
+        }).join("") : "";
+      });
+    }
+
+    async function sendReply(messageId) {
+      const replyText = document.getElementById("replyText");
+      const message = replyText.value.trim();
+      if (!message) return;
+      const button = document.getElementById("sendReply");
+      button.disabled = true;
+      await addDoc(collection(db, "siteChatReplies"), {
+        messageId,
+        message,
+        author: "Quaerens",
+        createdAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, "siteChatMessages", messageId), {
+        status: "replied",
+        updatedAt: serverTimestamp()
+      });
+      replyText.value = "";
+      button.disabled = false;
+    }
+
+    async function markHandled(messageId) {
+      await updateDoc(doc(db, "siteChatMessages", messageId), {
+        status: "handled",
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    function shorten(value, max) {
+      return value.length > max ? `${value.slice(0, max - 1)}...` : value;
+    }
+
+    function formatDate(value) {
+      return value?.toDate ? value.toDate().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "";
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll("`", "&#096;");
+    }
+  </script>
+</body>
+</html>
