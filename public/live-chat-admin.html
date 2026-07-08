@@ -12,7 +12,7 @@
     .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
     .top { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 0; }
     .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 20px; }
-    .brand img { width: 48px; height: 48px; object-fit: contain; }
+    .brand img { width: 150px; height: auto; object-fit: contain; }
     .top a { color: var(--blue); font-weight: 800; text-decoration: none; }
     main { padding: 26px 0 46px; }
     h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 44px); }
@@ -37,6 +37,7 @@
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
     button, .button { border: 0; border-radius: 999px; background: var(--blue); color: #fff; padding: 12px 16px; font-weight: 900; cursor: pointer; text-decoration: none; }
     button.secondary { background: #e0edff; color: #0f4bd8; }
+    button.danger { background: #fee2e2; color: #991b1b; }
     button:disabled { opacity: .65; cursor: wait; }
     .login-panel { width: min(520px, 100%); margin: 48px auto 0; padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 16px 45px rgba(15,23,42,.08); }
     .login-panel h1 { font-size: 28px; }
@@ -51,7 +52,7 @@
 <body data-disable-live-chat="true">
   <header>
     <div class="wrap top">
-      <div class="brand"><img src="/images/logo.png" alt="">Quaerens Live Chat</div>
+      <div class="brand"><img src="/images/quaerens-logo.png" alt="Quaerens"><span>Live Chat</span></div>
       <div class="actions">
         <a href="/admin-centre.html">Admin centre</a>
         <button id="logoutBtn" class="secondary" type="button" style="display:none">Log out</button>
@@ -91,7 +92,9 @@
     import {
       addDoc,
       collection,
+      deleteDoc,
       doc,
+      getDocs,
       getFirestore,
       limit,
       onSnapshot,
@@ -228,11 +231,13 @@
           <button id="sendReply">Add reply</button>
           <button id="markHandled" class="secondary">Mark handled</button>
           <a class="button secondary" href="mailto:${encodeURIComponent(item.contact || "")}">Email visitor</a>
+          <button id="deleteEntry" class="danger" type="button">Delete entry</button>
         </div>
       `;
 
       document.getElementById("sendReply").addEventListener("click", () => sendReply(item.id));
       document.getElementById("markHandled").addEventListener("click", () => markHandled(item.id));
+      document.getElementById("deleteEntry").addEventListener("click", () => deleteEntry(item.id, item.name));
 
       const replyList = document.getElementById("replyList");
       const repliesQuery = query(collection(db, "siteChatReplies"), where("messageId", "==", item.id));
@@ -275,6 +280,19 @@
         status: "handled",
         updatedAt: serverTimestamp()
       });
+    }
+
+    async function deleteEntry(messageId, visitorName) {
+      const label = visitorName ? ` from ${visitorName}` : "";
+      if (!confirm(`Delete this chat entry${label}? This cannot be undone.`)) return;
+
+      const repliesQuery = query(collection(db, "siteChatReplies"), where("messageId", "==", messageId));
+      const replies = await getDocs(repliesQuery);
+      await Promise.all(replies.docs.map((replyDoc) => deleteDoc(replyDoc.ref)));
+      await deleteDoc(doc(db, "siteChatMessages", messageId));
+
+      selectedId = "";
+      chatDetail.innerHTML = '<p class="empty">Chat entry deleted.</p>';
     }
 
     function shorten(value, max) {
