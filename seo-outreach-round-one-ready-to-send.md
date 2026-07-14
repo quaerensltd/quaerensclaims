@@ -26,6 +26,50 @@ Kind regards,
 [Your name]
 ```
 
+## Moneyfacts Press & PR
+
+Contact: press@moneyfacts.co.uk
+Pitch URL: https://www.quaerens.co.uk/equity-release.html
+Subject: Practical equity release evidence resource for readers
+
+```text
+Hi Moneyfacts team,
+
+I wanted to share a practical Quaerens resource that may be useful for readers researching equity release problems, later-life finance complaints or suitability concerns:
+
+https://www.quaerens.co.uk/equity-release.html
+
+The page explains the main evidence points consumers should gather, including advice documents, suitability reports, illustrations, repayment charge wording, inheritance impact, linked investment losses and complaint routes. It is written as a plain-English evidence guide and does not promise any specific outcome.
+
+If you are updating equity release, retirement finance or consumer complaint resources, it may be a useful practical link for readers who need to organise their paperwork before seeking advice or escalating a complaint.
+
+Kind regards,
+[Your name]
+```
+
+## The Guardian Consumer Champions - Equity Release
+
+Contact: consumer.champions@theguardian.com
+Pitch URL: https://www.quaerens.co.uk/equity-release.html
+Subject: Equity release complaints: practical evidence guide for readers
+
+```text
+Hi Consumer Champions team,
+
+I thought this Quaerens resource may be useful for readers dealing with equity release concerns or later-life finance complaints:
+
+https://www.quaerens.co.uk/equity-release.html
+
+It sets out the documents and issues that often matter in an equity release review, including suitability reports, advice records, alternatives discussed, compound interest, inheritance impact, exit charges and any linked investment or property scheme losses.
+
+The page is intended as a practical evidence organisation guide. Quaerens is not a law firm and the resource does not guarantee any outcome, but it may help consumers understand what paperwork to gather before making a complaint or seeking specialist advice.
+
+If you are covering equity release or later-life finance complaints, it may be a useful reader resource.
+
+Kind regards,
+[Your name]
+```
+
 ## ClearComplaint
 
 Contact: https://clearcomplaint.co.uk/contact/
