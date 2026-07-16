@@ -1138,24 +1138,26 @@
       const resultDiv = document.getElementById('reviewResult');
       const resultLevel = document.getElementById('reviewResultLevel');
       const resultMessage = document.getElementById('reviewResultMessage');
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const issue = document.getElementById('issueType').value;
-        const value = parseFloat(document.getElementById('amountAffected').value) || 0;
-        const evidence = document.getElementById('evidenceLevel').value;
-        if (!issue || !value || !evidence) { alert('Please complete all fields.'); return; }
-        let score = 2;
-        if (value >= 10000) score += 3; else if (value >= 2500) score += 2; else score += 1;
-        if (evidence === 'strong') score += 3; else if (evidence === 'some') score += 2;
-        let level = 'May need more evidence';
-        let message = 'The issue may still be worth organising, but stronger documents and correspondence would usually make review clearer.';
-        if (score >= 7) { level = 'Potentially suitable'; message = 'This looks potentially suitable for structured review support, especially if the payment trail, timeline and responses can be evidenced.'; }
-        else if (score >= 5) { level = 'Worth reviewing'; message = 'This may be worth reviewing, particularly if you can provide documents, payment records and correspondence showing the timeline.'; }
-        resultLevel.textContent = level;
-        resultMessage.textContent = message;
-        resultDiv.classList.remove('hidden');
-        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
+      if (form && resultDiv && resultLevel && resultMessage) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const issue = document.getElementById('issueType').value;
+          const value = parseFloat(document.getElementById('amountAffected').value) || 0;
+          const evidence = document.getElementById('evidenceLevel').value;
+          if (!issue || !value || !evidence) { alert('Please complete all fields.'); return; }
+          let score = 2;
+          if (value >= 10000) score += 3; else if (value >= 2500) score += 2; else score += 1;
+          if (evidence === 'strong') score += 3; else if (evidence === 'some') score += 2;
+          let level = 'May need more evidence';
+          let message = 'The issue may still be worth organising, but stronger documents and correspondence would usually make review clearer.';
+          if (score >= 7) { level = 'Potentially suitable'; message = 'This looks potentially suitable for structured review support, especially if the payment trail, timeline and responses can be evidenced.'; }
+          else if (score >= 5) { level = 'Worth reviewing'; message = 'This may be worth reviewing, particularly if you can provide documents, payment records and correspondence showing the timeline.'; }
+          resultLevel.textContent = level;
+          resultMessage.textContent = message;
+          resultDiv.classList.remove('hidden');
+          resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+      }
       const observer = new IntersectionObserver((entries) => { entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('show'); }); }, { threshold: 0.12 });
       document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
       document.querySelectorAll('.faq-button').forEach((button) => {
