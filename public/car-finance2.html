@@ -394,7 +394,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="eyebrow">Live preview</p>
-                <h3 class="text-2xl font-extrabold">Complaint letter preview</h3>
+                <h3 class="text-2xl font-extrabold">Initial complaint and information request preview</h3>
               </div>
               <button id="togglePreview" class="btn btn-outline no-print" type="button" aria-expanded="true">Hide Preview</button>
             </div>
@@ -410,7 +410,7 @@
       <div class="section-wrap">
         <div class="info-box">
           <p class="eyebrow">Document pack generated</p>
-          <h2 class="text-3xl font-extrabold">&check; Your Complaint Letter Is Ready</h2>
+          <h2 class="text-3xl font-extrabold">&check; Your Complaint Pack Is Ready</h2>
           <p class="lead">Review every document carefully. Remove or change anything that does not accurately describe your circumstances before downloading, copying, printing or sending it.</p><div id="whereToSend" class="where-send"></div><div class="field mt-4"><label for="subjectEditor">Editable subject line</label><input id="subjectEditor" /></div>
           <p class="notice mt-4"><strong>Changes made here affect the exported documents.</strong></p>
           <div id="docTabs" class="doc-tabs" role="tablist" aria-label="Generated document sections"></div>
@@ -421,13 +421,14 @@
           </div>
           <h3 class="text-2xl font-extrabold mt-8 mb-3">Copy, print and download options</h3>
           <div class="download-grid no-print">
-            <button class="btn btn-blue" type="button" data-download="pdf">Download PDF</button>
+            <button class="btn btn-blue" type="button" data-download="pdf">Download Complaint Pack PDF</button>
             <button class="btn btn-outline" type="button" data-download="rtf">Download Word</button>
             <button class="btn btn-outline" type="button" data-download="txt">Download TXT</button>
+            <button class="btn btn-outline" type="button" data-download="pack">Download Full Pack</button>
             <button class="btn btn-outline" type="button" data-download="evidence">Download Evidence Checklist</button>
             <button class="btn btn-outline" type="button" data-download="timeline">Download Timeline Template</button>
-            <button class="btn btn-outline" type="button" data-download="print">Print Letter</button>
-            <button class="btn btn-outline" type="button" data-copy="letter">Copy Letter</button>
+            <button class="btn btn-outline" type="button" data-download="print">Print Complaint Pack</button>
+            <button class="btn btn-outline" type="button" data-copy="letter">Copy Main Document</button>
             <button class="btn btn-outline" type="button" data-copy="subject">Copy subject line</button>
             <button class="btn btn-outline" type="button" data-copy="email">Copy Cover Email</button>
             <button id="startAgainBottom" class="btn btn-outline" type="button">Start Again</button>
@@ -435,7 +436,7 @@
           <div class="notice mt-5">
             <p class="eyebrow">Optional next step</p>
             <h3 class="font-extrabold text-2xl mb-2">Need more templates and complaint management tools?</h3>
-            <p>Your free complaint letter is ready. You can download and send it without buying anything. The optional Premium DIY Complaint Pack adds extra trackers, follow-up templates and document organisers for people who want to manage the complaint themselves from beginning to end.</p>
+            <p>Your free complaint pack is ready. You can download and send it without buying anything. The optional Premium DIY Complaint Pack adds extra trackers, follow-up templates and document organisers for people who want to manage the complaint themselves from beginning to end.</p>
             <a class="btn btn-blue mt-4" href="car-finance-premium-pack.html">Compare Free and Premium</a>
           </div>
         </div>
@@ -812,6 +813,12 @@
       if (a.selectedRoute === 'clarification') return `Request for clarification following final response${a.complaintRef ? ' - ' + a.complaintRef : ''}`;
       return `Car finance information request and complaint${a.agreementRef ? ' - ' + a.agreementRef : ''}`;
     }
+    function fieldOrPlaceholder(value, placeholder){
+      return value && String(value).trim() ? String(value).trim() : placeholder;
+    }
+    function numberedLines(items){
+      return items.map((item, index) => `${index + 1}. ${item}`).join('\n');
+    }
     function currentLenderForOutput(a){
       if (state.selectedLender) return state.selectedLender;
       if (a.selectedLenderId) return state.lenderData.find(l => l.id === a.selectedLenderId) || null;
@@ -838,7 +845,7 @@
     }
     function buildLetter(a){
       const name = a.representative === 'No' ? a.fullName : (a.customerName || a.fullName);
-      const concernList = a.concerns.length ? a.concerns.map(concernText).join('; ') : 'the way the finance was explained and recorded';
+      const concerns = a.concerns.length ? a.concerns.map(concernText) : ['The way the finance was explained and recorded'];
       const lenderLine = lenderLineForLetter(a);
       const agreementDate = a.agreementDate || a.purchaseDateApprox || 'not currently known';
       const introRoute = {
@@ -850,19 +857,14 @@
         'information-only': 'I am writing to request information about my vehicle finance agreement before deciding whether any further complaint is appropriate.'
       }[a.selectedRoute] || 'I am writing about my vehicle finance agreement.';
       const commissionParagraph = a.selectedRoute === 'unknown-lender' ? 'Please identify the finance provider, agreement reference, agreement date and any records you hold about commission, broker involvement or lender introductions connected to this vehicle finance arrangement.' : 'Please confirm whether any commission was paid in connection with the agreement, who received it, how it was calculated, whether any discretionary commission arrangement or high commission arrangement existed, and what disclosures were made before I entered into the agreement.';
-      const unknownLenderRequest = a.selectedRoute === 'unknown-lender' ? `
-
-Please provide, where held:
-- The legal name of the finance provider
-- Any trading name used at the time
-- The agreement or account number
-- The approximate start date of the agreement
-- The vehicle registration
-- The vehicle make and model
-- A copy of the finance agreement
-- Any commission records or commission-disclosure records
-- Broker, introducer or dealership details connected with the finance arrangement
-` : '';
+      const requestedInfo = [
+        'A copy of the finance agreement and pre-contract information.',
+        'The finance quotation, statement of account and total amount payable.',
+        'Any records showing commission, broker involvement, lender introduction or commission disclosure.',
+        'Any documents explaining how the interest rate, optional final payment, fees or charges were calculated.',
+        'Any sales notes, dealer or broker communications, affordability records and complaint history held about the agreement.'
+      ];
+      if (a.selectedRoute === 'unknown-lender') requestedInfo.unshift('The legal name of the finance provider, any trading name, agreement reference and official complaints route.');
       return `${todayText()}
 
 ${a.fullName || '[Your name]'}
@@ -876,30 +878,60 @@ Dear Sir or Madam,
 
 ${introRoute}
 
-Agreement and vehicle details
-- Customer name: ${name || '[Customer name]'}
-- Agreement type: ${a.agreementType || '[Agreement type]'}
-- Vehicle use: ${a.useType || '[Vehicle use]'}
-- Agreement date: ${agreementDate}
-- Agreement reference: ${a.agreementRef || '[Not known]'}
-- Vehicle: ${a.vehicleMake || '[Vehicle make/model not known]'}
-- Registration: ${a.vehicleReg || '[Not known]'}
-- Dealer or broker: ${a.dealer || '[Not known]'}
+REFERENCE DETAILS
+Customer name: ${fieldOrPlaceholder(name, '[Customer name]')}
+Finance provider: ${fieldOrPlaceholder(lenderLine, '[Finance provider]')}
+Agreement type: ${fieldOrPlaceholder(a.agreementType, '[Agreement type]')}
+Agreement date: ${agreementDate}
+Agreement reference: ${fieldOrPlaceholder(a.agreementRef, '[Not known]')}
+Vehicle: ${fieldOrPlaceholder(a.vehicleMake, '[Vehicle make/model not known]')}
+Registration: ${fieldOrPlaceholder(a.vehicleReg, '[Not known]')}
+Dealer or broker: ${fieldOrPlaceholder(a.dealer, '[Not known]')}
+Vehicle use: ${fieldOrPlaceholder(a.useType, '[Vehicle use]')}
 
-The concerns I want you to investigate or clarify include: ${concernList}.
+BACKGROUND
+The finance was arranged for the vehicle identified above. Based on the records currently available to me, I am asking you to investigate the way the agreement was arranged, explained and recorded.
 
-I do not recall being told that commission would be paid, how it would be calculated or whether it could affect the cost of the finance. Please investigate and provide the relevant information and records. ${commissionParagraph}
-${unknownLenderRequest}
+MY CONCERNS
+${numberedLines(concerns)}
 
-Please also provide copies of the records you hold about the sale, finance quotation, affordability information, commission disclosures, broker or dealer communications, complaint history and any documents explaining the total amount payable, interest rate or optional final payment.
+I do not recall being given a clear explanation of any commission arrangement, how commission was calculated, whether it could affect the cost of the finance, or whether alternative finance terms were available. Please investigate and provide the relevant information and records. ${commissionParagraph}
 
-${a.saleNarrative ? 'Additional factual background I have recorded:\n' + a.saleNarrative + '\n\n' : ''}${a.responseSummary ? 'Previous response or complaint background:\n' + a.responseSummary + '\n\n' : ''}Please acknowledge this letter in writing and provide a complaint reference where applicable. Please preserve all relevant records while this matter is being reviewed.
+INFORMATION REQUESTED
+${numberedLines(requestedInfo)}
+
+${a.saleNarrative ? 'FACTUAL BACKGROUND PROVIDED BY ME\n' + a.saleNarrative + '\n\n' : ''}${a.responseSummary ? 'PREVIOUS RESPONSE OR COMPLAINT BACKGROUND\n' + a.responseSummary + '\n\n' : ''}OUTCOME REQUESTED
+Please acknowledge this letter in writing and provide a complaint or request reference where applicable. Please preserve all relevant records while this matter is being reviewed. After reviewing your response and the documents provided, I will decide whether any further complaint, information request or official escalation route is appropriate.
 
 I reserve the right to use an appropriate official complaint or information route after I have reviewed your response and the records provided.
 
 Yours faithfully,
 
 ${a.fullName || '[Your name]'}`;
+    }
+    function buildComplaintSummary(a){
+      const name = a.representative === 'No' ? a.fullName : (a.customerName || a.fullName);
+      const concerns = a.concerns.length ? a.concerns.map(concernText) : ['The way the finance was explained and recorded'];
+      return `Complaint Summary
+
+Generated: ${todayText()}
+
+Consumer: ${fieldOrPlaceholder(name, '[Consumer name]')}
+Prepared by: ${fieldOrPlaceholder(a.fullName, '[Your name]')}
+Finance provider or lender: ${fieldOrPlaceholder(lenderLineForLetter(a), '[Finance provider]')}
+Agreement reference: ${fieldOrPlaceholder(a.agreementRef, '[Not known]')}
+Vehicle: ${fieldOrPlaceholder(a.vehicleMake, '[Vehicle make/model not known]')}
+Registration: ${fieldOrPlaceholder(a.vehicleReg, '[Not known]')}
+Dealer or broker: ${fieldOrPlaceholder(a.dealer, '[Not known]')}
+
+Main issues raised
+${numberedLines(concerns)}
+
+Suggested document route
+${buildSubject(a)}
+
+Important review note
+This pack is a self-service starting point. Check every answer, remove anything inaccurate and only send documents that reflect your own circumstances.`;
     }
     function renderLivePreview(){
       const preview = qs('liveLetterPreview');
@@ -916,12 +948,13 @@ ${a.fullName || '[Your name]'}`;
       const a = collectAnswers();
       a.selectedRoute = val('selectedRoute');
       const subject = buildSubject(a);
+      const summary = buildComplaintSummary(a);
       const letter = buildLetter(a);
       const coverEmail = `Subject: ${subject}
 
 Dear Sir or Madam,
 
-Please find attached my car finance letter and supporting checklist.
+Please find attached my initial car finance complaint and information request, together with my supporting checklist.
 
 Please acknowledge receipt and confirm the complaint or request reference where applicable.
 
@@ -930,36 +963,49 @@ Regards,
 ${a.fullName || '[Your name]'}`;
       const evidence = `Personalised Evidence Checklist
 
-- Finance agreement and pre-contract information
-- Agreement reference and vehicle registration
-- Finance quotation, statements and payment history
-- Dealer or broker messages and sales paperwork
-- Any commission, interest-rate or total-amount-payable explanation
-- Complaint letters, acknowledgements and final responses
-- Notes of phone calls, branch visits or sales conversations
-- Proof of sending and copies of every document submitted
-- FCA and Financial Ombudsman guidance checked before sending`;
+Required information
+[ ] Full name and current contact details
+[ ] Vehicle registration and make/model
+[ ] Finance provider or lender name
+[ ] Agreement number or account reference, if known
+[ ] Approximate agreement date or purchase date
+
+Supporting documents
+[ ] Finance agreement and pre-contract information
+[ ] Finance quotation, statements and payment history
+[ ] Dealer, broker or lender messages and sales paperwork
+[ ] Any commission, interest-rate or total-amount-payable explanation
+[ ] Complaint letters, acknowledgements and final responses
+[ ] Notes of phone calls, branch visits or sales conversations
+
+Optional supporting evidence
+[ ] Screenshots, emails or text messages about the sale
+[ ] Details of affordability checks or income/expenditure discussion
+[ ] Records showing optional extras, fees, balloon payment or final payment
+[ ] Proof of sending and copies of every document submitted
+[ ] FCA and Financial Ombudsman guidance checked before sending`;
       const timeline = `Complaint Timeline Template
 
-1. Date of finance agreement: ${a.agreementDate || a.purchaseDateApprox || '[add date]'}
-2. Vehicle purchased or collected: [add date]
-3. When concern was discovered: [add date]
-4. First complaint or information request sent: [add date]
-5. Lender/dealer acknowledgement received: [add date]
-6. Further response or final response received: [add date]
-7. Any official route considered: [add date]
+Event | Date | Evidence reference
+Finance agreement signed | ${a.agreementDate || a.purchaseDateApprox || '[add date]'} | [agreement / quote]
+Vehicle purchased or collected | [add date] | [invoice / handover record]
+Concern first noticed | [add date] | [notes / correspondence]
+Information request or complaint sent | [add date] | [proof of sending]
+Acknowledgement received | [add date] | [email / letter]
+Further response or final response received | [add date] | [response reference]
+Official route considered | [add date] | [FCA / FOS guidance checked]
 
 Add document references beside each event.`;
       const submission = `Submission Checklist
 
-- Read the whole letter and remove anything inaccurate.
-- Check names, addresses, agreement reference and vehicle details.
-- Attach only relevant documents.
-- Send through the lender's official complaints route or postal address.
-- Keep proof of sending.
-- Keep a copy of everything sent.
-- Do not send duplicate complaints unless necessary.
-- Check official FCA and Financial Ombudsman guidance before taking further action.`;
+[ ] Read the whole pack and remove anything inaccurate.
+[ ] Check names, addresses, agreement reference and vehicle details.
+[ ] Attach only relevant documents.
+[ ] Send through the lender's official complaints route or postal address.
+[ ] Keep proof of sending.
+[ ] Keep a copy of everything sent.
+[ ] Do not send duplicate complaints unless necessary.
+[ ] Check official FCA and Financial Ombudsman guidance before taking further action.`;
       const tracker = `Follow-Up Tracker
 
 Date sent:
@@ -976,20 +1022,31 @@ Use this tracker for each follow-up contact.`;
 Date:
 Time:
 Organisation:
+Department:
 Person spoken to:
 Reference number:
 Summary of discussion:
+Outcome:
 Action promised:
 Follow-up date:
 
 Keep this factual and avoid relying only on memory.`;
       const resources = `Official Resources
 
-- FCA car finance complaints: https://www.fca.org.uk/consumers/car-finance-complaints
-- FCA lender contact list: https://www.fca.org.uk/consumers/car-finance-complaints/list-lenders
-- FCA motor-finance scheme update: https://www.fca.org.uk/news/statements/motor-finance-scheme-partially-suspended
-- Financial Ombudsman car finance information: https://www.financial-ombudsman.org.uk/consumers/complaints-can-help/credit-borrowing-money/car-finance
-- Equifax Car Finance Checker: https://www.equifax.co.uk/products/product-features/car-finance-checker
+1. FCA: Car finance complaints
+https://www.fca.org.uk/consumers/car-finance-complaints
+
+2. FCA: List of motor finance firms and complaint routes
+https://www.fca.org.uk/consumers/car-finance-complaints/list-lenders
+
+3. FCA: Motor finance complaint handling updates
+https://www.fca.org.uk/news/statements/motor-finance-scheme-partially-suspended
+
+4. Financial Ombudsman Service: Car finance complaints
+https://www.financial-ombudsman.org.uk/consumers/complaints-can-help/credit-borrowing-money/car-finance
+
+5. Equifax: Car Finance Checker
+https://www.equifax.co.uk/products/product-features/car-finance-checker
 
 Official rules and processes can change. Check the latest guidance before sending or escalating a complaint.
 
@@ -997,9 +1054,9 @@ Links to external services are provided for convenience. Quaerens does not contr
       const disclaimer = `Self-Service Disclaimer
 
 This pack was generated by a free self-service tool. Quaerens has not assessed whether compensation is due, has not scored the complaint, has not submitted the complaint, and does not act on behalf of the consumer. The consumer is responsible for reviewing, editing and sending the documents.`;
-      state.generatedDocs = { letter, email: coverEmail, evidence, timeline, submission, tracker, contact, resources, disclaimer };
+      state.generatedDocs = { summary, letter, email: coverEmail, evidence, timeline, submission, tracker, contact, resources, disclaimer };
       state.docs = JSON.parse(JSON.stringify(state.generatedDocs));
-      state.activeDoc = 'letter';
+      state.activeDoc = 'summary';
       qs('whereToSend').innerHTML = buildWhereToSend(a);
       qs('subjectEditor').value = subject;
       renderDocs();
@@ -1007,12 +1064,12 @@ This pack was generated by a free self-service tool. Quaerens has not assessed w
       qs('packReady').scrollIntoView({behavior:'smooth'});
     }
     function renderDocs(){
-      const labels = {letter:'Complaint Letter',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Timeline',submission:'Submission Checklist',tracker:'Follow-Up Tracker',contact:'Contact Record',resources:'Official Resources',disclaimer:'Self-Service Disclaimer'};
+      const labels = {summary:'Complaint Summary',letter:'Initial Complaint and Information Request',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Timeline',submission:'Submission Checklist',tracker:'Follow-Up Tracker',contact:'Contact Record',resources:'Official Resources',disclaimer:'Self-Service Disclaimer'};
       qs('docTabs').innerHTML = Object.keys(state.docs).map(key => `<button type="button" class="doc-tab ${key===state.activeDoc?'active':''}" data-doc="${key}" role="tab">${labels[key]}</button>`).join('');
       qs('docEditor').value = state.docs[state.activeDoc] || '';
     }
     function fullPackText(){
-      const labels = {letter:'Complaint Letter',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Timeline',submission:'Submission Checklist',tracker:'Follow-Up Tracker',contact:'Contact Record',resources:'Official Resources',disclaimer:'Self-Service Disclaimer'};
+      const labels = {summary:'Complaint Summary',letter:'Initial Complaint and Information Request',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Timeline',submission:'Submission Checklist',tracker:'Follow-Up Tracker',contact:'Contact Record',resources:'Official Resources',disclaimer:'Self-Service Disclaimer'};
       return Object.entries(state.docs).map(([key,text]) => `${labels[key]}\n${'='.repeat(labels[key].length)}\n\n${text}`).join('\n\n\n');
     }
     function download(filename, text, type='text/plain'){
@@ -1032,16 +1089,65 @@ This pack was generated by a free self-service tool. Quaerens has not assessed w
     function downloadPdf(){
       if (window.jspdf?.jsPDF) {
         const doc = new window.jspdf.jsPDF({unit:'pt', format:'a4'});
-        const lines = doc.splitTextToSize(fullPackText(), 500);
-        let y = 48;
-        doc.setFont('helvetica','bold'); doc.text('Quaerens - Car Finance Complaint Pack', 48, y); y += 28;
-        doc.setFont('helvetica','normal'); doc.setFontSize(10);
-        lines.forEach(line => {
-          if (y > 780) { doc.addPage(); y = 48; }
-          doc.text(line, 48, y); y += 14;
+        const labels = {summary:'Complaint Summary',letter:'Initial Complaint and Information Request',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Timeline',submission:'Submission Checklist',tracker:'Follow-Up Tracker',contact:'Contact Record',resources:'Official Resources',disclaimer:'Self-Service Disclaimer'};
+        let y = 58;
+        const margin = 48;
+        const maxWidth = 500;
+        function footer(){
+          doc.setFont('helvetica','normal');
+          doc.setFontSize(8);
+          doc.setTextColor(90);
+          doc.text('Quaerens Car Finance Complaint Pack', margin, 812);
+          doc.setTextColor(0);
+        }
+        function newPage(){
+          footer();
+          doc.addPage();
+          y = 58;
+        }
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(18);
+        doc.text('Quaerens Car Finance Complaint Pack', margin, y);
+        y += 28;
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(10);
+        doc.text(`Generated ${todayText()}`, margin, y);
+        y += 28;
+        Object.entries(state.docs).forEach(([key, text], sectionIndex) => {
+          if (sectionIndex > 0) newPage();
+          doc.setFont('helvetica','bold');
+          doc.setFontSize(14);
+          doc.text(labels[key] || key, margin, y);
+          y += 22;
+          doc.setFont('helvetica','normal');
+          doc.setFontSize(10);
+          String(text || '').split('\n').forEach(rawLine => {
+            const isHeading = rawLine && rawLine === rawLine.toUpperCase() && rawLine.length < 70 && /[A-Z]/.test(rawLine);
+            const lines = doc.splitTextToSize(rawLine || ' ', maxWidth);
+            if (isHeading) {
+              doc.setFont('helvetica','bold');
+              y += 6;
+            } else {
+              doc.setFont('helvetica','normal');
+            }
+            lines.forEach(line => {
+              if (y > 780) newPage();
+              doc.text(line, margin, y);
+              y += 14;
+            });
+          });
+          y += 8;
         });
+        footer();
         const pages = doc.getNumberOfPages();
-        for (let i=1;i<=pages;i++){ doc.setPage(i); doc.text(`Page ${i} of ${pages}`, 48, 820); }
+        for (let i=1;i<=pages;i++){
+          doc.setPage(i);
+          doc.setFont('helvetica','normal');
+          doc.setFontSize(8);
+          doc.setTextColor(90);
+          doc.text(`Page ${i} of ${pages}`, 500, 812);
+          doc.setTextColor(0);
+        }
         doc.save(filename('pdf'));
       } else {
         window.print();
@@ -1173,7 +1279,8 @@ This pack was generated by a free self-service tool. Quaerens has not assessed w
         const type = btn.dataset.download;
         if (type === 'pdf') downloadPdf();
         if (type === 'rtf') downloadRtf();
-        if (type === 'txt') download(filename('txt'), state.docs.letter || '');
+        if (type === 'txt') download(filename('txt'), fullPackText());
+        if (type === 'pack') download(filename('txt'), fullPackText());
         if (type === 'evidence') download('car-finance-evidence-checklist.txt', state.docs.evidence || '');
         if (type === 'timeline') download('car-finance-timeline-template.txt', state.docs.timeline || '');
         if (type === 'print') window.print();
@@ -1183,7 +1290,7 @@ This pack was generated by a free self-service tool. Quaerens has not assessed w
         const text = type === 'subject' ? val('subjectEditor') : type === 'email' ? state.docs.email : state.docs.letter;
         await navigator.clipboard.writeText(text || '');
         btn.textContent = 'Copied';
-        setTimeout(()=>btn.textContent = type === 'subject' ? 'Copy subject line' : type === 'email' ? 'Copy Cover Email' : 'Copy Letter', 1200);
+        setTimeout(()=>btn.textContent = type === 'subject' ? 'Copy subject line' : type === 'email' ? 'Copy Cover Email' : 'Copy Main Document', 1200);
       }));
       qs('openEmailPanel')?.addEventListener('click', () => qs('emailPanel')?.classList.toggle('hidden'));
       qs('emailPack')?.addEventListener('click', emailDelivery);
