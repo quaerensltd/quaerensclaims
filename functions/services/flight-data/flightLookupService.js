@@ -28,7 +28,7 @@ async function fromCache(db, key) {
 
 async function saveCache(db, key, payload) {
   await db.collection("flightLookupCache").doc(key).set({
-    payload,
+    payload: stripUndefined(payload),
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + CACHE_TTL_MS)
   }, { merge: true });
@@ -36,9 +36,19 @@ async function saveCache(db, key, payload) {
 
 async function logUsage(db, data) {
   await db.collection("flightApiUsage").add({
-    ...data,
+    ...stripUndefined(data),
     createdAt: admin.firestore.FieldValue.serverTimestamp()
   });
+}
+
+function stripUndefined(value) {
+  if (Array.isArray(value)) return value.map(stripUndefined);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, stripUndefined(entry)])
+  );
 }
 
 function providerUrl({ flightNumber, date }) {
