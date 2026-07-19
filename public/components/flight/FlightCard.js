@@ -33,6 +33,8 @@
     options = options || {};
     var escape = options.escapeHtml || defaultEscape;
     var formatDate = options.formatDate || valueText;
+    var variant = options.variant || "full";
+    var resultAttr = options.resultIndex !== undefined ? ' data-flight-result="' + escape(options.resultIndex) + '"' : "";
     var airportDisplay = options.airportDisplay || function (airport) {
       if (!airport) return "";
       return [airport.name, airport.iata].filter(Boolean).join(" ");
@@ -51,7 +53,21 @@
       return '<div class="flight-card-field"><span>' + escape(label) + "</span><strong>" + escape(valueText(value)) + "</strong></div>";
     };
 
-    return '<article class="flight-card" data-component="FlightCard">' +
+    if (variant === "compact") {
+      return '<article class="flight-card flight-card-compact" data-component="FlightCard"' + resultAttr + '>' +
+        '<div class="flight-card-head"><div><div class="flight-card-kicker">' + escape(valueText(flight.airline && flight.airline.name, "Airline")) + '</div><div class="flight-card-number">' + escape(valueText(flight.flightNumber || options.flightNumber)) + '</div><div class="flight-card-route">' + escape(dep + " \u2192 " + arr) + '</div></div><div class="flight-card-highlight"><span>Confidence</span><strong>' + escape(flight.dataConfidence || "Manual confirmation") + '</strong><small>' + escape(flight.status || "Awaiting data") + '</small></div></div>' +
+        '<div class="flight-card-badges">' + badgeHtml + '</div>' +
+        '<div class="flight-card-grid">' +
+        field("Travel date", options.travelDate) +
+        field("Scheduled departure", formatDate(flight.scheduledDeparture && (flight.scheduledDeparture.local || flight.scheduledDeparture.utc))) +
+        field("Scheduled arrival", formatDate(flight.scheduledArrival && (flight.scheduledArrival.local || flight.scheduledArrival.utc))) +
+        field("Operating airline", flight.operatingAirline && flight.operatingAirline.name || flight.airline && flight.airline.name) +
+        '</div>' +
+        '<div class="flight-card-actions"><button type="button" class="btn btn-blue" data-flight-action="select"' + resultAttr + '>Select This Flight</button><button type="button" class="btn btn-outline" data-flight-action="details"' + resultAttr + '>View Flight Details</button></div>' +
+        '</article>';
+    }
+
+    return '<article class="flight-card" data-component="FlightCard"' + resultAttr + '>' +
       '<div class="flight-card-head"><div><div class="flight-card-kicker">' + escape(valueText(flight.airline && flight.airline.name, "Airline")) + '</div><div class="flight-card-number">' + escape(valueText(flight.flightNumber || options.flightNumber)) + '</div><div class="flight-card-route">' + escape(dep + " \u2192 " + arr) + '</div></div><div class="flight-card-highlight"><span>Estimated statutory compensation</span><strong>' + escape(perPassenger) + '</strong><small>Estimated total: ' + escape(total) + '</small></div></div>' +
       '<div class="flight-card-badges">' + badgeHtml + '</div>' +
       '<div class="flight-card-grid">' +
@@ -72,8 +88,8 @@
       field("Data confidence", flight.dataConfidence || (flight.rawProvider ? "Provider data found" : "Manual review")) +
       field("Last updated", formatDate(options.lastUpdated || new Date().toISOString())) +
       '</div>' +
-      '<p class="flight-card-note">Estimated only. Subject to airline investigation. Preferred complaint method and official submission details are shown later in Smart Submission when the airline is selected.</p>' +
-      '<div class="flight-card-actions"><button type="button" class="btn btn-blue" id="useFlightLookupBtn">Build Complaint Pack</button><button type="button" class="btn btn-outline" id="viewJourneyAnalysisBtn">View Journey Analysis</button><button type="button" class="btn btn-outline" id="viewAirlineRouteBtn">View Airline Complaint Route</button><button type="button" class="btn btn-outline" id="ignoreFlightLookupBtn">Search Another Flight</button></div>' +
+      '<p class="flight-card-note">Estimated only. Subject to airline investigation. Confirm this flight against your booking confirmation or airline communications before using these details.</p>' +
+      '<div class="flight-card-actions"><button type="button" class="btn btn-blue" id="useFlightLookupBtn" data-flight-action="confirm">Confirm and Use This Flight</button><button type="button" class="btn btn-outline" id="viewJourneyAnalysisBtn" data-flight-action="journey">View Journey Analysis</button><button type="button" class="btn btn-outline" id="viewAirlineRouteBtn" data-flight-action="airline-route">View Airline Complaint Route</button><button type="button" class="btn btn-outline" id="editFlightLookupBtn" data-flight-action="edit">Edit Search</button><button type="button" class="btn btn-outline" id="ignoreFlightLookupBtn" data-flight-action="manual">Enter Journey Manually</button></div>' +
       '</article>';
   }
 

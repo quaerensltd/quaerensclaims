@@ -90,6 +90,8 @@ function normaliseFlight(rawFlight = {}, options = {}) {
 function pickFlights(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.flights)) return payload.flights;
+  if (Array.isArray(payload?.departures)) return payload.departures;
+  if (Array.isArray(payload?.arrivals)) return payload.arrivals;
   if (Array.isArray(payload?.items)) return payload.items;
   if (payload && typeof payload === "object") return [payload];
   return [];

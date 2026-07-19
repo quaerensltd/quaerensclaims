@@ -138,6 +138,15 @@
     .recent-flight-button{width:100%;border:1px solid #bfdbfe;background:#fff;border-radius:12px;padding:.7rem .85rem;text-align:left;cursor:pointer;font:inherit;color:#0f172a}
     .recent-flight-button strong{display:block;color:#0f2e75}
     .recent-flight-button span{display:block;color:#475569;font-size:.84rem;margin-top:.15rem}
+    .recent-flight-row{display:grid;grid-template-columns:1fr auto;gap:.45rem;align-items:stretch}
+    .lookup-fallbacks{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem}
+    .lookup-panel{border:1px solid #bfdbfe;background:#fff;border-radius:14px;padding:.9rem;margin-top:.75rem}
+    .lookup-panel.hidden{display:none}
+    .lookup-confirm{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:12px;padding:.8rem;margin:.8rem 0;color:#14532d}
+    .lookup-results-grid{display:grid;gap:.9rem;margin-top:.8rem}
+    .preview-empty-state{white-space:normal}
+    .preview-empty-state h3{margin:0 0 .5rem;color:#06153a}
+    .preview-empty-state ul{margin:.6rem 0 0;padding-left:1.1rem}
     .results-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.9rem;margin:1rem 0}
     .results-dashboard-card{background:#fff;border:1px solid #dbeafe;border-radius:14px;padding:1rem;box-shadow:0 10px 22px rgba(15,23,42,.05)}
     .results-dashboard-card h3{margin:.1rem 0 .75rem;color:#06153a}
@@ -149,6 +158,7 @@
     .metric-row strong{text-align:right;color:#0f172a}
     .passenger-chip{display:inline-flex;border:1px solid #bfdbfe;border-radius:999px;padding:.35rem .6rem;margin:.18rem;background:#eff6ff;color:#0f2e75;font-weight:800}
     .estimate-total{font-size:1.8rem;font-weight:900;color:#047857;margin:.25rem 0}
+    @media(max-width:640px){.recent-flight-row{grid-template-columns:1fr}.lookup-fallbacks .btn,.lookup-panel .btn,.flight-card-actions .btn{width:100%}}
     @media(max-width:900px){.hero{background-position:center}.issue-card{min-height:auto}}
   </style>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Free Flight Disruption Complaint Pack Builder","url":"https://www.quaerens.co.uk/freeflightclaim.html","applicationCategory":"BusinessApplication","operatingSystem":"Web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"provider":{"@type":"Organization","name":"Quaerens Ltd.","url":"https://www.quaerens.co.uk"}}</script>
@@ -269,15 +279,47 @@
 
                 <div class="wizard-step" data-step="2" data-title="Flight Details">
                   <h3>Flight Details</h3>
-                  <div class="flight-lookup-box no-print" aria-label="Find flight details">
-                    <strong>Find the flight automatically</strong>
-                    <p class="small">Enter the flight number and date first. If the flight is found, the builder can prefill the airline, route and available times for you.</p>
+                  <div class="flight-lookup-box no-print" aria-label="Smart Flight Lookup">
+                    <strong>Smart Flight Lookup&trade;</strong>
+                    <p class="small">Your flight number normally contains an airline code followed by numbers, for example U2 8133, FR3847 or BA286. Do not confuse it with your booking reference or ticket number.</p>
                     <div class="flight-lookup-grid">
                       <div class="field"><label for="lookupFlightNumber">Flight number</label><input id="lookupFlightNumber" placeholder="e.g. BA123" /></div>
                       <div class="field"><label for="lookupFlightDate">Flight date</label><input id="lookupFlightDate" type="date" /></div>
-                      <button type="button" class="btn btn-blue" id="lookupFlightBtn">Find Flight</button>
+                      <div class="field combo"><label for="lookupDepartureAirport">Departure airport optional</label><input id="lookupDepartureAirport" placeholder="Start typing city, airport or IATA code" data-combo="airports" /><div class="combo-results hidden" id="lookupDepartureAirportResults" role="listbox"></div></div>
+                      <button type="button" class="btn btn-blue" id="lookupFlightBtn">Find My Flight</button>
                     </div>
                     <div id="flightLookupStatus" class="small" aria-live="polite" style="margin-top:.6rem"></div>
+                    <div id="lookupFallbacks" class="lookup-fallbacks hidden">
+                      <button type="button" class="btn btn-outline" data-lookup-mode="check-number">Check Flight Number</button>
+                      <button type="button" class="btn btn-outline" data-lookup-mode="route">Search by Route</button>
+                      <button type="button" class="btn btn-outline" data-lookup-mode="airline-departure">Search by Airline and Departure Airport</button>
+                      <button type="button" class="btn btn-outline" data-lookup-mode="nearby">Search Nearby Dates</button>
+                      <button type="button" class="btn btn-outline" data-lookup-mode="manual">Enter Journey Manually</button>
+                    </div>
+                    <div id="lookupNumberGuidance" class="lookup-panel hidden">
+                      <strong>Check Flight Number</strong>
+                      <p class="small">This does not look like a typical flight number. Please check your booking confirmation for an airline code and number, for example U2 8133, FR3847 or BA286. You can still continue manually if your reference is unusual.</p>
+                    </div>
+                    <div id="lookupRoutePanel" class="lookup-panel hidden">
+                      <strong>Search by Route</strong>
+                      <div class="flight-lookup-grid">
+                        <div class="field combo"><label for="routeDepartureAirport">Departure airport</label><input id="routeDepartureAirport" placeholder="Start typing city, airport or IATA code" data-combo="airports" /><div class="combo-results hidden" id="routeDepartureAirportResults" role="listbox"></div></div>
+                        <div class="field combo"><label for="routeArrivalAirport">Arrival airport</label><input id="routeArrivalAirport" placeholder="Start typing city, airport or IATA code" data-combo="airports" /><div class="combo-results hidden" id="routeArrivalAirportResults" role="listbox"></div></div>
+                        <div class="field"><label for="routeSearchDate">Travel date</label><input id="routeSearchDate" type="date" /></div>
+                        <div class="field combo"><label for="routeSearchAirline">Airline optional</label><input id="routeSearchAirline" placeholder="Start typing airline name" data-combo="airlines" /><div class="combo-results hidden" id="routeSearchAirlineResults" role="listbox"></div></div>
+                        <button type="button" class="btn btn-blue" id="routeSearchBtn">Find Flights on This Route</button>
+                      </div>
+                    </div>
+                    <div id="lookupAirlinePanel" class="lookup-panel hidden">
+                      <strong>Search by Airline and Departure Airport</strong>
+                      <div class="flight-lookup-grid">
+                        <div class="field combo"><label for="airlineSearchAirline">Airline</label><input id="airlineSearchAirline" placeholder="Start typing airline name" data-combo="airlines" /><div class="combo-results hidden" id="airlineSearchAirlineResults" role="listbox"></div></div>
+                        <div class="field combo"><label for="airlineSearchDeparture">Departure airport</label><input id="airlineSearchDeparture" placeholder="Start typing city, airport or IATA code" data-combo="airports" /><div class="combo-results hidden" id="airlineSearchDepartureResults" role="listbox"></div></div>
+                        <div class="field"><label for="airlineSearchDate">Travel date</label><input id="airlineSearchDate" type="date" /></div>
+                        <div class="field combo"><label for="airlineSearchArrival">Arrival airport optional</label><input id="airlineSearchArrival" placeholder="Start typing city, airport or IATA code" data-combo="airports" /><div class="combo-results hidden" id="airlineSearchArrivalResults" role="listbox"></div></div>
+                        <button type="button" class="btn btn-blue" id="airlineSearchBtn">Find Departing Flights</button>
+                      </div>
+                    </div>
                     <div id="flightLookupResult" class="flight-lookup-result hidden"></div>
                     <div id="recentFlightSearches" class="recent-flight-searches"></div>
                   </div>
@@ -551,6 +593,7 @@
     const totalSteps = 8;
     const storageKey = 'quaerensFlightComplaintPackDraftV1';
     const recentFlightsKey = 'quaerensRecentFlightSearchesV1';
+    const lookupCacheKey = 'quaerensSmartFlightLookupCacheV1';
     const state = { step: 1, docs: {}, activeDoc: 'summary', activePreview: 'summary', expenses: [], selectedRecords: {}, expenseSort: 'date', flightLookupApplied: false };
     const fields = ['passengerName','passengerStreet','passengerPostcode','passengerCity','passengerCountry','passengerCount','travelTogether','passengerNames','packageHoliday','bookingMethod','airline','operatingAirline','bookingAgent','flightNumber','bookingReference','flightDate','departureAirport','finalDestination','connectingAirport','replacementDepartureAirport','replacementArrivalAirport','countryDeparture','countryDestination','airlineBase','scheduledDeparture','actualDeparture','scheduledArrival','actualArrival','manualDelayMinutes','arrivalNextDay','approxTimes','extraordinaryCircumstances','cancelNotice','cancelHow','altFlightOffered','acceptedRerouting','refundOffered','cancelStage','oneBooking','firstFlight','connectingFlight','connectionTime','connectionCause','baggageAffected','confirmedBooking','onTimeCheckin','validDocs','volunteered','overbookingStated','boardingReroute','ticketNumber','boardingPassHeld','bookingConfirmationHeld','rightsNotice','airlineReason','exactExplanation','previousComplaint','complaintReference','previousResponse','preferredRoute','whatHappened'];
     const sharedData = {
@@ -661,6 +704,24 @@
       const name = airport.name || airport.city || airport.iata || '';
       return airport.iata && !String(name).includes('(' + airport.iata + ')') ? name + ' (' + airport.iata + ')' : name;
     }
+    function airportCodeFrom(value){
+      const record = state.selectedRecords[value] || {};
+      const raw = record.iata || record.icao || val(value) || value || '';
+      const match = String(raw).toUpperCase().match(/\b[A-Z]{3}\b|^[A-Z]{3}/);
+      return match ? match[0] : '';
+    }
+    function normaliseFlightNumber(value){
+      return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+    }
+    function looksLikeFlightNumber(value){
+      return /^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$/.test(normaliseFlightNumber(value));
+    }
+    function addDaysToDate(value, days){
+      const d = new Date(String(value || '') + 'T12:00:00');
+      if(isNaN(d)) return '';
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0,10);
+    }
     function localAirportRecord(airport){
       if(!airport) return null;
       const iata = normalizeSearch(airport.iata);
@@ -716,13 +777,15 @@
     }
     function createFlightCard(flight, options){
       if(!window.QuaerensFlightCard || typeof window.QuaerensFlightCard.render !== 'function'){
-        return '<div class="notice warning">Flight details were found, but the visual flight card is still loading. You can apply the details or continue manually.</div><button type="button" class="btn btn-blue" id="useFlightLookupBtn">Build Complaint Pack</button>';
+        return '<div class="notice warning">Flight details were found, but the visual flight card is still loading. You can confirm the details or continue manually.</div><button type="button" class="btn btn-blue" id="useFlightLookupBtn">Confirm and Use This Flight</button>';
       }
       return window.QuaerensFlightCard.render(flight, {
         flightNumber: options?.flightNumber,
         passengerCount: options?.passengerCount,
-        travelDate: val('lookupFlightDate') || val('flightDate'),
-        lastUpdated: new Date().toISOString(),
+        travelDate: options?.travelDate || val('lookupFlightDate') || val('flightDate'),
+        lastUpdated: options?.lastUpdated || new Date().toISOString(),
+        variant: options?.variant || 'full',
+        resultIndex: options?.resultIndex,
         escapeHtml,
         formatDate,
         airportDisplay
@@ -745,8 +808,14 @@
       if(!box) return;
       const list = recentFlightSearches();
       if(!list.length){ box.innerHTML=''; return; }
-      box.innerHTML = '<div class="recent-flight-title"><strong>Recent flight searches</strong><button type="button" class="doc-tab" id="clearRecentFlightsBtn">Clear</button></div><div class="recent-flight-list">' + list.map((item,idx)=>'<button type="button" class="recent-flight-button" data-recent-flight="'+idx+'"><strong>'+escapeHtml(item.flightNumber)+' · '+escapeHtml(item.date)+'</strong><span>'+escapeHtml([item.airline,item.route].filter(Boolean).join(' / ') || 'Search again')+'</span></button>').join('') + '</div>';
+      box.innerHTML = '<div class="recent-flight-title"><strong>Recent flight searches</strong><button type="button" class="doc-tab" id="clearRecentFlightsBtn">Clear All</button></div><div class="recent-flight-list">' + list.map((item,idx)=>'<div class="recent-flight-row"><button type="button" class="recent-flight-button" data-recent-flight="'+idx+'"><strong>'+escapeHtml(item.flightNumber)+' · '+escapeHtml(item.date)+'</strong><span>'+escapeHtml([item.airline,item.route].filter(Boolean).join(' / ') || 'Search again')+'</span></button><button type="button" class="btn btn-outline" data-remove-recent-flight="'+idx+'">Remove</button></div>').join('') + '</div>';
       qs('clearRecentFlightsBtn')?.addEventListener('click',()=>{ localStorage.removeItem(recentFlightsKey); renderRecentFlightSearches(); });
+      box.querySelectorAll('[data-remove-recent-flight]').forEach(btn=>btn.addEventListener('click',()=>{
+        const idx = Number(btn.dataset.removeRecentFlight);
+        const next = recentFlightSearches().filter((_,i)=>i!==idx);
+        localStorage.setItem(recentFlightsKey, JSON.stringify(next));
+        renderRecentFlightSearches();
+      }));
       box.querySelectorAll('[data-recent-flight]').forEach(btn=>btn.addEventListener('click',()=>{
         const item = recentFlightSearches()[Number(btn.dataset.recentFlight)];
         if(!item) return;
@@ -755,21 +824,103 @@
         runFlightLookup();
       }));
     }
-    function renderFlightLookupResult(flight){
+    function showLookupFallbacks(show){
+      qs('lookupFallbacks')?.classList.toggle('hidden', !show);
+    }
+    function hideLookupPanels(){
+      ['lookupNumberGuidance','lookupRoutePanel','lookupAirlinePanel'].forEach(id=>qs(id)?.classList.add('hidden'));
+    }
+    function lookupCache(){
+      try{ return JSON.parse(localStorage.getItem(lookupCacheKey) || '{}') || {}; }
+      catch(e){ return {}; }
+    }
+    function stableLookupPayload(payload){
+      return {
+        searchType: payload.searchType || 'exact',
+        flightNumber: normaliseFlightNumber(payload.flightNumber),
+        date: clean(payload.date),
+        passengerCount: String(payload.passengerCount || val('passengerCount') || 1),
+        departureAirport: clean(payload.departureAirport).toUpperCase(),
+        arrivalAirport: clean(payload.arrivalAirport).toUpperCase(),
+        airline: clean(payload.airline)
+      };
+    }
+    function lookupCacheId(payload){
+      const p = stableLookupPayload(payload);
+      return [p.searchType,p.flightNumber,p.date,p.departureAirport,p.arrivalAirport,normalizeSearch(p.airline)].join('|');
+    }
+    function lookupCacheGet(payload){
+      const cache = lookupCache();
+      const item = cache[lookupCacheId(payload)];
+      if(!item || !item.savedAt) return null;
+      if(Date.now() - Number(item.savedAt) > 6 * 60 * 60 * 1000) return null;
+      return Object.assign({}, item.data, { cached: true });
+    }
+    function lookupCacheSet(payload, data){
+      const cache = lookupCache();
+      cache[lookupCacheId(payload)] = { savedAt: Date.now(), data };
+      localStorage.setItem(lookupCacheKey, JSON.stringify(cache));
+    }
+    function lookupPayload(searchType, overrides){
+      return stableLookupPayload(Object.assign({
+        searchType,
+        flightNumber: val('lookupFlightNumber') || val('flightNumber'),
+        date: val('lookupFlightDate') || val('flightDate'),
+        passengerCount: val('passengerCount') || 1,
+        departureAirport: airportCodeFrom('lookupDepartureAirport')
+      }, overrides || {}));
+    }
+    async function requestFlightLookup(payload){
+      const cached = lookupCacheGet(payload);
+      if(cached) return cached;
+      let res = await fetch('/api/flight-lookup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      if(res.status === 404){
+        res = await fetch('https://us-central1-quaerensclaims.cloudfunctions.net/lookupFlight', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      }
+      const data = await res.json();
+      const cleanData = {
+        success: !!data.success,
+        configured: data.configured !== false,
+        cached: !!data.cached,
+        searchType: data.searchType || payload.searchType,
+        flight: data.flight || null,
+        matches: Array.isArray(data.matches) ? data.matches : (data.flight ? [data.flight] : []),
+        message: data.message || ''
+      };
+      lookupCacheSet(payload, cleanData);
+      return cleanData;
+    }
+    function renderFlightLookupResult(flight, context){
       const box = qs('flightLookupResult');
       if(!box || !flight) return;
-      box.innerHTML = createFlightCard(flight, { flightNumber: val('lookupFlightNumber'), passengerCount: val('passengerCount') });
+      context = context || {};
+      box.innerHTML = '<div class="lookup-confirm"><strong>Please confirm this is your flight before the builder fills the journey fields.</strong><span>Passenger names and private details are never filled from the flight lookup.</span></div>' + createFlightCard(flight, { flightNumber: context.flightNumber || val('lookupFlightNumber'), passengerCount: val('passengerCount'), travelDate: context.date || val('lookupFlightDate') || val('flightDate') });
       box.classList.remove('hidden');
-      qs('useFlightLookupBtn')?.addEventListener('click',()=>applyFlightLookup(flight));
-      qs('viewJourneyAnalysisBtn')?.addEventListener('click',()=>{ applyFlightLookup(flight); goStep(4); });
-      qs('viewAirlineRouteBtn')?.addEventListener('click',()=>{ applyFlightLookup(flight); qs('airline')?.scrollIntoView({behavior:'smooth',block:'center'}); });
-      qs('ignoreFlightLookupBtn')?.addEventListener('click',()=>{ box.classList.add('hidden'); qs('flightLookupStatus').textContent='Search another flight or enter the journey manually.'; });
+      qs('useFlightLookupBtn')?.addEventListener('click',()=>applyFlightLookup(flight, context));
+      qs('viewJourneyAnalysisBtn')?.addEventListener('click',()=>{ applyFlightLookup(flight, context); goStep(4); });
+      qs('viewAirlineRouteBtn')?.addEventListener('click',()=>{ applyFlightLookup(flight, context); qs('airline')?.scrollIntoView({behavior:'smooth',block:'center'}); });
+      qs('editFlightLookupBtn')?.addEventListener('click',()=>{ box.classList.add('hidden'); hideLookupPanels(); showLookupFallbacks(true); qs('lookupFlightNumber')?.focus(); });
+      qs('ignoreFlightLookupBtn')?.addEventListener('click',()=>{ box.classList.add('hidden'); showLookupFallbacks(true); qs('flightLookupStatus').textContent='You can search another way or enter the journey manually.'; });
     }
-    function applyFlightLookup(flight){
+    function renderFlightMatches(matches, context){
+      const box = qs('flightLookupResult');
+      if(!box) return;
+      const flights = (matches || []).filter(Boolean).slice(0,12);
+      if(!flights.length){ box.classList.add('hidden'); return; }
+      box.innerHTML = '<div class="lookup-confirm"><strong>Several possible flights were found.</strong><span>Select the journey that matches your booking confirmation before filling the builder.</span></div><div class="lookup-results-grid">' + flights.map((flight,idx)=>createFlightCard(flight, { flightNumber: context.flightNumber, passengerCount: val('passengerCount'), travelDate: context.date || flight.lookupDate, variant:'compact', resultIndex:idx })).join('') + '</div>';
+      box.classList.remove('hidden');
+      box.querySelectorAll('[data-flight-action="select"],[data-flight-action="details"]').forEach(btn=>btn.addEventListener('click',()=>{
+        const flight = flights[Number(btn.dataset.flightResult)];
+        if(!flight) return;
+        renderFlightLookupResult(flight, context);
+      }));
+    }
+    function applyFlightLookup(flight, context){
+      context = context || {};
       setAirlineField('airline', flight.airline);
-      setAirlineField('operatingAirline', flight.airline);
-      setVal('flightNumber', flight.flightNumber);
-      setVal('flightDate', val('lookupFlightDate') || (flight.scheduledDeparture?.local || '').slice(0,10));
+      setAirlineField('operatingAirline', flight.operatingAirline || flight.airline);
+      setVal('flightNumber', flight.flightNumber || context.flightNumber);
+      setVal('flightDate', context.date || val('lookupFlightDate') || (flight.scheduledDeparture?.local || '').slice(0,10));
       setAirportField('departureAirport', flight.departureAirport);
       setAirportField('finalDestination', flight.arrivalAirport);
       setCountryField('countryDeparture', flight.departureAirport);
@@ -784,24 +935,78 @@
       saveDraftMaybe();
       qs('flightLookupStatus').textContent='Flight details applied. Please check every field before generating your complaint pack.';
     }
-    async function runFlightLookup(){
-      const flightNumber = val('lookupFlightNumber') || val('flightNumber');
-      const date = val('lookupFlightDate') || val('flightDate');
+    async function handleLookupResponse(payload, statusText){
       const status = qs('flightLookupStatus');
       const result = qs('flightLookupResult');
       if(result) result.classList.add('hidden');
-      if(!flightNumber || !date){ status.textContent='Enter a flight number and flight date first.'; return; }
-      status.textContent='Looking up flight details...';
+      hideLookupPanels();
+      showLookupFallbacks(false);
+      status.textContent = statusText || 'Searching Smart Flight Lookup...';
       try{
-        const payload = { flightNumber, date, passengerCount:val('passengerCount') || 1 };
-        let res = await fetch('/api/flight-lookup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        if(res.status === 404){
-          res = await fetch('https://us-central1-quaerensclaims.cloudfunctions.net/lookupFlight', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        const data = await requestFlightLookup(payload);
+        const matches = (data.matches && data.matches.length ? data.matches : (data.flight ? [data.flight] : [])).filter(Boolean);
+        if(data.success && matches.length > 1){
+          status.textContent = (data.cached ? 'Recent lookup: ' : '') + 'Several possible flights found. Please select the correct journey.';
+          saveRecentFlightSearch(payload, matches[0]);
+          renderFlightMatches(matches, payload);
+          return;
         }
-        const data = await res.json();
-        if(data.success && data.flight){ status.textContent=data.cached?'Flight found from recent lookup.':'Flight found from flight data provider.'; saveRecentFlightSearch(payload, data.flight); renderFlightLookupResult(data.flight); }
-        else { status.textContent = data.message || 'No matching flight was found. Please enter the journey manually.'; }
-      }catch(e){ status.textContent='Flight lookup is temporarily unavailable. Please enter the journey manually.'; }
+        if(data.success && matches.length === 1){
+          status.textContent = (data.cached ? 'Recent lookup: ' : '') + 'Flight found. Please confirm it matches your booking before using it.';
+          saveRecentFlightSearch(payload, matches[0]);
+          renderFlightLookupResult(matches[0], payload);
+          return;
+        }
+        status.textContent = data.message || 'No exact match found. Try one of the search options below or enter the journey manually.';
+        showLookupFallbacks(true);
+      }catch(e){
+        status.textContent='Smart Flight Lookup is temporarily unavailable. Try another search option or enter the journey manually.';
+        showLookupFallbacks(true);
+      }
+    }
+    async function runFlightLookup(){
+      const payload = lookupPayload('exact');
+      const status = qs('flightLookupStatus');
+      if(!payload.flightNumber || !payload.date){ status.textContent='Enter a flight number and flight date first.'; showLookupFallbacks(true); return; }
+      if(!looksLikeFlightNumber(payload.flightNumber)){
+        qs('lookupNumberGuidance')?.classList.remove('hidden');
+        status.textContent='That does not look like a flight number. Check it is not a booking reference, then search again.';
+        showLookupFallbacks(true);
+        return;
+      }
+      await handleLookupResponse(payload, 'Searching Smart Flight Lookup by flight number and date...');
+    }
+    async function runRouteLookup(){
+      const payload = lookupPayload('route', { departureAirport: airportCodeFrom('routeDepartureAirport'), arrivalAirport: airportCodeFrom('routeArrivalAirport'), date: val('routeSearchDate'), airline: val('routeSearchAirline') });
+      if(!payload.departureAirport || !payload.arrivalAirport || !payload.date){ qs('flightLookupStatus').textContent='Enter the departure airport, arrival airport and travel date for route search.'; return; }
+      await handleLookupResponse(payload, 'Searching flights on this route...');
+    }
+    async function runAirlineDepartureLookup(){
+      const payload = lookupPayload('airlineDeparture', { airline: val('airlineSearchAirline'), departureAirport: airportCodeFrom('airlineSearchDeparture'), arrivalAirport: airportCodeFrom('airlineSearchArrival'), date: val('airlineSearchDate') });
+      if(!payload.airline || !payload.departureAirport || !payload.date){ qs('flightLookupStatus').textContent='Enter the airline, departure airport and travel date for airline search.'; return; }
+      await handleLookupResponse(payload, 'Searching departures for this airline...');
+    }
+    async function runNearbyDateLookup(){
+      const base = lookupPayload('nearby');
+      if(!base.flightNumber || !base.date){ qs('flightLookupStatus').textContent='Enter a flight number and date before searching nearby dates.'; return; }
+      qs('flightLookupStatus').textContent='Searching the previous day, travel day and following day...';
+      hideLookupPanels();
+      const dates = [-1,0,1].map(offset=>addDaysToDate(base.date, offset)).filter(Boolean);
+      const all = [];
+      for(const date of dates){
+        try{
+          const data = await requestFlightLookup(Object.assign({}, base, { date, searchType:'nearby' }));
+          const matches = (data.matches && data.matches.length ? data.matches : (data.flight ? [data.flight] : [])).map(f=>Object.assign({}, f, { lookupDate: date }));
+          all.push(...matches);
+        }catch(e){}
+      }
+      if(all.length){
+        qs('flightLookupStatus').textContent='Possible flights found on nearby dates. Please select the correct journey.';
+        renderFlightMatches(all, base);
+      } else {
+        qs('flightLookupStatus').textContent='No nearby-date match found. Enter the journey manually or search by route.';
+        showLookupFallbacks(true);
+      }
     }
     function passengerList(a){
       const primary = clean(a.passengerName);
@@ -845,8 +1050,32 @@
     function docLabels(){ return {summary:'Complaint Summary',letter:'Initial Airline Complaint',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Journey Timeline',expenses:'Expense Schedule',submission:'Before You Send',tracker:'Follow-Up Tracker',contact:'Contact Record',next:'Next Steps',resources:'Official Resources',disclaimer:'Self-Service Disclaimer'}; }
     function buildDocs(a){ const docs={summary:buildSummary(a),letter:buildLetter(a),email:buildCoverEmail(a),evidence:buildEvidenceChecklist(a),timeline:buildTimeline(a)}; const expenseDoc=buildExpenseSchedule(a); if(expenseDoc) docs.expenses=expenseDoc; docs.submission=buildSubmissionChecklist(); docs.tracker=buildTracker(); docs.contact=buildContactRecord(); docs.next=buildNextSteps(); docs.resources=buildResources(); docs.disclaimer=buildDisclaimer(); return docs; }
     function renderSummary(){ const a=collect(); const items=[['Passenger',fallback(a.passengerName)],['Passenger Count',String(passengerList(a).length)],['Airline',fallback(a.airline)],['Operating Airline',fallback(a.operatingAirline || a.airline)],['Flight Number',fallback(a.flightNumber)],['Booking Reference',fallback(a.bookingReference)],['Travel Date',fallback(a.flightDate)],['Departure Airport',fallback(a.departureAirport)],['Destination Airport',fallback(a.finalDestination)],['Scheduled Arrival',formatDate(a.scheduledArrival)],['Actual Arrival',formatDate(a.actualArrival)],['Estimated Arrival Delay',a.delayText],['Delay Source',fallback(a.delaySource)],['Disruption Type',a.issues.length?a.issues.map(issueLabel).join(', '):'Not selected'],['Complaint Route',primaryRoute(a)],['Expenses Recorded',a.expenses.length ? a.expenses.length + ' item(s)' : 'None recorded']]; qs('journeySummary').innerHTML = items.map(x=>'<div class="summary-card"><strong>'+escapeHtml(x[0])+'</strong>'+escapeHtml(x[1])+'</div>').join(''); renderJourneyFlow(a); }
-    function previewDocument(a){ const key=state.activePreview; if(key==='summary') return buildSummary(a); if(key==='letter') return buildLetter(a); if(key==='evidence') return buildEvidenceChecklist(a); if(key==='timeline') return buildTimeline(a); if(key==='expenses') return buildExpenseSchedule(a) || 'Expense Schedule\n\nNo expenses recorded yet.'; if(key==='next') return buildNextSteps(a); return buildSummary(a); }
-    function renderPreview(){ const a=collect(); qs('livePreview').textContent = previewDocument(a); renderDelayPanel(a); renderAirlineInfo(a); renderExpenseTotals(a); renderSummary(); }
+    function previewHasStarted(a){
+      return !!(a.passengerName || a.airline || a.flightNumber || a.bookingReference || a.flightDate || a.departureAirport || a.finalDestination || a.scheduledArrival || a.actualArrival || a.manualDelayMinutes || a.issues.length || a.expenses.length);
+    }
+    function previewHasCoreJourney(a){
+      return !!(a.airline && a.flightNumber && a.flightDate && a.departureAirport && a.finalDestination);
+    }
+    function previewEmptyHtml(){
+      return '<div class="preview-empty-state"><h3>Your Complaint Pack Preview</h3><p>Start with Smart Flight Lookup or manual journey entry. The preview will build as useful information is added.</p><ul><li>Flight and passenger details</li><li>Journey timing and delay calculation</li><li>Evidence checklist</li><li>Complaint wording and next steps</li></ul></div>';
+    }
+    function buildProgressivePreview(a){
+      const lines = ['Your Complaint Pack Preview','','Add or confirm the key journey details and this preview will turn into the full Quaerens Consumer Complaint File.'];
+      const known = [];
+      if(a.flightNumber) known.push('Flight number: ' + a.flightNumber);
+      if(a.flightDate) known.push('Travel date: ' + a.flightDate);
+      if(a.airline) known.push('Airline: ' + a.airline);
+      if(a.departureAirport || a.finalDestination) known.push('Journey: ' + routeLine(a));
+      if(a.delayMinutes !== null) known.push('Estimated arrival delay: ' + a.delayText);
+      if(a.issues.length) known.push('Issues selected: ' + a.issues.map(issueLabel).join(', '));
+      if(a.expenses.length) known.push('Expenses recorded: ' + a.expenses.length + ' item(s)');
+      if(known.length) lines.push('', 'Details added so far', known.map(x=>'[x] '+x).join('\n'));
+      lines.push('', 'Still useful to add', '[ ] Airline or operating airline', '[ ] Departure and arrival airports', '[ ] Scheduled and actual arrival times', '[ ] Disruption type', '[ ] Evidence and expenses where relevant');
+      lines.push('', 'No compensation figure is shown until there is enough route, passenger and timing information to support an estimate.');
+      return lines.join('\n');
+    }
+    function previewDocument(a){ if(!previewHasCoreJourney(a)) return buildProgressivePreview(a); const key=state.activePreview; if(key==='summary') return buildSummary(a); if(key==='letter') return buildLetter(a); if(key==='evidence') return buildEvidenceChecklist(a); if(key==='timeline') return buildTimeline(a); if(key==='expenses') return buildExpenseSchedule(a) || 'Expense Schedule\n\nNo expenses recorded yet.'; if(key==='next') return buildNextSteps(a); return buildSummary(a); }
+    function renderPreview(){ const a=collect(); const preview=qs('livePreview'); if(preview){ if(!previewHasStarted(a)){ preview.innerHTML = previewEmptyHtml(); } else { preview.textContent = previewDocument(a); } } renderDelayPanel(a); renderAirlineInfo(a); renderExpenseTotals(a); renderSummary(); }
     function escapeHtml(s){ return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
     function normalizeSearch(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
     function renderDelayPanel(a){ if(qs('delayScheduled')) qs('delayScheduled').textContent = formatDate(a.scheduledArrival).replace('[Not known]','Not added'); if(qs('delayActual')) qs('delayActual').textContent = formatDate(a.actualArrival).replace('[Not known]','Not added'); if(qs('delayDifference')) qs('delayDifference').textContent = a.delayMinutes === null ? 'Not calculated' : a.delayText; if(qs('delayFinal')) qs('delayFinal').textContent = a.delayMinutes === null ? 'Not calculated' : (a.delayMinutes < 0 ? 'Check times' : a.delayText); qs('delayResult').textContent = delayGuidance(a); }
@@ -1049,6 +1278,29 @@
     qs('newComplaintBtn').addEventListener('click',()=>{ document.getElementById('flightBuilderForm').reset(); state.expenses=[]; qs('expenseRows').innerHTML=''; state.docs={}; qs('packReady').classList.add('hidden'); state.step=1; renderStep(); renderPreview(); });
     qs('togglePreviewBtn').addEventListener('click',()=>{ qs('livePreview').classList.toggle('hidden'); qs('togglePreviewBtn').textContent=qs('livePreview').classList.contains('hidden')?'Preview My Complaint':'Hide Preview'; });
     if(qs('lookupFlightBtn')) qs('lookupFlightBtn').addEventListener('click',runFlightLookup);
+    if(qs('routeSearchBtn')) qs('routeSearchBtn').addEventListener('click',runRouteLookup);
+    if(qs('airlineSearchBtn')) qs('airlineSearchBtn').addEventListener('click',runAirlineDepartureLookup);
+    document.querySelectorAll('[data-lookup-mode]').forEach(btn=>btn.addEventListener('click',()=>{
+      const mode = btn.dataset.lookupMode;
+      hideLookupPanels();
+      if(mode === 'check-number'){ qs('lookupNumberGuidance')?.classList.remove('hidden'); qs('lookupFlightNumber')?.focus(); }
+      if(mode === 'route'){
+        qs('lookupRoutePanel')?.classList.remove('hidden');
+        setVal('routeSearchDate', val('lookupFlightDate') || val('flightDate'));
+        qs('routeDepartureAirport')?.focus();
+      }
+      if(mode === 'airline-departure'){
+        qs('lookupAirlinePanel')?.classList.remove('hidden');
+        setVal('airlineSearchDate', val('lookupFlightDate') || val('flightDate'));
+        qs('airlineSearchAirline')?.focus();
+      }
+      if(mode === 'nearby') runNearbyDateLookup();
+      if(mode === 'manual'){
+        qs('flightLookupStatus').textContent = 'Manual journey entry is always available. Add the details you know below and the pack will adapt.';
+        qs('airline')?.scrollIntoView({behavior:'smooth',block:'center'});
+        qs('airline')?.focus();
+      }
+    }));
     if(qs('flightNumber')) qs('flightNumber').addEventListener('input',()=>setVal('lookupFlightNumber', val('flightNumber')));
     if(qs('flightDate')) qs('flightDate').addEventListener('input',()=>setVal('lookupFlightDate', val('flightDate')));
     document.querySelectorAll('.faq-btn').forEach(btn=>btn.addEventListener('click',()=>btn.closest('.faq-item').classList.toggle('active')));

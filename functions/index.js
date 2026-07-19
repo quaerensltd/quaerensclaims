@@ -27,9 +27,13 @@ exports.lookupFlight = onRequest(async (req, res) => {
     try {
       const data = req.body || {};
       const result = await lookupFlightWithAeroDataBox(db, {
+        searchType: data.searchType,
         flightNumber: data.flightNumber,
         date: data.date || data.flightDate,
-        passengerCount: data.passengerCount
+        passengerCount: data.passengerCount,
+        departureAirport: data.departureAirport,
+        arrivalAirport: data.arrivalAirport,
+        airline: data.airline
       });
 
       return res.status(200).json(result);
