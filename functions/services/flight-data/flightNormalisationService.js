@@ -22,6 +22,21 @@ function airportFromMovement(movement = {}) {
   };
 }
 
+function withAirportFallback(airport = {}, fallback = {}) {
+  if (!fallback) return airport;
+  return {
+    name: firstAvailable(airport.name, fallback.name),
+    iata: firstAvailable(airport.iata, fallback.iata),
+    icao: firstAvailable(airport.icao, fallback.icao),
+    city: firstAvailable(airport.city, fallback.city),
+    country: firstAvailable(airport.country, fallback.country),
+    countryCode: firstAvailable(airport.countryCode, fallback.countryCode),
+    latitude: firstAvailable(airport.latitude, fallback.latitude),
+    longitude: firstAvailable(airport.longitude, fallback.longitude),
+    timezone: firstAvailable(airport.timezone, fallback.timezone)
+  };
+}
+
 function timeFromMovement(movement = {}, key) {
   const source = movement[key] || {};
   if (typeof source === "string") return { local: source, utc: source };
@@ -37,8 +52,8 @@ function normaliseFlight(rawFlight = {}, options = {}) {
   const airline = rawFlight.airline || rawFlight.carrier || {};
   const operatingAirline = rawFlight.operatingAirline || rawFlight.operatingCarrier || rawFlight.operator || airline;
 
-  const departureAirport = airportFromMovement(departure);
-  const arrivalAirport = airportFromMovement(arrival);
+  const departureAirport = withAirportFallback(airportFromMovement(departure), options.departureAirportFallback);
+  const arrivalAirport = withAirportFallback(airportFromMovement(arrival), options.arrivalAirportFallback);
   const scheduledDeparture = timeFromMovement(departure, "scheduledTime");
   const actualDeparture = timeFromMovement(departure, "actualTime");
   const scheduledArrival = timeFromMovement(arrival, "scheduledTime");

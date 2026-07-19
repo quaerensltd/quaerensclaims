@@ -7,20 +7,20 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const AIRPORT_META = {
-  STN: { name: "London Stansted Airport", timezone: "Europe/London" },
-  LHR: { name: "London Heathrow Airport", timezone: "Europe/London" },
-  LGW: { name: "London Gatwick Airport", timezone: "Europe/London" },
-  LTN: { name: "London Luton Airport", timezone: "Europe/London" },
-  LCY: { name: "London City Airport", timezone: "Europe/London" },
-  MAN: { name: "Manchester Airport", timezone: "Europe/London" },
-  BHX: { name: "Birmingham Airport", timezone: "Europe/London" },
-  EDI: { name: "Edinburgh Airport", timezone: "Europe/London" },
-  GLA: { name: "Glasgow Airport", timezone: "Europe/London" },
-  RHO: { name: "Rhodes International Airport", timezone: "Europe/Athens" },
-  CFU: { name: "Corfu International Airport", timezone: "Europe/Athens" },
-  ALC: { name: "Alicante Airport", timezone: "Europe/Madrid" },
-  AGP: { name: "Malaga Airport", timezone: "Europe/Madrid" },
-  PMI: { name: "Palma de Mallorca Airport", timezone: "Europe/Madrid" }
+  STN: { name: "London Stansted Airport", timezone: "Europe/London", countryCode: "GB", latitude: 51.885, longitude: 0.235 },
+  LHR: { name: "London Heathrow Airport", timezone: "Europe/London", countryCode: "GB", latitude: 51.470, longitude: -0.454 },
+  LGW: { name: "London Gatwick Airport", timezone: "Europe/London", countryCode: "GB", latitude: 51.153, longitude: -0.182 },
+  LTN: { name: "London Luton Airport", timezone: "Europe/London", countryCode: "GB", latitude: 51.874, longitude: -0.368 },
+  LCY: { name: "London City Airport", timezone: "Europe/London", countryCode: "GB", latitude: 51.505, longitude: 0.055 },
+  MAN: { name: "Manchester Airport", timezone: "Europe/London", countryCode: "GB", latitude: 53.354, longitude: -2.275 },
+  BHX: { name: "Birmingham Airport", timezone: "Europe/London", countryCode: "GB", latitude: 52.453, longitude: -1.748 },
+  EDI: { name: "Edinburgh Airport", timezone: "Europe/London", countryCode: "GB", latitude: 55.950, longitude: -3.373 },
+  GLA: { name: "Glasgow Airport", timezone: "Europe/London", countryCode: "GB", latitude: 55.872, longitude: -4.433 },
+  RHO: { name: "Rhodes International Airport", timezone: "Europe/Athens", countryCode: "GR", latitude: 36.405, longitude: 28.086 },
+  CFU: { name: "Corfu International Airport", timezone: "Europe/Athens", countryCode: "GR", latitude: 39.602, longitude: 19.912 },
+  ALC: { name: "Alicante Airport", timezone: "Europe/Madrid", countryCode: "ES", latitude: 38.282, longitude: -0.558 },
+  AGP: { name: "Malaga Airport", timezone: "Europe/Madrid", countryCode: "ES", latitude: 36.675, longitude: -4.499 },
+  PMI: { name: "Palma de Mallorca Airport", timezone: "Europe/Madrid", countryCode: "ES", latitude: 39.552, longitude: 2.739 }
 };
 
 const AIRLINE_ALIASES = {
@@ -127,6 +127,20 @@ function airportTimezone(airport) {
 function airportName(airport) {
   const code = cleanCode(airport);
   return AIRPORT_META[code]?.name || code || "the selected airport";
+}
+
+function airportFallback(airport) {
+  const code = cleanCode(airport);
+  const meta = AIRPORT_META[code];
+  if (!code) return null;
+  return {
+    name: meta?.name || code,
+    iata: code,
+    countryCode: meta?.countryCode,
+    latitude: meta?.latitude,
+    longitude: meta?.longitude,
+    timezone: meta?.timezone
+  };
 }
 
 function providerAirportRequest({ airport, date }) {
@@ -377,7 +391,9 @@ async function lookupFlightWithAeroDataBox(db, input) {
   }
 
   const providerRecords = payloads.flatMap(payload => pickFlights(payload));
-  let flights = providerRecords.map(flight => normaliseFlight(flight, { flightNumber, passengerCount }));
+  const departureFallback = searchType === "route" || searchType === "airlineDeparture" ? airportFallback(departureAirport) : null;
+  const arrivalFallback = searchType === "route" ? airportFallback(arrivalAirport) : null;
+  let flights = providerRecords.map(flight => normaliseFlight(flight, { flightNumber, passengerCount, departureAirportFallback: departureFallback, arrivalAirportFallback: arrivalFallback }));
   if (searchType === "route") {
     flights = flights.filter(flight => airportMatches(flight.departureAirport, departureAirport) && airportMatches(flight.arrivalAirport, arrivalAirport));
     if (airline || airlineCode || airlineIcao) flights = flights.filter(flight => airlineMatches(flight, lookupInput));
