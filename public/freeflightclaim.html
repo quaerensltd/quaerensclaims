@@ -131,6 +131,24 @@
     .combo-status{font-size:.78rem;color:#475569;margin-top:.2rem}
     .combo-option.active,.combo-option:focus{background:#eff6ff;outline:2px solid #bfdbfe}
     .combo-option mark{background:#dbeafe;color:#0f2e75;border-radius:4px;padding:0 .12rem}
+    .recent-flight-searches{margin-top:.85rem}
+    .recent-flight-title{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin:.2rem 0 .55rem}
+    .recent-flight-title strong{color:#172554}
+    .recent-flight-list{display:grid;gap:.55rem}
+    .recent-flight-button{width:100%;border:1px solid #bfdbfe;background:#fff;border-radius:12px;padding:.7rem .85rem;text-align:left;cursor:pointer;font:inherit;color:#0f172a}
+    .recent-flight-button strong{display:block;color:#0f2e75}
+    .recent-flight-button span{display:block;color:#475569;font-size:.84rem;margin-top:.15rem}
+    .results-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.9rem;margin:1rem 0}
+    .results-dashboard-card{background:#fff;border:1px solid #dbeafe;border-radius:14px;padding:1rem;box-shadow:0 10px 22px rgba(15,23,42,.05)}
+    .results-dashboard-card h3{margin:.1rem 0 .75rem;color:#06153a}
+    .status-line{display:flex;gap:.5rem;align-items:flex-start;margin:.45rem 0;color:#334155}
+    .status-line b{width:1.45rem;height:1.45rem;border-radius:999px;background:#ecfdf3;border:1px solid #86efac;color:#047857;display:inline-flex;align-items:center;justify-content:center;flex:0 0 1.45rem;font-size:.82rem}
+    .status-line.warn b{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+    .metric-row{display:flex;justify-content:space-between;gap:.85rem;border-bottom:1px solid #e5edf8;padding:.45rem 0}
+    .metric-row span{color:#64748b}
+    .metric-row strong{text-align:right;color:#0f172a}
+    .passenger-chip{display:inline-flex;border:1px solid #bfdbfe;border-radius:999px;padding:.35rem .6rem;margin:.18rem;background:#eff6ff;color:#0f2e75;font-weight:800}
+    .estimate-total{font-size:1.8rem;font-weight:900;color:#047857;margin:.25rem 0}
     @media(max-width:900px){.hero{background-position:center}.issue-card{min-height:auto}}
   </style>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Free Flight Disruption Complaint Pack Builder","url":"https://www.quaerens.co.uk/freeflightclaim.html","applicationCategory":"BusinessApplication","operatingSystem":"Web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"provider":{"@type":"Organization","name":"Quaerens Ltd.","url":"https://www.quaerens.co.uk"}}</script>
@@ -261,6 +279,7 @@
                     </div>
                     <div id="flightLookupStatus" class="small" aria-live="polite" style="margin-top:.6rem"></div>
                     <div id="flightLookupResult" class="flight-lookup-result hidden"></div>
+                    <div id="recentFlightSearches" class="recent-flight-searches"></div>
                   </div>
                   <div class="field-grid">
                     <div class="field combo"><label for="airline">Airline</label><input id="airline" placeholder="Start typing airline name" data-combo="airlines" /><div class="combo-results hidden" id="airlineResults" role="listbox"></div></div>
@@ -456,6 +475,8 @@
           </div>
           <h3>Case Summary</h3>
           <div id="completionSummary" class="completion-summary"></div>
+          <h3>Results Dashboard</h3>
+          <div id="resultsDashboard" class="results-dashboard"></div>
           <h3>Smart Submission Status</h3>
           <div id="smartSubmissionStatus" class="status-grid"></div>
           <div id="airlineSubmissionDetails" class="submission-grid"></div>
@@ -524,12 +545,13 @@
     </div>
   </footer>
 
-  <script src="/components/flight/FlightCard.js" defer></script>
+  <script src="/components/flight/FlightCard.js"></script>
   <script>
   (function(){
     const totalSteps = 8;
     const storageKey = 'quaerensFlightComplaintPackDraftV1';
-    const state = { step: 1, docs: {}, activeDoc: 'summary', activePreview: 'summary', expenses: [], selectedRecords: {}, expenseSort: 'date' };
+    const recentFlightsKey = 'quaerensRecentFlightSearchesV1';
+    const state = { step: 1, docs: {}, activeDoc: 'summary', activePreview: 'summary', expenses: [], selectedRecords: {}, expenseSort: 'date', flightLookupApplied: false };
     const fields = ['passengerName','passengerStreet','passengerPostcode','passengerCity','passengerCountry','passengerCount','travelTogether','passengerNames','packageHoliday','bookingMethod','airline','operatingAirline','bookingAgent','flightNumber','bookingReference','flightDate','departureAirport','finalDestination','connectingAirport','replacementDepartureAirport','replacementArrivalAirport','countryDeparture','countryDestination','airlineBase','scheduledDeparture','actualDeparture','scheduledArrival','actualArrival','manualDelayMinutes','arrivalNextDay','approxTimes','extraordinaryCircumstances','cancelNotice','cancelHow','altFlightOffered','acceptedRerouting','refundOffered','cancelStage','oneBooking','firstFlight','connectingFlight','connectionTime','connectionCause','baggageAffected','confirmedBooking','onTimeCheckin','validDocs','volunteered','overbookingStated','boardingReroute','ticketNumber','boardingPassHeld','bookingConfirmationHeld','rightsNotice','airlineReason','exactExplanation','previousComplaint','complaintReference','previousResponse','preferredRoute','whatHappened'];
     const sharedData = {
       countries: [],
@@ -693,6 +715,9 @@
       return badges;
     }
     function createFlightCard(flight, options){
+      if(!window.QuaerensFlightCard || typeof window.QuaerensFlightCard.render !== 'function'){
+        return '<div class="notice warning">Flight details were found, but the visual flight card is still loading. You can apply the details or continue manually.</div><button type="button" class="btn btn-blue" id="useFlightLookupBtn">Build Complaint Pack</button>';
+      }
       return window.QuaerensFlightCard.render(flight, {
         flightNumber: options?.flightNumber,
         passengerCount: options?.passengerCount,
@@ -703,15 +728,42 @@
         airportDisplay
       });
     }
+    function recentFlightSearches(){
+      try{ return JSON.parse(localStorage.getItem(recentFlightsKey) || '[]').filter(Boolean).slice(0,5); }
+      catch(e){ return []; }
+    }
+    function saveRecentFlightSearch(payload, flight){
+      const route = [airportDisplay(flight.departureAirport), airportDisplay(flight.arrivalAirport)].filter(Boolean).join(' to ');
+      const item = { flightNumber: payload.flightNumber, date: payload.date, airline: flight.airline?.name || '', route, savedAt: new Date().toISOString() };
+      const key = normalizeSearch(item.flightNumber + ' ' + item.date);
+      const list = [item, ...recentFlightSearches().filter(x => normalizeSearch(x.flightNumber + ' ' + x.date) !== key)].slice(0,5);
+      localStorage.setItem(recentFlightsKey, JSON.stringify(list));
+      renderRecentFlightSearches();
+    }
+    function renderRecentFlightSearches(){
+      const box = qs('recentFlightSearches');
+      if(!box) return;
+      const list = recentFlightSearches();
+      if(!list.length){ box.innerHTML=''; return; }
+      box.innerHTML = '<div class="recent-flight-title"><strong>Recent flight searches</strong><button type="button" class="doc-tab" id="clearRecentFlightsBtn">Clear</button></div><div class="recent-flight-list">' + list.map((item,idx)=>'<button type="button" class="recent-flight-button" data-recent-flight="'+idx+'"><strong>'+escapeHtml(item.flightNumber)+' · '+escapeHtml(item.date)+'</strong><span>'+escapeHtml([item.airline,item.route].filter(Boolean).join(' / ') || 'Search again')+'</span></button>').join('') + '</div>';
+      qs('clearRecentFlightsBtn')?.addEventListener('click',()=>{ localStorage.removeItem(recentFlightsKey); renderRecentFlightSearches(); });
+      box.querySelectorAll('[data-recent-flight]').forEach(btn=>btn.addEventListener('click',()=>{
+        const item = recentFlightSearches()[Number(btn.dataset.recentFlight)];
+        if(!item) return;
+        setVal('lookupFlightNumber', item.flightNumber);
+        setVal('lookupFlightDate', item.date);
+        runFlightLookup();
+      }));
+    }
     function renderFlightLookupResult(flight){
       const box = qs('flightLookupResult');
       if(!box || !flight) return;
       box.innerHTML = createFlightCard(flight, { flightNumber: val('lookupFlightNumber'), passengerCount: val('passengerCount') });
       box.classList.remove('hidden');
-      qs('useFlightLookupBtn').addEventListener('click',()=>applyFlightLookup(flight));
-      qs('viewJourneyAnalysisBtn').addEventListener('click',()=>{ applyFlightLookup(flight); goStep(4); });
-      qs('viewAirlineRouteBtn').addEventListener('click',()=>{ applyFlightLookup(flight); qs('airline')?.scrollIntoView({behavior:'smooth',block:'center'}); });
-      qs('ignoreFlightLookupBtn').addEventListener('click',()=>{ box.classList.add('hidden'); qs('flightLookupStatus').textContent='Search another flight or enter the journey manually.'; });
+      qs('useFlightLookupBtn')?.addEventListener('click',()=>applyFlightLookup(flight));
+      qs('viewJourneyAnalysisBtn')?.addEventListener('click',()=>{ applyFlightLookup(flight); goStep(4); });
+      qs('viewAirlineRouteBtn')?.addEventListener('click',()=>{ applyFlightLookup(flight); qs('airline')?.scrollIntoView({behavior:'smooth',block:'center'}); });
+      qs('ignoreFlightLookupBtn')?.addEventListener('click',()=>{ box.classList.add('hidden'); qs('flightLookupStatus').textContent='Search another flight or enter the journey manually.'; });
     }
     function applyFlightLookup(flight){
       setAirlineField('airline', flight.airline);
@@ -727,6 +779,7 @@
       setVal('scheduledArrival', dateTimeLocalFrom(flight.scheduledArrival?.local || flight.scheduledArrival?.utc));
       setVal('actualArrival', dateTimeLocalFrom(flight.actualArrival?.local || flight.actualArrival?.utc));
       if(flight.delay?.delayMinutes !== null && flight.delay?.delayMinutes !== undefined) setVal('manualDelayMinutes', String(flight.delay.delayMinutes));
+      state.flightLookupApplied = true;
       renderPreview();
       saveDraftMaybe();
       qs('flightLookupStatus').textContent='Flight details applied. Please check every field before generating your complaint pack.';
@@ -746,7 +799,7 @@
           res = await fetch('https://us-central1-quaerensclaims.cloudfunctions.net/lookupFlight', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
         }
         const data = await res.json();
-        if(data.success && data.flight){ status.textContent=data.cached?'Flight found from recent lookup.':'Flight found from flight data provider.'; renderFlightLookupResult(data.flight); }
+        if(data.success && data.flight){ status.textContent=data.cached?'Flight found from recent lookup.':'Flight found from flight data provider.'; saveRecentFlightSearch(payload, data.flight); renderFlightLookupResult(data.flight); }
         else { status.textContent = data.message || 'No matching flight was found. Please enter the journey manually.'; }
       }catch(e){ status.textContent='Flight lookup is temporarily unavailable. Please enter the journey manually.'; }
     }
@@ -906,10 +959,70 @@
     function buildSummary(a){ const c=compAnalysis(a); const docs=['Complaint Summary','Flight Disruption Journey Analysis','Estimated Compensation Analysis','Initial Airline Complaint and Information Request']; if(buildCoverEmail(a)) docs.push('Cover Email'); docs.push('Flight Evidence Checklist','Journey and Disruption Timeline'); if(a.expenses.length) docs.push('Expense Schedule'); docs.push('Airline Submission Details','Before You Submit','Follow-Up Tracker','Airline Contact Record','Next Steps','Official Resources','Self-Service Disclaimer'); const mainIssues=a.issues.length ? a.issues.map(x=>'[x] '+issueLabel(x)).join('\n') : '[x] Information request'; return 'QUAERENS CONSUMER COMPLAINT FILE\n\nFlight Disruption\n\nComplaint Summary\n\nGenerated: ' + today() + '\nSmart Submission stage: Quaerens Smart Submission™\n\nPASSENGER AND JOURNEY\n' + passengerBlock(a) + '\nAirline: ' + fallback(a.airline) + '\nOperating airline: ' + fallback(a.operatingAirline || a.airline) + '\nFlight number: ' + fallback(a.flightNumber) + '\nBooking reference: ' + fallback(a.bookingReference) + '\nTravel date: ' + fallback(a.flightDate) + '\nJourney: ' + routeLine(a) + '\nApplicable regulation: ' + c.regulation + '\nGreat-circle distance: ' + (c.distanceKm?c.distanceKm+' km':'Further review required') + '\nEstimated final-destination delay: ' + a.delayText + '\nDelay source: ' + fallback(a.delaySource) + '\nEstimated statutory compensation: ' + (c.total?money(c.total,c.currency):'No monetary estimate shown') + '\nRecorded expenses: ' + expenseTotalsText(a) + '\nEstimated total requested: ' + totalRequestedText(a) + '\nComplaint route: ' + primaryRoute(a) + '\n\nMAIN ISSUES RAISED\n' + mainIssues + '\n\nDOCUMENTS INCLUDED\n' + docs.map(x=>'[x] '+x).join('\n') + '\n\nIMPORTANT REVIEW NOTE\n\nThis pack is a self-service starting point. Check every answer, remove anything inaccurate and only send documents that reflect your own journey and circumstances. It does not determine legal entitlement, compensation, refund or reimbursement.'; }
     function buildDocs(a){ const docs={summary:buildSummary(a),journey:buildJourneyAnalysis(a),compensation:buildCompensationAnalysis(a),letter:buildLetter(a)}; const email=buildCoverEmail(a); if(email) docs.email=email; docs.evidence=buildEvidenceChecklist(a); docs.timeline=buildTimeline(a); const expenseDoc=buildExpenseSchedule(a); if(expenseDoc) docs.expenses=expenseDoc; docs.submissionDetails=buildSubmissionInstructions(a); docs.submission=buildSubmissionChecklist(); docs.tracker=buildTracker(); docs.contact=buildContactRecord(); docs.next=buildNextSteps(); docs.resources=buildResources(); docs.disclaimer=buildDisclaimer(); return docs; }
     function docLabels(){ return {summary:'Complaint Summary',journey:'Journey Analysis',compensation:'Compensation Analysis',letter:'Complaint Letter',email:'Cover Email',evidence:'Evidence Checklist',timeline:'Timeline',expenses:'Expense Schedule',submissionDetails:'Airline Submission Details',submission:'Before You Submit',tracker:'Follow-Up Tracker',contact:'Contact Record',next:'Next Steps',resources:'Official Resources',disclaimer:'Disclaimer'}; }
+    function dashboardMetric(label,value){ return '<div class="metric-row"><span>'+escapeHtml(label)+'</span><strong>'+escapeHtml(value)+'</strong></div>'; }
+    function dashboardStatus(label,ok,detail){ return '<div class="status-line '+(ok?'':'warn')+'"><b>'+(ok?'&#10003;':'!')+'</b><span><strong>'+escapeHtml(label)+'</strong><br><small>'+escapeHtml(detail)+'</small></span></div>'; }
+    function renderResultsDashboard(a){
+      const box=qs('resultsDashboard');
+      if(!box) return;
+      const c=compAnalysis(a);
+      const s=airlineSubmissionInfo(a);
+      const passengers=passengerList(a);
+      const hasFlight=!!(a.airline && a.flightNumber && a.flightDate);
+      const hasRoute=!!(a.departureAirport && a.finalDestination);
+      const hasDelay=a.delayMinutes !== null;
+      const hasDistance=!!c.distanceKm;
+      const hasSubmission=!!(s.form || s.email || s.website);
+      const timingConfidence=a.actualArrival ? 'Actual arrival time entered' : (a.manualDelayMinutes ? 'Manual delay entered' : 'Awaiting actual arrival or manual delay');
+      const source=state.flightLookupApplied ? 'Flight lookup applied' : 'Manual entry or lookup not applied';
+      const formLink=s.form?'<a href="'+escapeHtml(s.form)+'" target="_blank" rel="noopener noreferrer">Open official complaint route</a>':'Check the airline official website before sending.';
+      box.innerHTML =
+        '<div class="results-dashboard-card"><h3>Journey Status</h3>'+
+          dashboardStatus('Flight data added',hasFlight,hasFlight?'Airline, flight number and date are present.':'Add airline, flight number and travel date.')+
+          dashboardStatus('Passenger details added',passengers.length>0,passengers.length+' passenger(s) included in the pack.')+
+          dashboardStatus('Arrival delay calculated or entered',hasDelay,hasDelay?a.delayText:'Add actual arrival or manual delay.')+
+          dashboardStatus('Route distance calculated',hasDistance,hasDistance?c.distanceKm+' km':'Further review required.')+
+          dashboardStatus('Complaint pack ready',true,'Documents generated for review before sending.')+
+        '</div>'+
+        '<div class="results-dashboard-card"><h3>Flight Data Confidence</h3>'+
+          dashboardMetric('Source',source)+
+          dashboardMetric('Arrival times',timingConfidence)+
+          dashboardMetric('Distance',hasDistance?c.distanceKm+' km':'Further review required')+
+          dashboardMetric('Estimate',c.total?money(c.total,c.currency):'No monetary estimate shown')+
+          '<p class="small">Estimated only. Subject to airline investigation.</p>'+
+        '</div>'+
+        '<div class="results-dashboard-card"><h3>Route Analysis</h3>'+
+          dashboardMetric('Flight',flightLine(a))+
+          dashboardMetric('Route',routeLine(a))+
+          dashboardMetric('Scheduled arrival',formatDate(a.scheduledArrival))+
+          dashboardMetric('Actual arrival',formatDate(a.actualArrival))+
+          dashboardMetric('Arrival delay',a.delayText)+
+          dashboardMetric('Possible regulation',c.regulation)+
+        '</div>'+
+        '<div class="results-dashboard-card"><h3>Passenger Summary</h3>'+
+          '<div>'+passengers.map((name,i)=>'<span class="passenger-chip">'+escapeHtml((i+1)+'. '+name)+'</span>').join('')+'</div>'+
+          '<p class="small">The complaint letter references '+passengers.length+' passenger(s).</p>'+
+        '</div>'+
+        '<div class="results-dashboard-card"><h3>Compensation Estimate</h3>'+
+          '<p class="estimate-total">'+escapeHtml(c.total?money(c.total,c.currency):'Further review')+'</p>'+
+          dashboardMetric('Per passenger',c.perPassenger?money(c.perPassenger,c.currency):'No estimate shown')+
+          dashboardMetric('Passengers',String(c.passengers))+
+          dashboardMetric('Recorded expenses',expenseTotalsText(a))+
+          dashboardMetric('Estimated total requested',totalRequestedText(a))+
+          '<p class="small">'+escapeHtml(c.note)+'</p>'+
+        '</div>'+
+        '<div class="results-dashboard-card"><h3>Airline Submission</h3>'+
+          dashboardMetric('Airline',s.name)+
+          dashboardMetric('Preferred method',s.preferred)+
+          '<p><strong>Official complaint form:</strong><br>'+formLink+'</p>'+
+          dashboardMetric('Complaint email',s.email||'Use the official online form where required')+
+          dashboardMetric('Last verified',s.verified)+
+          dashboardStatus('Submission route available',hasSubmission,hasSubmission?'A published airline route is listed.':'Check the current airline website before sending.')+
+        '</div>';
+    }
     function renderCompletionSummary(a){ const box=qs('completionSummary'); if(!box) return; const c=compAnalysis(a); const rows=[['Airline',fallback(a.airline)],['Flight Number',fallback(a.flightNumber)],['Travel Date',fallback(a.flightDate)],['Route',routeLine(a)],['Applicable Regulation',c.regulation],['Estimated Compensation',c.total?money(c.total,c.currency):'No monetary estimate shown'],['Estimated Expenses',expenseTotalsText(a)],['Estimated Total Requested',totalRequestedText(a)],['Passengers',String(c.passengers)],['Complaint Status','Complaint pack ready for review']]; box.innerHTML=rows.map(x=>'<div class="summary-card"><strong>'+escapeHtml(x[0])+'</strong>'+escapeHtml(x[1])+'</div>').join(''); }
     function renderSmartSubmission(a){ const status=qs('smartSubmissionStatus'); const panel=qs('airlineSubmissionDetails'); if(!status||!panel)return; const c=compAnalysis(a); const s=airlineSubmissionInfo(a); const hasMethod=!!(s.form||s.email||s.website); const items=[['Complaint Pack Created','Complete',true],['Documents Ready','Complete',true],['Airline Selected',s.name&&s.name!=='Airline not selected'?'Complete':'Review airline',s.name&&s.name!=='Airline not selected'],['Submission Method Available',hasMethod?'Complete':'Check airline website',hasMethod],['Estimated Compensation Calculated',c.distanceKm?'Complete':'Further review',!!c.distanceKm],['Ready To Submit','Review before sending',true]]; status.innerHTML=items.map(i=>'<div class="status-item"><span class="status-dot">'+(i[2]?'✓':'!')+'</span><span><strong>'+escapeHtml(i[0])+'</strong><small>'+escapeHtml(i[1])+'</small></span></div>').join(''); const formLink=s.form?'<a href="'+escapeHtml(s.form)+'" target="_blank" rel="noopener noreferrer">Open official complaint page</a>':'Use the airline official website or current CAA guidance.'; panel.innerHTML='<div class="submission-card"><h3>Airline Submission Details</h3><p><strong>Airline:</strong> '+escapeHtml(s.name)+'</p><p><strong>Preferred method:</strong> '+escapeHtml(s.preferred)+'</p><p><strong>Official complaint form:</strong> '+formLink+'</p><p><strong>Complaint email:</strong> '+escapeHtml(s.email||'This airline normally requests complaints through its official online form.')+'</p><p><strong>Postal address:</strong> '+escapeHtml(s.postal||'Not published in the local airline directory.')+'</p><p><strong>Last verified:</strong> '+escapeHtml(s.verified)+'</p></div><div class="submission-card"><h3>How To Submit</h3><ul><li>Review your complaint letter.</li><li>Attach supporting evidence.</li><li>Use the airline official complaint route.</li><li>Save a copy before sending.</li><li>Keep any reference number.</li><li>Retain proof of submission.</li></ul></div><div class="submission-card"><h3>Estimated Statutory Compensation</h3><p class="big-amount">'+escapeHtml(c.total?money(c.total,c.currency):'Further review')+'</p><p>'+escapeHtml(c.note)+'</p></div><div class="submission-card"><h3>Relevant Documents</h3><ul><li>Complaint Letter</li><li>'+escapeHtml(s.email?'Cover Email':'Online form wording')+'</li><li>Booking Confirmation</li><li>Boarding Pass</li><li>Delay or cancellation evidence</li><li>Expense receipts where relevant</li><li>Alternative travel or hotel evidence where relevant</li></ul></div>'; }
     function renderAirlineInfo(a){ const box=qs('airlineSelectedInfo'); if(!box) return; const s=airlineSubmissionInfo(a); if(!a.airline&&!a.operatingAirline){ box.innerHTML='Start typing an airline to show complaint-route guidance. External links are provided for convenience only. The airline selected does not by itself determine which passenger-rights rules apply.'; return; } const link=s.form?'<a href="'+escapeHtml(s.form)+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(s.preferred)+'</a>':escapeHtml(s.preferred); box.innerHTML='<strong>Selected Airline: '+escapeHtml(s.name)+'</strong><br>Operating airline/legal entity where known: '+escapeHtml(s.legal)+'.<br>Preferred complaint route: '+link+'<br>Complaint email: '+escapeHtml(s.email||'not published in the local airline directory')+'.<br>Last verified: '+escapeHtml(s.verified)+'.<br><span class="small">Never assume email is the correct method. Use the airline official complaint form or published route where required. The airline selected does not by itself determine which passenger-rights rules apply.</span>'; }
-    function generatePack(){ const a=collect(); state.docs=buildDocs(a); state.activeDoc='summary'; renderCompletionSummary(a); renderSmartSubmission(a); renderDocs(); qs('packReady').classList.remove('hidden'); qs('packReady').scrollIntoView({behavior:'smooth'}); }
+    function generatePack(){ const a=collect(); state.docs=buildDocs(a); state.activeDoc='summary'; renderCompletionSummary(a); renderResultsDashboard(a); renderSmartSubmission(a); renderDocs(); qs('packReady').classList.remove('hidden'); qs('packReady').scrollIntoView({behavior:'smooth'}); }
     function downloadPdf(){ if(window.jspdf?.jsPDF){ const doc=new window.jspdf.jsPDF({unit:'pt',format:'a4'}); let y=58; const margin=48,maxWidth=500; function footer(){ const page=doc.internal.getCurrentPageInfo().pageNumber; doc.setFontSize(7.5); doc.setTextColor(90); doc.text('Quaerens Consumer Complaint File - Flight Disruption',margin,805); doc.text('Quaerens Smart Submission',margin,817); doc.text('Generated: '+today(),260,817); doc.text('Page: '+page+' of {total_pages_count_string}',455,817); doc.setTextColor(0); } function newPage(){ footer(); doc.addPage(); y=58; } function ensure(h){ if(y+h>780)newPage(); } function line(raw){ const text=String(raw||' '); const heading=text && text===text.toUpperCase() && text.length<90 && /[A-Z]/.test(text); doc.setFont('helvetica',heading?'bold':'normal'); doc.setFontSize(heading?12:10); const lines=doc.splitTextToSize(text,maxWidth); ensure(lines.length*14+8); if(heading)y+=5; lines.forEach(part=>{doc.text(part,margin,y);y+=14;}); } Object.entries(state.docs).forEach(([k,text],idx)=>{ if(idx>0)newPage(); String(text||'').split('\n').forEach(line); y+=8; }); footer(); if(doc.putTotalPages)doc.putTotalPages('{total_pages_count_string}'); doc.save(filename('pdf')); } else { window.print(); } }
     const originalReusableRenderDocs = renderDocs;
     function saveDraftMaybe(){ if(!qs('saveOnDevice').checked) return; const data={step:state.step,answers:collect(),expenses:state.expenses,selectedRecords:state.selectedRecords,expenseSort:state.expenseSort,checks:{issues:selected('issues'),careProvided:selected('careProvided')}}; localStorage.setItem(storageKey,JSON.stringify(data)); qs('saveStatus').textContent='Progress saved on this device.'; }
@@ -942,7 +1055,7 @@
     const reusableBuilderComponents = { questionnaireEngine:{collect,renderStep}, complaintGenerator:{buildDocs,buildLetter}, pdfGenerator:{downloadPdf}, timelineComponent:{buildTimeline,renderJourneyFlow}, evidenceChecklist:{buildEvidenceChecklist}, expenseSchedule:{buildExpenseSchedule,sortExpenses,addExpense}, followUpTracker:{buildTracker}, officialResources:{buildResources}, disclaimer:{buildDisclaimer} };
     window.quaerensBuilderPlatform = { sharedData, comboData:()=>comboData, loadSharedData, normalizeSearch };
     window.quaerensFlightBuilderComponents = reusableBuilderComponents;
-    loadSharedData().finally(()=>{ document.querySelectorAll('[data-combo]').forEach(setupCombo); loadDraft(); renderStep(); renderPreview(); });
+    loadSharedData().finally(()=>{ document.querySelectorAll('[data-combo]').forEach(setupCombo); loadDraft(); renderStep(); renderPreview(); renderRecentFlightSearches(); });
   })();
   </script>
 </body>

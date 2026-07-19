@@ -12,7 +12,7 @@
   function formatMoney(value, currency) {
     var n = Number(value);
     if (!Number.isFinite(n)) return "Further review";
-    var symbol = currency === "EUR" ? "€" : "£";
+    var symbol = currency === "EUR" ? "\u20ac" : "\u00a3";
     return symbol + Math.round(n).toLocaleString("en-GB");
   }
 
@@ -52,7 +52,7 @@
     };
 
     return '<article class="flight-card" data-component="FlightCard">' +
-      '<div class="flight-card-head"><div><div class="flight-card-kicker">' + escape(valueText(flight.airline && flight.airline.name, "Airline")) + '</div><div class="flight-card-number">' + escape(valueText(flight.flightNumber || options.flightNumber)) + '</div><div class="flight-card-route">' + escape(dep + " → " + arr) + '</div></div><div class="flight-card-highlight"><span>Estimated statutory compensation</span><strong>' + escape(perPassenger) + '</strong><small>Estimated total: ' + escape(total) + '</small></div></div>' +
+      '<div class="flight-card-head"><div><div class="flight-card-kicker">' + escape(valueText(flight.airline && flight.airline.name, "Airline")) + '</div><div class="flight-card-number">' + escape(valueText(flight.flightNumber || options.flightNumber)) + '</div><div class="flight-card-route">' + escape(dep + " \u2192 " + arr) + '</div></div><div class="flight-card-highlight"><span>Estimated statutory compensation</span><strong>' + escape(perPassenger) + '</strong><small>Estimated total: ' + escape(total) + '</small></div></div>' +
       '<div class="flight-card-badges">' + badgeHtml + '</div>' +
       '<div class="flight-card-grid">' +
       field("Operating airline", flight.operatingAirline && flight.operatingAirline.name || flight.airline && flight.airline.name) +
