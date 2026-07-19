@@ -9,19 +9,19 @@ const html = String.raw`<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Free Holiday & Package Travel Complaint Pack Builder | Quaerens</title>
-  <meta name="description" content="Build a free holiday complaint pack for cancelled holidays, poor accommodation, package travel disputes, hotel problems and holiday company complaints." />
+  <meta name="description" content="Build a free holiday and package travel complaint pack for cancellations, major changes, poor accommodation, missing facilities, downgrades and other holiday disputes." />
   <meta name="robots" content="index, follow" />
   <meta name="author" content="Quaerens Ltd." />
   <meta name="theme-color" content="#2563eb" />
   <link rel="canonical" href="https://www.quaerens.co.uk/freeholidaycompensation.html" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Build Your Holiday Complaint Pack | Quaerens" />
-  <meta property="og:description" content="Create a professional holiday complaint pack for cancellations, changes, poor accommodation and package travel disputes." />
+  <meta property="og:title" content="Build Your Holiday & Package Travel Complaint Pack | Quaerens" />
+  <meta property="og:description" content="Organise your booking, evidence, losses and complaint route with a free self-service holiday complaint pack builder." />
   <meta property="og:image" content="https://www.quaerens.co.uk/images/hero-holidaycompensation3.jpg" />
   <meta property="og:url" content="https://www.quaerens.co.uk/freeholidaycompensation.html" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Build Your Holiday Complaint Pack | Quaerens" />
-  <meta name="twitter:description" content="Free self-service holiday complaint pack builder for cancelled holidays, poor accommodation and package travel disputes." />
+  <meta name="twitter:title" content="Build Your Holiday & Package Travel Complaint Pack | Quaerens" />
+  <meta name="twitter:description" content="Free self-service complaint pack builder for holiday cancellations, poor accommodation, missing facilities and package travel disputes." />
   <meta name="twitter:image" content="https://www.quaerens.co.uk/images/hero-holidaycompensation3.jpg" />
   <link rel="icon" href="/images/favicon.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -29,9 +29,10 @@ const html = String.raw`<!DOCTYPE html>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','AW-18202267837');</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Free Holiday & Package Travel Complaint Pack Builder","url":"https://www.quaerens.co.uk/freeholidaycompensation.html","applicationCategory":"BusinessApplication","operatingSystem":"Web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"provider":{"@type":"Organization","name":"Quaerens Ltd.","url":"https://www.quaerens.co.uk"}}</script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I use this for a package holiday complaint?","acceptedAnswer":{"@type":"Answer","text":"Yes. The builder supports package holiday complaints, including cancellations, significant changes, poor accommodation, missed services and resort problems."}},{"@type":"Question","name":"Does this calculate guaranteed compensation?","acceptedAnswer":{"@type":"Answer","text":"No. It helps you describe the problem, organise evidence and identify potential outcomes. It does not guarantee a refund, compensation or price reduction."}},{"@type":"Question","name":"Can I use it if the hotel was not as described?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add details about the listing, room, facilities, photos, videos and any complaint raised during the holiday."}},{"@type":"Question","name":"What if I complained while I was away?","acceptedAnswer":{"@type":"Answer","text":"Include the date, who you spoke to, any reference number and the response you received. Keep screenshots and written confirmation where possible."}},{"@type":"Question","name":"Does Quaerens send the complaint for me?","acceptedAnswer":{"@type":"Answer","text":"No. This free page is a browser-first self-service builder. You review, download and send the complaint pack yourself."}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.quaerens.co.uk/"},{"@type":"ListItem","position":2,"name":"Free Tools","item":"https://www.quaerens.co.uk/category-free-tools.html"},{"@type":"ListItem","position":3,"name":"Holiday & Package Travel Complaint Pack Builder","item":"https://www.quaerens.co.uk/freeholidaycompensation.html"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I use this for a package holiday complaint?","acceptedAnswer":{"@type":"Answer","text":"Yes. The builder supports package holiday complaints, including cancellations, significant changes, poor accommodation, missed services and resort problems."}},{"@type":"Question","name":"Does this calculate guaranteed compensation?","acceptedAnswer":{"@type":"Answer","text":"No. It helps you describe the problem, organise evidence and identify potential outcomes. It does not guarantee a refund, compensation or price reduction."}},{"@type":"Question","name":"Can I use it if the hotel was not as described?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add details about the listing, room, facilities, photos, videos and any complaint raised during the holiday."}},{"@type":"Question","name":"What if I complained while I was away?","acceptedAnswer":{"@type":"Answer","text":"Include the date, who you spoke to, any reference number and the response you received. Keep screenshots and written confirmation where possible."}},{"@type":"Question","name":"Can I use it if my holiday was changed before departure?","acceptedAnswer":{"@type":"Answer","text":"Yes. Record what was originally booked, what changed, when you were told, whether alternatives were offered and whether you accepted them."}},{"@type":"Question","name":"Can I include extra costs?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add documented costs such as replacement accommodation, transport, food, calls or other expenses. Not every cost will be recoverable, so the pack presents them as costs to be reviewed."}},{"@type":"Question","name":"What if I do not have every document?","acceptedAnswer":{"@type":"Answer","text":"You can still use the builder. The missing evidence schedule helps you identify documents that may be useful to request or look for before submitting."}},{"@type":"Question","name":"Does this work for accommodation-only bookings?","acceptedAnswer":{"@type":"Answer","text":"Yes. Select the closest booking type and explain who sold the accommodation, who took payment and what was promised. Different complaint routes may apply depending on the booking structure."}},{"@type":"Question","name":"Can I mention lost enjoyment or inconvenience?","acceptedAnswer":{"@type":"Answer","text":"Yes, but use cautious wording and link the impact to specific evidence. The builder helps you describe the impact without implying that a particular outcome is guaranteed."}},{"@type":"Question","name":"Does Quaerens send the complaint for me?","acceptedAnswer":{"@type":"Answer","text":"No. This free page is a browser-first self-service builder. You review, download and send the complaint pack yourself."}}]}</script>
   <style>
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:Inter,Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a;top:0!important}.wrap{max-width:1180px;margin:0 auto;padding:0 1rem}.site-header{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:60}.header-inner{min-height:92px;display:flex;align-items:center;justify-content:space-between;gap:1rem}.logo{height:70px;width:auto}.nav{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;justify-content:flex-end}.nav a{font-weight:900;text-decoration:none;color:#1f2937}.nav .pill{border-radius:999px;padding:.8rem 1.18rem;background:#2563eb;color:#fff;box-shadow:0 12px 28px rgba(37,99,235,.22)}.hero{position:relative;min-height:700px;background:linear-gradient(90deg,rgba(7,19,39,.72),rgba(15,23,42,.48),rgba(15,23,42,.16)),url('/images/hero-holidaycompensation3.jpg') center/cover no-repeat;color:#fff;overflow:hidden}.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(350px,.78fr);gap:2rem;align-items:center;min-height:700px;padding:3rem 1rem}.eyebrow{font-size:.86rem;letter-spacing:.08em;text-transform:uppercase;color:#1d4ed8;font-weight:900}.hero .eyebrow{color:#bfdbfe}.hero h1{font-size:clamp(2.45rem,5vw,4.65rem);line-height:1.02;margin:.75rem 0 1rem;font-weight:900;letter-spacing:-.035em;text-shadow:0 3px 20px rgba(7,19,39,.55)}.hero p{font-size:clamp(1.05rem,2vw,1.25rem);line-height:1.6;color:#f8fafc;max-width:760px;text-shadow:0 2px 12px rgba(7,19,39,.45)}.hero-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem 1.1rem;margin:1.35rem 0;color:#fff;font-weight:800}.hero-list span,.tick{display:flex;gap:.5rem;align-items:flex-start}.hero-list b,.tick b{color:#86efac}.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.95rem 1.35rem;font-weight:900;text-decoration:none;border:0;cursor:pointer;font:inherit}.btn-blue{background:#2563eb;color:#fff;box-shadow:0 14px 30px rgba(37,99,235,.26)}.btn-outline{background:#fff;border:2px solid #2563eb;color:#1d4ed8}.btn-ghost{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);color:#fff}.panel{background:#fff;border:1px solid #dbeafe;border-radius:18px;padding:1.35rem;box-shadow:0 16px 40px rgba(15,23,42,.12);color:#0f172a}.hero-card{position:sticky;top:112px}.hero-card h2{font-size:1.45rem;line-height:1.15;margin:0 0 .45rem;font-weight:900}.trust-grid,.card-grid,.step-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}.trust-card,.feature-card,.step-card{background:#fff;border:1px solid #dbeafe;border-radius:16px;padding:1rem;box-shadow:0 10px 26px rgba(15,23,42,.06)}.trust-card{font-weight:900;color:#0f2e75}.section{padding:3rem 0}.info-box{background:#fff;border:1px solid #dbeafe;border-radius:18px;padding:clamp(1.2rem,3vw,2rem);box-shadow:0 12px 32px rgba(15,23,42,.07)}.soft-blue{background:linear-gradient(180deg,#eff6ff 0%,#f8fbff 100%)}.tool-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.72fr);gap:1.25rem;align-items:start}.progress{height:.62rem;background:#dbeafe;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;width:12.5%;background:#2563eb;transition:width .25s ease}.wizard-step{display:none}.wizard-step.active{display:block}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}.field{display:grid;gap:.35rem}.field.full{grid-column:1/-1}.field label,.check-label{font-weight:800;font-size:.9rem;color:#172554}.field input,.field select,.field textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:.82rem .9rem;font:inherit;background:#fff}.field textarea{min-height:96px;resize:vertical}.choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}.choice{border:1px solid #cbd5e1;border-radius:14px;padding:.85rem;background:#fff;display:flex;gap:.55rem;align-items:flex-start;cursor:pointer}.choice input{margin-top:.25rem}.small{font-size:.88rem;color:#475569;line-height:1.55}.notice{border-radius:14px;padding:1rem;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}.success{background:#ecfdf5;border-color:#bbf7d0;color:#065f46}.warning{background:#fff7ed;border-color:#fed7aa;color:#7c2d12}.live-preview{position:sticky;top:112px}.live-letter-preview{margin-top:1rem;max-height:640px;overflow:auto;white-space:pre-wrap;background:#f8fbff;border:1px solid #dbeafe;border-radius:14px;padding:1rem;color:#0f172a;font:14px/1.55 Consolas,monospace}.doc-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}.doc-tab{border:1px solid #bfdbfe;background:#fff;color:#1d4ed8;border-radius:999px;padding:.65rem .9rem;font-weight:900;cursor:pointer}.doc-tab.active{background:#2563eb;color:#fff}.doc-editor{width:100%;min-height:420px;border:1px solid #cbd5e1;border-radius:14px;padding:1rem;font:15px/1.55 Consolas,monospace;background:#fff;white-space:pre-wrap}.download-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem}.document-checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.65rem}.document-checklist span{background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:.75rem;font-weight:800;color:#172554}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem}.summary-card{background:#fff;border:1px solid #dbeafe;border-radius:14px;padding:.9rem}.summary-card strong{display:block;color:#0f2e75;margin-bottom:.25rem}.faq-item{background:#fff;border:1px solid #dbeafe;border-radius:14px;margin:.75rem 0;overflow:hidden}.faq-btn{width:100%;border:0;background:#fff;text-align:left;padding:1rem;font-weight:900;display:flex;justify-content:space-between;gap:1rem;cursor:pointer}.faq-content{display:none;padding:0 1rem 1rem;color:#334155;line-height:1.65}.faq-item.active .faq-content{display:block}.source-list a{color:#1d4ed8;font-weight:800}.quaerens-language-switcher{position:fixed;right:1rem;top:6.2rem;z-index:80;display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.96);border:1px solid #dbeafe;border-radius:999px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:.45rem .55rem .45rem .8rem}.quaerens-language-switcher label{font-size:.78rem;font-weight:900;color:#1e3a8a}.quaerens-language-switcher select{border:0;background:transparent;font-weight:800;outline:none}.hidden{display:none!important}.print-area{display:none}.footer{background:#06153a;color:#dbeafe;padding:2rem 0;margin-top:2rem}.footer a{color:#fff;font-weight:800;text-decoration:none}.travel-directory{display:grid;gap:.8rem}.directory-card{border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:1rem}.directory-card strong{display:block;color:#0f2e75}@media(max-width:900px){.nav a:not(.pill){display:none}.hero-grid,.tool-workspace{grid-template-columns:1fr;min-height:auto}.hero{min-height:auto}.hero-card,.live-preview{position:relative;top:auto}.hero-list,.field-grid{grid-template-columns:1fr}.logo{height:60px}.quaerens-language-switcher{top:5.1rem}.section{padding:2.2rem 0}}@media(max-width:420px){.hero h1{font-size:2.25rem}.btn{width:100%}.download-grid{grid-template-columns:1fr}}@media print{header,.hero,.quaerens-language-switcher,.no-print,.doc-tabs,.download-grid,.faq-btn{display:none!important}.print-area{display:block!important}.info-box,.panel{box-shadow:none;border:0}.wrap{max-width:none}.doc-editor{border:0;min-height:auto;white-space:pre-wrap}}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:Inter,Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a;top:0!important}.wrap{max-width:1180px;margin:0 auto;padding:0 1rem}.site-header{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:60}.header-inner{min-height:92px;display:flex;align-items:center;justify-content:space-between;gap:1rem}.logo{height:70px;width:auto}.nav{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;justify-content:flex-end}.nav a{font-weight:900;text-decoration:none;color:#1f2937}.nav .pill{border-radius:999px;padding:.8rem 1.18rem;background:#2563eb;color:#fff;box-shadow:0 12px 28px rgba(37,99,235,.22)}.hero{position:relative;min-height:700px;background:linear-gradient(90deg,rgba(7,19,39,.72),rgba(15,23,42,.48),rgba(15,23,42,.16)),url('/images/hero-holidaycompensation3.jpg') center/cover no-repeat;color:#fff;overflow:hidden}.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(350px,.78fr);gap:2rem;align-items:center;min-height:700px;padding:3rem 1rem}.eyebrow{font-size:.86rem;letter-spacing:.08em;text-transform:uppercase;color:#1d4ed8;font-weight:900}.hero .eyebrow{color:#bfdbfe}.hero h1{font-size:clamp(2.45rem,5vw,4.65rem);line-height:1.02;margin:.75rem 0 1rem;font-weight:900;letter-spacing:-.035em;text-shadow:0 3px 20px rgba(7,19,39,.55)}.hero p{font-size:clamp(1.05rem,2vw,1.25rem);line-height:1.6;color:#f8fafc;max-width:760px;text-shadow:0 2px 12px rgba(7,19,39,.45)}.hero-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem 1.1rem;margin:1.35rem 0;color:#fff;font-weight:800}.hero-list span,.tick{display:flex;gap:.5rem;align-items:flex-start}.hero-list b,.tick b{color:#86efac}.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.95rem 1.35rem;font-weight:900;text-decoration:none;border:0;cursor:pointer;font:inherit}.btn-blue{background:#2563eb;color:#fff;box-shadow:0 14px 30px rgba(37,99,235,.26)}.btn-outline{background:#fff;border:2px solid #2563eb;color:#1d4ed8}.btn-ghost{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);color:#fff}.panel{background:#fff;border:1px solid #dbeafe;border-radius:18px;padding:1.35rem;box-shadow:0 16px 40px rgba(15,23,42,.12);color:#0f172a}.hero-card{position:sticky;top:112px}.hero-card h2{font-size:1.45rem;line-height:1.15;margin:0 0 .45rem;font-weight:900}.trust-grid,.card-grid,.step-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}.trust-card,.feature-card,.step-card{background:#fff;border:1px solid #dbeafe;border-radius:16px;padding:1rem;box-shadow:0 10px 26px rgba(15,23,42,.06)}.trust-card{font-weight:900;color:#0f2e75}.section{padding:3rem 0}.info-box{background:#fff;border:1px solid #dbeafe;border-radius:18px;padding:clamp(1.2rem,3vw,2rem);box-shadow:0 12px 32px rgba(15,23,42,.07)}.soft-blue{background:linear-gradient(180deg,#eff6ff 0%,#f8fbff 100%)}.tool-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.72fr);gap:1.25rem;align-items:start}.progress{height:.62rem;background:#dbeafe;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;width:12.5%;background:#2563eb;transition:width .25s ease}.wizard-step{display:none}.wizard-step.active{display:block}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}.field{display:grid;gap:.35rem}.field.full{grid-column:1/-1}.field label,.check-label{font-weight:800;font-size:.9rem;color:#172554}.field input,.field select,.field textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:.82rem .9rem;font:inherit;background:#fff}.field textarea{min-height:96px;resize:vertical}.choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}.choice{border:1px solid #cbd5e1;border-radius:14px;padding:.85rem;background:#fff;display:flex;gap:.55rem;align-items:flex-start;cursor:pointer}.choice input{margin-top:.25rem}.small{font-size:.88rem;color:#475569;line-height:1.55}.notice{border-radius:14px;padding:1rem;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}.success{background:#ecfdf5;border-color:#bbf7d0;color:#065f46}.warning{background:#fff7ed;border-color:#fed7aa;color:#7c2d12}.live-preview{position:sticky;top:112px}.live-letter-preview{margin-top:1rem;max-height:640px;overflow:auto;white-space:pre-wrap;background:#f8fbff;border:1px solid #dbeafe;border-radius:14px;padding:1rem;color:#0f172a;font:14px/1.55 Consolas,monospace}.doc-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}.doc-tab{border:1px solid #bfdbfe;background:#fff;color:#1d4ed8;border-radius:999px;padding:.65rem .9rem;font-weight:900;cursor:pointer}.doc-tab.active{background:#2563eb;color:#fff}.doc-editor{width:100%;min-height:420px;border:1px solid #cbd5e1;border-radius:14px;padding:1rem;font:15px/1.55 Consolas,monospace;background:#fff;white-space:pre-wrap}.download-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem}.document-checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.65rem}.document-checklist span{background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:.75rem;font-weight:800;color:#172554}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem}.summary-card{background:#fff;border:1px solid #dbeafe;border-radius:14px;padding:.9rem}.summary-card strong{display:block;color:#0f2e75;margin-bottom:.25rem}.expense-row{border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:1rem;margin:.75rem 0}.expense-row h4{margin:.1rem 0 .8rem;color:#0f2e75}.faq-item{background:#fff;border:1px solid #dbeafe;border-radius:14px;margin:.75rem 0;overflow:hidden}.faq-btn{width:100%;border:0;background:#fff;text-align:left;padding:1rem;font-weight:900;display:flex;justify-content:space-between;gap:1rem;cursor:pointer}.faq-content{display:none;padding:0 1rem 1rem;color:#334155;line-height:1.65}.faq-item.active .faq-content{display:block}.source-list{display:grid;gap:.7rem}.source-list a{color:#1d4ed8;font-weight:800}.quaerens-language-switcher{position:fixed;right:1rem;top:6.2rem;z-index:80;display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.96);border:1px solid #dbeafe;border-radius:999px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:.45rem .55rem .45rem .8rem}.quaerens-language-switcher label{font-size:.78rem;font-weight:900;color:#1e3a8a}.quaerens-language-switcher select{border:0;background:transparent;font-weight:800;outline:none}.hidden{display:none!important}.print-area{display:none}.footer{background:#06153a;color:#dbeafe;padding:2rem 0;margin-top:2rem}.footer a{color:#fff;font-weight:800;text-decoration:none}.travel-directory{display:grid;gap:.8rem}.directory-card{border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:1rem}.directory-card strong{display:block;color:#0f2e75}@media(max-width:900px){.nav a:not(.pill){display:none}.hero-grid,.tool-workspace{grid-template-columns:1fr;min-height:auto}.hero{min-height:auto}.hero-card,.live-preview{position:relative;top:auto}.hero-list,.field-grid{grid-template-columns:1fr}.logo{height:60px}.quaerens-language-switcher{top:5.1rem}.section{padding:2.2rem 0}}@media(max-width:420px){.hero h1{font-size:2.25rem}.btn{width:100%}.download-grid{grid-template-columns:1fr}}@media print{header,.hero,.quaerens-language-switcher,.no-print,.doc-tabs,.download-grid,.faq-btn{display:none!important}.print-area{display:block!important}.info-box,.panel{box-shadow:none;border:0}.wrap{max-width:none}.doc-editor{border:0;min-height:auto;white-space:pre-wrap}}
   </style>
 </head>
 <body>
@@ -52,25 +53,26 @@ const html = String.raw`<!DOCTYPE html>
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">Free Complaint Pack Builder</p>
-        <h1>Build Your Holiday Complaint Pack</h1>
-        <p>Create a professional complaint pack for cancelled holidays, poor accommodation, package travel disputes and holiday companies.</p>
+        <p class="eyebrow">Free Self-Service Complaint Tool</p>
+        <h1>Build Your Holiday &amp; Package Travel Complaint Pack</h1>
+        <p>Use this free self-service tool to create a structured complaint pack for holiday cancellations, major changes, poor accommodation, missing facilities, downgrades, unsafe conditions, hidden costs and other holiday or package travel problems.</p>
         <div class="hero-list">
-          <span><b>&check;</b> Package holiday complaints</span>
-          <span><b>&check;</b> Holiday cancellation</span>
-          <span><b>&check;</b> Hotel not as described</span>
-          <span><b>&check;</b> Resort or supplier problems</span>
+          <span><b>&check;</b> Free to use</span>
+          <span><b>&check;</b> No success fee</span>
+          <span><b>&check;</b> No automatic submission</span>
+          <span><b>&check;</b> Your information remains under your control</span>
         </div>
         <div style="display:flex;gap:.8rem;flex-wrap:wrap"><a class="btn btn-blue" href="#holiday-tool">Build My Complaint Pack</a><a class="btn btn-ghost" href="#how-it-works">How It Works</a></div>
       </div>
       <aside class="panel hero-card">
-        <h2>Free Holiday Complaint Pack Builder</h2>
+        <h2>Holiday &amp; Package Travel Complaint Pack Builder</h2>
         <p class="small">Answer structured questions, organise your evidence and build a complaint pack to review before sending to the travel company yourself.</p>
         <div class="document-checklist" style="margin-top:1rem">
           <span>&check; Complaint letter</span>
           <span>&check; Evidence checklist</span>
           <span>&check; Timeline</span>
-          <span>&check; Potential outcome summary</span>
+          <span>&check; Loss schedule</span>
+          <span>&check; Potential remedy summary</span>
           <span>&check; Ready to submit guidance</span>
           <span>&check; PDF, Word/RTF, TXT and print</span>
         </div>
@@ -84,9 +86,9 @@ const html = String.raw`<!DOCTYPE html>
       <div class="trust-grid">
         <div class="trust-card">&check; Completely free to use</div>
         <div class="trust-card">&check; No account required</div>
-        <div class="trust-card">&check; You stay in control</div>
+        <div class="trust-card">&check; Browser-first self-service builder</div>
         <div class="trust-card">&check; Cautious, evidence-led wording</div>
-        <div class="trust-card">&check; You send the complaint yourself</div>
+        <div class="trust-card">&check; You review and send the complaint yourself</div>
       </div>
     </div>
   </section>
@@ -97,10 +99,10 @@ const html = String.raw`<!DOCTYPE html>
         <p class="eyebrow">How It Works</p>
         <h2>Four simple stages before you submit</h2>
         <div class="step-grid">
-          <div class="step-card"><span class="eyebrow">1</span><h3>Choose Your Holiday Issue</h3><p>Select the closest type of holiday problem so the pack uses relevant wording.</p></div>
-          <div class="step-card"><span class="eyebrow">2</span><h3>Answer Simple Questions</h3><p>Add the booking, timeline, evidence and current complaint status.</p></div>
-          <div class="step-card"><span class="eyebrow">3</span><h3>Build Your Complaint Pack</h3><p>Review a summary, complaint letter, evidence checklist and timeline.</p></div>
-          <div class="step-card"><span class="eyebrow">4</span><h3>Submit To Your Travel Company</h3><p>Use the official complaint route and keep proof of sending.</p></div>
+          <div class="step-card"><span class="eyebrow">1</span><h3>Describe Your Holiday</h3><p>Add the booking, organiser, destination, travellers and payment details.</p></div>
+          <div class="step-card"><span class="eyebrow">2</span><h3>Record What Went Wrong</h3><p>Explain cancellations, changes, accommodation problems, missing facilities or other issues.</p></div>
+          <div class="step-card"><span class="eyebrow">3</span><h3>Organise Your Evidence and Losses</h3><p>List documents, photos, messages, receipts, extra costs and missing evidence.</p></div>
+          <div class="step-card"><span class="eyebrow">4</span><h3>Build and Submit Your Pack</h3><p>Review the generated complaint file, use Smart Submission guidance and keep proof of sending.</p></div>
         </div>
       </div>
     </div>
@@ -111,74 +113,132 @@ const html = String.raw`<!DOCTYPE html>
       <div class="info-box soft-blue">
         <p class="eyebrow">Smart Holiday Builder&trade;</p>
         <h2>Start the Holiday Complaint Pack Builder</h2>
-        <p class="small"><strong>Start at Step 1 below.</strong> Your answers stay in this browser unless you copy, print, download or email the generated documents yourself.</p>
+        <p class="small"><strong>Start at Step 1 below.</strong> Your answers stay in this browser unless you deliberately copy, print or download the generated documents yourself.</p>
         <div class="progress" aria-label="Progress"><span id="progressBar"></span></div>
         <p id="progressText" class="small"><strong>Step 1 of 8 - Holiday</strong></p>
         <div class="tool-workspace">
           <form id="holidayForm" class="panel" autocomplete="on">
             <section class="wizard-step active" data-step="0">
-              <h3>Holiday type</h3>
+              <h3>Holiday details</h3>
+              <p class="small">Start with the basic booking position. If you are unsure whether it was a package holiday, choose the closest option and explain the paperwork later.</p>
               <div class="choice-grid" data-radio-group="holidayType">
-                <label class="choice"><input type="radio" name="holidayType" value="Package Holiday"> Package Holiday</label>
-                <label class="choice"><input type="radio" name="holidayType" value="Hotel Only"> Hotel Only</label>
-                <label class="choice"><input type="radio" name="holidayType" value="Villa"> Villa</label>
-                <label class="choice"><input type="radio" name="holidayType" value="Resort"> Resort</label>
-                <label class="choice"><input type="radio" name="holidayType" value="Coach Holiday"> Coach Holiday</label>
-                <label class="choice"><input type="radio" name="holidayType" value="Other"> Other</label>
+                <label class="choice"><input type="radio" name="holidayType" value="Package Holiday"> Package holiday</label>
+                <label class="choice"><input type="radio" name="holidayType" value="Flight and Hotel"> Flight and hotel</label>
+                <label class="choice"><input type="radio" name="holidayType" value="Accommodation Only"> Accommodation only</label>
+                <label class="choice"><input type="radio" name="holidayType" value="Villa or Private Rental"> Villa or private rental</label>
+                <label class="choice"><input type="radio" name="holidayType" value="Holiday Park or Lodge"> Holiday park or lodge</label>
+                <label class="choice"><input type="radio" name="holidayType" value="Other Holiday Booking"> Other holiday booking</label>
               </div>
+              <div class="field-grid" style="margin-top:1rem">
+                <div class="field"><label for="packageSold">Were two or more travel services sold together?</label><select id="packageSold" name="packageSold"><option value="">Select</option><option>Yes</option><option>No</option><option>Not sure</option></select></div>
+                <div class="field"><label for="bookingDate">Booking date</label><input id="bookingDate" name="bookingDate" type="date" /></div>
+                <div class="field"><label for="travelStart">Departure date</label><input id="travelStart" name="travelStart" type="date" /></div>
+                <div class="field"><label for="travelEnd">Return date</label><input id="travelEnd" name="travelEnd" type="date" /></div>
+                <div class="field"><label for="destination">Destination / resort</label><input id="destination" name="destination" placeholder="Resort, city or hotel area" /></div>
+                <div class="field"><label for="country">Country</label><input id="country" name="country" list="countries" placeholder="Start typing a country" /></div>
+                <div class="field"><label for="travellers">Number of travellers</label><input id="travellers" name="travellers" type="number" min="1" max="30" value="1" /></div>
+                <div class="field"><label for="nights">Number of nights</label><input id="nights" name="nights" type="number" min="0" max="120" placeholder="If known" /></div>
+                <div class="field"><label for="leadPassenger">Lead traveller</label><input id="leadPassenger" name="leadPassenger" placeholder="Full name" /></div>
+                <div class="field"><label for="additionalTravellers">Additional travellers</label><input id="additionalTravellers" name="additionalTravellers" placeholder="Names or count, if useful" /></div>
+              </div>
+              <datalist id="countries"><option>Spain</option><option>Greece</option><option>Turkey</option><option>Portugal</option><option>France</option><option>Italy</option><option>Cyprus</option><option>Malta</option><option>United Kingdom</option><option>United States</option><option>Mexico</option><option>Egypt</option><option>Morocco</option><option>Other</option></datalist>
             </section>
             <section class="wizard-step" data-step="1">
-              <h3>Travel company</h3>
+              <h3>Company and contract</h3>
               <div class="field-grid">
-                <div class="field full"><label for="travelCompany">Travel company or supplier</label><input id="travelCompany" name="travelCompany" list="travelCompanies" placeholder="Start typing e.g. TUI, Jet2 Holidays, Expedia" /></div>
-                <div class="field full"><label for="companyOther">If other, add any details you know</label><input id="companyOther" name="companyOther" placeholder="Website, agent, branch or contact details" /></div>
+                <div class="field"><label for="travelCompany">Main travel company / organiser</label><input id="travelCompany" name="travelCompany" list="travelCompanies" placeholder="Start typing e.g. TUI, Jet2 Holidays, Expedia" /></div>
+                <div class="field"><label for="travelAgent">Travel agent or booking website</label><input id="travelAgent" name="travelAgent" placeholder="If different from organiser" /></div>
+                <div class="field"><label for="accommodationProvider">Accommodation provider / hotel</label><input id="accommodationProvider" name="accommodationProvider" placeholder="Hotel, resort, villa or park name" /></div>
+                <div class="field"><label for="bookingReference">Booking reference</label><input id="bookingReference" name="bookingReference" placeholder="If known" /></div>
+                <div class="field"><label for="whoTookPayment">Who took your payment?</label><input id="whoTookPayment" name="whoTookPayment" placeholder="Company shown on receipt or statement" /></div>
+                <div class="field"><label for="whoIssuedConfirmation">Who issued the booking confirmation?</label><input id="whoIssuedConfirmation" name="whoIssuedConfirmation" placeholder="Company on confirmation email" /></div>
+                <div class="field"><label for="paymentMethod">Payment method</label><select id="paymentMethod" name="paymentMethod"><option value="">Select</option><option>Debit card</option><option>Credit card</option><option>Bank transfer</option><option>PayPal</option><option>Finance</option><option>Cash</option><option>Other</option></select></div>
+                <div class="field"><label for="totalPrice">Total holiday price</label><input id="totalPrice" name="totalPrice" type="number" min="0" step="0.01" placeholder="Amount paid or agreed" /></div>
+                <div class="field"><label for="currency">Currency</label><select id="currency" name="currency"><option>GBP</option><option>EUR</option><option>USD</option><option>Other</option></select></div>
+                <div class="field"><label for="amountPaid">Amount paid so far</label><input id="amountPaid" name="amountPaid" type="number" min="0" step="0.01" placeholder="If different" /></div>
+                <div class="field full"><label for="companyOther">Other company, supplier or contact details</label><textarea id="companyOther" name="companyOther" placeholder="Airline, transfer provider, excursion provider, branch, website, email address or phone number."></textarea></div>
               </div>
               <datalist id="travelCompanies">
                 <option value="TUI"></option><option value="Jet2 Holidays"></option><option value="easyJet Holidays"></option><option value="British Airways Holidays"></option><option value="Love Holidays"></option><option value="On The Beach"></option><option value="Booking.com"></option><option value="Expedia"></option><option value="Lastminute.com"></option><option value="Hays Travel"></option><option value="Travel Republic"></option><option value="Thomas Cook"></option><option value="Other"></option>
               </datalist>
             </section>
             <section class="wizard-step" data-step="2">
-              <h3>Booking details</h3>
+              <h3>What was promised?</h3>
               <div class="field-grid">
-                <div class="field"><label for="bookingReference">Booking reference</label><input id="bookingReference" name="bookingReference" placeholder="If known" /></div>
-                <div class="field"><label for="leadPassenger">Lead passenger</label><input id="leadPassenger" name="leadPassenger" placeholder="Full name" /></div>
-                <div class="field"><label for="travelStart">Travel start date</label><input id="travelStart" name="travelStart" type="date" /></div>
-                <div class="field"><label for="travelEnd">Travel end date</label><input id="travelEnd" name="travelEnd" type="date" /></div>
-                <div class="field"><label for="destination">Destination</label><input id="destination" name="destination" placeholder="Resort, city or hotel area" /></div>
-                <div class="field"><label for="country">Country</label><input id="country" name="country" list="countries" placeholder="Start typing a country" /></div>
-                <div class="field"><label for="travellers">Number of travellers</label><input id="travellers" name="travellers" type="number" min="1" max="30" value="1" /></div>
+                <div class="field"><label for="accommodationName">Accommodation name</label><input id="accommodationName" name="accommodationName" placeholder="Hotel, villa, apartment, lodge or resort" /></div>
+                <div class="field"><label for="accommodationType">Accommodation type</label><select id="accommodationType" name="accommodationType"><option value="">Select</option><option>Hotel</option><option>Apartment</option><option>Villa</option><option>Holiday lodge</option><option>Holiday park</option><option>Resort</option><option>Other</option></select></div>
+                <div class="field"><label for="advertisedStarRating">Advertised star rating / grade</label><input id="advertisedStarRating" name="advertisedStarRating" placeholder="If applicable" /></div>
+                <div class="field"><label for="roomTypeBooked">Room or unit booked</label><input id="roomTypeBooked" name="roomTypeBooked" placeholder="Sea view, family room, lodge type etc." /></div>
+                <div class="field"><label for="boardBasis">Board basis</label><select id="boardBasis" name="boardBasis"><option value="">Select</option><option>Self-catering</option><option>Room only</option><option>Bed and breakfast</option><option>Half board</option><option>Full board</option><option>All inclusive</option><option>Other</option></select></div>
+                <div class="field"><label for="accessibilityRequirements">Accessibility or medical requirements</label><input id="accessibilityRequirements" name="accessibilityRequirements" placeholder="If relevant" /></div>
+                <div class="field full"><label class="check-label">Facilities or services advertised</label><div class="choice-grid">
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Pool"> Pool</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Air conditioning"> Air conditioning</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Family facilities"> Family facilities</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Beach access"> Beach access</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Transfers"> Transfers</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Excursions"> Excursions</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Restaurant or bar"> Restaurant or bar</label>
+                  <label class="choice"><input type="checkbox" name="facilitiesAdvertised" value="Wi-Fi"> Wi-Fi</label>
+                </div></div>
+                <div class="field full"><label for="keyPromises">Key promises made before booking</label><textarea id="keyPromises" name="keyPromises" placeholder="Describe important promises about the accommodation, facilities, safety, location, transfers, room type, upgrade, cancellation or refund."></textarea></div>
+                <div class="field full"><label class="check-label">Where the promise appears</label><div class="choice-grid">
+                  <label class="choice"><input type="checkbox" name="promiseSource" value="Website listing"> Website listing</label>
+                  <label class="choice"><input type="checkbox" name="promiseSource" value="Brochure"> Brochure</label>
+                  <label class="choice"><input type="checkbox" name="promiseSource" value="Email"> Email</label>
+                  <label class="choice"><input type="checkbox" name="promiseSource" value="Chat messages"> Chat messages</label>
+                  <label class="choice"><input type="checkbox" name="promiseSource" value="Booking confirmation"> Booking confirmation</label>
+                  <label class="choice"><input type="checkbox" name="promiseSource" value="Verbal statement"> Verbal statement</label>
+                </div></div>
               </div>
-              <datalist id="countries"><option>Spain</option><option>Greece</option><option>Turkey</option><option>Portugal</option><option>France</option><option>Italy</option><option>Cyprus</option><option>Malta</option><option>United Kingdom</option><option>United States</option><option>Mexico</option><option>Egypt</option><option>Morocco</option><option>Other</option></datalist>
             </section>
             <section class="wizard-step" data-step="3">
-              <h3>Complaint type</h3>
+              <h3>What actually happened?</h3>
               <p class="small">Select every issue that applies.</p>
               <div class="choice-grid">
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Holiday Cancelled"> Holiday Cancelled</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Holiday Changed"> Holiday Changed</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Poor Accommodation"> Poor Accommodation</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Dirty Hotel"> Dirty Hotel</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Unsafe Accommodation"> Unsafe Accommodation</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Facilities Closed"> Facilities Closed</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Construction Noise"> Construction Noise</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Different Room"> Different Room</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Holiday cancelled"> Holiday cancelled</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Major changes before travel"> Major changes before travel</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Hotel not as described"> Hotel not as described</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Room downgrade"> Room downgrade</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Dirty or unhygienic accommodation"> Dirty or unhygienic accommodation</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Unsafe accommodation"> Unsafe accommodation</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Missing facilities"> Missing facilities</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Pool closed"> Pool closed</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Building works or noise"> Building works or noise</label>
                 <label class="choice"><input type="checkbox" name="complaintTypes" value="Overbooking"> Overbooking</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Food Issues"> Food Issues</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Pool Closed"> Pool Closed</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Air Conditioning"> Air Conditioning</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Transfer Problems"> Transfer Problems</label>
-                <label class="choice"><input type="checkbox" name="complaintTypes" value="Missed Excursion"> Missed Excursion</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Food or all-inclusive problems"> Food or all-inclusive problems</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Air conditioning failure"> Air conditioning failure</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Transfer problems"> Transfer problems</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Missed excursion or included service"> Missed excursion or included service</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Illness or food hygiene concern"> Illness or food hygiene concern</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Accessibility or special-request failure"> Accessibility or special-request failure</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Hidden charges"> Hidden charges</label>
+                <label class="choice"><input type="checkbox" name="complaintTypes" value="Refund refused"> Refund refused</label>
                 <label class="choice"><input type="checkbox" name="complaintTypes" value="Other"> Other</label>
+              </div>
+              <div class="field-grid" style="margin-top:1rem">
+                <div class="field"><label for="problemDate">Problem first discovered</label><input id="problemDate" name="problemDate" type="date" /></div>
+                <div class="field"><label for="problemEnd">When did the issue end?</label><input id="problemEnd" name="problemEnd" type="date" /></div>
+                <div class="field"><label for="continuedWholeHoliday">Did it affect the whole holiday?</label><select id="continuedWholeHoliday" name="continuedWholeHoliday"><option value="">Select</option><option>Yes</option><option>No</option><option>Partly</option><option>Not sure</option></select></div>
+                <div class="field"><label for="problemFixed">Was it fixed during the holiday?</label><select id="problemFixed" name="problemFixed"><option value="">Select</option><option>Yes</option><option>No</option><option>Partly</option><option>Not applicable</option></select></div>
+                <div class="field"><label for="alternativeOffered">Alternative offered</label><input id="alternativeOffered" name="alternativeOffered" placeholder="Alternative room, hotel, refund, voucher etc." /></div>
+                <div class="field"><label for="acceptedAlternative">Was it accepted?</label><select id="acceptedAlternative" name="acceptedAlternative"><option value="">Select</option><option>Yes</option><option>No</option><option>Accepted under protest</option><option>No alternative offered</option></select></div>
+                <div class="field full"><label for="issueDetails">Describe what happened</label><textarea id="issueDetails" name="issueDetails" placeholder="Explain the facts clearly. Include what was promised, what happened, dates, names and any reference numbers."></textarea></div>
               </div>
             </section>
             <section class="wizard-step" data-step="4">
-              <h3>Timeline</h3>
+              <h3>Complaint and response history</h3>
               <div class="field-grid">
                 <div class="field"><label for="bookedDate">Holiday booked</label><input id="bookedDate" name="bookedDate" type="date" /></div>
-                <div class="field"><label for="problemDate">Problem discovered</label><input id="problemDate" name="problemDate" type="date" /></div>
                 <div class="field"><label for="complaintDate">Complaint made</label><input id="complaintDate" name="complaintDate" type="date" /></div>
-                <div class="field"><label for="currentStatus">Current status</label><select id="currentStatus" name="currentStatus"><option value="">Select</option><option>No complaint sent yet</option><option>Complaint sent, no reply yet</option><option>Complaint refused</option><option>Partial offer made</option><option>Travel company says it is investigating</option><option>Resolved</option></select></div>
-                <div class="field full"><label for="timelineNotes">What happened?</label><textarea id="timelineNotes" name="timelineNotes" placeholder="Briefly explain the main events in date order."></textarea></div>
+                <div class="field"><label for="reportedDuringHoliday">Reported while away?</label><select id="reportedDuringHoliday" name="reportedDuringHoliday"><option value="">Select</option><option>Yes</option><option>No</option><option>Not applicable</option></select></div>
+                <div class="field"><label for="complaintMethod">How was it reported?</label><select id="complaintMethod" name="complaintMethod"><option value="">Select</option><option>Email</option><option>Online form</option><option>App chat</option><option>Telephone</option><option>In person</option><option>Letter</option><option>Other</option></select></div>
+                <div class="field"><label for="complaintReference">Complaint reference</label><input id="complaintReference" name="complaintReference" placeholder="If known" /></div>
+                <div class="field"><label for="responseReceived">Response received?</label><select id="responseReceived" name="responseReceived"><option value="">Select</option><option>No response yet</option><option>Complaint refused</option><option>Partial offer made</option><option>Voucher offered</option><option>Refund offered</option><option>Investigation ongoing</option><option>Resolved</option></select></div>
+                <div class="field"><label for="remedyOffered">Remedy or offer made</label><input id="remedyOffered" name="remedyOffered" placeholder="Refund, voucher, apology, alternative etc." /></div>
+                <div class="field"><label for="remedyAccepted">Was the offer accepted?</label><select id="remedyAccepted" name="remedyAccepted"><option value="">Select</option><option>No offer</option><option>Not accepted</option><option>Accepted</option><option>Accepted under protest</option><option>Still considering</option></select></div>
+                <div class="field"><label for="currentStatus">Current status</label><select id="currentStatus" name="currentStatus"><option value="">Select</option><option>No complaint sent yet</option><option>Complaint sent, no reply yet</option><option>Complaint refused</option><option>Partial offer made</option><option>Travel company says it is investigating</option><option>Preparing escalation</option><option>Resolved</option></select></div>
+                <div class="field full"><label for="timelineNotes">Complaint timeline notes</label><textarea id="timelineNotes" name="timelineNotes" placeholder="Set out what happened in date order: booking, travel, problem, report, response and any follow-up."></textarea></div>
               </div>
             </section>
             <section class="wizard-step" data-step="5">
@@ -188,34 +248,59 @@ const html = String.raw`<!DOCTYPE html>
                 <label class="choice"><input type="checkbox" name="evidence" value="Booking confirmation"> Booking confirmation</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Invoices"> Invoices</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Receipts"> Receipts</label>
+                <label class="choice"><input type="checkbox" name="evidence" value="Payment records"> Payment records</label>
+                <label class="choice"><input type="checkbox" name="evidence" value="Website listing screenshots"> Website listing screenshots</label>
+                <label class="choice"><input type="checkbox" name="evidence" value="Brochure or advert"> Brochure or advert</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Photos"> Photos</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Videos"> Videos</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Emails"> Emails</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Chat messages"> Chat messages</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Travel documents"> Travel documents</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Complaint correspondence"> Complaint correspondence</label>
+                <label class="choice"><input type="checkbox" name="evidence" value="Representative or hotel report"> Representative or hotel report</label>
+                <label class="choice"><input type="checkbox" name="evidence" value="Replacement accommodation receipts"> Replacement accommodation receipts</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Medical evidence"> Medical evidence, if applicable</label>
                 <label class="choice"><input type="checkbox" name="evidence" value="Witnesses"> Witnesses</label>
               </div>
+              <div class="field full" style="margin-top:1rem"><label for="missingEvidence">Evidence that may still be missing</label><textarea id="missingEvidence" name="missingEvidence" placeholder="Examples: full booking terms, screenshots of the original listing, written hotel report, receipts, or the final response."></textarea></div>
             </section>
             <section class="wizard-step" data-step="6">
-              <h3>Potential outcome</h3>
-              <p class="small">Select outcomes you may want the travel company to consider. This tool does not guarantee any refund, compensation or result.</p>
+              <h3>Impact, financial loss and requested outcome</h3>
+              <p class="small">Add costs and outcomes you may want the travel company to consider. This tool does not guarantee any refund, compensation, reimbursement, price reduction or goodwill payment.</p>
               <div class="choice-grid">
                 <label class="choice"><input type="checkbox" name="outcomes" value="Refund"> Refund</label>
-                <label class="choice"><input type="checkbox" name="outcomes" value="Partial Refund"> Partial Refund</label>
-                <label class="choice"><input type="checkbox" name="outcomes" value="Compensation"> Compensation</label>
-                <label class="choice"><input type="checkbox" name="outcomes" value="Price Reduction"> Price Reduction</label>
-                <label class="choice"><input type="checkbox" name="outcomes" value="Goodwill Payment"> Goodwill Payment</label>
-                <label class="choice"><input type="checkbox" name="outcomes" value="Alternative Holiday"> Alternative Holiday</label>
-                <label class="choice"><input type="checkbox" name="outcomes" value="Travel Credit"> Travel Credit</label>
+                <label class="choice"><input type="checkbox" name="outcomes" value="Partial refund"> Partial refund</label>
+                <label class="choice"><input type="checkbox" name="outcomes" value="Price reduction"> Price reduction</label>
+                <label class="choice"><input type="checkbox" name="outcomes" value="Reimbursement of extra costs"> Reimbursement of extra costs</label>
+                <label class="choice"><input type="checkbox" name="outcomes" value="Compensation or goodwill payment"> Compensation or goodwill payment</label>
+                <label class="choice"><input type="checkbox" name="outcomes" value="Alternative holiday or replacement service"> Alternative holiday or replacement service</label>
+                <label class="choice"><input type="checkbox" name="outcomes" value="Written explanation and records"> Written explanation and records</label>
               </div>
-              <div class="field full" style="margin-top:1rem"><label for="losses">Costs or impact to mention</label><textarea id="losses" name="losses" placeholder="Add extra accommodation, transport, replacement booking, lost services, distress/inconvenience or other documented impact."></textarea></div>
+              <div class="field-grid" style="margin-top:1rem">
+                <div class="field"><label for="holidayPriceClaimed">Holiday price relevant to complaint</label><input id="holidayPriceClaimed" name="holidayPriceClaimed" type="number" min="0" step="0.01" placeholder="If different from total price" /></div>
+                <div class="field"><label for="currencyLoss">Loss currency</label><select id="currencyLoss" name="currencyLoss"><option>GBP</option><option>EUR</option><option>USD</option><option>Other</option></select></div>
+                <div class="field"><label for="refundAlreadyReceived">Refund already received</label><input id="refundAlreadyReceived" name="refundAlreadyReceived" type="number" min="0" step="0.01" placeholder="0 if none" /></div>
+                <div class="field"><label for="voucherReceived">Voucher / credit offered</label><input id="voucherReceived" name="voucherReceived" placeholder="Amount or terms, if offered" /></div>
+              </div>
+              <div id="expenseRows">
+                <div class="expense-row" data-expense-row>
+                  <h4>Cost item 1</h4>
+                  <div class="field-grid">
+                    <div class="field"><label>Description</label><input name="expenseDescription" placeholder="Replacement hotel, taxi, food, medical, calls etc." /></div>
+                    <div class="field"><label>Amount</label><input name="expenseAmount" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+                    <div class="field"><label>Receipt available?</label><select name="expenseReceipt"><option value="">Select</option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                    <div class="field"><label>Why did this cost arise?</label><input name="expenseReason" placeholder="Link the cost to the holiday problem" /></div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline" id="addExpenseBtn">Add Another Cost</button>
+              <div class="field full" style="margin-top:1rem"><label for="losses">Other impact to mention</label><textarea id="losses" name="losses" placeholder="Explain lost holiday enjoyment, inconvenience, missed services, disruption, accessibility impact, safety concerns or other documented impact."></textarea></div>
+              <div class="field full"><label for="requestedOutcomeReason">Why the requested outcome is fair</label><textarea id="requestedOutcomeReason" name="requestedOutcomeReason" placeholder="Explain why the outcome requested is proportionate to the problem and evidence."></textarea></div>
             </section>
             <section class="wizard-step" data-step="7">
               <h3>Review and build</h3>
               <p>Generate the holiday complaint pack, then review every section before sending anything to a travel company.</p>
-              <div class="notice warning"><strong>Important:</strong> This is a self-service document builder. It does not provide legal advice and does not decide entitlement. Check all wording before use.</div>
+              <div class="notice warning"><strong>Important:</strong> This is a self-service complaint pack builder. It does not provide legal advice and does not decide entitlement. Check all wording before use and send the complaint yourself through the appropriate travel company route.</div>
               <button type="button" class="btn btn-blue" id="generatePackBtn" style="margin-top:1rem">Generate My Holiday Complaint Pack</button>
             </section>
             <div class="no-print" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.2rem">
@@ -234,6 +319,7 @@ const html = String.raw`<!DOCTYPE html>
               <button type="button" class="doc-tab" data-preview="letter">Complaint</button>
               <button type="button" class="doc-tab" data-preview="evidence">Evidence</button>
               <button type="button" class="doc-tab" data-preview="timeline">Timeline</button>
+              <button type="button" class="doc-tab" data-preview="expenses">Losses</button>
               <button type="button" class="doc-tab" data-preview="submit">Submit</button>
             </div>
             <pre id="livePreview" class="live-letter-preview">Your preview will update as you answer the questions.</pre>
@@ -248,7 +334,7 @@ const html = String.raw`<!DOCTYPE html>
       <div class="info-box">
         <p class="eyebrow">Downloads</p>
         <h2>Quaerens Consumer Complaint File</h2>
-        <p>Includes your Holiday Analysis, Complaint Letter, Evidence Checklist, Timeline, Potential Outcome Summary and Smart Submission guidance.</p>
+        <p>Includes your Holiday Analysis, Complaint Letter, Evidence Checklist, Missing Evidence Schedule, Timeline, Financial Loss Schedule, Potential Remedy Summary and Smart Submission guidance.</p>
         <textarea id="docEditor" class="doc-editor" aria-label="Generated complaint pack">Generate the pack above to unlock the full document.</textarea>
         <div class="download-grid no-print" style="margin-top:1rem">
           <button type="button" class="btn btn-blue" id="downloadPdfBtn">Download Complete PDF</button>
@@ -256,7 +342,6 @@ const html = String.raw`<!DOCTYPE html>
           <button type="button" class="btn btn-outline" id="downloadTxtBtn">Download Plain Text Version</button>
           <button type="button" class="btn btn-outline" id="copyDocBtn">Copy This Document</button>
           <button type="button" class="btn btn-outline" id="printBtn">Print My Complaint Pack</button>
-          <a class="btn btn-outline" id="emailBtn" href="mailto:?subject=Holiday%20Complaint%20Pack">Email to Yourself</a>
         </div>
       </div>
     </div>
@@ -275,7 +360,8 @@ const html = String.raw`<!DOCTYPE html>
           <div class="summary-card"><strong>Ready To Submit</strong><span>Save proof of sending and the complaint reference.</span></div>
         </div>
         <div class="travel-directory" style="margin-top:1rem">
-          <div class="directory-card"><strong>Travel Company Directory Framework</strong><p class="small">Version 1.0 includes the structure for official complaint page, customer relations, postal address and website. Check the current official company website before sending.</p></div>
+          <div class="directory-card"><strong>Preferred Complaint Method</strong><p class="small">Use the travel company or organiser's official complaint form, customer relations email or postal complaint address where available. Check the current official website before sending, because routes and addresses can change.</p></div>
+          <div class="directory-card"><strong>Smart Submission Record</strong><p class="small">Record the date sent, the method used, complaint reference, attachments included and the deadline for follow-up. Keep copies of everything sent and received.</p></div>
         </div>
       </div>
     </div>
@@ -286,9 +372,26 @@ const html = String.raw`<!DOCTYPE html>
       <div class="info-box">
         <p class="eyebrow">Evidence Guidance</p>
         <h2>Documents That May Help</h2>
-        <p>You do not need every item before using the builder, but clearer evidence usually makes the complaint easier to understand.</p>
+        <p>You do not need every item before using the builder, but clearer evidence usually makes the complaint easier to understand. Save originals where possible and send copies unless the company specifically asks for original documents.</p>
         <div class="document-checklist">
-          <span>Booking confirmation</span><span>Invoices</span><span>Receipts</span><span>Photos</span><span>Videos</span><span>Emails</span><span>Chat messages</span><span>Travel documents</span><span>Complaint correspondence</span><span>Medical evidence, if applicable</span><span>Witness details</span>
+          <span>Booking confirmation</span><span>Invoice and payment records</span><span>Terms and conditions</span><span>Website or brochure screenshots</span><span>Photos and videos</span><span>Emails and app messages</span><span>Travel documents</span><span>In-resort complaint records</span><span>Receipts for extra costs</span><span>Medical evidence, if applicable</span><span>Witness details</span><span>Final response or offer letter</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="info-box">
+        <p class="eyebrow">Official Resources</p>
+        <h2>Official and Authoritative References</h2>
+        <p class="small">These references can help you understand the wider context. They do not decide the outcome of any individual complaint. Last reviewed: July 2026.</p>
+        <div class="source-list">
+          <a href="https://www.legislation.gov.uk/uksi/2018/634/contents" target="_blank" rel="noopener">1. Package Travel and Linked Travel Arrangements Regulations 2018</a>
+          <a href="https://www.legislation.gov.uk/ukpga/2015/15/contents" target="_blank" rel="noopener">2. Consumer Rights Act 2015</a>
+          <a href="https://www.citizensadvice.org.uk/consumer/holiday-cancellations-and-compensation/" target="_blank" rel="noopener">3. Citizens Advice: holiday cancellations and compensation</a>
+          <a href="https://www.caa.co.uk/passengers/resolving-travel-problems/how-the-caa-can-help/" target="_blank" rel="noopener">4. UK Civil Aviation Authority: resolving travel problems</a>
+          <a href="https://www.abta.com/help-and-complaints" target="_blank" rel="noopener">5. ABTA help and complaints</a>
         </div>
       </div>
     </div>
@@ -303,6 +406,11 @@ const html = String.raw`<!DOCTYPE html>
         <div class="faq-item"><button class="faq-btn" type="button"><span>Does this calculate guaranteed compensation?</span><span>+</span></button><div class="faq-content">No. It helps you describe the problem, organise evidence and identify potential outcomes. It does not guarantee a refund, compensation or price reduction.</div></div>
         <div class="faq-item"><button class="faq-btn" type="button"><span>Can I use it if the hotel was not as described?</span><span>+</span></button><div class="faq-content">Yes. Add details about the listing, room, facilities, photos, videos and any complaint raised during the holiday.</div></div>
         <div class="faq-item"><button class="faq-btn" type="button"><span>What if I complained while I was away?</span><span>+</span></button><div class="faq-content">Include the date, who you spoke to, any reference number and the response you received. Keep screenshots and written confirmation where possible.</div></div>
+        <div class="faq-item"><button class="faq-btn" type="button"><span>Can I use it if my holiday was changed before departure?</span><span>+</span></button><div class="faq-content">Yes. Record what was originally booked, what changed, when you were told, whether alternatives were offered and whether you accepted them.</div></div>
+        <div class="faq-item"><button class="faq-btn" type="button"><span>Can I include extra costs?</span><span>+</span></button><div class="faq-content">Yes. Add documented costs such as replacement accommodation, transport, food, calls or other expenses. Not every cost will be recoverable, so the pack presents them as costs to be reviewed.</div></div>
+        <div class="faq-item"><button class="faq-btn" type="button"><span>What if I do not have every document?</span><span>+</span></button><div class="faq-content">You can still use the builder. The missing evidence schedule helps you identify documents that may be useful to request or look for before submitting.</div></div>
+        <div class="faq-item"><button class="faq-btn" type="button"><span>Does this work for accommodation-only bookings?</span><span>+</span></button><div class="faq-content">Yes. Select the closest booking type and explain who sold the accommodation, who took payment and what was promised. Different complaint routes may apply depending on the booking structure.</div></div>
+        <div class="faq-item"><button class="faq-btn" type="button"><span>Can I mention lost enjoyment or inconvenience?</span><span>+</span></button><div class="faq-content">Yes, but use cautious wording and link the impact to specific evidence. The builder helps you describe the impact without implying that a particular outcome is guaranteed.</div></div>
         <div class="faq-item"><button class="faq-btn" type="button"><span>Does Quaerens send the complaint for me?</span><span>+</span></button><div class="faq-content">No. This free page is a browser-first self-service builder. You review, download and send the complaint pack yourself.</div></div>
       </div>
     </div>
@@ -323,7 +431,7 @@ const html = String.raw`<!DOCTYPE html>
       const qs = id => document.getElementById(id);
       const qsa = sel => Array.from(document.querySelectorAll(sel));
       const storageKey = 'quaerensHolidayComplaintPackV1';
-      const steps = ['Holiday','Booking','Problem','Timeline','Evidence','Complaint Pack','Review','Submit'];
+      const steps = ['Holiday','Booking','What Went Wrong','Impact','Evidence','Outcome','Review','Submit'];
       let step = 0;
       let activePreview = 'summary';
       let docs = {};
@@ -333,36 +441,77 @@ const html = String.raw`<!DOCTYPE html>
       function radio(name){ const el = document.querySelector('[name="'+name+'"]:checked'); return el ? el.value : ''; }
       function fallback(v){ return v && String(v).trim() ? String(v).trim() : '[Not provided]'; }
       function lines(items){ return items.length ? items.map(x => '- ' + x).join('\n') : '- [Not selected]'; }
+      function money(amount, currency){ return amount ? (currency || 'GBP') + ' ' + amount : '[Not provided]'; }
+      function collectExpenses(){
+        return qsa('[data-expense-row]').map((row, index) => {
+          const get = name => {
+            const el = row.querySelector('[name="'+name+'"]');
+            return el ? el.value.trim() : '';
+          };
+          return { index:index+1, description:get('expenseDescription'), amount:get('expenseAmount'), receipt:get('expenseReceipt'), reason:get('expenseReason') };
+        }).filter(item => item.description || item.amount || item.reason);
+      }
+      function expenseLines(items, currency){
+        return items.length ? items.map(x => '- ' + fallback(x.description) + ': ' + money(x.amount, currency) + ' | Receipt: ' + fallback(x.receipt) + ' | Reason: ' + fallback(x.reason)).join('\n') : '- [No itemised extra costs added]';
+      }
+      function expenseTotal(items){
+        return items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      }
+      function expenseRowHtml(item){
+        const data = item || {};
+        return '<div class="expense-row" data-expense-row>' +
+          '<label>Cost description <input name="expenseDescription" value="' + escapeAttr(data.description || '') + '" placeholder="Replacement hotel, taxi, meals, calls"></label>' +
+          '<label>Amount <input name="expenseAmount" value="' + escapeAttr(data.amount || '') + '" inputmode="decimal" placeholder="e.g. 125.50"></label>' +
+          '<label>Receipt available? <select name="expenseReceipt"><option value="">Select</option><option' + selected(data.receipt, 'Yes') + '>Yes</option><option' + selected(data.receipt, 'No') + '>No</option><option' + selected(data.receipt, 'Partly') + '>Partly</option></select></label>' +
+          '<label>Why was this cost incurred? <input name="expenseReason" value="' + escapeAttr(data.reason || '') + '" placeholder="Explain briefly"></label>' +
+        '</div>';
+      }
+      function selected(current, value){
+        return current === value ? ' selected' : '';
+      }
+      function escapeAttr(value){
+        return String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
       function data(){
         return {
-          holidayType: radio('holidayType'), travelCompany: value('travelCompany'), companyOther: value('companyOther'),
-          bookingReference: value('bookingReference'), leadPassenger: value('leadPassenger'), travelStart: value('travelStart'), travelEnd: value('travelEnd'),
-          destination: value('destination'), country: value('country'), travellers: value('travellers') || '1',
-          complaintTypes: checked('complaintTypes'), bookedDate: value('bookedDate'), problemDate: value('problemDate'), complaintDate: value('complaintDate'),
-          currentStatus: value('currentStatus'), timelineNotes: value('timelineNotes'), evidence: checked('evidence'), outcomes: checked('outcomes'), losses: value('losses')
+          holidayType: radio('holidayType'), packageSold: value('packageSold'), bookingDate: value('bookingDate'), bookedDate: value('bookedDate'),
+          travelStart: value('travelStart'), travelEnd: value('travelEnd'), destination: value('destination'), country: value('country'), travellers: value('travellers') || '1',
+          nights: value('nights'), leadPassenger: value('leadPassenger'), additionalTravellers: value('additionalTravellers'),
+          travelCompany: value('travelCompany'), travelAgent: value('travelAgent'), accommodationProvider: value('accommodationProvider'), bookingReference: value('bookingReference'),
+          whoTookPayment: value('whoTookPayment'), whoIssuedConfirmation: value('whoIssuedConfirmation'), paymentMethod: value('paymentMethod'), totalPrice: value('totalPrice'), currency: value('currency'), amountPaid: value('amountPaid'), companyOther: value('companyOther'),
+          accommodationName: value('accommodationName'), accommodationType: value('accommodationType'), advertisedStarRating: value('advertisedStarRating'), roomTypeBooked: value('roomTypeBooked'), boardBasis: value('boardBasis'), accessibilityRequirements: value('accessibilityRequirements'),
+          facilitiesAdvertised: checked('facilitiesAdvertised'), keyPromises: value('keyPromises'), promiseSource: checked('promiseSource'),
+          complaintTypes: checked('complaintTypes'), problemDate: value('problemDate'), problemEnd: value('problemEnd'), continuedWholeHoliday: value('continuedWholeHoliday'), problemFixed: value('problemFixed'), alternativeOffered: value('alternativeOffered'), acceptedAlternative: value('acceptedAlternative'), issueDetails: value('issueDetails'),
+          complaintDate: value('complaintDate'), reportedDuringHoliday: value('reportedDuringHoliday'), complaintMethod: value('complaintMethod'), complaintReference: value('complaintReference'), responseReceived: value('responseReceived'), remedyOffered: value('remedyOffered'), remedyAccepted: value('remedyAccepted'), currentStatus: value('currentStatus'), timelineNotes: value('timelineNotes'),
+          evidence: checked('evidence'), missingEvidence: value('missingEvidence'), outcomes: checked('outcomes'), holidayPriceClaimed: value('holidayPriceClaimed'), currencyLoss: value('currencyLoss'), refundAlreadyReceived: value('refundAlreadyReceived'), voucherReceived: value('voucherReceived'), losses: value('losses'), requestedOutcomeReason: value('requestedOutcomeReason'), expenses: collectExpenses()
         };
       }
       function buildSummary(a){
-        return 'QUAERENS CONSUMER COMPLAINT FILE\n\nHoliday & Package Travel Complaint Pack\n\nGenerated: ' + today() + '\n\nHOLIDAY SUMMARY\nHoliday type: ' + fallback(a.holidayType) + '\nTravel company: ' + fallback(a.travelCompany || a.companyOther) + '\nBooking reference: ' + fallback(a.bookingReference) + '\nLead passenger: ' + fallback(a.leadPassenger) + '\nTravel dates: ' + fallback(a.travelStart) + ' to ' + fallback(a.travelEnd) + '\nDestination: ' + fallback(a.destination) + ', ' + fallback(a.country) + '\nNumber of travellers: ' + fallback(a.travellers) + '\n\nKEY ISSUES\n' + lines(a.complaintTypes) + '\n\nPOTENTIAL OUTCOMES TO CONSIDER\n' + lines(a.outcomes) + '\n\nIMPORTANT NOTE\nThis pack is a self-service starting point. Check every answer, remove anything inaccurate and only send documents that reflect your own circumstances. It does not provide legal advice or guarantee a refund, compensation, price reduction or goodwill payment.';
+        const totalCosts = expenseTotal(a.expenses);
+        return 'QUAERENS CONSUMER COMPLAINT FILE\n\nHoliday & Package Travel Complaint Pack\n\nGenerated: ' + today() + '\n\nHOLIDAY AND BOOKING ANALYSIS\nHoliday type: ' + fallback(a.holidayType) + '\nPossible package position: ' + fallback(a.packageSold) + '\nTravel company / organiser: ' + fallback(a.travelCompany) + '\nTravel agent / booking website: ' + fallback(a.travelAgent) + '\nAccommodation provider: ' + fallback(a.accommodationProvider || a.accommodationName) + '\nBooking reference: ' + fallback(a.bookingReference) + '\nLead traveller: ' + fallback(a.leadPassenger) + '\nAdditional travellers: ' + fallback(a.additionalTravellers) + '\nTravel dates: ' + fallback(a.travelStart) + ' to ' + fallback(a.travelEnd) + '\nNights: ' + fallback(a.nights) + '\nDestination: ' + fallback(a.destination) + ', ' + fallback(a.country) + '\nNumber of travellers: ' + fallback(a.travellers) + '\nPayment method: ' + fallback(a.paymentMethod) + '\nTotal price: ' + money(a.totalPrice, a.currency) + '\nAmount paid: ' + money(a.amountPaid, a.currency) + '\n\nWHAT WAS PROMISED\nAccommodation: ' + fallback(a.accommodationName) + ' | Type: ' + fallback(a.accommodationType) + ' | Rating: ' + fallback(a.advertisedStarRating) + '\nRoom / unit booked: ' + fallback(a.roomTypeBooked) + '\nBoard basis: ' + fallback(a.boardBasis) + '\nAdvertised facilities or services:\n' + lines(a.facilitiesAdvertised) + '\nPromise sources:\n' + lines(a.promiseSource) + '\nKey promises:\n' + fallback(a.keyPromises) + '\n\nWHAT ACTUALLY HAPPENED\nKey issues:\n' + lines(a.complaintTypes) + '\nProblem period: ' + fallback(a.problemDate) + ' to ' + fallback(a.problemEnd) + '\nAffected whole holiday: ' + fallback(a.continuedWholeHoliday) + '\nFixed during holiday: ' + fallback(a.problemFixed) + '\nAlternative offered: ' + fallback(a.alternativeOffered) + '\nAccepted alternative: ' + fallback(a.acceptedAlternative) + '\nDetails:\n' + fallback(a.issueDetails) + '\n\nFINANCIAL POSITION\nHoliday price relevant to complaint: ' + money(a.holidayPriceClaimed || a.totalPrice, a.currencyLoss || a.currency) + '\nRefund already received: ' + money(a.refundAlreadyReceived, a.currencyLoss || a.currency) + '\nVoucher or credit offered: ' + fallback(a.voucherReceived) + '\nItemised extra costs total entered: ' + money(totalCosts ? totalCosts.toFixed(2) : '', a.currencyLoss || a.currency) + '\n\nPOTENTIAL OUTCOMES TO CONSIDER\n' + lines(a.outcomes) + '\n\nIMPORTANT NOTE\nThis pack is a self-service starting point. Check every answer, remove anything inaccurate and only send documents that reflect your own circumstances. It does not provide legal advice or guarantee a refund, compensation, reimbursement, price reduction or goodwill payment.';
       }
       function buildTimeline(a){
-        return 'HOLIDAY TIMELINE\n\nHoliday booked: ' + fallback(a.bookedDate) + '\nTravel start: ' + fallback(a.travelStart) + '\nTravel end: ' + fallback(a.travelEnd) + '\nProblem discovered: ' + fallback(a.problemDate) + '\nComplaint made: ' + fallback(a.complaintDate) + '\nCurrent status: ' + fallback(a.currentStatus) + '\n\nEVENT NOTES\n' + fallback(a.timelineNotes);
+        return 'HOLIDAY TIMELINE AND COMPLAINT HISTORY\n\nHoliday booked: ' + fallback(a.bookingDate || a.bookedDate) + '\nTravel start: ' + fallback(a.travelStart) + '\nTravel end: ' + fallback(a.travelEnd) + '\nProblem discovered: ' + fallback(a.problemDate) + '\nProblem ended: ' + fallback(a.problemEnd) + '\nReported while away: ' + fallback(a.reportedDuringHoliday) + '\nComplaint made: ' + fallback(a.complaintDate) + '\nComplaint method: ' + fallback(a.complaintMethod) + '\nComplaint reference: ' + fallback(a.complaintReference) + '\nResponse received: ' + fallback(a.responseReceived) + '\nRemedy offered: ' + fallback(a.remedyOffered) + '\nOffer accepted: ' + fallback(a.remedyAccepted) + '\nCurrent status: ' + fallback(a.currentStatus) + '\n\nEVENT NOTES\n' + fallback(a.timelineNotes);
       }
       function buildEvidence(a){
-        return 'HOLIDAY EVIDENCE CHECKLIST\n\nEvidence already identified:\n' + lines(a.evidence) + '\n\nOther evidence that may help:\n- Booking confirmation\n- Invoice and payment records\n- Screenshots of the hotel, villa, resort or package description\n- Photos and videos showing the problem\n- Emails, chat messages and complaint correspondence\n- Receipts for replacement accommodation, transport or extra costs\n- Notes of who you spoke to and when\n- Medical or witness evidence where relevant\n\nDo not send original documents unless specifically required. Redact unnecessary sensitive information before attaching documents.';
+        return 'HOLIDAY EVIDENCE CHECKLIST\n\nEvidence already identified:\n' + lines(a.evidence) + '\n\nMissing evidence schedule:\n' + fallback(a.missingEvidence) + '\n\nOther evidence that may help:\n- Booking confirmation, invoice and payment records\n- Terms and conditions supplied at booking\n- Screenshots of the hotel, villa, resort or package description\n- Photos and videos showing the problem\n- Emails, app messages, chat logs and complaint correspondence\n- Receipts for replacement accommodation, transport, food, calls or extra costs\n- Notes of who you spoke to and when\n- Medical or witness evidence where relevant\n\nDo not send original documents unless specifically required. Redact unnecessary sensitive information before attaching documents.';
       }
       function buildLetter(a){
         const issues = a.complaintTypes.length ? a.complaintTypes.join(', ') : 'holiday complaint issues';
         const outcomes = a.outcomes.length ? a.outcomes.join(', ') : 'an appropriate response based on the evidence';
-        return 'INITIAL HOLIDAY COMPLAINT AND INFORMATION REQUEST\n\nTo: ' + fallback(a.travelCompany || a.companyOther) + '\n\nBooking reference: ' + fallback(a.bookingReference) + '\nLead passenger: ' + fallback(a.leadPassenger) + '\nDestination: ' + fallback(a.destination) + ', ' + fallback(a.country) + '\nTravel dates: ' + fallback(a.travelStart) + ' to ' + fallback(a.travelEnd) + '\n\nDear Customer Relations Team,\n\nI am writing about the holiday booking above. I would like you to review the circumstances and provide a clear written response.\n\nThe main issues I would like reviewed are: ' + issues + '.\n\nTimeline and background:\n' + fallback(a.timelineNotes) + '\n\nEvidence available:\n' + lines(a.evidence) + '\n\nPotential outcome requested:\nI ask that you review the evidence and explain what outcome may be appropriate. The outcome I would like considered includes: ' + outcomes + '.\n\nCosts or impact to consider:\n' + fallback(a.losses) + '\n\nPlease provide a written response explaining your position, the evidence you have considered and any further information you require from me.\n\nYours faithfully,\n\n' + fallback(a.leadPassenger);
+        return 'INITIAL HOLIDAY AND PACKAGE TRAVEL COMPLAINT\n\nTo: ' + fallback(a.travelCompany || a.companyOther) + '\n\nBooking reference: ' + fallback(a.bookingReference) + '\nLead traveller: ' + fallback(a.leadPassenger) + '\nDestination: ' + fallback(a.destination) + ', ' + fallback(a.country) + '\nTravel dates: ' + fallback(a.travelStart) + ' to ' + fallback(a.travelEnd) + '\n\nDear Customer Relations Team,\n\nI am writing about the holiday booking above. I would like you to review the circumstances and provide a clear written response.\n\nThe main issues I would like reviewed are: ' + issues + '.\n\nWhat was booked or promised:\n' + fallback(a.keyPromises) + '\n\nWhat happened:\n' + fallback(a.issueDetails || a.timelineNotes) + '\n\nComplaint and response history:\nReported while away: ' + fallback(a.reportedDuringHoliday) + '\nComplaint method: ' + fallback(a.complaintMethod) + '\nComplaint reference: ' + fallback(a.complaintReference) + '\nResponse received: ' + fallback(a.responseReceived) + '\nRemedy offered: ' + fallback(a.remedyOffered) + '\n\nEvidence available:\n' + lines(a.evidence) + '\n\nFinancial loss and impact:\n' + expenseLines(a.expenses, a.currencyLoss || a.currency) + '\n\nOther impact:\n' + fallback(a.losses) + '\n\nPotential outcome requested:\nI ask that you review the evidence and explain what outcome may be appropriate. The outcome I would like considered includes: ' + outcomes + '.\n\nWhy this appears fair:\n' + fallback(a.requestedOutcomeReason) + '\n\nPlease provide a written response explaining your position, the evidence you have considered, any documents you need from me and the route for further escalation if we cannot resolve this directly.\n\nYours faithfully,\n\n' + fallback(a.leadPassenger);
+      }
+      function buildLosses(a){
+        const totalCosts = expenseTotal(a.expenses);
+        return 'FINANCIAL LOSS SCHEDULE\n\nHoliday price relevant to complaint: ' + money(a.holidayPriceClaimed || a.totalPrice, a.currencyLoss || a.currency) + '\nAmount paid so far: ' + money(a.amountPaid, a.currency || a.currencyLoss) + '\nRefund already received: ' + money(a.refundAlreadyReceived, a.currencyLoss || a.currency) + '\nVoucher / credit offered: ' + fallback(a.voucherReceived) + '\n\nItemised extra costs:\n' + expenseLines(a.expenses, a.currencyLoss || a.currency) + '\n\nEstimated extra costs total entered: ' + money(totalCosts ? totalCosts.toFixed(2) : '', a.currencyLoss || a.currency) + '\n\nOther impact:\n' + fallback(a.losses) + '\n\nCaution: This schedule is a record of costs and impact for review. Not every cost or impact will be recoverable.';
       }
       function buildSubmit(a){
-        return 'QUAERENS SMART SUBMISSION\n\nYour Holiday Complaint Pack Is Ready to Submit\n\nBefore sending:\n- Read every section carefully\n- Remove or amend anything that is inaccurate\n- Attach only relevant evidence\n- Check the travel company official complaint page\n- Keep proof of sending\n- Record any complaint reference\n- Save copies of all documents and responses\n\nTRAVEL COMPANY DIRECTORY FRAMEWORK\nTravel company: ' + fallback(a.travelCompany || a.companyOther) + '\nOfficial complaint page: Check the current official website before sending\nCustomer relations: Check the current official website before sending\nPostal address: Check the current official website before sending\nWebsite: Check the current official website before sending\n\nQuaerens does not send this complaint for you through this free builder.';
+        return 'QUAERENS SMART SUBMISSION\n\nYour Holiday Complaint Pack Is Ready to Submit\n\nBefore sending:\n- Read every section carefully\n- Remove or amend anything that is inaccurate\n- Attach only relevant evidence\n- Check the travel company or organiser official complaint page\n- Keep proof of sending\n- Record any complaint reference\n- Save copies of all documents and responses\n\nPREFERRED COMPLAINT METHOD\nTravel company / organiser: ' + fallback(a.travelCompany || a.companyOther) + '\nOfficial complaint form: Check the current official website before sending\nCustomer relations email: Check the current official website before sending\nPostal address: Check the current official website before sending\nWebsite: Check the current official website before sending\n\nFOLLOW-UP TRACKER\nDate sent: [add date]\nMethod used: [online form / email / post]\nAttachments included: [list attachments]\nComplaint reference: ' + fallback(a.complaintReference) + '\nFollow-up date: [add date]\n\nQuaerens does not send this complaint for you through this free builder.';
       }
       function buildAll(){
         const a = data();
-        docs = { summary: buildSummary(a), letter: buildLetter(a), evidence: buildEvidence(a), timeline: buildTimeline(a), submit: buildSubmit(a) };
-        docs.full = 'QUAERENS CONSUMER COMPLAINT FILE\nHoliday & Package Travel Complaint Pack\n\nIncludes your Holiday Analysis, Complaint Letter, Evidence Checklist, Timeline, Potential Outcome Summary and Smart Submission guidance.\n\n---\n\n' + [docs.summary, docs.letter, docs.evidence, docs.timeline, docs.submit].join('\n\n---\n\n');
+        docs = { summary: buildSummary(a), letter: buildLetter(a), evidence: buildEvidence(a), timeline: buildTimeline(a), expenses: buildLosses(a), submit: buildSubmit(a) };
+        docs.full = 'QUAERENS CONSUMER COMPLAINT FILE\nHoliday & Package Travel Complaint Pack\n\nIncludes your Holiday Analysis, Complaint Letter, Evidence Checklist, Missing Evidence Schedule, Timeline, Financial Loss Schedule, Potential Remedy Summary and Smart Submission guidance.\n\n---\n\n' + [docs.summary, docs.letter, docs.evidence, docs.timeline, docs.expenses, docs.submit].join('\n\n---\n\n');
         return docs;
       }
       function render(){
@@ -384,7 +533,10 @@ const html = String.raw`<!DOCTYPE html>
           if (!raw) return;
           const a = JSON.parse(raw);
           Object.entries(a).forEach(([k,v]) => {
-            if (Array.isArray(v)) v.forEach(item => { const el = document.querySelector('[name="'+k+'"][value="'+CSS.escape(item)+'"]'); if (el) el.checked = true; });
+            if (k === 'expenses' && Array.isArray(v)) {
+              const wrap = qs('expenseRows');
+              if (wrap && v.length) wrap.innerHTML = v.map(expenseRowHtml).join('');
+            } else if (Array.isArray(v)) v.forEach(item => { const el = document.querySelector('[name="'+k+'"][value="'+CSS.escape(item)+'"]'); if (el) el.checked = true; });
             else {
               const radioEl = document.querySelector('[name="'+k+'"][value="'+CSS.escape(v || '')+'"]');
               if (radioEl && radioEl.type === 'radio') radioEl.checked = true;
@@ -421,6 +573,7 @@ const html = String.raw`<!DOCTYPE html>
       qs('generatePackBtn').addEventListener('click', () => { buildAll(); render(); qs('downloads').scrollIntoView({behavior:'smooth'}); });
       qs('holidayForm').addEventListener('input', render);
       qs('holidayForm').addEventListener('change', render);
+      qs('addExpenseBtn').addEventListener('click', () => { qs('expenseRows').insertAdjacentHTML('beforeend', expenseRowHtml()); render(); });
       qsa('.doc-tab').forEach(btn => btn.addEventListener('click', () => { qsa('.doc-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); activePreview = btn.dataset.preview; render(); }));
       qs('togglePreview').addEventListener('click', () => { const pre = qs('livePreview'); pre.classList.toggle('hidden'); qs('togglePreview').textContent = pre.classList.contains('hidden') ? 'Show Preview' : 'Hide Preview'; });
       qs('downloadPdfBtn').addEventListener('click', downloadPdf);
@@ -428,7 +581,6 @@ const html = String.raw`<!DOCTYPE html>
       qs('downloadTxtBtn').addEventListener('click', () => download('quaerens-holiday-complaint-pack.txt', 'text/plain;charset=utf-8', docs.full || buildAll().full));
       qs('copyDocBtn').addEventListener('click', async () => { await navigator.clipboard.writeText(qs('docEditor').value); qs('copyDocBtn').textContent = 'Copied'; setTimeout(()=>qs('copyDocBtn').textContent='Copy This Document', 1200); });
       qs('printBtn').addEventListener('click', () => window.print());
-      qs('emailBtn').addEventListener('click', () => { qs('emailBtn').href = 'mailto:?subject=Holiday%20Complaint%20Pack&body=' + encodeURIComponent(qs('docEditor').value.slice(0,1600)); });
       qsa('.faq-btn').forEach(btn => btn.addEventListener('click', () => btn.closest('.faq-item').classList.toggle('active')));
     })();
   </script>
