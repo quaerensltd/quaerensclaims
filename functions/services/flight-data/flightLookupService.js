@@ -7,7 +7,7 @@ const { normaliseFlight, pickFlights } = require("./flightNormalisationService")
 const DEFAULT_BASE_URL = "https://prod.api.market/api/v1/aedbx/aerodatabox";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const SEARCH_CACHE_VERSION = "2026-07-19-airport-database";
+const SEARCH_CACHE_VERSION = "2026-07-19-expanded-airports";
 
 const AIRPORT_META = {
   STN: { name: "London Stansted Airport", timezone: "Europe/London", countryCode: "GB", latitude: 51.885, longitude: 0.235 },
