@@ -27,6 +27,14 @@
     .flight-lookup-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:.7rem;align-items:end}
     .flight-lookup-result{background:#fff;border:1px solid #bfdbfe;border-radius:14px;padding:.8rem;margin-top:.8rem}
     .flight-lookup-result strong{color:#0f2e75}
+    .lookup-message{background:#f8fbff;border:1px solid #bfdbfe;border-radius:14px;padding:1rem}
+    .lookup-message strong{display:block;color:#0f2e75;margin-bottom:.35rem}
+    .lookup-message p{margin:.25rem 0;color:#334155}
+    .lookup-actions{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:.8rem}
+    .lookup-status-loading{display:inline-flex;align-items:center;gap:.45rem;color:#0f2e75;font-weight:800}
+    .lookup-status-loading:before{content:"";width:14px;height:14px;border:2px solid #bfdbfe;border-top-color:#2563eb;border-radius:999px;animation:lookupSpin .8s linear infinite}
+    .btn[disabled]{opacity:.72;cursor:wait}
+    @keyframes lookupSpin{to{transform:rotate(360deg)}}
     .flight-prefill-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.55rem;margin:.7rem 0}
     .flight-prefill-grid span{border:1px solid #dbeafe;border-radius:10px;padding:.55rem;background:#f8fbff}
     .flight-card{border:1px solid #bfdbfe;border-radius:18px;background:linear-gradient(180deg,#fff,#f8fbff);box-shadow:0 18px 36px rgba(15,23,42,.08);overflow:hidden}
@@ -835,19 +843,25 @@
       catch(e){ return {}; }
     }
     function stableLookupPayload(payload){
+      const mode = payload.mode || payload.searchType || 'exact';
       return {
-        searchType: payload.searchType || 'exact',
+        mode,
+        searchType: mode,
         flightNumber: normaliseFlightNumber(payload.flightNumber),
         date: clean(payload.date),
         passengerCount: String(payload.passengerCount || val('passengerCount') || 1),
         departureAirport: clean(payload.departureAirport).toUpperCase(),
         arrivalAirport: clean(payload.arrivalAirport).toUpperCase(),
-        airline: clean(payload.airline)
+        airline: clean(payload.airline || payload.airlineName),
+        airlineName: clean(payload.airlineName || payload.airline),
+        airlineCode: clean(payload.airlineCode).toUpperCase(),
+        airlineIata: clean(payload.airlineIata || payload.airlineCode).toUpperCase(),
+        airlineIcao: clean(payload.airlineIcao).toUpperCase()
       };
     }
     function lookupCacheId(payload){
       const p = stableLookupPayload(payload);
-      return [p.searchType,p.flightNumber,p.date,p.departureAirport,p.arrivalAirport,normalizeSearch(p.airline)].join('|');
+      return [p.mode,p.flightNumber,p.date,p.departureAirport,p.arrivalAirport,p.airlineCode,p.airlineIcao,normalizeSearch(p.airline)].join('|');
     }
     function lookupCacheGet(payload){
       const cache = lookupCache();
@@ -863,12 +877,23 @@
     }
     function lookupPayload(searchType, overrides){
       return stableLookupPayload(Object.assign({
+        mode: searchType,
         searchType,
         flightNumber: val('lookupFlightNumber') || val('flightNumber'),
         date: val('lookupFlightDate') || val('flightDate'),
         passengerCount: val('passengerCount') || 1,
         departureAirport: airportCodeFrom('lookupDepartureAirport')
       }, overrides || {}));
+    }
+    function airlinePayloadFrom(id){
+      const record = recordFromCombo(id, val(id), 'airline') || state.selectedRecords[id] || {};
+      return {
+        airline: val(id) || record.name || '',
+        airlineName: record.name || val(id) || '',
+        airlineCode: record.iata || record.code || '',
+        airlineIata: record.iata || record.code || '',
+        airlineIcao: record.icao || ''
+      };
     }
     async function requestFlightLookup(payload){
       const cached = lookupCacheGet(payload);
@@ -878,16 +903,23 @@
         res = await fetch('https://us-central1-quaerensclaims.cloudfunctions.net/lookupFlight', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
       }
       const data = await res.json();
+      const results = Array.isArray(data.results) ? data.results : (Array.isArray(data.matches) ? data.matches : (data.flight ? [data.flight] : []));
+      const ok = data.ok === true || data.success === true;
       const cleanData = {
-        success: !!data.success,
+        ok,
+        success: ok,
         configured: data.configured !== false,
         cached: !!data.cached,
-        searchType: data.searchType || payload.searchType,
-        flight: data.flight || null,
-        matches: Array.isArray(data.matches) ? data.matches : (data.flight ? [data.flight] : []),
-        message: data.message || ''
+        mode: data.mode || data.searchType || payload.mode || payload.searchType,
+        searchType: data.searchType || data.mode || payload.searchType || payload.mode,
+        flight: data.flight || results[0] || null,
+        matches: results,
+        results,
+        message: data.message || '',
+        failureCategory: data.failureCategory || '',
+        source: data.source || data.provider || ''
       };
-      lookupCacheSet(payload, cleanData);
+      if(res.ok && data.configured !== false) lookupCacheSet(payload, cleanData);
       return cleanData;
     }
     function renderFlightLookupResult(flight, context){
@@ -915,6 +947,35 @@
         renderFlightLookupResult(flight, context);
       }));
     }
+    function airportNameForCode(code){
+      const wanted = clean(code).toUpperCase();
+      const record = (sharedData.airports || []).find(a => clean(a.iata || a.code).toUpperCase() === wanted || clean(a.icao).toUpperCase() === wanted);
+      return record ? (record.name + (record.iata ? ' ('+record.iata+')' : '')) : wanted;
+    }
+    function lookupResultTitle(context){
+      const mode = context.mode || context.searchType;
+      if(mode === 'airlineDeparture') return 'No matching departing flights found yet';
+      if(mode === 'route') return 'No matching route flights found yet';
+      if(mode === 'nearby') return 'No nearby-date flight found yet';
+      return 'No exact flight match found yet';
+    }
+    function renderLookupMessage(context, message){
+      const box = qs('flightLookupResult');
+      if(!box) return;
+      const mode = context.mode || context.searchType;
+      const routeHint = context.departureAirport ? '<p><strong>Search context:</strong> '+escapeHtml(airportNameForCode(context.departureAirport))+(context.arrivalAirport ? ' to '+escapeHtml(airportNameForCode(context.arrivalAirport)) : '')+(context.airlineName || context.airline || context.airlineCode ? ' · '+escapeHtml(context.airlineName || context.airline || context.airlineCode) : '')+(context.date ? ' · '+escapeHtml(context.date) : '')+'</p>' : '';
+      box.innerHTML = '<div class="lookup-message"><strong>'+escapeHtml(lookupResultTitle(context))+'</strong><p>'+escapeHtml(message || 'Try another Smart Flight Lookup option, search a nearby date or enter the journey manually.')+'</p>'+routeHint+'<div class="lookup-actions"><button type="button" class="btn btn-outline" data-lookup-action="route">Try route search</button><button type="button" class="btn btn-outline" data-lookup-action="airline">Try airline departures</button><button type="button" class="btn btn-outline" data-lookup-action="manual">Enter manually</button></div></div>';
+      box.classList.remove('hidden');
+      box.querySelector('[data-lookup-action="route"]')?.addEventListener('click',()=>{ showLookupFallbacks(true); hideLookupPanels(); qs('lookupRoutePanel')?.classList.remove('hidden'); qs('routeDepartureAirport')?.focus(); });
+      box.querySelector('[data-lookup-action="airline"]')?.addEventListener('click',()=>{ showLookupFallbacks(true); hideLookupPanels(); qs('lookupAirlinePanel')?.classList.remove('hidden'); qs('airlineSearchAirline')?.focus(); });
+      box.querySelector('[data-lookup-action="manual"]')?.addEventListener('click',()=>{ qs('airline')?.scrollIntoView({behavior:'smooth',block:'center'}); qs('airline')?.focus(); });
+    }
+    async function withLookupButton(button, loadingText, task){
+      const oldText = button ? button.textContent : '';
+      if(button){ button.disabled = true; button.textContent = loadingText || 'Searching...'; }
+      try{ return await task(); }
+      finally{ if(button){ button.disabled = false; button.textContent = oldText; } }
+    }
     function applyFlightLookup(flight, context){
       context = context || {};
       setAirlineField('airline', flight.airline);
@@ -935,36 +996,44 @@
       saveDraftMaybe();
       qs('flightLookupStatus').textContent='Flight details applied. Please check every field before generating your complaint pack.';
     }
-    async function handleLookupResponse(payload, statusText){
+    async function handleLookupResponse(payload, statusText, button){
       const status = qs('flightLookupStatus');
       const result = qs('flightLookupResult');
-      if(result) result.classList.add('hidden');
-      hideLookupPanels();
-      showLookupFallbacks(false);
-      status.textContent = statusText || 'Searching Smart Flight Lookup...';
-      try{
-        const data = await requestFlightLookup(payload);
-        const matches = (data.matches && data.matches.length ? data.matches : (data.flight ? [data.flight] : [])).filter(Boolean);
-        if(data.success && matches.length > 1){
-          status.textContent = (data.cached ? 'Recent lookup: ' : '') + 'Several possible flights found. Please select the correct journey.';
-          saveRecentFlightSearch(payload, matches[0]);
-          renderFlightMatches(matches, payload);
-          return;
+      return withLookupButton(button, 'Searching...', async ()=>{
+        if(result) result.classList.add('hidden');
+        hideLookupPanels();
+        showLookupFallbacks(false);
+        status.classList.add('lookup-status-loading');
+        status.textContent = statusText || 'Searching Smart Flight Lookup...';
+        try{
+          const data = await requestFlightLookup(payload);
+          const matches = (data.results && data.results.length ? data.results : (data.matches && data.matches.length ? data.matches : (data.flight ? [data.flight] : []))).filter(Boolean);
+          status.classList.remove('lookup-status-loading');
+          if(data.success && matches.length > 1){
+            status.textContent = (data.cached ? 'Recent lookup: ' : '') + 'Several possible flights found. Please select the correct journey.';
+            saveRecentFlightSearch(payload, matches[0]);
+            renderFlightMatches(matches, payload);
+            return;
+          }
+          if(data.success && matches.length === 1){
+            status.textContent = (data.cached ? 'Recent lookup: ' : '') + 'Flight found. Please confirm it matches your booking before using it.';
+            saveRecentFlightSearch(payload, matches[0]);
+            renderFlightLookupResult(matches[0], payload);
+            return;
+          }
+          status.textContent = data.message || 'No exact match found. Try one of the search options below or enter the journey manually.';
+          renderLookupMessage(payload, data.message);
+          showLookupFallbacks(true);
+        }catch(e){
+          status.classList.remove('lookup-status-loading');
+          status.textContent='Smart Flight Lookup is temporarily unavailable. Try another search option or enter the journey manually.';
+          renderLookupMessage(payload, 'Smart Flight Lookup is temporarily unavailable. Try another search option or enter the journey manually.');
+          showLookupFallbacks(true);
         }
-        if(data.success && matches.length === 1){
-          status.textContent = (data.cached ? 'Recent lookup: ' : '') + 'Flight found. Please confirm it matches your booking before using it.';
-          saveRecentFlightSearch(payload, matches[0]);
-          renderFlightLookupResult(matches[0], payload);
-          return;
-        }
-        status.textContent = data.message || 'No exact match found. Try one of the search options below or enter the journey manually.';
-        showLookupFallbacks(true);
-      }catch(e){
-        status.textContent='Smart Flight Lookup is temporarily unavailable. Try another search option or enter the journey manually.';
-        showLookupFallbacks(true);
-      }
+      });
     }
-    async function runFlightLookup(){
+    async function runFlightLookup(eventOrButton){
+      const button = eventOrButton?.currentTarget || eventOrButton;
       const payload = lookupPayload('exact');
       const status = qs('flightLookupStatus');
       if(!payload.flightNumber || !payload.date){ status.textContent='Enter a flight number and flight date first.'; showLookupFallbacks(true); return; }
@@ -974,17 +1043,19 @@
         showLookupFallbacks(true);
         return;
       }
-      await handleLookupResponse(payload, 'Searching Smart Flight Lookup by flight number and date...');
+      await handleLookupResponse(payload, 'Searching Smart Flight Lookup by flight number and date...', button);
     }
-    async function runRouteLookup(){
-      const payload = lookupPayload('route', { departureAirport: airportCodeFrom('routeDepartureAirport'), arrivalAirport: airportCodeFrom('routeArrivalAirport'), date: val('routeSearchDate'), airline: val('routeSearchAirline') });
+    async function runRouteLookup(eventOrButton){
+      const button = eventOrButton?.currentTarget || eventOrButton;
+      const payload = lookupPayload('route', Object.assign({ departureAirport: airportCodeFrom('routeDepartureAirport'), arrivalAirport: airportCodeFrom('routeArrivalAirport'), date: val('routeSearchDate') }, airlinePayloadFrom('routeSearchAirline')));
       if(!payload.departureAirport || !payload.arrivalAirport || !payload.date){ qs('flightLookupStatus').textContent='Enter the departure airport, arrival airport and travel date for route search.'; return; }
-      await handleLookupResponse(payload, 'Searching flights on this route...');
+      await handleLookupResponse(payload, 'Searching flights on this route...', button);
     }
-    async function runAirlineDepartureLookup(){
-      const payload = lookupPayload('airlineDeparture', { airline: val('airlineSearchAirline'), departureAirport: airportCodeFrom('airlineSearchDeparture'), arrivalAirport: airportCodeFrom('airlineSearchArrival'), date: val('airlineSearchDate') });
+    async function runAirlineDepartureLookup(eventOrButton){
+      const button = eventOrButton?.currentTarget || eventOrButton;
+      const payload = lookupPayload('airlineDeparture', Object.assign({ departureAirport: airportCodeFrom('airlineSearchDeparture'), arrivalAirport: airportCodeFrom('airlineSearchArrival'), date: val('airlineSearchDate') }, airlinePayloadFrom('airlineSearchAirline')));
       if(!payload.airline || !payload.departureAirport || !payload.date){ qs('flightLookupStatus').textContent='Enter the airline, departure airport and travel date for airline search.'; return; }
-      await handleLookupResponse(payload, 'Searching departures for this airline...');
+      await handleLookupResponse(payload, 'Searching departures for this airline...', button);
     }
     async function runNearbyDateLookup(){
       const base = lookupPayload('nearby');

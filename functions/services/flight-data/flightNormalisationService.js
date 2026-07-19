@@ -35,6 +35,7 @@ function normaliseFlight(rawFlight = {}, options = {}) {
   const departure = rawFlight.departure || {};
   const arrival = rawFlight.arrival || {};
   const airline = rawFlight.airline || rawFlight.carrier || {};
+  const operatingAirline = rawFlight.operatingAirline || rawFlight.operatingCarrier || rawFlight.operator || airline;
 
   const departureAirport = airportFromMovement(departure);
   const arrivalAirport = airportFromMovement(arrival);
@@ -71,6 +72,12 @@ function normaliseFlight(rawFlight = {}, options = {}) {
       iata: firstAvailable(airline.iata, airline.iataCode),
       icao: firstAvailable(airline.icao, airline.icaoCode),
       countryCode: firstAvailable(airline.countryCode, airline.countryIso2)
+    },
+    operatingAirline: {
+      name: firstAvailable(operatingAirline.name, operatingAirline.alias),
+      iata: firstAvailable(operatingAirline.iata, operatingAirline.iataCode),
+      icao: firstAvailable(operatingAirline.icao, operatingAirline.icaoCode),
+      countryCode: firstAvailable(operatingAirline.countryCode, operatingAirline.countryIso2)
     },
     status: firstAvailable(rawFlight.status, rawFlight.flightStatus),
     departureAirport,

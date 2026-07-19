@@ -22,26 +22,46 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 exports.lookupFlight = onRequest(async (req, res) => {
   cors(req, res, async () => {
     if (req.method === "OPTIONS") return res.status(204).send("");
-    if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method Not Allowed" });
+    if (req.method !== "POST") {
+      return res.status(405).json({
+        ok: false,
+        success: false,
+        mode: "exact",
+        searchType: "exact",
+        results: [],
+        matches: [],
+        message: "Method Not Allowed"
+      });
+    }
 
     try {
       const data = req.body || {};
       const result = await lookupFlightWithAeroDataBox(db, {
-        searchType: data.searchType,
+        mode: data.mode || data.searchType,
+        searchType: data.searchType || data.mode,
         flightNumber: data.flightNumber,
         date: data.date || data.flightDate,
         passengerCount: data.passengerCount,
         departureAirport: data.departureAirport,
         arrivalAirport: data.arrivalAirport,
-        airline: data.airline
+        airline: data.airline || data.airlineName,
+        airlineName: data.airlineName,
+        airlineCode: data.airlineCode || data.airlineIata,
+        airlineIata: data.airlineIata,
+        airlineIcao: data.airlineIcao
       });
 
       return res.status(200).json(result);
     } catch (error) {
       console.error("lookupFlight error:", error);
       return res.status(500).json({
+        ok: false,
         success: false,
         configured: true,
+        mode: req.body?.mode || req.body?.searchType || "exact",
+        searchType: req.body?.searchType || req.body?.mode || "exact",
+        results: [],
+        matches: [],
         message: "Flight lookup is temporarily unavailable. Please enter the journey manually."
       });
     }
