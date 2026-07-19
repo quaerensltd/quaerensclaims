@@ -1,4 +1,9 @@
-<!DOCTYPE html>
+const fs = require("fs");
+const path = require("path");
+
+const out = path.join(__dirname, "public", "freeholidaycompensation.html");
+
+const html = String.raw`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -431,4 +436,7 @@
   <script src="quaerens-trust-shields.js" defer></script>
   <script type="module" src="/quaerens-live-chat.js"></script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(out, html, "utf8");
+console.log(`Wrote ${out}`);
