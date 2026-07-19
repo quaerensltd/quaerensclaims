@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const admin = require("firebase-admin");
 const { normaliseFlight, pickFlights } = require("./flightNormalisationService");
 
@@ -32,6 +34,20 @@ const AIRLINE_ALIASES = {
   BY: { iata: "BY", icao: "TOM", names: ["TUI", "TUI AIRWAYS"] },
   W9: { iata: "W9", icao: "WUK", names: ["WIZZ AIR UK", "WIZZ AIR"] }
 };
+
+let airportDatabaseCache = null;
+
+function airportDatabase() {
+  if (airportDatabaseCache) return airportDatabaseCache;
+  try {
+    const file = path.join(__dirname, "airports.json");
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    airportDatabaseCache = Array.isArray(data) ? data : [];
+  } catch (error) {
+    airportDatabaseCache = [];
+  }
+  return airportDatabaseCache;
+}
 
 function cleanFlightNumber(value) {
   return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -123,26 +139,52 @@ function providerUrl({ flightNumber, date }) {
 }
 
 function airportTimezone(airport) {
-  return AIRPORT_META[cleanCode(airport)]?.timezone || "UTC";
+  return airportRecord(airport)?.timezone || "UTC";
 }
 
 function airportName(airport) {
   const code = cleanCode(airport);
-  return AIRPORT_META[code]?.name || code || "the selected airport";
+  return airportRecord(code)?.name || code || "the selected airport";
+}
+
+function airportRecord(airport) {
+  const code = cleanCode(airport);
+  if (!code) return null;
+  const databaseRecord = airportDatabase().find(record =>
+    cleanCode(record.iata) === code ||
+    cleanCode(record.icao) === code ||
+    normaliseText(record.name).includes(normaliseText(code))
+  );
+  return databaseRecord || AIRPORT_META[code] || null;
 }
 
 function airportFallback(airport) {
   const code = cleanCode(airport);
-  const meta = AIRPORT_META[code];
+  const meta = airportRecord(code);
   if (!code) return null;
   return {
     name: meta?.name || code,
-    iata: code,
+    iata: meta?.iata || code,
+    icao: meta?.icao,
+    city: meta?.city,
+    country: meta?.country,
     countryCode: meta?.countryCode,
     latitude: meta?.latitude,
     longitude: meta?.longitude,
     timezone: meta?.timezone
   };
+}
+
+function providerMovementAirportCode(movement = {}) {
+  const airport = movement.airport || movement;
+  return cleanCode(
+    airport.iata ||
+    airport.iataCode ||
+    airport.icao ||
+    airport.icaoCode ||
+    airport.name ||
+    ""
+  );
 }
 
 function providerAirportRequest({ airport, date }) {
@@ -395,7 +437,12 @@ async function lookupFlightWithAeroDataBox(db, input) {
   const providerRecords = payloads.flatMap(payload => pickFlights(payload));
   const departureFallback = searchType === "route" || searchType === "airlineDeparture" ? airportFallback(departureAirport) : null;
   const arrivalFallback = searchType === "route" ? airportFallback(arrivalAirport) : null;
-  let flights = providerRecords.map(flight => normaliseFlight(flight, { flightNumber, passengerCount, departureAirportFallback: departureFallback, arrivalAirportFallback: arrivalFallback }));
+  let flights = providerRecords.map(flight => normaliseFlight(flight, {
+    flightNumber,
+    passengerCount,
+    departureAirportFallback: departureFallback || airportFallback(providerMovementAirportCode(flight.departure)),
+    arrivalAirportFallback: arrivalFallback || airportFallback(providerMovementAirportCode(flight.arrival))
+  }));
   if (searchType === "route") {
     flights = flights.filter(flight => airportMatches(flight.departureAirport, departureAirport) && airportMatches(flight.arrivalAirport, arrivalAirport));
     if (airline || airlineCode || airlineIcao) flights = flights.filter(flight => airlineMatches(flight, lookupInput));
