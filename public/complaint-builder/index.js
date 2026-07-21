@@ -1,6 +1,7 @@
 "use strict";
 
 module.exports = {
+  ...require("./version"),
   ...require("./core/BuilderEngine"),
   ...require("./core/StateManager"),
   ...require("./core/StepController"),
@@ -11,11 +12,16 @@ module.exports = {
   ...require("./core/DraftManager"),
   ...require("./core/ErrorManager"),
   ...require("./core/AccessibilityManager"),
+  ...require("./core/BuilderRegistry"),
   ...require("./core/Engines"),
+  ...require("./core/StatusEngine"),
   ...require("./components/Components"),
+  ...require("./components/CardComponents"),
   ...require("./components/DownloadPanel"),
   ...require("./components/FlightCard"),
+  ...require("./documents/ComplaintPack"),
   ...require("./documents/DocumentModel"),
+  ...require("./documents/ExportEngine"),
   ...require("./documents/TextRenderer"),
   ...require("./documents/RTFRenderer"),
   ...require("./documents/PrintRenderer"),

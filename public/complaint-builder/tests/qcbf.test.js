@@ -7,7 +7,12 @@ const { ValidationEngine } = require("../core/ValidationEngine");
 const { evaluateCondition } = require("../core/ConditionalLogic");
 const { StepController } = require("../core/StepController");
 const { evidencePosition, readiness, confidence, expenseSchedule, timeline } = require("../core/Engines");
+const { statusEngine } = require("../core/StatusEngine");
+const { BuilderRegistry } = require("../core/BuilderRegistry");
+const { overviewCard } = require("../components/CardComponents");
 const { documentModel, heading, paragraph, keyValue, checklist } = require("../documents/DocumentModel");
+const { complaintPack } = require("../documents/ComplaintPack");
+const { exportComplaintPack } = require("../documents/ExportEngine");
 const { renderText } = require("../documents/TextRenderer");
 const { renderRtf } = require("../documents/RTFRenderer");
 const { SubmissionDirectory } = require("../submission/SubmissionDirectory");
@@ -18,8 +23,10 @@ const flightConfig = require("../../builders/flight/flight.config");
 const holidayConfig = require("../../builders/holiday/holiday.config");
 const flightFixture = require("./fixtures/flight-delayed.json");
 const holidayFixture = require("./fixtures/holiday-hotel.json");
+const { registry } = require("../registry");
 
 assert.ok(qcbf.BuilderEngine, "framework index exports BuilderEngine");
+assert.strictEqual(qcbf.QCBF_VERSION_LABEL, "QCBF 1.1", "framework version label");
 
 function memoryStorage() {
   const data = {};
@@ -78,5 +85,24 @@ assert.strictEqual(directory.resolve("Unknown").status, "not-listed", "directory
 
 assert.ok(downloadPanel().includes("Download Complete PDF"), "download panel labels");
 assert.ok(flightCard({ flightNumber: "EX123", badges: ["Flight Found"] }).includes("EX123"), "flight card renders");
+
+const customRegistry = new BuilderRegistry();
+customRegistry.register(flightConfig, { status: "pending migration" });
+customRegistry.register(holidayConfig, { status: "migrated" });
+assert.strictEqual(customRegistry.get("flight").status, "pending migration", "registry records pending builders");
+assert.strictEqual(registry.get("holiday").status, "migrated", "central registry records holiday migration");
+assert.ok(registry.migrationStatus().some((entry) => entry.id === "flight"), "central registry exposes migration status");
+
+const status = statusEngine(flightConfig, flightFixture, flightFixture.evidence, [true, true], { status: "matched" });
+assert.ok(status.badges.includes("Ready to Submit"), "shared status engine includes readiness");
+assert.ok(status.badges.includes("Developing"), "shared status engine includes evidence status");
+
+assert.ok(overviewCard({ title: "Shared component", body: "Reusable card", action: "Open" }).includes("Shared component"), "shared card renders");
+
+const sharedPack = complaintPack({ packPrefix: "QA" }, [heading("Shared complaint pack", 1), paragraph("Reusable document model.")]);
+const exported = exportComplaintPack(sharedPack, ["txt", "rtf", "print"]);
+assert.ok(exported.txt.includes("SHARED COMPLAINT PACK"), "export engine text output");
+assert.ok(exported.rtf.startsWith("{\\rtf1"), "export engine rtf output");
+assert.ok(exported.print.includes("qcbf-print-document"), "export engine print output");
 
 console.log("QCBF tests passed");
