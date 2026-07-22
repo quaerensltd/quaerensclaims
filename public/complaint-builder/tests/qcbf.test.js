@@ -26,7 +26,7 @@ const holidayFixture = require("./fixtures/holiday-hotel.json");
 const { registry } = require("../registry");
 
 assert.ok(qcbf.BuilderEngine, "framework index exports BuilderEngine");
-assert.strictEqual(qcbf.QCBF_VERSION_LABEL, "QCBF 1.1", "framework version label");
+assert.strictEqual(qcbf.QCBF_VERSION_LABEL, "QCBF 1.2", "framework version label");
 
 function memoryStorage() {
   const data = {};
@@ -87,11 +87,13 @@ assert.ok(downloadPanel().includes("Download Complete PDF"), "download panel lab
 assert.ok(flightCard({ flightNumber: "EX123", badges: ["Flight Found"] }).includes("EX123"), "flight card renders");
 
 const customRegistry = new BuilderRegistry();
-customRegistry.register(flightConfig, { status: "pending migration" });
+customRegistry.register(flightConfig, { status: "migrated" });
 customRegistry.register(holidayConfig, { status: "migrated" });
-assert.strictEqual(customRegistry.get("flight").status, "pending migration", "registry records pending builders");
+assert.strictEqual(customRegistry.get("flight").status, "migrated", "registry records migrated builders");
 assert.strictEqual(registry.get("holiday").status, "migrated", "central registry records holiday migration");
 assert.ok(registry.migrationStatus().some((entry) => entry.id === "flight"), "central registry exposes migration status");
+assert.strictEqual(registry.get("flight").frameworkVersion, "QCBF 1.2", "central registry exposes Flight framework version");
+assert.ok(registry.get("flight").exportSupport.includes("PDF"), "central registry exposes Flight export support");
 
 const status = statusEngine(flightConfig, flightFixture, flightFixture.evidence, [true, true], { status: "matched" });
 assert.ok(status.badges.includes("Ready to Submit"), "shared status engine includes readiness");

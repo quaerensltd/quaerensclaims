@@ -28,9 +28,11 @@ const registry = createDefaultRegistry([
   },
   {
     config: flightConfig,
-    status: "pending migration",
-    modules: ["config", "flight-card"],
-    resources: ["airline-directory", "airport-directory", "flight-lookup"]
+    status: "migrated",
+    modules: ["config", "questions", "lookup", "analysis", "compensation", "evidence", "expenses", "timeline", "documents", "submission", "resources", "page", "flight-card", "tests"],
+    resources: ["airline-directory", "airport-directory", "flight-lookup", "smart-submission", "official-resources"],
+    apiIntegration: flightConfig.apiIntegration,
+    exportSupport: flightConfig.exportSupport
   },
   {
     config: carFinanceConfig,

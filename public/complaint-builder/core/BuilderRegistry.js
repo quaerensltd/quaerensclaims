@@ -30,7 +30,9 @@ class BuilderRegistry {
       version: builder.version,
       status: builder.status,
       modules: builder.modules,
-      resources: builder.resources
+      resources: builder.resources,
+      apiIntegration: builder.apiIntegration,
+      exportSupport: builder.exportSupport
     }));
   }
 }
@@ -49,7 +51,9 @@ function normaliseBuilder(config, details) {
     resources: extra.resources || config.resources || [],
     status: extra.status || config.status || "registered",
     publicUrl: config.canonicalUrl || extra.publicUrl || "",
-    storageNamespace: config.storageNamespace || config.storageKey || ""
+    storageNamespace: config.storageNamespace || config.storageKey || "",
+    apiIntegration: extra.apiIntegration || config.apiIntegration || null,
+    exportSupport: extra.exportSupport || config.exportSupport || []
   };
 }
 

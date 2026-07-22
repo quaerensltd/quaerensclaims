@@ -2,7 +2,7 @@
 
 QCBF is the shared internal platform used by Quaerens complaint pack builders.
 
-Current framework version: **QCBF 1.1**
+Current framework version: **QCBF 1.2**
 
 ## Lifecycle
 
