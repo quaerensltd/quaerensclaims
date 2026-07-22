@@ -12,6 +12,19 @@
   const stepper = new QCBF.StepController(config.stages);
   let activePreview = "summary";
   let docs = {};
+  let packReference = "";
+
+  function createPackReference() {
+    const year = new Date().getFullYear();
+    const random = Math.random().toString(36).slice(2, 8).toUpperCase().replace(/[^A-Z0-9]/g, "0");
+    return "QH-" + year + "-" + random.padEnd(6, "0").slice(0, 6);
+  }
+
+  function ensurePackReference() {
+    if (/^QH-\d{4}-[A-Z0-9]{6}$/.test(packReference)) return packReference;
+    packReference = createPackReference();
+    return packReference;
+  }
 
   function value(name) {
     const el = document.querySelector('[name="' + name + '"]');
@@ -59,6 +72,7 @@
 
   function data() {
     return {
+      packReference: ensurePackReference(),
       holidayType: radio("holidayType"),
       packageSold: value("packageSold"),
       bookingDate: value("bookingDate"),
@@ -129,7 +143,9 @@
   function restore() {
     const saved = state.restore();
     if (!saved) return;
+    if (/^QH-\d{4}-[A-Z0-9]{6}$/.test(saved.packReference || "")) packReference = saved.packReference;
     Object.entries(saved).forEach(([key, val]) => {
+      if (key === "packReference") return;
       if (key === "expenses" && Array.isArray(val)) {
         const wrap = qs("expenseRows");
         if (wrap && val.length) wrap.innerHTML = val.map(expenseRowHtml).join("");
@@ -161,7 +177,15 @@
     if (nextBtn) nextBtn.textContent = stepper.index === config.stages.length - 1 ? "Review Pack" : "Next Step";
     docs = documents.buildAll(data());
     const preview = qs("livePreview");
-    if (preview) preview.textContent = docs[activePreview] || docs.summary;
+    if (preview) {
+      if (activePreview === "summary" && docs.previewHtml) {
+        preview.classList.add("preview-cards");
+        preview.innerHTML = docs.previewHtml;
+      } else {
+        preview.classList.remove("preview-cards");
+        preview.textContent = docs[activePreview] || docs.summary;
+      }
+    }
     const editor = qs("docEditor");
     if (editor) editor.value = docs.full || "";
     const printArea = qs("printArea");
@@ -187,6 +211,7 @@
       if (confirm("Clear all answers on this page?")) {
         holidayForm.reset();
         state.clear();
+        packReference = createPackReference();
         stepper.set(0);
         render();
       }
