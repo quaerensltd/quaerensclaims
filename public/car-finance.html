@@ -773,10 +773,65 @@
       ]
     };
 
-    const state = { step: 1, docs: {}, generatedDocs: {}, activeDoc: 'letter', selectedLender: null, lenderData: [], lenderMeta: {}, activeLenderIndex: -1 };
+    const CAR_FINANCE_QCBF_META = {
+      builderId: 'car-finance',
+      frameworkVersion: 'QCBF 1.2',
+      builderVersion: 'car-finance-qcbf-phase1-2026-07-22',
+      schemaVersion: 1,
+      draftVersion: '1',
+      storageNamespace: 'qcbf-car-finance',
+      packPrefix: 'QC',
+      legacyStorageKeys: ['quaerensCarFinanceToolDraftV1', 'quaerensCarFinancePackDraftV1'],
+      legacyRememberedKeys: ['quaerensCarFinanceToolRememberedV1', 'quaerensCarFinancePackDraftRememberedV1']
+    };
+    const state = { step: 1, docs: {}, generatedDocs: {}, activeDoc: 'letter', selectedLender: null, lenderData: [], lenderMeta: {}, activeLenderIndex: -1, packReference: '' };
     const totalSteps = 10;
-    const storageKey = 'quaerensCarFinanceToolDraftV1';
-    const localKey = 'quaerensCarFinanceToolRememberedV1';
+    const storageKey = 'qcbf:car-finance:1:draft';
+    const localKey = 'qcbf:car-finance:1:remembered';
+    function createCarFinancePackReference(){
+      const year = new Date().getFullYear();
+      const code = Math.floor(Math.random() * 2176782336).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
+      return CAR_FINANCE_QCBF_META.packPrefix + '-' + year + '-' + code;
+    }
+    function ensurePackReference(value){
+      const current = value || state.packReference;
+      if (/^QC-\d{4}-[A-Z0-9]{6}$/.test(String(current || ''))) {
+        state.packReference = current;
+        return state.packReference;
+      }
+      state.packReference = createCarFinancePackReference();
+      return state.packReference;
+    }
+    function draftEnvelope(){
+      return {
+        meta: {
+          builderId: CAR_FINANCE_QCBF_META.builderId,
+          frameworkVersion: CAR_FINANCE_QCBF_META.frameworkVersion,
+          builderVersion: CAR_FINANCE_QCBF_META.builderVersion,
+          schemaVersion: CAR_FINANCE_QCBF_META.schemaVersion,
+          draftVersion: CAR_FINANCE_QCBF_META.draftVersion,
+          storageNamespace: CAR_FINANCE_QCBF_META.storageNamespace,
+          packReference: ensurePackReference()
+        },
+        step: state.step,
+        answers: collectAnswers()
+      };
+    }
+    function readStoredDraft(){
+      try {
+        const sessionKeys = [storageKey, ...CAR_FINANCE_QCBF_META.legacyStorageKeys];
+        for (const key of sessionKeys) {
+          const raw = sessionStorage.getItem(key);
+          if (raw) return raw;
+        }
+        const rememberedKeys = [localKey, ...CAR_FINANCE_QCBF_META.legacyRememberedKeys];
+        for (const key of rememberedKeys) {
+          const raw = localStorage.getItem(key);
+          if (raw) return raw;
+        }
+      } catch(e) {}
+      return null;
+    }
 
     const fields = ['fullName','preferredContact','email','phone','address','postcode','representative','customerName','vehicleMake','vehicleModel','vehicleReg','vehicleYear','purchaseDate','newUsed','cashPrice','vehicleStatus','lender','lenderSearch','manualLender','lenderKnown','dealer','dealerLocation','agreementRef','dealerArranged','lenderDirect','alternativesDiscussed','multipleLendersSearched','lenderRecommended','recommendationReasonExplained','agreementType','agreementDate','purchaseDateApprox','originalEndDate','actualEndDate','agreementStatus','vehicleType','useType','cashDeposit','partExchangeAllowance','partExchangeSettlement','dealerContribution','amountCredit','apr','flatRate','termMonths','monthlyPayment','regularPayments','finalPayment','optionFee','arrangementFee','otherCharges','totalPayable','paymentsMadeCount','settlementAmount','arrearsCharges','refundsReceived','financeOptions','bestOnlyOption','saleNarrative','otherConcern','commissionExplained','commissionAmountDisclosed','commissionMethodDisclosed','commissionAffectRate','dealerInfluenceRate','tiedLendersExplained','preContractInfo','adequateExplanation','pressured','originalAgreementHeld','commissionDocsHeld','lenderConfirmedCommission','lenderProvidedCommissionAmount','lenderProvidedCommissionType','officialRedressProvided','commissionAmount','commissionPercentage','commissionType','commissionRecipient','lenderAprAdjustment','officialRedressFigure','compensatoryInterest','lenderResponseDate','commissionSource','missingDocs','customEvents','complaintStatus','complaintRef','responseSummary','selectedRoute'];
 
@@ -1006,10 +1061,19 @@
       answers.selectedLenderId = state.selectedLender?.id || '';
       answers.selectedLenderLegalName = state.selectedLender ? lenderLegalName(state.selectedLender) : '';
       answers.selectedLenderDisplayName = state.selectedLender ? lenderDisplayName(state.selectedLender) : '';
+      answers.packReference = ensurePackReference();
+      answers.qcbfMeta = {
+        builderId: CAR_FINANCE_QCBF_META.builderId,
+        frameworkVersion: CAR_FINANCE_QCBF_META.frameworkVersion,
+        builderVersion: CAR_FINANCE_QCBF_META.builderVersion,
+        schemaVersion: CAR_FINANCE_QCBF_META.schemaVersion,
+        draftVersion: CAR_FINANCE_QCBF_META.draftVersion,
+        storageNamespace: CAR_FINANCE_QCBF_META.storageNamespace
+      };
       return answers;
     }
     function saveDraft(){
-      const data = JSON.stringify({step: state.step, answers: collectAnswers()});
+      const data = JSON.stringify(draftEnvelope());
       try {
         sessionStorage.setItem(storageKey, data);
         if (qs('rememberDevice')?.checked) localStorage.setItem(localKey, data);
@@ -1017,9 +1081,10 @@
     }
     function loadDraft(){
       try {
-        const raw = sessionStorage.getItem(storageKey) || localStorage.getItem(localKey);
+        const raw = readStoredDraft();
         if (!raw) return;
         const draft = JSON.parse(raw);
+        state.packReference = ensurePackReference(draft.meta?.packReference || draft.answers?.packReference || draft.packReference);
         Object.entries(draft.answers || {}).forEach(([k,v]) => {
           if (k === 'concerns') {
             document.querySelectorAll('input[name="concerns"]').forEach(i => i.checked = Array.isArray(v) && v.includes(i.value));
@@ -1036,7 +1101,10 @@
     }
     function deleteSaved(){
       if (!confirm('Delete saved answers and start again?')) return;
-      try { sessionStorage.removeItem(storageKey); localStorage.removeItem(localKey); } catch(e) {}
+      try {
+        [storageKey, ...CAR_FINANCE_QCBF_META.legacyStorageKeys].forEach(key => sessionStorage.removeItem(key));
+        [localKey, ...CAR_FINANCE_QCBF_META.legacyRememberedKeys].forEach(key => localStorage.removeItem(key));
+      } catch(e) {}
       window.location.reload();
     }
     function showStep(step){
@@ -1169,6 +1237,7 @@
       }
     }
     function buildPack(){
+      ensurePackReference();
       const a = collectAnswers();
       a.selectedRoute = val('selectedRoute');
       const subject = buildSubject(a);
@@ -1369,6 +1438,15 @@
       answers.selectedLenderId = state.selectedLender?.id || '';
       answers.selectedLenderLegalName = state.selectedLender ? lenderLegalName(state.selectedLender) : '';
       answers.selectedLenderDisplayName = state.selectedLender ? lenderDisplayName(state.selectedLender) : '';
+      answers.packReference = ensurePackReference();
+      answers.qcbfMeta = {
+        builderId: CAR_FINANCE_QCBF_META.builderId,
+        frameworkVersion: CAR_FINANCE_QCBF_META.frameworkVersion,
+        builderVersion: CAR_FINANCE_QCBF_META.builderVersion,
+        schemaVersion: CAR_FINANCE_QCBF_META.schemaVersion,
+        draftVersion: CAR_FINANCE_QCBF_META.draftVersion,
+        storageNamespace: CAR_FINANCE_QCBF_META.storageNamespace
+      };
       return answers;
     }
     function buildAgreementAnalysis(a){
@@ -1505,6 +1583,7 @@
     }
     function caseInfoRows(a){
       return [
+        ['Pack Reference', ensurePackReference()],
         ['Consumer', a.customerName || a.fullName],
         ['Finance Provider', lenderLineForLetter(a)],
         ['Dealer', a.dealer],
@@ -1521,7 +1600,7 @@
       return rows.map(([k,v]) => k + ': ' + cleanValue(v)).join('\n');
     }
     function buildComplaintSummary(a){
-      return CONSUMER_FILE_TITLE.toUpperCase() + '\nCar Finance Agreement Analysis & Complaint Pack\n\nCASE INFORMATION\n' + summaryRowsFriendly(caseInfoRows(a)) + '\n\nPACK CONTENTS\n' + checkboxLines(Object.values(docLabels())) + '\n\nMAIN ISSUES RAISED\n' + ((a.concerns || []).length ? (a.concerns || []).map(c => '[ ] ' + concernText(c)).join('\n') : '[ ] Disclosure, explanation and agreement-record issues to review') + '\n\nThis file is a self-service starting point. Check every answer, remove anything inaccurate and only send documents that reflect your own circumstances.';
+      return CONSUMER_FILE_TITLE.toUpperCase() + '\nCar Finance Agreement Analysis & Complaint Pack\nPack Reference: ' + ensurePackReference() + '\n\nCASE INFORMATION\n' + summaryRowsFriendly(caseInfoRows(a)) + '\n\nPACK CONTENTS\n' + checkboxLines(Object.values(docLabels())) + '\n\nMAIN ISSUES RAISED\n' + ((a.concerns || []).length ? (a.concerns || []).map(c => '[ ] ' + concernText(c)).join('\n') : '[ ] Disclosure, explanation and agreement-record issues to review') + '\n\nThis file is a self-service starting point. Check every answer, remove anything inaccurate and only send documents that reflect your own circumstances.';
     }
     function buildFinancialAgreementSummary(a){
       const c = calcAgreement(a);
@@ -1732,8 +1811,8 @@
     function fullPackText(){
       const directoryVersion = state.lenderMeta?.directoryVersion || '1.0';
       const regulatoryVersion = state.lenderMeta?.regulatoryContentVersion || 'motor-finance-2026-07-18';
-      const versionBlock = '\n\n---\n\nVERSION INFORMATION\nBuilder Version ' + BUILDER_VERSION + '\nDocument Version ' + DOCUMENT_VERSION + '\nLender Directory Version ' + directoryVersion + '\nRegulatory Content Version ' + regulatoryVersion + '\nGenerated Date: ' + todayText();
-      return CONSUMER_FILE_TITLE.toUpperCase() + '\nCar Finance Agreement Analysis & Complaint Pack\n\nIncludes your Agreement Analysis, Complaint Letter, Evidence Checklist, Timeline, Financial Summary, Supporting Documents and Lender Submission Details.\n\n---\n\n' + Object.entries(state.docs).map(([key,text]) => String(text || '').trim()).join('\n\n---\n\n') + versionBlock;
+      const versionBlock = '\n\n---\n\nVERSION INFORMATION\nPack Reference: ' + ensurePackReference() + '\nFramework Version ' + CAR_FINANCE_QCBF_META.frameworkVersion + '\nBuilder Version ' + BUILDER_VERSION + '\nDocument Version ' + DOCUMENT_VERSION + '\nLender Directory Version ' + directoryVersion + '\nRegulatory Content Version ' + regulatoryVersion + '\nGenerated Date: ' + todayText();
+      return CONSUMER_FILE_TITLE.toUpperCase() + '\nCar Finance Agreement Analysis & Complaint Pack\nPack Reference: ' + ensurePackReference() + '\n\nIncludes your Agreement Analysis, Complaint Letter, Evidence Checklist, Timeline, Financial Summary, Supporting Documents and Lender Submission Details.\n\n---\n\n' + Object.entries(state.docs).map(([key,text]) => String(text || '').trim()).join('\n\n---\n\n') + versionBlock;
     }
     function filename(ext){ return 'quaerens-consumer-complaint-file-car-finance-' + safeFilePart(val('fullName').split(' ').slice(-1)[0]) + '-' + new Date().toISOString().slice(0,10) + '.' + ext; }
     function downloadRtf(){ const body = escapeRtf(fullPackText()); download(filename('rtf'), '{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Arial;}}\\fs24\\b Quaerens Consumer Complaint File\\b0\\par ' + body + '}', 'application/rtf'); }
@@ -1751,7 +1830,7 @@
         const page = doc.internal.getCurrentPageInfo().pageNumber;
         doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100);
         doc.text('Quaerens Consumer Complaint File - Car Finance', margin, pageH - 34);
-        doc.text('Builder Version ' + BUILDER_VERSION + ' | Document Version ' + DOCUMENT_VERSION + ' | Generated ' + todayText(), margin, pageH - 22);
+        doc.text('Pack ' + ensurePackReference() + ' | ' + CAR_FINANCE_QCBF_META.frameworkVersion + ' | Builder Version ' + BUILDER_VERSION + ' | Generated ' + todayText(), margin, pageH - 22);
         doc.text('Page ' + page + ' of {total_pages_count_string}', pageW - 118, pageH - 22);
         doc.setTextColor(15,23,42);
       }
@@ -1772,7 +1851,7 @@
       doc.setFont('helvetica','bold'); doc.setFontSize(24); doc.text('Car Finance Agreement Analysis', margin, y); y += 30;
       doc.text('& Complaint Pack', margin, y); y += 34;
       doc.setFontSize(16); doc.setTextColor(29,78,216); doc.text(CONSUMER_FILE_TITLE, margin, y); y += 30; doc.setTextColor(15,23,42);
-      cards([['Consumer Name', a.customerName || a.fullName],['Finance Provider', lenderLineForLetter(a)],['Agreement Number', a.agreementRef],['Vehicle', [a.vehicleMake,a.vehicleModel,a.vehicleReg].filter(Boolean).join(' - ')],['Agreement Type', a.agreementType],['Date Generated', todayText()],['Builder Version', BUILDER_VERSION],['Document Version', DOCUMENT_VERSION],['Lender Directory Version', state.lenderMeta?.directoryVersion || '1.0'],['Regulatory Content Version', state.lenderMeta?.regulatoryContentVersion || 'motor-finance-2026-07-18']], 2);
+      cards([['Pack Reference', ensurePackReference()],['Consumer Name', a.customerName || a.fullName],['Finance Provider', lenderLineForLetter(a)],['Agreement Number', a.agreementRef],['Vehicle', [a.vehicleMake,a.vehicleModel,a.vehicleReg].filter(Boolean).join(' - ')],['Agreement Type', a.agreementType],['Date Generated', todayText()],['Framework Version', CAR_FINANCE_QCBF_META.frameworkVersion],['Builder Version', BUILDER_VERSION],['Document Version', DOCUMENT_VERSION],['Lender Directory Version', state.lenderMeta?.directoryVersion || '1.0'],['Regulatory Content Version', state.lenderMeta?.regulatoryContentVersion || 'motor-finance-2026-07-18']], 2);
       y += 8; heading('PACK CONTENTS');
       const contents = ['Agreement Analysis','Agreement Review','Known Information and Information to Request','Financial Agreement Summary','Potential Redress Analysis','Complaint Summary','Complaint Letter','Information Request','Cover Email','Evidence Checklist','Timeline','Lender Submission Details','Quaerens Smart Submission','Submission Checklist','Contact Record','Follow-Up Tracker','Official Resources','Self-Service Disclaimer'];
       cards(contents.map(item => ['Included', item]), 2);
@@ -1782,7 +1861,7 @@
       heading('Financial Summary'); cards([['Vehicle Price', fmtMoney(c.cashPrice)],['Deposit', fmtMoney(c.cashDeposit)],['Finance Amount', fmtMoney(c.amountCredit)],['APR', c.apr !== null ? c.apr + '%' : 'Not confirmed yet'],['Monthly Payment', fmtMoney(c.monthly)],['Agreement Term', c.term ? c.term + ' months' : 'Not confirmed yet'],['Agreement Status', cleanValue(a.agreementStatus)],['Payments Made', c.paidCount !== null ? String(c.paidCount) : 'Not confirmed yet']], 2);
       heading('Complaint Pack Readiness'); const score = readinessPercent(a); smallText(score + '% - ' + readinessStatus(score)); smallText('This score reflects how complete your complaint pack is based on the information you have entered. It does not predict the outcome of your complaint.');
       Object.entries(state.docs).forEach(([key,text]) => { if (key === 'summary') return; textSection(docLabels()[key] || key, text); });
-      textSection('Version Information', 'Builder Version ' + BUILDER_VERSION + '\nDocument Version ' + DOCUMENT_VERSION + '\nLender Directory Version ' + (state.lenderMeta?.directoryVersion || '1.0') + '\nRegulatory Content Version ' + (state.lenderMeta?.regulatoryContentVersion || 'motor-finance-2026-07-18') + '\nGenerated Date: ' + todayText());
+      textSection('Version Information', 'Pack Reference: ' + ensurePackReference() + '\nFramework Version ' + CAR_FINANCE_QCBF_META.frameworkVersion + '\nBuilder Version ' + BUILDER_VERSION + '\nDocument Version ' + DOCUMENT_VERSION + '\nLender Directory Version ' + (state.lenderMeta?.directoryVersion || '1.0') + '\nRegulatory Content Version ' + (state.lenderMeta?.regulatoryContentVersion || 'motor-finance-2026-07-18') + '\nGenerated Date: ' + todayText());
       addFooter(); if (doc.putTotalPages) doc.putTotalPages('{total_pages_count_string}');
       doc.save(filename('pdf'));
     }

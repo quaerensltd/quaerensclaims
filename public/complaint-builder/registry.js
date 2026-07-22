@@ -7,13 +7,15 @@ const templateConfig = require("../builders/template/template.config");
 
 let carFinanceConfig = null;
 try {
-  carFinanceConfig = require("../builders/car-finance/config.json");
+  carFinanceConfig = require("../builders/car-finance/carfinance.config");
 } catch (error) {
   carFinanceConfig = {
     id: "car-finance",
     productName: "Car Finance Complaint Pack Builder",
     shortName: "Car Finance",
-    packPrefix: "QCF",
+    packPrefix: "QC",
+    frameworkVersion: "QCBF 1.2",
+    migrationStatus: "partial integration",
     stages: [],
     canonicalUrl: "https://www.quaerens.co.uk/car-finance.html"
   };
@@ -36,9 +38,10 @@ const registry = createDefaultRegistry([
   },
   {
     config: carFinanceConfig,
-    status: "pending migration",
-    modules: ["config"],
-    resources: ["finance-evidence-guidance"]
+    status: "partial integration",
+    modules: ["config", "pack-reference", "storage-adapter", "accessibility-shell", "readiness-shell", "document-adapter", "export-adapter", "tests"],
+    resources: ["motor-finance-lender-directory", "car-finance-regulatory-status", "car-finance-redress-methodology", "finance-evidence-guidance"],
+    exportSupport: carFinanceConfig.exportSupport
   },
   {
     config: templateConfig,
