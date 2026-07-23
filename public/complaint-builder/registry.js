@@ -4,6 +4,7 @@ const { createDefaultRegistry } = require("./core/BuilderRegistry");
 const holidayConfig = require("../builders/holiday/holiday.config");
 const flightConfig = require("../builders/flight/flight.config");
 const templateConfig = require("../builders/template/template.config");
+const baggageConfig = require("../builders/baggage/baggage.config");
 
 let carFinanceConfig = null;
 try {
@@ -35,6 +36,13 @@ const registry = createDefaultRegistry([
     resources: ["airline-directory", "airport-directory", "flight-lookup", "smart-submission", "official-resources"],
     apiIntegration: flightConfig.apiIntegration,
     exportSupport: flightConfig.exportSupport
+  },
+  {
+    config: baggageConfig,
+    status: "migrated",
+    modules: ["config", "questions", "analysis", "evidence", "documents", "resources", "submission", "page", "tests"],
+    resources: ["airline-baggage-directory", "baggage-evidence-guidance", "official-baggage-resources"],
+    exportSupport: baggageConfig.exports
   },
   {
     config: carFinanceConfig,

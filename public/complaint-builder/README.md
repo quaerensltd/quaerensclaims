@@ -35,4 +35,4 @@ Keep public page content stable. Move builder-specific logic into:
 - `tests`
 - `page`
 
-Holiday is the current reference migration. Flight should be migrated next using the registry, document model, status engine and export engine.
+Holiday is the current reference migration. Flight is a live QCBF 1.2 builder with lookup, compensation and Smart Submission modules. Baggage is a native QCBF builder for lost, delayed and damaged luggage complaint packs. Car Finance remains a specialist partial integration until its calculation engine is moved behind the shared framework boundary.
