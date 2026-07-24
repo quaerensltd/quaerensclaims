@@ -1,59 +1,78 @@
 "use strict";
 
-const evidenceRules = {
-  delayed: ["ticket", "booking", "screenshots", "delayNotifications", "receipts"],
-  cancelled: ["ticket", "operatorMessages", "replacementOffered", "announcements", "alternativeTransport"],
-  missedConnection: ["ticket", "booking", "connectionDetails", "delayNotifications", "receipts"],
-  abandoned: ["ticket", "alternativeTravel", "receipts", "operatorMessages"],
-  replacementBus: ["operatorMessages", "announcements", "replacementTransport", "arrivalEvidence"],
-  alternativeTransport: ["alternativeTravel", "receipts", "reasonForAlternative"],
-  seatUnavailable: ["seatReservation", "ticket", "operatorMessages"],
-  overcrowding: ["ticket", "photos", "operatorMessages", "journeyNotes"],
-  delayRepayRejected: ["claimReference", "operatorDecision", "appeal", "ticket"],
-  refundRejected: ["operatorResponse", "refundRequest", "ticket", "booking"],
-  incorrectInformation: ["screenshots", "operatorMessages", "announcements", "journeyNotes"],
-  other: ["journeyNotes", "operatorMessages"]
-};
+(function(root, factory) {
+  const train = root.QCBFTrain || {};
+  const api = factory(train.questions, train.analysis);
+  if (typeof module === "object" && module.exports) {
+    module.exports = api;
+  }
+  root.QCBFTrain = root.QCBFTrain || {};
+  root.QCBFTrain.evidence = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function(questions, analysis) {
+  if (!questions && typeof require === "function") questions = require("./train.questions");
+  if (!analysis && typeof require === "function") analysis = require("./train.analysis");
 
-const labels = {
-  ticket: "Ticket or travel pass",
-  booking: "Booking confirmation",
-  screenshots: "Screenshots",
-  delayNotifications: "Delay notifications",
-  receipts: "Receipts",
-  operatorMessages: "Operator messages",
-  replacementOffered: "Replacement transport offered",
-  announcements: "Station or onboard announcements",
-  alternativeTransport: "Alternative transport evidence",
-  connectionDetails: "Connection details",
-  alternativeTravel: "Alternative travel records",
-  replacementTransport: "Replacement bus or transport records",
-  arrivalEvidence: "Arrival-time evidence",
-  reasonForAlternative: "Reason alternative transport was used",
-  seatReservation: "Seat reservation",
-  photos: "Photos or videos",
-  journeyNotes: "Journey notes",
-  claimReference: "Delay Repay claim reference",
-  operatorDecision: "Operator decision",
-  appeal: "Appeal or review request",
-  operatorResponse: "Operator response",
-  refundRequest: "Refund request"
-};
+  const evidenceRules = {
+    delayed: ["ticket", "booking", "delayNotification", "arrivalEvidence", "receipts"],
+    cancelled: ["ticket", "operatorMessages", "replacementOffered", "arrivalEvidence", "receipts"],
+    missedConnection: ["ticket", "booking", "connectionDetails", "delayNotification", "receipts"],
+    abandoned: ["ticket", "alternativeTravel", "receipts", "operatorMessages"],
+    replacementBus: ["operatorMessages", "replacementOffered", "arrivalEvidence"],
+    alternativeTransport: ["alternativeTravel", "receipts", "journeyNotes"],
+    seatUnavailable: ["seatReservation", "ticket", "operatorMessages"],
+    overcrowding: ["ticket", "photos", "journeyNotes"],
+    incorrectInformation: ["screenshots", "operatorMessages", "journeyNotes"],
+    delayRepayRejected: ["claimReference", "operatorDecision", "appeal", "ticket"],
+    refundRejected: ["operatorDecision", "claimReference", "ticket", "booking"],
+    accessibility: ["passengerAssist", "operatorMessages", "journeyNotes"],
+    other: ["journeyNotes", "operatorMessages"]
+  };
 
-function requiredEvidence(issues) {
-  const set = new Set();
-  (issues || []).forEach(issue => (evidenceRules[issue] || []).forEach(item => set.add(item)));
-  return Array.from(set);
-}
+  function unique(list) {
+    return Array.from(new Set((list || []).filter(Boolean)));
+  }
 
-function buildEvidenceStatus(data) {
-  const available = new Set(Array.isArray(data.evidence) ? data.evidence : []);
-  const required = requiredEvidence(data.journeyIssues);
-  return required.map(id => ({
-    id,
-    label: labels[id] || id,
-    status: available.has(id) ? "Available" : "Requested"
-  }));
-}
+  function requiredEvidence(journeyIssues) {
+    const selected = journeyIssues || [];
+    let required = ["ticket", "journeyNotes"];
+    selected.forEach(issue => {
+      required = required.concat(evidenceRules[issue] || evidenceRules.other);
+    });
+    return unique(required);
+  }
 
-module.exports = { evidenceRules, labels, requiredEvidence, buildEvidenceStatus };
+  function labelFor(id) {
+    const found = (questions.evidenceOptions || []).find(item => item.id === id);
+    return found ? found.label : id.replace(/([A-Z])/g, " $1").replace(/^./, char => char.toUpperCase());
+  }
+
+  function buildEvidenceStatus(data) {
+    const selected = (data && data.evidence) || [];
+    const required = requiredEvidence((data && data.journeyIssues) || []);
+    const optional = (questions.evidenceOptions || []).map(item => item.id).filter(id => !required.includes(id));
+    return required.concat(optional).map(id => {
+      const status = selected.includes(id) ? "Available" : (required.includes(id) ? "Requested" : "Not applicable");
+      return { id: id, label: labelFor(id), status: status, required: required.includes(id) };
+    });
+  }
+
+  function buildEvidenceChecklist(data) {
+    return buildEvidenceStatus(data).filter(item => item.required || item.status === "Available");
+  }
+
+  function missingEvidence(data) {
+    return buildEvidenceStatus(data).filter(item => item.required && item.status !== "Available");
+  }
+
+  function evidencePosition(data) {
+    return analysis.evidencePosition(data || {});
+  }
+
+  return {
+    requiredEvidence: requiredEvidence,
+    buildEvidenceStatus: buildEvidenceStatus,
+    buildEvidenceChecklist: buildEvidenceChecklist,
+    missingEvidence: missingEvidence,
+    evidencePosition: evidencePosition
+  };
+});

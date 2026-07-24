@@ -47,9 +47,9 @@ const registry = createDefaultRegistry([
   },
   {
     config: trainConfig,
-    status: "native builder",
-    modules: ["config", "questions", "analysis", "evidence", "resources", "submission", "page", "tests"],
-    resources: ["train-operator-directory", "rail-evidence-guidance", "rail-journey-analysis"],
+    status: "migrated",
+    modules: ["config", "questions", "analysis", "compensation", "evidence", "documents", "resources", "submission", "page", "tests"],
+    resources: ["train-operator-directory", "rail-evidence-guidance", "rail-journey-analysis", "smart-submission", "official-rail-resources"],
     exportSupport: trainConfig.exports
   },
   {

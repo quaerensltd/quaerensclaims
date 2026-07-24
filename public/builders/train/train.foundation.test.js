@@ -40,7 +40,7 @@ function baseData(overrides) {
     delayRepayClaimed: "No",
     refundRequested: "No",
     operatorResponse: "",
-    evidence: ["ticket", "booking", "delayNotifications", "receipts"],
+    evidence: ["ticket", "booking", "delayNotification", "receipts"],
     requestedOutcomes: ["Delay Repay", "Explanation"],
     expenses: [{ category: "Taxi", amount: "24.50", currency: "GBP", receipt: "Available", reason: "Late onward connection", reimbursed: "No" }],
     timelineNotes: "Journey planned, train delayed, arrived late."
@@ -52,7 +52,7 @@ assert.strictEqual(config.storageNamespace, "qcbf-train");
 assert.strictEqual(config.packPrefix, "QT");
 assert.strictEqual(config.frameworkVersion, "QCBF 1.2");
 assert.strictEqual(config.stages.length, 8);
-assert.ok(config.exports[0].includes("Phase 2"));
+assert.deepStrictEqual(config.exports, ["PDF", "Word/RTF", "TXT", "Print", "Copy"]);
 assert.ok(questions.journeyIssueOptions.length >= 12);
 assert.ok(questions.multiValueFields.includes("journeyIssues"));
 
@@ -62,7 +62,7 @@ assert.strictEqual(analysis.potentialDelayRepay(delayed), "Potential Delay Repay
 assert.strictEqual(analysis.evidencePosition(delayed).level, "Supported");
 assert.strictEqual(analysis.completeness(delayed).status, "Ready for Review");
 assert.strictEqual(analysis.expenseTotal(delayed.expenses), 24.5);
-assert.ok(evidence.requiredEvidence(delayed.journeyIssues).includes("delayNotifications"));
+assert.ok(evidence.requiredEvidence(delayed.journeyIssues).includes("delayNotification"));
 assert.ok(page.buildPreviewCards(delayed, { packReference: "QT-2026-RAIL01" }).some(card => card.body.includes("QT-2026-RAIL01")));
 
 const cancelled = baseData({ journeyIssues: ["cancelled"], actualArrival: "", evidence: ["ticket", "operatorMessages", "announcements"], requestedOutcomes: ["Refund"] });
@@ -81,14 +81,14 @@ assert.strictEqual(analysis.analyse(abandoned).journeyAbandoned, true);
 const delayRepayRejected = baseData({ journeyIssues: ["delayRepayRejected"], delayRepayClaimed: "Yes", operatorResponse: "Rejected", evidence: ["claimReference", "operatorDecision", "appeal", "ticket"] });
 assert.strictEqual(analysis.potentialDelayRepay(delayRepayRejected), "May need review");
 
-const refundRejected = baseData({ journeyIssues: ["refundRejected"], refundRequested: "Yes", operatorResponse: "Refund rejected", evidence: ["operatorResponse", "refundRequest", "ticket"] });
-assert.ok(evidence.requiredEvidence(refundRejected.journeyIssues).includes("refundRequest"));
+const refundRejected = baseData({ journeyIssues: ["refundRejected"], refundRequested: "Yes", operatorResponse: "Refund rejected", evidence: ["operatorDecision", "claimReference", "ticket"] });
+assert.ok(evidence.requiredEvidence(refundRejected.journeyIssues).includes("operatorDecision"));
 
 const alternativeTransport = baseData({ journeyIssues: ["alternativeTransport"], expenses: [{ category: "Alternative Rail", amount: "55", currency: "GBP" }] });
 assert.strictEqual(analysis.analyse(alternativeTransport).alternativeTransport, true);
 
 const multipleOperators = baseData({ trainOperator: "LNER", connectingOperator: "ScotRail", splitTickets: "Yes" });
-assert.strictEqual(resources.operatorRecord(multipleOperators.trainOperator).verified, false);
+assert.strictEqual(resources.operatorRecord(multipleOperators.trainOperator).verified, true);
 assert.ok(submission.buildSubmissionPlaceholder(multipleOperators).preferredComplaintMethod.includes("Verify"));
 
 const seasonTicket = baseData({ ticketType: "Season ticket", seasonTicket: "Yes", ticketPrice: "245" });
