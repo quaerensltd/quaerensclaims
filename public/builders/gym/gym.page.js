@@ -69,13 +69,13 @@
       });
     }
 
-    function showStep(index) {
+    function showStep(index, shouldScroll = true) {
       currentStep = Math.max(0, Math.min(index, steps.length - 1));
       steps.forEach((step, i) => step.hidden = i !== currentStep);
       tabs.forEach((tab, i) => tab.classList.toggle("active", i === currentStep));
       if (progress) progress.textContent = `Step ${currentStep + 1} of ${steps.length}`;
       update();
-      root.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (shouldScroll) root.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function update() {
@@ -153,6 +153,6 @@
     });
     tabs.forEach((tab, i) => tab.addEventListener("click", () => showStep(i)));
     restore();
-    showStep(0);
+    showStep(0, false);
   });
 })();
