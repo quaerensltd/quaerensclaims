@@ -8,6 +8,7 @@ const baggageConfig = require("../builders/baggage/baggage.config");
 const trainConfig = require("../builders/train/train.config");
 const parkingConfig = require("../builders/parking/parking.config");
 const gymConfig = require("../builders/gym/gym.config");
+const cruiseConfig = require("../builders/cruise/cruise.config");
 
 let carFinanceConfig = null;
 try {
@@ -67,6 +68,13 @@ const registry = createDefaultRegistry([
     modules: ["config", "questions", "analysis", "contract", "deadlines", "evidence", "documents", "resources", "submission", "page", "tests"],
     resources: ["gym-cancellation-routing", "gym-evidence-guidance", "gym-contract-review", "official-gym-resources"],
     exportSupport: gymConfig.exports
+  },
+  {
+    config: cruiseConfig,
+    status: "Native QCBF builder - implementation in progress",
+    modules: ["config", "questions", "analysis", "itinerary", "cabin", "excursions", "financial", "evidence", "resources", "submission", "documents", "page", "tests"],
+    resources: ["cruise-evidence-guidance", "planned-vs-actual-itinerary-review", "cruise-smart-submission", "official-cruise-resources"],
+    exportSupport: cruiseConfig.exports
   },
   {
     config: carFinanceConfig,
