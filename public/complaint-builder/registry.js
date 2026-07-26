@@ -7,6 +7,7 @@ const templateConfig = require("../builders/template/template.config");
 const baggageConfig = require("../builders/baggage/baggage.config");
 const trainConfig = require("../builders/train/train.config");
 const parkingConfig = require("../builders/parking/parking.config");
+const gymConfig = require("../builders/gym/gym.config");
 
 let carFinanceConfig = null;
 try {
@@ -59,6 +60,13 @@ const registry = createDefaultRegistry([
     modules: ["config", "questions", "analysis", "deadlines", "grounds", "evidence", "documents", "resources", "submission", "page", "tests"],
     resources: ["parking-issuer-routing", "parking-evidence-guidance", "parking-deadline-guidance", "official-parking-resources"],
     exportSupport: parkingConfig.exports
+  },
+  {
+    config: gymConfig,
+    status: "migrated",
+    modules: ["config", "questions", "analysis", "contract", "deadlines", "evidence", "documents", "resources", "submission", "page", "tests"],
+    resources: ["gym-cancellation-routing", "gym-evidence-guidance", "gym-contract-review", "official-gym-resources"],
+    exportSupport: gymConfig.exports
   },
   {
     config: carFinanceConfig,
