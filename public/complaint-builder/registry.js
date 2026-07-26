@@ -6,6 +6,7 @@ const flightConfig = require("../builders/flight/flight.config");
 const templateConfig = require("../builders/template/template.config");
 const baggageConfig = require("../builders/baggage/baggage.config");
 const trainConfig = require("../builders/train/train.config");
+const parkingConfig = require("../builders/parking/parking.config");
 
 let carFinanceConfig = null;
 try {
@@ -51,6 +52,13 @@ const registry = createDefaultRegistry([
     modules: ["config", "questions", "analysis", "compensation", "evidence", "documents", "resources", "submission", "page", "tests"],
     resources: ["train-operator-directory", "rail-evidence-guidance", "rail-journey-analysis", "smart-submission", "official-rail-resources"],
     exportSupport: trainConfig.exports
+  },
+  {
+    config: parkingConfig,
+    status: "migrated",
+    modules: ["config", "questions", "analysis", "deadlines", "grounds", "evidence", "documents", "resources", "submission", "page", "tests"],
+    resources: ["parking-issuer-routing", "parking-evidence-guidance", "parking-deadline-guidance", "official-parking-resources"],
+    exportSupport: parkingConfig.exports
   },
   {
     config: carFinanceConfig,
