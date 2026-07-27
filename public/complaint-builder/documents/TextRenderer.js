@@ -4,6 +4,7 @@ const { preventDuplicatedWords } = require("../utilities/text");
 
 function renderText(model) {
   const lines = [];
+  lines.push("QUAERENS COMPLAINT PACK™", "Powered by the Quaerens Evidence Engine™", "");
   if (model.meta && model.meta.title) lines.push(model.meta.title.toUpperCase(), "");
   if (model.meta && model.meta.packReference) lines.push("Pack reference: " + model.meta.packReference, "");
   (model.sections || []).forEach((section) => {

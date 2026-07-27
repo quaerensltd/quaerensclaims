@@ -7,6 +7,8 @@ class ComplaintPack {
   constructor(meta, sections) {
     this.model = documentModel(Object.assign({
       title: "Quaerens Consumer Complaint File",
+      platformOutputName: "Quaerens Complaint Pack™",
+      evidenceEngineAttribution: "Powered by the Quaerens Evidence Engine™",
       packReference: meta && meta.packReference ? meta.packReference : createPackReference(meta && meta.packPrefix ? meta.packPrefix : "QC")
     }, meta || {}), sections || []);
   }

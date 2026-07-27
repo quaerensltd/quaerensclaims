@@ -3,7 +3,14 @@
 const { escapeHtml } = require("../utilities/text");
 
 function renderPrintHtml(model) {
-  return '<article class="qcbf-print-document">' + (model.sections || []).map((section) => {
+  const header = [
+    '<header class="qcbf-print-header">',
+    "<p>Quaerens Complaint Pack™</p>",
+    "<p>Powered by the Quaerens Evidence Engine™</p>",
+    model.meta && model.meta.packReference ? "<p>Pack reference: " + escapeHtml(model.meta.packReference) + "</p>" : "",
+    "</header>"
+  ].join("");
+  return '<article class="qcbf-print-document">' + header + (model.sections || []).map((section) => {
     if (section.type === "heading") return "<h" + (section.level || 2) + ">" + escapeHtml(section.text) + "</h" + (section.level || 2) + ">";
     if (section.type === "paragraph") return "<p>" + escapeHtml(section.text) + "</p>";
     if (section.type === "callout") return '<p class="qcbf-callout">' + escapeHtml(section.text) + "</p>";

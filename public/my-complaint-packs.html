@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Complaint Packs | Quaerens</title>
+  <meta name="description" content="View, resume or remove Quaerens Complaint Packs stored locally in this browser on this device.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://www.quaerens.co.uk/my-complaint-packs.html">
+  <style>
+    :root{--blue:#2563eb;--navy:#071735;--line:#bfdbfe;--soft:#eff6ff;--green:#16a34a}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--navy);background:#f8fbff;line-height:1.55}a{color:#064de1;text-decoration:none;font-weight:800}.wrap{max-width:1160px;margin:0 auto;padding:0 20px}.top{background:#fff;border-bottom:1px solid #dbeafe}.nav{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 0}.logo{font-size:34px;font-weight:900}.navlinks{display:flex;gap:18px;align-items:center}.btn,.pack-actions button{display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;border-radius:999px;padding:11px 18px;font-weight:900;border:0;cursor:pointer}.hero{padding:58px 0 24px}.eyebrow{color:#0b57d0;text-transform:uppercase;font-weight:900;letter-spacing:.06em}h1{font-size:56px;line-height:1.04;margin:10px 0}h2{font-size:24px;margin:0 0 10px}.lead{font-size:20px}.panel,.pack-card,.empty-state{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 14px 35px rgba(15,23,42,.06)}.platform-privacy{background:#ecfdf5;border:1px solid #86efac;border-radius:14px;padding:16px;font-weight:800}.dashboard-toolbar{display:flex;gap:12px;margin:18px 0}.dashboard-toolbar input{width:100%;border:1px solid var(--line);border-radius:999px;padding:14px 16px;font:inherit}.pack-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pack-card h2{font-size:22px}.pack-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.pack-actions a:nth-child(2){background:#eaf2ff;color:#064de1}.pack-actions button{background:#fee2e2;color:#991b1b}.dashboard-warning{grid-column:1/-1;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:14px}.products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.product-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}.footer{padding:28px 0;background:#071735;color:#fff;margin-top:36px}.footer a{color:#bfdbfe}.small{font-size:14px;color:#475569}@media(max-width:820px){.pack-card-grid,.products{grid-template-columns:1fr}.nav{align-items:flex-start}.navlinks{flex-wrap:wrap}h1{font-size:40px}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap nav">
+      <a class="logo" href="/">Quaerens</a>
+      <nav class="navlinks" aria-label="Dashboard navigation">
+        <a href="/complaint-platform.html">Complaint Platform</a>
+        <a href="/consumer-rights-knowledge-centre.html">Knowledge Centre</a>
+        <a class="btn" href="/complaint-platform.html#packs">Explore Free Complaint Packs</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Personal dashboard</p>
+        <h1>My Complaint Packs</h1>
+        <p class="lead">View, resume or remove Complaint Packs stored in this browser on this device.</p>
+      </div>
+    </section>
+    <section class="wrap panel" aria-labelledby="dashboard-heading">
+      <h2 id="dashboard-heading">Saved in this browser</h2>
+      <p>Your Complaint Packs are stored locally in this browser on this device. They are not automatically uploaded to Quaerens. Clearing browser data may remove drafts, and drafts do not automatically appear on another device. Generated files should be saved separately by you.</p>
+      <div id="complaint-dashboard" aria-live="polite"></div>
+      <button class="btn" type="button" id="reset-all-packs">Reset all locally stored Quaerens drafts</button>
+    </section>
+    <section class="wrap panel" style="margin-top:24px">
+      <h2>Available Complaint Packs</h2>
+      <div id="available-products" class="products"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    <div class="wrap">
+      <strong>The Quaerens Consumer Complaint Platform</strong>
+      <p>Free evidence-first tools that help consumers organise facts, evidence and complaint documents while staying in control.</p>
+      <p><a href="/complaint-platform.html">Explore Complaint Packs</a> · <a href="/my-complaint-packs.html">My Complaint Packs</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/contact.html">Contact</a></p>
+      <p class="small">Quaerens Complaint Packs™ and the Quaerens Evidence Engine™ are product names used by Quaerens Ltd.</p>
+    </div>
+  </footer>
+  <script src="/complaint-builder/platform-metadata.js"></script>
+  <script src="/complaint-builder/platform-dashboard.js"></script>
+  <script>
+    QuaerensComplaintDashboard.renderDashboard(document.getElementById("complaint-dashboard"));
+    document.getElementById("reset-all-packs").addEventListener("click", function () {
+      if (window.confirm("Reset all locally stored Quaerens drafts from this browser? This cannot be undone.")) {
+        QuaerensComplaintDashboard.resetAll();
+        QuaerensComplaintDashboard.renderDashboard(document.getElementById("complaint-dashboard"));
+      }
+    });
+    const available = document.getElementById("available-products");
+    QuaerensPlatformMetadata.products.filter((p) => p.isLive && p.dashboardVisible).forEach((product) => {
+      const card = document.createElement("article");
+      card.className = "product-card";
+      const h = document.createElement("h3");
+      h.textContent = product.productName;
+      const p = document.createElement("p");
+      p.textContent = product.shortDescription;
+      const a = document.createElement("a");
+      a.className = "btn";
+      a.href = product.canonicalUrl;
+      a.textContent = "Start New Pack";
+      card.append(h, p, a);
+      available.appendChild(card);
+    });
+  </script>
+</body>
+</html>

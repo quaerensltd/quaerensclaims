@@ -35,25 +35,71 @@ class BuilderRegistry {
       exportSupport: builder.exportSupport
     }));
   }
+
+  publicProducts() {
+    return this.list()
+      .filter((builder) => builder.isPublicProduct && builder.dashboardVisible !== false && builder.isLive !== false)
+      .map((builder) => ({
+        id: builder.id,
+        productName: builder.productName,
+        packName: builder.packName,
+        shortName: builder.shortName,
+        shortDescription: builder.shortDescription,
+        category: builder.category,
+        canonicalUrl: builder.canonicalUrl,
+        storageNamespace: builder.storageNamespace,
+        storageKeys: builder.storageKeys,
+        packPrefix: builder.packPrefix,
+        version: builder.version,
+        status: builder.publicStatus,
+        isLive: builder.isLive,
+        isFree: builder.isFree,
+        dashboardVisible: builder.dashboardVisible,
+        supportedExports: builder.supportedExports,
+        knownLimitations: builder.knownLimitations
+      }));
+  }
 }
 
 function normaliseBuilder(config, details) {
   const extra = details || {};
+  const publicMeta = extra.publicMeta || {};
+  const hasPublicMeta = Boolean(extra.publicMeta);
   return {
     id: config.id,
-    title: config.productName || config.title || config.pageTitle || config.id,
-    shortName: config.shortName || config.id,
-    version: config.builderVersion || config.version || config.frameworkVersion || "1.0",
+    internalName: publicMeta.internalName || config.id,
+    title: publicMeta.productName || config.productName || config.title || config.pageTitle || config.id,
+    productName: publicMeta.productName || config.productName || config.title || config.pageTitle || config.id,
+    packName: publicMeta.packName || config.packName || config.productName || config.id,
+    shortName: publicMeta.shortName || config.shortName || config.id,
+    shortDescription: publicMeta.shortDescription || config.shortDescription || "",
+    category: publicMeta.category || config.category || "Consumer Complaints",
+    version: publicMeta.version || config.builderVersion || config.version || config.frameworkVersion || "1.0",
     frameworkVersion: config.frameworkVersion || QCBF_VERSION_LABEL,
-    packPrefix: config.packPrefix || "QC",
+    packPrefix: publicMeta.packPrefix || config.packPrefix || "QC",
     stages: (config.stages || []).map((stage) => ({ id: stage.id, label: stage.label || stage.id })),
     modules: extra.modules || config.modules || [],
     resources: extra.resources || config.resources || [],
     status: extra.status || config.status || "registered",
-    publicUrl: config.canonicalUrl || extra.publicUrl || "",
-    storageNamespace: config.storageNamespace || config.storageKey || "",
+    publicStatus: publicMeta.status || "Available",
+    publicUrl: publicMeta.canonicalUrl || config.canonicalUrl || extra.publicUrl || "",
+    canonicalUrl: publicMeta.canonicalUrl || config.canonicalUrl || extra.publicUrl || "",
+    dashboardUrl: publicMeta.dashboardUrl || "",
+    storageNamespace: publicMeta.storageNamespace || config.storageNamespace || config.storageKey || "",
+    storageKeys: publicMeta.storageKeys || [config.storageKey, config.draftStorageKey].filter(Boolean),
     apiIntegration: extra.apiIntegration || config.apiIntegration || null,
-    exportSupport: extra.exportSupport || config.exportSupport || []
+    exportSupport: extra.exportSupport || config.exportSupport || config.exports || [],
+    supportedExports: publicMeta.supportedExports || extra.exportSupport || config.exportSupport || config.exports || [],
+    isLive: publicMeta.isLive !== undefined ? publicMeta.isLive : true,
+    isFree: publicMeta.isFree !== undefined ? publicMeta.isFree : true,
+    dashboardVisible: publicMeta.dashboardVisible !== undefined ? publicMeta.dashboardVisible : true,
+    isPublicProduct: hasPublicMeta,
+    icon: publicMeta.icon || "",
+    image: publicMeta.image || "",
+    accentLabel: publicMeta.accentLabel || "",
+    draftSchemaVersion: publicMeta.draftSchemaVersion || config.schemaVersion || 1,
+    lastVerified: publicMeta.lastVerified || config.lastVerified || "",
+    knownLimitations: publicMeta.knownLimitations || []
   };
 }
 

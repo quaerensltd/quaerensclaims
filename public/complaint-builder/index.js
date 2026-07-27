@@ -33,3 +33,6 @@ module.exports = {
   ...require("./utilities/dates"),
   ...require("./utilities/currency")
 };
+
+module.exports.registry = require("./registry").registry;
+module.exports.platformMetadata = require("./registry").platformMetadata;
