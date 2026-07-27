@@ -44,6 +44,14 @@
       "Actual itinerary",
       value(analysis.itinerary.actual.map((x) => `- ${x}`).join("\n"), "Not recorded"),
       "",
+      analysis.itinerary.deliveryIndicator.label,
+      analysis.itinerary.deliveryIndicator.value,
+      analysis.itinerary.deliveryIndicator.caution,
+      "",
+      `Planned port calls recorded: ${analysis.itinerary.counts.plannedPortCalls}`,
+      `Recorded port calls delivered: ${analysis.itinerary.counts.recordedPortCallsDelivered}`,
+      `Missed or substituted port calls: ${analysis.itinerary.counts.missedOrSubstitutedPortCalls}`,
+      "",
       `Itinerary note: ${analysis.itinerary.caution}`
     ].join("\n");
   }
@@ -52,11 +60,13 @@
     return [
       "Refunds, Credits, Costs and Financial Impact",
       ...analysis.financial.lines.map((x) => `- ${x.label}: ${x.display} (${x.sign})`),
+      analysis.financial.futureCruiseCredit ? `- Future cruise credit or voucher recorded separately: ${analysis.financial.futureCruiseCredit.display}` : "",
       `Estimated financial position: ${analysis.financial.displayTotal}`,
+      ...analysis.financial.warnings.map((x) => `Warning: ${x}`),
       analysis.financial.caution,
       "",
       line("Financial notes", data.financialNotes, "No additional financial notes recorded")
-    ].join("\n");
+    ].filter(Boolean).join("\n");
   }
 
   function evidence(data, analysis) {
@@ -93,6 +103,7 @@
   function buildAll(data) {
     const analysis = analysisEngine.analyse(data);
     const submission = submissionEngine.smartSubmission(data, analysis);
+    const route = analysis.routeAnalysis || {};
     const sections = {
       cover: cover(data, analysis),
       summary: [
@@ -101,9 +112,13 @@
         line("Requested outcome", data.requestedOutcomes, "Requested outcome not yet recorded"),
         line("Issue summary", data.issueSummary, "No additional summary recorded"),
         `Analysis: ${analysis.issueType}`,
-        `Route: ${analysis.routeAnalysis}`,
+        `Booking structure: ${analysis.bookingStructure.note}`,
+        `Maritime boundary: ${analysis.maritimeBoundary.note}`,
+        `Primary route: ${route.primary || "Route not yet identified"}`,
+        `Responsible party note: ${route.responsiblePartyNote || "Check the booking documents before submitting."}`,
+        route.caution || "",
         analysis.caution
-      ].join("\n"),
+      ].filter(Boolean).join("\n"),
       journey: journey(data, analysis),
       cabin: ["Cabin and Onboard Review", analysis.cabin.summary, line("Cabin booked", data.cabinBooked), line("Cabin received", data.cabinReceived), line("Cabin notes", data.cabinIssues, "No cabin notes recorded")].join("\n"),
       excursions: ["Excursion Review", analysis.excursion.routeNote, analysis.excursion.caution, line("Excursion provider", data.excursionBookedBy, "Not recorded")].join("\n"),
@@ -112,7 +127,12 @@
       timeline: ["Voyage Timeline", line("Booking date", data.bookingDate), line("Problem date", data.problemDate), line("Complaint date", data.complaintDate), line("Response date", data.responseDate), line("Timeline notes", data.timelineNotes, "No timeline notes recorded")].join("\n"),
       letter: letter(data, analysis),
       submission: ["Quaerens Smart Submission", `Method: ${submission.method}`, `Status: ${submission.status}`, submission.detail, "", "Before You Submit", ...submission.checklist.map((x) => `- ${x}`)].join("\n"),
-      resources: ["Official and Authoritative Resources", ...resources.officialSources.map((x) => `- ${x.label}: ${x.url}`)].join("\n"),
+      resources: ["Official and Authoritative Resources", ...resources.officialSources.flatMap((x) => [
+        `- ${x.label} (${x.issuingBody})`,
+        `  Subject: ${x.subject}`,
+        `  Official source: ${x.officialUrl}`,
+        `  Limitation: ${x.limitation}`
+      ])].join("\n"),
       disclaimer: "Self-Service Disclaimer\nThis pack organises information for a self-service complaint. Quaerens does not submit the complaint for you and does not guarantee a refund, compensation, reimbursement or outcome."
     };
     return {
@@ -126,4 +146,3 @@
 
   return { buildAll };
 });
-

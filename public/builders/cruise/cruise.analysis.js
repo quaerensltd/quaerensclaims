@@ -41,11 +41,44 @@
     return { status: missing.length ? "Needs key information" : "Ready to review", missing };
   }
 
+  function bookingStructure(data) {
+    const bookingType = String(data.bookingType || "Unsure");
+    const organiser = data.organiserName || data.travelAgentName || "";
+    const paymentRoute = String(data.paymentRoute || "");
+    const likelyPackage = /package|fly-cruise|agent|organiser/i.test(bookingType);
+    const direct = /direct|cruise-only/i.test(bookingType);
+    return {
+      bookingType,
+      likelyPackage,
+      direct,
+      organiserRecorded: Boolean(organiser),
+      paymentRoute,
+      note: likelyPackage
+        ? "The booking appears to involve a package, organiser or travel agent route. Check the confirmation and invoice before submitting."
+        : direct
+          ? "The booking appears to be direct or cruise-only, so the cruise line route may be the clearest starting point."
+          : "The responsible organisation has not yet been confirmed. Check the booking confirmation, invoice and applicable terms before submitting."
+    };
+  }
+
+  function maritimeBoundary(data) {
+    const issueText = array(data.whatHappened).join(" ");
+    const hasDelay = /delay|cancel|boarding|embark/i.test(issueText);
+    return {
+      mayBeRelevant: hasDelay,
+      note: hasDelay
+        ? "Maritime passenger rights may be relevant to some delay, cancellation or boarding issues, but the service, port, operator and facts must be checked."
+        : "Maritime passenger rights are not assumed from the current answers. The complaint can still be organised around the booking, evidence and response received."
+    };
+  }
+
   function analyse(data) {
     const out = {
       packReference: data.packReference,
       issueType: issueType(data),
       urgent: urgent(data),
+      bookingStructure: bookingStructure(data),
+      maritimeBoundary: maritimeBoundary(data),
       itinerary: itinerary.compare(data),
       cabin: cabin.review(data),
       excursion: excursions.review(data),
@@ -63,4 +96,3 @@
 
   return { analyse, issueType, urgent, completeness };
 });
-

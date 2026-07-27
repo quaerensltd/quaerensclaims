@@ -71,7 +71,7 @@ const registry = createDefaultRegistry([
   },
   {
     config: cruiseConfig,
-    status: "Native QCBF builder - implementation in progress",
+    status: "Native QCBF builder - production",
     modules: ["config", "questions", "analysis", "itinerary", "cabin", "excursions", "financial", "evidence", "resources", "submission", "documents", "page", "tests"],
     resources: ["cruise-evidence-guidance", "planned-vs-actual-itinerary-review", "cruise-smart-submission", "official-cruise-resources"],
     exportSupport: cruiseConfig.exports
