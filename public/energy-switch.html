@@ -331,6 +331,54 @@
       width: 0;
       background: linear-gradient(90deg, var(--blue), #22c55e);
     }
+    .review-stack {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .energy-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: #fff;
+    }
+    .energy-table th,
+    .energy-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #dbeafe;
+      text-align: left;
+      vertical-align: top;
+    }
+    .energy-table tr:last-child th,
+    .energy-table tr:last-child td { border-bottom: 0; }
+    .energy-table th {
+      width: 34%;
+      color: #0b2a5b;
+      background: #f8fbff;
+      font-weight: 900;
+    }
+    .readiness-table td:last-child { font-weight: 900; color: #0b2a5b; }
+    .energy-timeline {
+      display: grid;
+      gap: 12px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .energy-timeline li {
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px;
+    }
+    .energy-timeline span {
+      display: block;
+      font-weight: 900;
+      color: #0b2a5b;
+    }
     .footer {
       margin-top: 38px;
       background: #eaf3ff;
@@ -363,6 +411,31 @@
       .pill, .button { width: 100%; }
       h1 { font-size: 42px; }
       .preview { max-height: 420px; }
+    }
+    @media print {
+      .site-header,
+      .hero,
+      .trust-strip,
+      .step-tabs,
+      .builder-actions,
+      .footer,
+      .pill,
+      .button { display: none !important; }
+      body { background: #fff; }
+      .section,
+      .builder-shell,
+      .card {
+        box-shadow: none !important;
+        border-color: #cbd5e1;
+      }
+      .builder-grid { display: block; }
+      .preview {
+        max-height: none;
+        overflow: visible;
+        white-space: pre-wrap;
+      }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; }
     }
   </style>
 </head>
@@ -500,6 +573,7 @@
                 <div><label for="postcode">Postcode</label><input id="postcode" data-qcbf-field="postcode" autocomplete="postal-code"></div>
                 <div><label for="jurisdiction">Where is the supply?</label><select id="jurisdiction" data-qcbf-field="jurisdiction"><option value="">Select</option><option>England</option><option>Wales</option><option>Scotland</option><option>Northern Ireland</option><option>Outside the UK</option></select></div>
                 <div><label for="customerType">Account type</label><select id="customerType" data-qcbf-field="customerType"><option value="">Select</option><option>Domestic household customer</option><option>Microbusiness or business account</option><option>Heat network customer</option><option>Landlord, tenant or shared supply</option></select></div>
+                <div><label for="accountStatus">Account status</label><select id="accountStatus" data-qcbf-field="accountStatus"><option value="">Select</option><option>Active account</option><option>Closed account</option><option>Moving home</option><option>Switch in progress</option><option>In dispute or debt collection</option></select></div>
               </div>
             </section>
 
@@ -522,6 +596,11 @@
                 <div><label for="complaintDate">When did you complain?</label><input id="complaintDate" data-qcbf-field="complaintDate" type="date"></div>
                 <div><label for="finalResponseDate">Final response or deadlock date</label><input id="finalResponseDate" data-qcbf-field="finalResponseDate" type="date"></div>
                 <div><label for="currentStage">Current stage</label><select id="currentStage" data-qcbf-field="currentStage"><option value="">Select</option><option>Not yet complained</option><option>Complaint sent, awaiting response</option><option>Supplier response received</option><option>Deadlock letter received</option><option>More than eight weeks since complaint</option><option>Debt collection, court or warrant concern</option></select></div>
+                <div><label for="switchRequestedDate">Switch requested date</label><input id="switchRequestedDate" data-qcbf-field="switchRequestedDate" type="date"></div>
+                <div><label for="switchCompletedDate">Switch completed date</label><input id="switchCompletedDate" data-qcbf-field="switchCompletedDate" type="date"></div>
+                <div><label for="billDate">Relevant bill date</label><input id="billDate" data-qcbf-field="billDate" type="date"></div>
+                <div><label for="deadlockDate">Deadlock date</label><input id="deadlockDate" data-qcbf-field="deadlockDate" type="date"></div>
+                <div><label for="ombudsmanDate">Ombudsman date</label><input id="ombudsmanDate" data-qcbf-field="ombudsmanDate" type="date"></div>
               </div>
               <p><label for="issueSummary">Briefly describe what happened</label><textarea id="issueSummary" data-qcbf-field="issueSummary" placeholder="For example: the switch completed late, the final bill is wrong, the supplier changed the Direct Debit without explaining why, or the smart meter readings do not match the bill."></textarea></p>
             </section>
@@ -529,10 +608,18 @@
             <section class="card step-panel" data-energy-step="5">
               <h3>Step 5: Payments, credit and amounts</h3>
               <div class="form-grid">
-                <div><label for="disputedAmount">Amount disputed</label><input id="disputedAmount" data-qcbf-field="disputedAmount" inputmode="decimal" placeholder="£"></div>
-                <div><label for="creditBalance">Credit balance owed</label><input id="creditBalance" data-qcbf-field="creditBalance" inputmode="decimal" placeholder="£"></div>
-                <div><label for="extraCosts">Extra costs or losses</label><input id="extraCosts" data-qcbf-field="extraCosts" inputmode="decimal" placeholder="£"></div>
+                <div><label for="currency">Currency</label><select id="currency" data-qcbf-field="currency"><option value="GBP">GBP</option><option value="EUR">EUR</option><option value="Other">Other</option></select></div>
+                <div><label for="disputedAmount">Amount disputed</label><input id="disputedAmount" data-qcbf-field="disputedAmount" inputmode="decimal" placeholder="Amount"></div>
+                <div><label for="creditBalance">Credit balance owed</label><input id="creditBalance" data-qcbf-field="creditBalance" inputmode="decimal" placeholder="Amount"></div>
+                <div><label for="extraCosts">Extra costs or losses</label><input id="extraCosts" data-qcbf-field="extraCosts" inputmode="decimal" placeholder="Amount"></div>
+                <div><label for="currentDirectDebit">Current Direct Debit</label><input id="currentDirectDebit" data-qcbf-field="currentDirectDebit" inputmode="decimal" placeholder="Amount"></div>
+                <div><label for="recordedAccountBalance">Recorded account balance</label><input id="recordedAccountBalance" data-qcbf-field="recordedAccountBalance" inputmode="decimal" placeholder="Amount"></div>
+                <div><label for="requestedRefund">Requested refund</label><input id="requestedRefund" data-qcbf-field="requestedRefund" inputmode="decimal" placeholder="Amount"></div>
+                <div><label for="refundsReceived">Refunds already received</label><input id="refundsReceived" data-qcbf-field="refundsReceived" inputmode="decimal" placeholder="Amount"></div>
                 <div><label for="paymentMethod">Payment method</label><select id="paymentMethod" data-qcbf-field="paymentMethod"><option value="">Select</option><option>Direct Debit</option><option>Prepayment</option><option>Payment card or bank transfer</option><option>Monthly bill</option><option>Other</option></select></div>
+                <div><label for="paymentDate">Payment date</label><input id="paymentDate" data-qcbf-field="paymentDate" type="date"></div>
+                <div><label for="refundRequestDate">Refund request date</label><input id="refundRequestDate" data-qcbf-field="refundRequestDate" type="date"></div>
+                <div><label for="refundReceivedDate">Refund received date</label><input id="refundReceivedDate" data-qcbf-field="refundReceivedDate" type="date"></div>
               </div>
               <p><label for="financialSummary">Explain any financial impact</label><textarea id="financialSummary" data-qcbf-field="financialSummary" placeholder="Include disputed charges, credit withheld, replacement supplier costs, missed discounts, debt collection charges or other documented costs."></textarea></p>
             </section>
@@ -570,12 +657,41 @@
 
             <section class="card step-panel" data-energy-step="8">
               <h3>Step 8: Review your pack</h3>
-              <p>This Part 1A local build creates the live complaint-pack preview and core analysis. Exports, verified submission routes and final Energy V1.0 launch checks are reserved for the later prompt phases.</p>
-              <div class="route-grid" data-energy-summary-cards></div>
+              <p>This Part 1B-B local build prepares the operational review, pack structure and export architecture. Review the facts before copying, printing or exporting your pack.</p>
+              <div class="review-stack">
+                <div>
+                  <h3>Complaint Pack Summary</h3>
+                  <div class="route-grid" data-energy-summary-cards></div>
+                </div>
+                <div>
+                  <h3>Energy Account Health Summary</h3>
+                  <div data-energy-health-summary></div>
+                </div>
+                <div>
+                  <h3>Financial Position</h3>
+                  <div data-energy-financial-position></div>
+                </div>
+                <div>
+                  <h3>Energy Timeline</h3>
+                  <div data-energy-timeline></div>
+                </div>
+                <div>
+                  <h3>Energy Smart Submission</h3>
+                  <div data-energy-smart-submission></div>
+                </div>
+                <div>
+                  <h3>Export Architecture</h3>
+                  <div data-energy-architecture></div>
+                </div>
+              </div>
               <div class="builder-actions">
-                <button class="button" type="button" data-energy-copy>Copy Current Preview</button>
+                <button class="button" type="button" data-energy-copy data-original-label="Copy Current Preview">Copy Current Preview</button>
+                <button class="button secondary" type="button" data-energy-copy-mode="email" data-original-label="Copy Email Version">Copy Email Version</button>
+                <button class="button secondary" type="button" data-energy-copy-mode="supplierPortal" data-original-label="Copy Supplier Portal Version">Copy Supplier Portal Version</button>
+                <button class="button secondary" type="button" data-energy-copy-mode="energyOmbudsmanForm" data-original-label="Copy Energy Ombudsman Form Version">Copy Energy Ombudsman Form Version</button>
+                <button class="button secondary" type="button" data-energy-print>Print Pack Preview</button>
                 <button class="button secondary" type="button" data-energy-reset>Delete Saved Answers</button>
-                <button class="button secondary" type="button" disabled>PDF / Word / Smart Submission Awaiting Part 1B</button>
+                <button class="button secondary" type="button" disabled>PDF / Word / TXT architecture prepared</button>
               </div>
             </section>
 
@@ -604,9 +720,9 @@
         <p>If you smell gas, have a dangerous meter issue, face imminent disconnection, have received court papers or are dealing with warrant action, seek urgent specialist help and contact the relevant supplier or emergency route immediately.</p>
       </div>
       <div class="card blue-card">
-        <h3>What this local Part 1A does</h3>
-        <p>It creates the native page, branching questions, issue classification, route analysis, evidence recommendations, missing-information wording, preview generation and browser-local draft storage.</p>
-        <p>It does not yet complete exports, Ofgem/Energy Ombudsman verification, Smart Submission or production deployment.</p>
+        <h3>What this local Part 1B-B does</h3>
+        <p>It prepares the Energy Smart Submission review, structured complaint pack, financial schedule, timeline, copy modes, editable-output architecture and print-friendly complaint pack layout.</p>
+        <p>It does not yet complete Ofgem or Energy Ombudsman guidance verification, visual PDF quality assurance, SEO finalisation, Version 1.0 freeze or production deployment.</p>
       </div>
     </section>
   </main>

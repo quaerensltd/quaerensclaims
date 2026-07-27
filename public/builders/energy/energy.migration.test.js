@@ -55,7 +55,107 @@ for (const [name, data, expected] of scenarios) {
   assert.ok(result.evidence.length >= 7, `${name}: evidence recommendations missing`);
   assert.ok(result.routes.length >= 1, `${name}: route analysis missing`);
   assert.ok(result.documentType, `${name}: document type missing`);
+  assert.ok(result.healthSummary.rows.length >= 3, `${name}: health summary missing`);
+  assert.ok(result.smartSubmission.rows.length >= 12, `${name}: smart submission readiness missing`);
+  assert.ok(result.financialPosition.rows.length >= 5, `${name}: financial position missing`);
   assert.ok(!/guaranteed|success score/i.test(docs.build(data)), `${name}: unsupported guarantee wording`);
 }
 
-console.log(`Energy Part 1A migration tests passed: ${scenarios.length} fictional scenarios`);
+const fullData = {
+  customerName: "Alex Consumer",
+  customerEmail: "alex@example.com",
+  accountNumber: "E-12345",
+  propertyAddress: "1 Test Street",
+  postcode: "TE1 1ST",
+  jurisdiction: "England",
+  customerType: "Domestic household customer",
+  supplierName: "Example Energy",
+  previousSupplier: "Old Energy",
+  fuelType: "Dual fuel",
+  meterType: "Smart meter",
+  issueGroups: ["switching", "billing", "meter", "payments"],
+  issueSummary: "The switch was delayed, both suppliers billed, the smart meter stopped sending readings and a refund remains outstanding.",
+  issueStartDate: "2026-01-05",
+  switchRequestedDate: "2026-01-06",
+  switchCompletedDate: "2026-02-10",
+  billDate: "2026-02-20",
+  paymentDate: "2026-02-28",
+  refundRequestDate: "2026-03-01",
+  complaintDate: "2026-03-05",
+  finalResponseDate: "2026-04-01",
+  disputedAmount: "240.50",
+  creditBalance: "180",
+  extraCosts: "25",
+  currentDirectDebit: "160",
+  recordedAccountBalance: "420",
+  requestedRefund: "180",
+  refundsReceived: "0",
+  paymentMethod: "Direct Debit",
+  evidence: ["bills", "readings", "switch", "payments", "complaint"],
+  requestedOutcomes: ["correct bill", "refund credit", "resolve switch"],
+  preferredOutcome: "Correct the account, explain the switch delay and refund the credit balance.",
+  officialRouteVerified: true
+};
+
+const fullAnalysis = analysis.analyse(fullData);
+assert.ok(fullAnalysis.smartSubmission.message.includes("Quaerens does not submit complaints automatically"), "Smart Submission message missing");
+assert.ok(fullAnalysis.smartSubmission.rows.some((row) => row[0] === "Official Route" && row[1] === "Verified"), "Official route status missing");
+assert.ok(fullAnalysis.smartSubmission.rows.some((row) => row[0] === "Evidence Position" && /Supported|Developing|Limited/.test(row[1])), "Evidence readiness label invalid");
+assert.ok(fullAnalysis.timeline.events.length >= 6, "Timeline events missing");
+assert.ok(fullAnalysis.financialSchedule.entries.length >= 5, "Financial schedule entries missing");
+
+const limitedEvidence = analysis.analyse({
+  customerName: "A",
+  supplierName: "Supplier",
+  jurisdiction: "England",
+  issueGroups: ["meter"],
+  issueSummary: "Meter serial and smart readings are disputed."
+});
+assert.strictEqual(limitedEvidence.completeness.status, "Needs Evidence", "Meter scenario should need evidence");
+
+const inconsistentDates = analysis.analyse({
+  customerName: "A",
+  supplierName: "Supplier",
+  jurisdiction: "England",
+  issueGroups: ["billing"],
+  issueSummary: "Bill dispute.",
+  issueStartDate: "2026-05-01",
+  complaintDate: "2026-04-01"
+});
+assert.ok(inconsistentDates.timeline.warnings.length >= 1, "Timeline warning missing for inconsistent dates");
+
+const pack = docs.build(fullData);
+[
+  "PREMIUM COVER PAGE",
+  "EXECUTIVE SUMMARY",
+  "ENERGY ACCOUNT HEALTH SUMMARY",
+  "ENERGY COMPLAINT ANALYSIS",
+  "FINANCIAL SCHEDULE",
+  "ENERGY TIMELINE",
+  "COMPLAINT LETTER",
+  "SMART SUBMISSION",
+  "BEFORE YOU SUBMIT",
+  "OFFICIAL RESOURCES",
+  "SELF-SERVICE DISCLAIMER"
+].forEach((heading) => assert.ok(pack.includes(heading), `Pack section missing: ${heading}`));
+assert.ok(!/Submit Now|Complaint sent|Success|Case opened|Compensation due|Legally owed|Guaranteed saving|Automatically refundable|success score/i.test(pack), "Unsupported submission or outcome wording found");
+
+const txt = docs.buildTxt(fullData);
+assert.ok(txt.shortComplaint.includes("Example Energy"), "Short complaint TXT missing supplier");
+assert.ok(txt.fullComplaint.includes("SMART SUBMISSION"), "Full complaint TXT missing Smart Submission");
+assert.ok(txt.completeSummary.includes("COMPLETE SUMMARY"), "Complete summary TXT missing");
+assert.ok(!/<[a-z][\s\S]*>/i.test(`${txt.shortComplaint}${txt.fullComplaint}${txt.completeSummary}`), "TXT output contains HTML");
+
+const copy = docs.buildCopy(fullData);
+assert.ok(copy.email.includes("Dear Example Energy"), "Email copy missing greeting");
+assert.ok(copy.supplierPortal.includes("Issue:"), "Supplier portal copy missing issue");
+assert.ok(copy.energyOmbudsmanForm.includes("Energy Ombudsman form summary"), "Ombudsman copy missing");
+assert.ok(copy.complaintPortal.includes("Complaint portal summary"), "Complaint portal copy missing");
+assert.ok(!/<[a-z][\s\S]*>/i.test(Object.values(copy).join("")), "Copy output contains HTML");
+
+assert.strictEqual(docs.architectures.pdf.status, "Prepared", "PDF architecture not prepared");
+assert.strictEqual(docs.architectures.word.status, "Prepared", "Word architecture not prepared");
+assert.strictEqual(docs.architectures.txt.status, "Prepared", "TXT architecture not prepared");
+assert.strictEqual(docs.architectures.print.status, "Prepared", "Print architecture not prepared");
+
+console.log(`Energy Part 1B-B migration tests passed: ${scenarios.length} fictional scenarios plus export architecture checks`);
