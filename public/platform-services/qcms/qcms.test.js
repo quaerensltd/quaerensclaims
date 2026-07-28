@@ -19,7 +19,7 @@ function assertNoOutcomePrediction(text) {
 }
 
 function run() {
-  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.1");
+  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.2");
   assert.strictEqual(SCHEMA_VERSION, "1.0.0");
   assert(QCMS_CASE_SUMMARY_FIELDS.includes("platformUser"));
   assert(QCMS_CASE_SUMMARY_FIELDS.includes("recommendedFee"));

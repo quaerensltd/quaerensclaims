@@ -1,4 +1,4 @@
-const ARCHITECTURE_VERSION = "1.0.0-alpha.1";
+const ARCHITECTURE_VERSION = "1.0.0-alpha.2";
 const SCHEMA_VERSION = "1.0.0";
 
 const VALUE_STATES = Object.freeze({

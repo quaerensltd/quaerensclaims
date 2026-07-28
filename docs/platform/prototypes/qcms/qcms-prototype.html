@@ -4,164 +4,923 @@
   <meta charset="UTF-8">
   <meta name="robots" content="noindex,nofollow">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QCMS Part 1A Internal Prototype</title>
+  <title>QCMS Part 1B Internal Prototype</title>
   <style>
-    :root {
-      --blue: #2563eb;
-      --ink: #061433;
-      --muted: #52627a;
-      --line: #bfdbfe;
-      --soft: #eff6ff;
-      --green: #067a46;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      color: var(--ink);
-      background: #f6f9ff;
-      line-height: 1.55;
-    }
-    main {
-      width: min(1120px, calc(100% - 32px));
-      margin: 32px auto;
-    }
-    .notice, .card, .grid-card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-    }
-    .notice {
-      padding: 18px 20px;
-      border-left: 6px solid var(--blue);
-      margin-bottom: 20px;
-    }
-    .hero {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 20px;
-      align-items: stretch;
-    }
-    .card { padding: 24px; }
-    h1, h2, h3 { line-height: 1.1; margin: 0 0 14px; }
-    h1 { font-size: clamp(2rem, 5vw, 4rem); }
-    h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
-    .kicker {
-      color: var(--blue);
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      font-size: .85rem;
-    }
-    .muted { color: var(--muted); }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .grid-card { padding: 18px; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      background: var(--soft);
-      color: #0b3b93;
-      padding: 6px 10px;
-      font-weight: 800;
-      font-size: .9rem;
-      margin: 4px 6px 4px 0;
-    }
-    .fee {
-      font-size: 2.2rem;
-      font-weight: 900;
-      color: var(--green);
-    }
-    .free-route {
-      background: #ecfdf5;
-      border-color: #86efac;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #e2e8f0;
-      text-align: left;
-      vertical-align: top;
-    }
-    th { color: #0b3b93; }
-    @media (max-width: 780px) {
-      .hero, .grid { grid-template-columns: 1fr; }
-      main { width: min(100% - 20px, 1120px); }
-    }
+    .qcms-experience {
+  color: #061433;
+  font-family: Inter, Arial, sans-serif;
+  line-height: 1.55;
+}
+
+.qcms-experience *,
+.qcms-experience *::before,
+.qcms-experience *::after {
+  box-sizing: border-box;
+}
+
+.qcms-complete,
+.qcms-section,
+.qcms-actions {
+  background: #fff;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  margin: 24px auto;
+  max-width: 1120px;
+  padding: 28px;
+}
+
+.qcms-complete {
+  background: linear-gradient(135deg, #eff6ff 0%, #ecfdf5 100%);
+}
+
+.qcms-kicker {
+  color: #0b55ea;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.qcms-experience h1,
+.qcms-experience h2,
+.qcms-experience h3,
+.qcms-experience h4 {
+  color: #061433;
+  margin: 0 0 14px;
+}
+
+.qcms-experience h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.02;
+}
+
+.qcms-experience h2 {
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  line-height: 1.12;
+}
+
+.qcms-free-message,
+.qcms-disclaimer,
+.qcms-missing-panel,
+.qcms-privacy,
+.qcms-consent-preview {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.qcms-free-message {
+  color: #067a46;
+  font-weight: 800;
+}
+
+.qcms-muted {
+  color: #52627a;
+}
+
+.qcms-summary-grid,
+.qcms-rec-grid,
+.qcms-health-grid,
+.qcms-scope-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.qcms-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.qcms-summary-row,
+.qcms-health-card,
+.qcms-rec-grid > div,
+.qcms-scope-grid > article,
+.qcms-evidence-group {
+  background: #fff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.qcms-summary-row dt,
+.qcms-health-label,
+.qcms-rec-grid span {
+  color: #123c8c;
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.qcms-summary-row dd {
+  margin: 6px 0 0;
+}
+
+.qcms-health-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.qcms-health-card strong,
+.qcms-rec-grid strong {
+  display: block;
+  font-size: 1.2rem;
+  margin: 6px 0;
+}
+
+.qcms-rec-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin: 16px 0;
+}
+
+.qcms-scope-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.qcms-list,
+.qcms-check-list {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.qcms-list li,
+.qcms-check-list li {
+  margin: 8px 0;
+}
+
+.qcms-check-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.qcms-check-list li::before {
+  color: #067a46;
+  content: "✓ ";
+  font-weight: 900;
+}
+
+.qcms-table-wrap {
+  overflow-x: auto;
+}
+
+.qcms-comparison-table {
+  border-collapse: collapse;
+  min-width: 720px;
+  width: 100%;
+}
+
+.qcms-comparison-table th,
+.qcms-comparison-table td {
+  border-bottom: 1px solid #dbeafe;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.qcms-actions {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.qcms-action {
+  align-items: flex-start;
+  border: 2px solid #2563eb;
+  border-radius: 14px;
+  color: #0b3aa3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 96px;
+  padding: 18px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.qcms-action-qcms {
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.qcms-action-free {
+  background: #fff;
+}
+
+.qcms-action span {
+  font-size: 0.95rem;
+}
+
+@media (max-width: 520px) {
+  .qcms-complete,
+  .qcms-section,
+  .qcms-actions {
+    border-radius: 12px;
+    margin: 16px 10px;
+    padding: 18px;
+  }
+
+  .qcms-comparison-table {
+    min-width: 0;
+  }
+
+  .qcms-comparison-table thead {
+    display: none;
+  }
+
+  .qcms-comparison-table tr,
+  .qcms-comparison-table th,
+  .qcms-comparison-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .qcms-comparison-table tr {
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    margin: 10px 0;
+    padding: 10px;
+  }
+}
+
+@media print {
+  .qcms-prototype-controls,
+  .qcms-actions {
+    display: none !important;
+  }
+
+  .qcms-complete,
+  .qcms-section {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
+
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f6f9ff; color: #061433; }
+    .prototype-shell { width: min(1180px, calc(100% - 32px)); margin: 28px auto 56px; }
+    .prototype-notice { background: #fff; border: 1px solid #bfdbfe; border-left: 6px solid #2563eb; border-radius: 14px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08); }
+    .fixture-controls { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 24px; }
+    .fixture-button { appearance: none; border: 1px solid #bfdbfe; border-radius: 999px; background: #fff; color: #0f3a8a; font-weight: 800; padding: 10px 14px; cursor: pointer; }
+    .fixture-button.is-active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .prototype-panel > h2 { font-size: clamp(1.4rem, 2vw, 2rem); margin: 0 0 16px; }
+    .qcms-experience { margin: 0; }
+    @media (max-width: 720px) { .prototype-shell { width: min(100% - 20px, 1180px); margin-top: 16px; } .fixture-button { width: 100%; } }
   </style>
 </head>
 <body>
-<main>
-  <section class="notice">
-    <strong>Internal alpha prototype.</strong>
-    This page is outside the public site and uses fictional data only. It does not submit information, collect payment, create a CRM case or create a QCMS instruction.
+  <main class="prototype-shell">
+    <section class="prototype-notice" aria-label="Internal prototype notice">
+      <h1>QCMS Version 1.0 Part 1B Internal Prototype</h1>
+      <p>This non-public prototype uses fictional local fixtures only. It does not submit data, collect payment, create a CRM case, send email, create an account, accept an instruction or request a signature.</p>
+      <p>Architecture version: 1.0.0-alpha.2. Case Summary schema version: 1.0.0.</p>
+    </section>
+    <section class="prototype-notice" aria-label="Fixture selector">
+      <h2>Select a fictional Case Summary fixture</h2>
+      <div class="fixture-controls"><button type="button" class="fixture-button is-active" data-fixture-target="flight">Flight fixture - QCMS-L1</button>
+<button type="button" class="fixture-button" data-fixture-target="energy">Energy fixture - QCMS-L2</button>
+<button type="button" class="fixture-button" data-fixture-target="car-finance">Car finance fixture - QCMS-L3 or review</button>
+<button type="button" class="fixture-button" data-fixture-target="holiday">Holiday fixture - travel complaint</button>
+<button type="button" class="fixture-button" data-fixture-target="manual">Manual review fixture</button>
+<button type="button" class="fixture-button" data-fixture-target="incomplete">Incomplete fixture</button></div>
+    </section>
+    <section class="prototype-panel is-active" id="fixture-flight" data-fixture-panel="flight" >
+  <h2>Flight fixture - QCMS-L1</h2>
+  <main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+    <section class="qcms-complete" aria-labelledby="qcms-complete-title">
+      <p class="qcms-kicker">Complaint Pack completion</p>
+      <h1 id="qcms-complete-title">Your Complaint Pack is complete.</h1>
+      <p>You can download your Complaint Pack and submit it yourself free of charge. If you would prefer Quaerens to review, prepare and manage the complaint process for you, you may explore the optional Quaerens Complaint Management Service(TM) below.</p>
+      <p id="free-diy" class="qcms-free-message">Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-summary-title">
+      <h2 id="qcms-summary-title">Your Complaint Summary</h2>
+      <dl class="qcms-summary-grid"><div class="qcms-summary-row"><dt>Complaint Pack</dt><dd>One delayed flight complaint pack</dd></div><div class="qcms-summary-row"><dt>Complaint Category</dt><dd>Travel</dd></div><div class="qcms-summary-row"><dt>Respondent or Supplier</dt><dd>Fictional Airways</dd></div><div class="qcms-summary-row"><dt>Complaint Issues</dt><dd>Arrival delay</dd></div><div class="qcms-summary-row"><dt>Current Complaint Stage</dt><dd>Not yet recorded</dd></div><div class="qcms-summary-row"><dt>Documents Generated</dt><dd>Complaint pack, Timeline, Evidence checklist</dd></div><div class="qcms-summary-row"><dt>Last Updated</dt><dd>2026-07-28T23:12:42.860Z</dd></div></dl>
+      <p class="qcms-muted">The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-health-title">
+      <h2 id="qcms-health-title">Case Health indicators</h2>
+      <p class="qcms-disclaimer">These indicators measure how complete and organised your Complaint Pack appears based on the information you provided. This does not assess legal merit, predict the result or guarantee any outcome.</p>
+      <div class="qcms-health-grid"><article class="qcms-health-card" aria-label="Evidence Completeness: {&quot;status&quot;:&quot;Supported&quot;,&quot;score&quot;:100,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}">
+    <span class="qcms-health-label">Evidence Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Supported&quot;,&quot;score&quot;:100,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}</strong>
+    <p>Shows whether essential, recommended and optional evidence appears available or still needs review.</p>
+  </article><article class="qcms-health-card" aria-label="Chronology Completeness: {&quot;status&quot;:&quot;Basic&quot;,&quot;eventCount&quot;:2,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}">
+    <span class="qcms-health-label">Chronology Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Basic&quot;,&quot;eventCount&quot;:2,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}</strong>
+    <p>Shows whether the sequence of events appears clear enough for complaint preparation.</p>
+  </article><article class="qcms-health-card" aria-label="Financial Information Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}">
+    <span class="qcms-health-label">Financial Information Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}</strong>
+    <p>Shows whether figures and supporting financial records appear organised.</p>
+  </article><article class="qcms-health-card" aria-label="Complaint Readiness: Ready for Initial Complaint">
+    <span class="qcms-health-label">Complaint Readiness</span>
+    <strong>Ready for Initial Complaint</strong>
+    <p>Shows the current preparation stage of the Complaint Pack.</p>
+  </article><article class="qcms-health-card" aria-label="Complexity: Simple">
+    <span class="qcms-health-label">Complexity</span>
+    <strong>Simple</strong>
+    <p>Shows the likely administrative complexity, not legal merit.</p>
+  </article><article class="qcms-health-card" aria-label="Overall Case Health: Organised enough to review">
+    <span class="qcms-health-label">Overall Case Health</span>
+    <strong>Organised enough to review</strong>
+    <p>A plain-English summary of preparation status, not a prediction.</p>
+  </article><article class="qcms-health-card" aria-label="Estimated Administration: Under 1 hour">
+    <span class="qcms-health-label">Estimated Administration</span>
+    <strong>Under 1 hour</strong>
+    <p>Estimated Quaerens administration time if a managed service is later instructed.</p>
+  </article></div>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-evidence-title">
+      <h2 id="qcms-evidence-title">Evidence and missing information</h2>
+      <div class="qcms-evidence-group"><h4>Essential before submission</h4><ul class="qcms-list"><li>Booking confirmation - available</li><li>Boarding pass - available</li><li>Delay evidence - available</li></ul></div><div class="qcms-evidence-group"><h4>May be relevant later</h4><ul class="qcms-list"><li>Expenses - unclear</li></ul></div>
+      <div class="qcms-missing-panel"><h3>Information to Review</h3><p>Your Complaint Pack may be easier to review or submit if you add the following information.</p><ul class="qcms-list"><li>Expenses status</li></ul></div>
+    </section>
+    <section class="qcms-section qcms-recommendation" aria-labelledby="qcms-recommended-service">
+    <p class="qcms-kicker">Recommended Service</p>
+    <h2 id="qcms-recommended-service">Complaint Submission Service</h2>
+    <div class="qcms-rec-grid">
+      <div><span>Indicative Service Fee</span><strong>£ 59</strong></div>
+      <div><span>Complexity</span><strong>Simple</strong></div>
+      <div><span>Estimated Administration</span><strong>Under 1 hour</strong></div>
+      <div><span>Manual Review</span><strong>Not currently required</strong></div>
+    </div>
+    <p>For straightforward Complaint Packs that are substantially complete and require review and correct submission through the appropriate email address, portal or complaint form.</p>
+    <p><strong>Reason:</strong> The information suggests a single, relatively straightforward submission task.</p>
+    <p class="qcms-muted">The final service scope and fee will be confirmed before any instruction or payment is accepted.</p>
   </section>
-
-  <section class="hero">
-    <article class="card">
-      <p class="kicker">Quaerens Complaint Management Service (TM)</p>
-      <h1>QCMS Part 1A Case Summary</h1>
-      <p>The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
-      <div>
-        <span class="pill">Schema 1.0.0</span>
-        <span class="pill">Architecture 1.0.0-alpha.1</span>
-        <span class="pill">Local only</span>
-      </div>
-    </article>
-    <aside class="card">
-      <p class="kicker">Recommendation preview</p>
-      <h2>Managed Complaint Service</h2>
-      <p class="fee">GBP 199</p>
-      <p class="muted">Fictional Energy fixture: Moderate complexity, estimated 2-4 hours administration.</p>
-    </aside>
+    <section class="qcms-section" aria-labelledby="qcms-why-service">
+    <h2 id="qcms-why-service">Why this service has been recommended</h2>
+    <ul class="qcms-check-list"><li>The information suggests a single, relatively straightforward submission task.</li><li>The complaint route may require a portal or structured submission process.</li></ul>
   </section>
-
-  <section class="grid">
-    <article class="grid-card">
-      <h3>Case Summary</h3>
-      <table>
-        <tr><th>Complaint Pack</th><td>Energy Supplier Complaint & Switching Pack</td></tr>
-        <tr><th>Respondent</th><td>Fictional Energy Supplier Ltd</td></tr>
-        <tr><th>Issues</th><td>Estimated bills, smart meter not communicating, direct debit increased</td></tr>
-        <tr><th>Stage</th><td>Complaint raised, response incomplete</td></tr>
-      </table>
-    </article>
-    <article class="grid-card">
-      <h3>Neutral Case Health</h3>
-      <table>
-        <tr><th>Evidence</th><td>Developing</td></tr>
-        <tr><th>Chronology</th><td>Developing</td></tr>
-        <tr><th>Financial position</th><td>Developing</td></tr>
-        <tr><th>Readiness</th><td>Evidence Review Recommended</td></tr>
-      </table>
-    </article>
-    <article class="grid-card free-route">
-      <h3>Free DIY Route</h3>
-      <p>Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
-      <p class="muted">QCMS is optional and secondary to the free DIY route.</p>
-    </article>
-  </section>
-
-  <section class="card" style="margin-top: 20px;">
-    <h2>Consent and Transfer States</h2>
-    <div>
-      <span class="pill">Consent: NOT_REQUESTED</span>
-      <span class="pill">Transfer: LOCAL_ONLY</span>
-      <span class="pill">No payment</span>
-      <span class="pill">No CRM case</span>
-      <span class="pill">No digital instruction</span>
+    <section class="qcms-section" aria-labelledby="qcms-scope">
+    <h2 id="qcms-scope">Service scope</h2>
+    <div class="qcms-scope-grid">
+      <article><h3>Included in your recommended service</h3><ul class="qcms-list"><li>Basic review of the completed Complaint Pack</li><li>Basic information check</li><li>Confirmation of the submission route</li><li>Submission through the appropriate route</li><li>Retention of submission confirmation</li><li>Copy of the submitted complaint</li></ul></article>
+      <article><h3>Not included</h3><ul class="qcms-list"><li>Extensive evidence reconstruction</li><li>Repeated correspondence</li><li>Detailed financial schedules</li><li>External escalation</li><li>Legal representation</li><li>Court proceedings</li></ul></article>
+      <article><h3>May require a separate agreement</h3><ul class="qcms-list"><li>Further follow-up after the initial submission</li><li>External escalation support</li><li>Specialist or regulated support if needed</li></ul></article>
+      <article><h3>Platform User responsibilities</h3><ul class="qcms-list"><li>Providing accurate information</li><li>Supplying requested documents</li><li>Checking factual accuracy</li><li>Responding to reasonable information requests</li><li>Informing Quaerens of relevant correspondence</li><li>Retaining original records</li></ul></article>
     </div>
   </section>
-</main>
+    <section class="qcms-section" aria-labelledby="qcms-comparison">
+    <h2 id="qcms-comparison">Submit It Yourself or use Quaerens Complaint Management Service&trade;</h2>
+    <p>Some Platform Users prefer to submit complaints themselves. Others prefer Quaerens to manage the administration. The choice is entirely yours.</p>
+    <div class="qcms-table-wrap"><table class="qcms-comparison-table">
+      <thead><tr><th>Support area</th><th>Submit It Yourself</th><th>Quaerens Complaint Management Service&trade;</th></tr></thead>
+      <tbody><tr><th scope="row">Complaint Pack generated</th><td>Included</td><td>Included</td></tr><tr><th scope="row">PDF/RTF/TXT downloads</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Evidence checklist</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Timeline</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Official routes</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Review by Quaerens</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Missing information identified by a person</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Submission handled</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Portal form completed where included</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Supporting documents organised</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Initial complaint monitored</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Follow-up included where specified</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr></tbody>
+    </table></div>
+  </section>
+    <section class="qcms-section qcms-privacy" aria-labelledby="qcms-privacy">
+      <h2 id="qcms-privacy">Privacy and transfer position</h2>
+      <p>Your Complaint Pack currently remains stored locally in your browser. Exploring QCMS does not send your information to Quaerens. Nothing will be transferred unless you later give clear permission during the instruction process.</p>
+      <p><strong>Transfer status:</strong> LOCAL_ONLY</p>
+      
+    </section>
+    <section class="qcms-section qcms-consent-preview" aria-labelledby="qcms-consent-preview">
+    <p class="qcms-kicker">Coming in the instruction stage</p>
+    <h2 id="qcms-consent-preview">Before Quaerens can manage your complaint</h2>
+    <ul class="qcms-list"><li>Review your Case Summary</li><li>Confirm the service scope</li><li>Authorise transfer of the Complaint Pack</li><li>Confirm information accuracy</li><li>Agree to the Service Agreement</li><li>Sign digitally</li><li>Make secure payment</li></ul>
+    <p class="qcms-muted">These confirmations are not collected during QCMS Version 1.0 Part 1B.</p>
+  </section>
+    <section class="qcms-actions" aria-label="Choose your next step">
+    <a class="qcms-action qcms-action-free" href="#free-diy"><strong>Continue with Free DIY</strong><span>Download your Complaint Pack and submit it independently.</span></a>
+    <button class="qcms-action qcms-action-qcms" type="button" data-qcms-prototype-action="explore"><strong>Explore QCMS</strong><span>Review the optional service scope before deciding whether to instruct Quaerens.</span></button>
+  </section>
+  </main>
+</section>
+<section class="prototype-panel" id="fixture-energy" data-fixture-panel="energy" hidden>
+  <h2>Energy fixture - QCMS-L2</h2>
+  <main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+    <section class="qcms-complete" aria-labelledby="qcms-complete-title">
+      <p class="qcms-kicker">Complaint Pack completion</p>
+      <h1 id="qcms-complete-title">Your Complaint Pack is complete.</h1>
+      <p>You can download your Complaint Pack and submit it yourself free of charge. If you would prefer Quaerens to review, prepare and manage the complaint process for you, you may explore the optional Quaerens Complaint Management Service(TM) below.</p>
+      <p id="free-diy" class="qcms-free-message">Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-summary-title">
+      <h2 id="qcms-summary-title">Your Complaint Summary</h2>
+      <dl class="qcms-summary-grid"><div class="qcms-summary-row"><dt>Complaint Pack</dt><dd>Incorrect estimated bills and smart meter not communicating</dd></div><div class="qcms-summary-row"><dt>Complaint Category</dt><dd>Energy</dd></div><div class="qcms-summary-row"><dt>Respondent or Supplier</dt><dd>Fictional Energy Supplier Ltd</dd></div><div class="qcms-summary-row"><dt>Complaint Issues</dt><dd>Estimated bills, Smart meter not communicating, Direct debit increased</dd></div><div class="qcms-summary-row"><dt>Current Complaint Stage</dt><dd>Not yet recorded</dd></div><div class="qcms-summary-row"><dt>Documents Generated</dt><dd>Complaint letter, Financial summary, Evidence checklist</dd></div><div class="qcms-summary-row"><dt>Last Updated</dt><dd>2026-07-28T23:12:42.860Z</dd></div></dl>
+      <p class="qcms-muted">The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-health-title">
+      <h2 id="qcms-health-title">Case Health indicators</h2>
+      <p class="qcms-disclaimer">These indicators measure how complete and organised your Complaint Pack appears based on the information you provided. This does not assess legal merit, predict the result or guarantee any outcome.</p>
+      <div class="qcms-health-grid"><article class="qcms-health-card" aria-label="Evidence Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;score&quot;:60,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}">
+    <span class="qcms-health-label">Evidence Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;score&quot;:60,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}</strong>
+    <p>Shows whether essential, recommended and optional evidence appears available or still needs review.</p>
+  </article><article class="qcms-health-card" aria-label="Chronology Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;eventCount&quot;:5,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}">
+    <span class="qcms-health-label">Chronology Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;eventCount&quot;:5,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}</strong>
+    <p>Shows whether the sequence of events appears clear enough for complaint preparation.</p>
+  </article><article class="qcms-health-card" aria-label="Financial Information Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}">
+    <span class="qcms-health-label">Financial Information Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}</strong>
+    <p>Shows whether figures and supporting financial records appear organised.</p>
+  </article><article class="qcms-health-card" aria-label="Complaint Readiness: Ready for Initial Complaint">
+    <span class="qcms-health-label">Complaint Readiness</span>
+    <strong>Ready for Initial Complaint</strong>
+    <p>Shows the current preparation stage of the Complaint Pack.</p>
+  </article><article class="qcms-health-card" aria-label="Complexity: Moderate">
+    <span class="qcms-health-label">Complexity</span>
+    <strong>Moderate</strong>
+    <p>Shows the likely administrative complexity, not legal merit.</p>
+  </article><article class="qcms-health-card" aria-label="Overall Case Health: Organised enough to review">
+    <span class="qcms-health-label">Overall Case Health</span>
+    <strong>Organised enough to review</strong>
+    <p>A plain-English summary of preparation status, not a prediction.</p>
+  </article><article class="qcms-health-card" aria-label="Estimated Administration: 2-4 hours">
+    <span class="qcms-health-label">Estimated Administration</span>
+    <strong>2-4 hours</strong>
+    <p>Estimated Quaerens administration time if a managed service is later instructed.</p>
+  </article></div>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-evidence-title">
+      <h2 id="qcms-evidence-title">Evidence and missing information</h2>
+      <div class="qcms-evidence-group"><h4>Essential before submission</h4><ul class="qcms-list"><li>Recent bill - available</li><li>Direct debit notice - available</li><li>Complaint correspondence - available</li></ul></div><div class="qcms-evidence-group"><h4>Helpful but not essential</h4><ul class="qcms-list"><li>Meter readings - unclear</li><li>Supplier final response - missing. This may help support or verify the complaint route.</li></ul></div>
+      <div class="qcms-missing-panel"><h3>Information to Review</h3><p>Your Complaint Pack may be easier to review or submit if you add the following information.</p><ul class="qcms-list"><li>Meter readings status</li><li>Supplier final response</li></ul></div>
+    </section>
+    <section class="qcms-section qcms-recommendation" aria-labelledby="qcms-recommended-service">
+    <p class="qcms-kicker">Recommended Service</p>
+    <h2 id="qcms-recommended-service">Managed Complaint Service</h2>
+    <div class="qcms-rec-grid">
+      <div><span>Indicative Service Fee</span><strong>£ 199</strong></div>
+      <div><span>Complexity</span><strong>Moderate</strong></div>
+      <div><span>Estimated Administration</span><strong>2-4 hours</strong></div>
+      <div><span>Manual Review</span><strong>Not currently required</strong></div>
+    </div>
+    <p>For complaints involving several documents, multiple issues, billing or financial discrepancies, or information that requires review before submission.</p>
+    <p><strong>Reason:</strong> The complaint route may require a portal or structured submission process.</p>
+    <p class="qcms-muted">The final service scope and fee will be confirmed before any instruction or payment is accepted.</p>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-why-service">
+    <h2 id="qcms-why-service">Why this service has been recommended</h2>
+    <ul class="qcms-check-list"><li>The complaint route may require a portal or structured submission process.</li><li>Several complaint issues may need to be organised clearly.</li></ul>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-scope">
+    <h2 id="qcms-scope">Service scope</h2>
+    <div class="qcms-scope-grid">
+      <article><h3>Included in your recommended service</h3><ul class="qcms-list"><li>Review of the Complaint Pack</li><li>Review of supporting evidence</li><li>Identification of missing information</li><li>Reasonable request for missing documentation</li><li>Preparation of the final complaint</li><li>Organisation of supporting documents</li><li>Submission through the appropriate route</li><li>Monitoring of the initial complaint stage</li><li>One reasonable follow-up where included in the confirmed scope</li><li>Progress updates</li></ul></article>
+      <article><h3>Not included</h3><ul class="qcms-list"><li>Litigation</li><li>Legal representation</li><li>Independent expert reports</li><li>Multiple external appeals</li><li>Unrelated complaints</li><li>Open-ended case management</li></ul></article>
+      <article><h3>May require a separate agreement</h3><ul class="qcms-list"><li>Additional complaint stages</li><li>External ombudsman or tribunal preparation</li><li>Specialist evidence or professional reports</li></ul></article>
+      <article><h3>Platform User responsibilities</h3><ul class="qcms-list"><li>Providing accurate information</li><li>Supplying requested documents</li><li>Checking factual accuracy</li><li>Responding to reasonable information requests</li><li>Informing Quaerens of relevant correspondence</li><li>Retaining original records</li></ul></article>
+    </div>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-comparison">
+    <h2 id="qcms-comparison">Submit It Yourself or use Quaerens Complaint Management Service&trade;</h2>
+    <p>Some Platform Users prefer to submit complaints themselves. Others prefer Quaerens to manage the administration. The choice is entirely yours.</p>
+    <div class="qcms-table-wrap"><table class="qcms-comparison-table">
+      <thead><tr><th>Support area</th><th>Submit It Yourself</th><th>Quaerens Complaint Management Service&trade;</th></tr></thead>
+      <tbody><tr><th scope="row">Complaint Pack generated</th><td>Included</td><td>Included</td></tr><tr><th scope="row">PDF/RTF/TXT downloads</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Evidence checklist</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Timeline</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Official routes</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Review by Quaerens</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Missing information identified by a person</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Submission handled</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Portal form completed where included</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Supporting documents organised</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Initial complaint monitored</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Follow-up included where specified</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr></tbody>
+    </table></div>
+  </section>
+    <section class="qcms-section qcms-privacy" aria-labelledby="qcms-privacy">
+      <h2 id="qcms-privacy">Privacy and transfer position</h2>
+      <p>Your Complaint Pack currently remains stored locally in your browser. Exploring QCMS does not send your information to Quaerens. Nothing will be transferred unless you later give clear permission during the instruction process.</p>
+      <p><strong>Transfer status:</strong> LOCAL_ONLY</p>
+      
+    </section>
+    <section class="qcms-section qcms-consent-preview" aria-labelledby="qcms-consent-preview">
+    <p class="qcms-kicker">Coming in the instruction stage</p>
+    <h2 id="qcms-consent-preview">Before Quaerens can manage your complaint</h2>
+    <ul class="qcms-list"><li>Review your Case Summary</li><li>Confirm the service scope</li><li>Authorise transfer of the Complaint Pack</li><li>Confirm information accuracy</li><li>Agree to the Service Agreement</li><li>Sign digitally</li><li>Make secure payment</li></ul>
+    <p class="qcms-muted">These confirmations are not collected during QCMS Version 1.0 Part 1B.</p>
+  </section>
+    <section class="qcms-actions" aria-label="Choose your next step">
+    <a class="qcms-action qcms-action-free" href="#free-diy"><strong>Continue with Free DIY</strong><span>Download your Complaint Pack and submit it independently.</span></a>
+    <button class="qcms-action qcms-action-qcms" type="button" data-qcms-prototype-action="explore"><strong>Explore QCMS</strong><span>Review the optional service scope before deciding whether to instruct Quaerens.</span></button>
+  </section>
+  </main>
+</section>
+<section class="prototype-panel" id="fixture-car-finance" data-fixture-panel="car-finance" hidden>
+  <h2>Car finance fixture - QCMS-L3 or review</h2>
+  <main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+    <section class="qcms-complete" aria-labelledby="qcms-complete-title">
+      <p class="qcms-kicker">Complaint Pack completion</p>
+      <h1 id="qcms-complete-title">Your Complaint Pack is complete.</h1>
+      <p>You can download your Complaint Pack and submit it yourself free of charge. If you would prefer Quaerens to review, prepare and manage the complaint process for you, you may explore the optional Quaerens Complaint Management Service(TM) below.</p>
+      <p id="free-diy" class="qcms-free-message">Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-summary-title">
+      <h2 id="qcms-summary-title">Your Complaint Summary</h2>
+      <dl class="qcms-summary-grid"><div class="qcms-summary-row"><dt>Complaint Pack</dt><dd>Commission concern with partly missing agreement</dd></div><div class="qcms-summary-row"><dt>Complaint Category</dt><dd>Finance</dd></div><div class="qcms-summary-row"><dt>Respondent or Supplier</dt><dd>Fictional Motor Finance, Fictional Dealer Ltd</dd></div><div class="qcms-summary-row"><dt>Complaint Issues</dt><dd>Commission concern, Agreement missing, Affordability concern</dd></div><div class="qcms-summary-row"><dt>Current Complaint Stage</dt><dd>Not yet recorded</dd></div><div class="qcms-summary-row"><dt>Documents Generated</dt><dd>Information request, Evidence checklist</dd></div><div class="qcms-summary-row"><dt>Last Updated</dt><dd>2026-07-28T23:12:42.860Z</dd></div></dl>
+      <p class="qcms-muted">The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-health-title">
+      <h2 id="qcms-health-title">Case Health indicators</h2>
+      <p class="qcms-disclaimer">These indicators measure how complete and organised your Complaint Pack appears based on the information you provided. This does not assess legal merit, predict the result or guarantee any outcome.</p>
+      <div class="qcms-health-grid"><article class="qcms-health-card" aria-label="Evidence Completeness: {&quot;status&quot;:&quot;Limited&quot;,&quot;score&quot;:20,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}">
+    <span class="qcms-health-label">Evidence Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Limited&quot;,&quot;score&quot;:20,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}</strong>
+    <p>Shows whether essential, recommended and optional evidence appears available or still needs review.</p>
+  </article><article class="qcms-health-card" aria-label="Chronology Completeness: {&quot;status&quot;:&quot;Basic&quot;,&quot;eventCount&quot;:3,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}">
+    <span class="qcms-health-label">Chronology Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Basic&quot;,&quot;eventCount&quot;:3,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}</strong>
+    <p>Shows whether the sequence of events appears clear enough for complaint preparation.</p>
+  </article><article class="qcms-health-card" aria-label="Financial Information Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:true,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}">
+    <span class="qcms-health-label">Financial Information Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:true,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}</strong>
+    <p>Shows whether figures and supporting financial records appear organised.</p>
+  </article><article class="qcms-health-card" aria-label="Complaint Readiness: Evidence Review Recommended">
+    <span class="qcms-health-label">Complaint Readiness</span>
+    <strong>Evidence Review Recommended</strong>
+    <p>Shows the current preparation stage of the Complaint Pack.</p>
+  </article><article class="qcms-health-card" aria-label="Complexity: Complex">
+    <span class="qcms-health-label">Complexity</span>
+    <strong>Complex</strong>
+    <p>Shows the likely administrative complexity, not legal merit.</p>
+  </article><article class="qcms-health-card" aria-label="Overall Case Health: Organised enough to review">
+    <span class="qcms-health-label">Overall Case Health</span>
+    <strong>Organised enough to review</strong>
+    <p>A plain-English summary of preparation status, not a prediction.</p>
+  </article><article class="qcms-health-card" aria-label="Estimated Administration: 4-8 hours">
+    <span class="qcms-health-label">Estimated Administration</span>
+    <strong>4-8 hours</strong>
+    <p>Estimated Quaerens administration time if a managed service is later instructed.</p>
+  </article></div>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-evidence-title">
+      <h2 id="qcms-evidence-title">Evidence and missing information</h2>
+      <div class="qcms-evidence-group"><h4>Essential before submission</h4><ul class="qcms-list"><li>Finance agreement - missing. This may help support or verify the complaint route.</li><li>Payment history - unclear</li><li>Commission disclosure - missing. This may help support or verify the complaint route.</li></ul></div><div class="qcms-evidence-group"><h4>Helpful but not essential</h4><ul class="qcms-list"><li>Dealer correspondence - available</li><li>Timeline notes - unclear</li></ul></div>
+      <div class="qcms-missing-panel"><h3>Information to Review</h3><p>Your Complaint Pack may be easier to review or submit if you add the following information.</p><ul class="qcms-list"><li>Finance agreement</li><li>Payment history status</li><li>Commission disclosure</li><li>Timeline notes status</li></ul></div>
+    </section>
+    <section class="qcms-section qcms-recommendation" aria-labelledby="qcms-recommended-service">
+    <p class="qcms-kicker">Recommended Service</p>
+    <h2 id="qcms-recommended-service">Enhanced Managed Complaint Service</h2>
+    <div class="qcms-rec-grid">
+      <div><span>Indicative Service Fee</span><strong>£ 349</strong></div>
+      <div><span>Complexity</span><strong>Complex</strong></div>
+      <div><span>Estimated Administration</span><strong>4-8 hours</strong></div>
+      <div><span>Manual Review</span><strong>Not currently required</strong></div>
+    </div>
+    <p>For more complex complaints involving substantial evidence, incomplete financial information, multiple transactions, detailed chronology or a higher administrative workload.</p>
+    <p><strong>Reason:</strong> Several complaint issues may need to be organised clearly.</p>
+    <p class="qcms-muted">The final service scope and fee will be confirmed before any instruction or payment is accepted.</p>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-why-service">
+    <h2 id="qcms-why-service">Why this service has been recommended</h2>
+    <ul class="qcms-check-list"><li>Several complaint issues may need to be organised clearly.</li><li>Some core information appears to be missing or unclear.</li><li>The financial position may need to be reconstructed from available records.</li><li>More than one respondent or organisation may be involved.</li></ul>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-scope">
+    <h2 id="qcms-scope">Service scope</h2>
+    <div class="qcms-scope-grid">
+      <article><h3>Included in your recommended service</h3><ul class="qcms-list"><li>Detailed evidence audit</li><li>Structured missing-information review</li><li>Chronology preparation</li><li>Financial schedule preparation where relevant</li><li>Multiple-issue complaint preparation</li><li>Complaint bundle organisation</li><li>Submission</li><li>Agreed follow-ups</li><li>Management through the initial formal complaint outcome within the confirmed scope</li></ul></article>
+      <article><h3>Not included</h3><ul class="qcms-list"><li>Court proceedings</li><li>Solicitor representation</li><li>Expert witness work</li><li>Independent technical reports</li><li>Unlimited correspondence</li><li>Appeals outside the confirmed service scope</li></ul></article>
+      <article><h3>May require a separate agreement</h3><ul class="qcms-list"><li>Extended complaint management</li><li>Specialist technical reports</li><li>External appeal stages</li></ul></article>
+      <article><h3>Platform User responsibilities</h3><ul class="qcms-list"><li>Providing accurate information</li><li>Supplying requested documents</li><li>Checking factual accuracy</li><li>Responding to reasonable information requests</li><li>Informing Quaerens of relevant correspondence</li><li>Retaining original records</li></ul></article>
+    </div>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-comparison">
+    <h2 id="qcms-comparison">Submit It Yourself or use Quaerens Complaint Management Service&trade;</h2>
+    <p>Some Platform Users prefer to submit complaints themselves. Others prefer Quaerens to manage the administration. The choice is entirely yours.</p>
+    <div class="qcms-table-wrap"><table class="qcms-comparison-table">
+      <thead><tr><th>Support area</th><th>Submit It Yourself</th><th>Quaerens Complaint Management Service&trade;</th></tr></thead>
+      <tbody><tr><th scope="row">Complaint Pack generated</th><td>Included</td><td>Included</td></tr><tr><th scope="row">PDF/RTF/TXT downloads</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Evidence checklist</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Timeline</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Official routes</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Review by Quaerens</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Missing information identified by a person</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Submission handled</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Portal form completed where included</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Supporting documents organised</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Initial complaint monitored</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Follow-up included where specified</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr></tbody>
+    </table></div>
+  </section>
+    <section class="qcms-section qcms-privacy" aria-labelledby="qcms-privacy">
+      <h2 id="qcms-privacy">Privacy and transfer position</h2>
+      <p>Your Complaint Pack currently remains stored locally in your browser. Exploring QCMS does not send your information to Quaerens. Nothing will be transferred unless you later give clear permission during the instruction process.</p>
+      <p><strong>Transfer status:</strong> LOCAL_ONLY</p>
+      
+    </section>
+    <section class="qcms-section qcms-consent-preview" aria-labelledby="qcms-consent-preview">
+    <p class="qcms-kicker">Coming in the instruction stage</p>
+    <h2 id="qcms-consent-preview">Before Quaerens can manage your complaint</h2>
+    <ul class="qcms-list"><li>Review your Case Summary</li><li>Confirm the service scope</li><li>Authorise transfer of the Complaint Pack</li><li>Confirm information accuracy</li><li>Agree to the Service Agreement</li><li>Sign digitally</li><li>Make secure payment</li></ul>
+    <p class="qcms-muted">These confirmations are not collected during QCMS Version 1.0 Part 1B.</p>
+  </section>
+    <section class="qcms-actions" aria-label="Choose your next step">
+    <a class="qcms-action qcms-action-free" href="#free-diy"><strong>Continue with Free DIY</strong><span>Download your Complaint Pack and submit it independently.</span></a>
+    <button class="qcms-action qcms-action-qcms" type="button" data-qcms-prototype-action="explore"><strong>Explore QCMS</strong><span>Review the optional service scope before deciding whether to instruct Quaerens.</span></button>
+  </section>
+  </main>
+</section>
+<section class="prototype-panel" id="fixture-holiday" data-fixture-panel="holiday" hidden>
+  <h2>Holiday fixture - travel complaint</h2>
+  <main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+    <section class="qcms-complete" aria-labelledby="qcms-complete-title">
+      <p class="qcms-kicker">Complaint Pack completion</p>
+      <h1 id="qcms-complete-title">Your Complaint Pack is complete.</h1>
+      <p>You can download your Complaint Pack and submit it yourself free of charge. If you would prefer Quaerens to review, prepare and manage the complaint process for you, you may explore the optional Quaerens Complaint Management Service(TM) below.</p>
+      <p id="free-diy" class="qcms-free-message">Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-summary-title">
+      <h2 id="qcms-summary-title">Your Complaint Summary</h2>
+      <dl class="qcms-summary-grid"><div class="qcms-summary-row"><dt>Complaint Pack</dt><dd>Accommodation not as described and refund refused</dd></div><div class="qcms-summary-row"><dt>Complaint Category</dt><dd>Travel</dd></div><div class="qcms-summary-row"><dt>Respondent or Supplier</dt><dd>Fictional Travel Company Ltd</dd></div><div class="qcms-summary-row"><dt>Complaint Issues</dt><dd>Accommodation not as described, Missing facilities, Refund refused</dd></div><div class="qcms-summary-row"><dt>Current Complaint Stage</dt><dd>Not yet recorded</dd></div><div class="qcms-summary-row"><dt>Documents Generated</dt><dd>Complaint pack, Evidence checklist, Timeline</dd></div><div class="qcms-summary-row"><dt>Last Updated</dt><dd>2026-07-28T23:12:42.862Z</dd></div></dl>
+      <p class="qcms-muted">The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-health-title">
+      <h2 id="qcms-health-title">Case Health indicators</h2>
+      <p class="qcms-disclaimer">These indicators measure how complete and organised your Complaint Pack appears based on the information you provided. This does not assess legal merit, predict the result or guarantee any outcome.</p>
+      <div class="qcms-health-grid"><article class="qcms-health-card" aria-label="Evidence Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;score&quot;:67,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}">
+    <span class="qcms-health-label">Evidence Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;score&quot;:67,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}</strong>
+    <p>Shows whether essential, recommended and optional evidence appears available or still needs review.</p>
+  </article><article class="qcms-health-card" aria-label="Chronology Completeness: {&quot;status&quot;:&quot;Basic&quot;,&quot;eventCount&quot;:4,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}">
+    <span class="qcms-health-label">Chronology Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Basic&quot;,&quot;eventCount&quot;:4,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}</strong>
+    <p>Shows whether the sequence of events appears clear enough for complaint preparation.</p>
+  </article><article class="qcms-health-card" aria-label="Financial Information Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}">
+    <span class="qcms-health-label">Financial Information Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}</strong>
+    <p>Shows whether figures and supporting financial records appear organised.</p>
+  </article><article class="qcms-health-card" aria-label="Complaint Readiness: Ready for Initial Complaint">
+    <span class="qcms-health-label">Complaint Readiness</span>
+    <strong>Ready for Initial Complaint</strong>
+    <p>Shows the current preparation stage of the Complaint Pack.</p>
+  </article><article class="qcms-health-card" aria-label="Complexity: Moderate">
+    <span class="qcms-health-label">Complexity</span>
+    <strong>Moderate</strong>
+    <p>Shows the likely administrative complexity, not legal merit.</p>
+  </article><article class="qcms-health-card" aria-label="Overall Case Health: Organised enough to review">
+    <span class="qcms-health-label">Overall Case Health</span>
+    <strong>Organised enough to review</strong>
+    <p>A plain-English summary of preparation status, not a prediction.</p>
+  </article><article class="qcms-health-card" aria-label="Estimated Administration: 2-4 hours">
+    <span class="qcms-health-label">Estimated Administration</span>
+    <strong>2-4 hours</strong>
+    <p>Estimated Quaerens administration time if a managed service is later instructed.</p>
+  </article></div>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-evidence-title">
+      <h2 id="qcms-evidence-title">Evidence and missing information</h2>
+      <div class="qcms-evidence-group"><h4>Essential before submission</h4><ul class="qcms-list"><li>Holiday booking confirmation - available</li><li>Accommodation photographs - available</li><li>Complaint correspondence - available</li></ul></div><div class="qcms-evidence-group"><h4>Helpful but not essential</h4><ul class="qcms-list"><li>Listing screenshots - available</li><li>Final response - missing. This may help support or verify the complaint route.</li><li>Extra accommodation receipts - unclear</li></ul></div>
+      <div class="qcms-missing-panel"><h3>Information to Review</h3><p>Your Complaint Pack may be easier to review or submit if you add the following information.</p><ul class="qcms-list"><li>Final response</li><li>Extra accommodation receipts status</li></ul></div>
+    </section>
+    <section class="qcms-section qcms-recommendation" aria-labelledby="qcms-recommended-service">
+    <p class="qcms-kicker">Recommended Service</p>
+    <h2 id="qcms-recommended-service">Managed Complaint Service</h2>
+    <div class="qcms-rec-grid">
+      <div><span>Indicative Service Fee</span><strong>£ 199</strong></div>
+      <div><span>Complexity</span><strong>Moderate</strong></div>
+      <div><span>Estimated Administration</span><strong>2-4 hours</strong></div>
+      <div><span>Manual Review</span><strong>Not currently required</strong></div>
+    </div>
+    <p>For complaints involving several documents, multiple issues, billing or financial discrepancies, or information that requires review before submission.</p>
+    <p><strong>Reason:</strong> Several complaint issues may need to be organised clearly.</p>
+    <p class="qcms-muted">The final service scope and fee will be confirmed before any instruction or payment is accepted.</p>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-why-service">
+    <h2 id="qcms-why-service">Why this service has been recommended</h2>
+    <ul class="qcms-check-list"><li>Several complaint issues may need to be organised clearly.</li></ul>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-scope">
+    <h2 id="qcms-scope">Service scope</h2>
+    <div class="qcms-scope-grid">
+      <article><h3>Included in your recommended service</h3><ul class="qcms-list"><li>Review of the Complaint Pack</li><li>Review of supporting evidence</li><li>Identification of missing information</li><li>Reasonable request for missing documentation</li><li>Preparation of the final complaint</li><li>Organisation of supporting documents</li><li>Submission through the appropriate route</li><li>Monitoring of the initial complaint stage</li><li>One reasonable follow-up where included in the confirmed scope</li><li>Progress updates</li></ul></article>
+      <article><h3>Not included</h3><ul class="qcms-list"><li>Litigation</li><li>Legal representation</li><li>Independent expert reports</li><li>Multiple external appeals</li><li>Unrelated complaints</li><li>Open-ended case management</li></ul></article>
+      <article><h3>May require a separate agreement</h3><ul class="qcms-list"><li>Additional complaint stages</li><li>External ombudsman or tribunal preparation</li><li>Specialist evidence or professional reports</li></ul></article>
+      <article><h3>Platform User responsibilities</h3><ul class="qcms-list"><li>Providing accurate information</li><li>Supplying requested documents</li><li>Checking factual accuracy</li><li>Responding to reasonable information requests</li><li>Informing Quaerens of relevant correspondence</li><li>Retaining original records</li></ul></article>
+    </div>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-comparison">
+    <h2 id="qcms-comparison">Submit It Yourself or use Quaerens Complaint Management Service&trade;</h2>
+    <p>Some Platform Users prefer to submit complaints themselves. Others prefer Quaerens to manage the administration. The choice is entirely yours.</p>
+    <div class="qcms-table-wrap"><table class="qcms-comparison-table">
+      <thead><tr><th>Support area</th><th>Submit It Yourself</th><th>Quaerens Complaint Management Service&trade;</th></tr></thead>
+      <tbody><tr><th scope="row">Complaint Pack generated</th><td>Included</td><td>Included</td></tr><tr><th scope="row">PDF/RTF/TXT downloads</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Evidence checklist</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Timeline</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Official routes</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Review by Quaerens</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Missing information identified by a person</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Submission handled</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Portal form completed where included</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Supporting documents organised</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Initial complaint monitored</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Follow-up included where specified</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr></tbody>
+    </table></div>
+  </section>
+    <section class="qcms-section qcms-privacy" aria-labelledby="qcms-privacy">
+      <h2 id="qcms-privacy">Privacy and transfer position</h2>
+      <p>Your Complaint Pack currently remains stored locally in your browser. Exploring QCMS does not send your information to Quaerens. Nothing will be transferred unless you later give clear permission during the instruction process.</p>
+      <p><strong>Transfer status:</strong> LOCAL_ONLY</p>
+      
+    </section>
+    <section class="qcms-section qcms-consent-preview" aria-labelledby="qcms-consent-preview">
+    <p class="qcms-kicker">Coming in the instruction stage</p>
+    <h2 id="qcms-consent-preview">Before Quaerens can manage your complaint</h2>
+    <ul class="qcms-list"><li>Review your Case Summary</li><li>Confirm the service scope</li><li>Authorise transfer of the Complaint Pack</li><li>Confirm information accuracy</li><li>Agree to the Service Agreement</li><li>Sign digitally</li><li>Make secure payment</li></ul>
+    <p class="qcms-muted">These confirmations are not collected during QCMS Version 1.0 Part 1B.</p>
+  </section>
+    <section class="qcms-actions" aria-label="Choose your next step">
+    <a class="qcms-action qcms-action-free" href="#free-diy"><strong>Continue with Free DIY</strong><span>Download your Complaint Pack and submit it independently.</span></a>
+    <button class="qcms-action qcms-action-qcms" type="button" data-qcms-prototype-action="explore"><strong>Explore QCMS</strong><span>Review the optional service scope before deciding whether to instruct Quaerens.</span></button>
+  </section>
+  </main>
+</section>
+<section class="prototype-panel" id="fixture-manual" data-fixture-panel="manual" hidden>
+  <h2>Manual review fixture</h2>
+  <main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+    <section class="qcms-complete" aria-labelledby="qcms-complete-title">
+      <p class="qcms-kicker">Complaint Pack completion</p>
+      <h1 id="qcms-complete-title">Your Complaint Pack is complete.</h1>
+      <p>You can download your Complaint Pack and submit it yourself free of charge. If you would prefer Quaerens to review, prepare and manage the complaint process for you, you may explore the optional Quaerens Complaint Management Service(TM) below.</p>
+      <p id="free-diy" class="qcms-free-message">Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-summary-title">
+      <h2 id="qcms-summary-title">Your Complaint Summary</h2>
+      <dl class="qcms-summary-grid"><div class="qcms-summary-row"><dt>Complaint Pack</dt><dd>Several unrelated disputes with jurisdiction concerns</dd></div><div class="qcms-summary-row"><dt>Complaint Category</dt><dd>Multiple</dd></div><div class="qcms-summary-row"><dt>Respondent or Supplier</dt><dd>Organisation A, Organisation B, Organisation C, Organisation D</dd></div><div class="qcms-summary-row"><dt>Complaint Issues</dt><dd>Court proceedings, Jurisdiction unclear, Technical evidence, Debt collection, Specialist legal support requested</dd></div><div class="qcms-summary-row"><dt>Current Complaint Stage</dt><dd>Not yet recorded</dd></div><div class="qcms-summary-row"><dt>Documents Generated</dt><dd>Draft summary</dd></div><div class="qcms-summary-row"><dt>Last Updated</dt><dd>2026-07-28T23:12:42.860Z</dd></div></dl>
+      <p class="qcms-muted">The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-health-title">
+      <h2 id="qcms-health-title">Case Health indicators</h2>
+      <p class="qcms-disclaimer">These indicators measure how complete and organised your Complaint Pack appears based on the information you provided. This does not assess legal merit, predict the result or guarantee any outcome.</p>
+      <div class="qcms-health-grid"><article class="qcms-health-card" aria-label="Evidence Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;score&quot;:67,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}">
+    <span class="qcms-health-label">Evidence Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;score&quot;:67,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}</strong>
+    <p>Shows whether essential, recommended and optional evidence appears available or still needs review.</p>
+  </article><article class="qcms-health-card" aria-label="Chronology Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;eventCount&quot;:10,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}">
+    <span class="qcms-health-label">Chronology Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;eventCount&quot;:10,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}</strong>
+    <p>Shows whether the sequence of events appears clear enough for complaint preparation.</p>
+  </article><article class="qcms-health-card" aria-label="Financial Information Completeness: {&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:true,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}">
+    <span class="qcms-health-label">Financial Information Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Developing&quot;,&quot;hasFinancialReconstructionNeed&quot;:true,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}</strong>
+    <p>Shows whether figures and supporting financial records appear organised.</p>
+  </article><article class="qcms-health-card" aria-label="Complaint Readiness: Route Verification Required">
+    <span class="qcms-health-label">Complaint Readiness</span>
+    <strong>Route Verification Required</strong>
+    <p>Shows the current preparation stage of the Complaint Pack.</p>
+  </article><article class="qcms-health-card" aria-label="Complexity: Enhanced Review Required">
+    <span class="qcms-health-label">Complexity</span>
+    <strong>Enhanced Review Required</strong>
+    <p>Shows the likely administrative complexity, not legal merit.</p>
+  </article><article class="qcms-health-card" aria-label="Overall Case Health: Organised enough to review">
+    <span class="qcms-health-label">Overall Case Health</span>
+    <strong>Organised enough to review</strong>
+    <p>A plain-English summary of preparation status, not a prediction.</p>
+  </article><article class="qcms-health-card" aria-label="Estimated Administration: 8+ hours / Manual Review">
+    <span class="qcms-health-label">Estimated Administration</span>
+    <strong>8+ hours / Manual Review</strong>
+    <p>Estimated Quaerens administration time if a managed service is later instructed.</p>
+  </article></div>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-evidence-title">
+      <h2 id="qcms-evidence-title">Evidence and missing information</h2>
+      <div class="qcms-evidence-group"><h4>Essential before submission</h4><ul class="qcms-list"><li>Expert report - unclear</li><li>Court document - available</li><li>Debt collector letter - available</li></ul></div>
+      <div class="qcms-missing-panel"><h3>Information to Review</h3><p>Your Complaint Pack may be easier to review or submit if you add the following information.</p><ul class="qcms-list"><li>Expert report status</li></ul></div>
+    </section>
+    <section class="qcms-section qcms-recommendation" aria-labelledby="qcms-recommended-service">
+    <p class="qcms-kicker">Recommended Service</p>
+    <h2 id="qcms-recommended-service">Service Review Required</h2>
+    <div class="qcms-rec-grid">
+      <div><span>Indicative Service Fee</span><strong>Manual review required</strong></div>
+      <div><span>Complexity</span><strong>Enhanced Review Required</strong></div>
+      <div><span>Estimated Administration</span><strong>8+ hours / Manual Review</strong></div>
+      <div><span>Manual Review</span><strong>Required</strong></div>
+    </div>
+    <p>Your complaint may fall outside the standard fixed-fee service levels. This may be because it involves court proceedings, several unrelated complaints, an unclear jurisdiction, specialist technical evidence or a scope that requires individual review.</p>
+    <p><strong>Reason:</strong> Several complaint issues may need to be organised clearly.</p>
+    <p class="qcms-muted">The final service scope and fee will be confirmed before any instruction or payment is accepted.</p>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-why-service">
+    <h2 id="qcms-why-service">Why this service has been recommended</h2>
+    <ul class="qcms-check-list"><li>Several complaint issues may need to be organised clearly.</li><li>Some core information appears to be missing or unclear.</li><li>The financial position may need to be reconstructed from available records.</li><li>The chronology appears to cover a longer sequence of events.</li><li>More than one respondent or organisation may be involved.</li><li>Technical or specialist evidence may need to be organised.</li><li>Debt collection or arrears activity may need careful administration.</li><li>The correct complaint or escalation route should be checked before submission.</li><li>The scope appears to require manual service review before a fee is suggested.</li></ul>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-scope">
+    <h2 id="qcms-scope">Service scope</h2>
+    <div class="qcms-scope-grid">
+      <article><h3>Included in your recommended service</h3><ul class="qcms-list"><li>Individual service-scope review before any fee is suggested</li><li>Confirmation that no automatic payment is being offered</li><li>The free DIY route remains available</li></ul></article>
+      <article><h3>Not included</h3><ul class="qcms-list"><li>Automatic fixed-fee checkout</li><li>Payment collection</li><li>Legal representation unless separately confirmed</li><li>Any instruction before a future agreement is accepted</li></ul></article>
+      <article><h3>May require a separate agreement</h3><ul class="qcms-list"><li>Any managed service after scope review</li><li>Specialist or regulated support if needed</li></ul></article>
+      <article><h3>Platform User responsibilities</h3><ul class="qcms-list"><li>Providing accurate information</li><li>Supplying requested documents</li><li>Checking factual accuracy</li><li>Responding to reasonable information requests</li><li>Informing Quaerens of relevant correspondence</li><li>Retaining original records</li></ul></article>
+    </div>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-comparison">
+    <h2 id="qcms-comparison">Submit It Yourself or use Quaerens Complaint Management Service&trade;</h2>
+    <p>Some Platform Users prefer to submit complaints themselves. Others prefer Quaerens to manage the administration. The choice is entirely yours.</p>
+    <div class="qcms-table-wrap"><table class="qcms-comparison-table">
+      <thead><tr><th>Support area</th><th>Submit It Yourself</th><th>Quaerens Complaint Management Service&trade;</th></tr></thead>
+      <tbody><tr><th scope="row">Complaint Pack generated</th><td>Included</td><td>Included</td></tr><tr><th scope="row">PDF/RTF/TXT downloads</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Evidence checklist</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Timeline</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Official routes</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Review by Quaerens</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Missing information identified by a person</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Submission handled</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Portal form completed where included</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Supporting documents organised</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Initial complaint monitored</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Follow-up included where specified</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr></tbody>
+    </table></div>
+  </section>
+    <section class="qcms-section qcms-privacy" aria-labelledby="qcms-privacy">
+      <h2 id="qcms-privacy">Privacy and transfer position</h2>
+      <p>Your Complaint Pack currently remains stored locally in your browser. Exploring QCMS does not send your information to Quaerens. Nothing will be transferred unless you later give clear permission during the instruction process.</p>
+      <p><strong>Transfer status:</strong> LOCAL_ONLY</p>
+      <p>No information has been sent to Quaerens.</p>
+    </section>
+    <section class="qcms-section qcms-consent-preview" aria-labelledby="qcms-consent-preview">
+    <p class="qcms-kicker">Coming in the instruction stage</p>
+    <h2 id="qcms-consent-preview">Before Quaerens can manage your complaint</h2>
+    <ul class="qcms-list"><li>Review your Case Summary</li><li>Confirm the service scope</li><li>Authorise transfer of the Complaint Pack</li><li>Confirm information accuracy</li><li>Agree to the Service Agreement</li><li>Sign digitally</li><li>Make secure payment</li></ul>
+    <p class="qcms-muted">These confirmations are not collected during QCMS Version 1.0 Part 1B.</p>
+  </section>
+    <section class="qcms-actions" aria-label="Choose your next step">
+    <a class="qcms-action qcms-action-free" href="#free-diy"><strong>Continue with Free DIY</strong><span>Download your Complaint Pack and submit it independently.</span></a>
+    <button class="qcms-action qcms-action-qcms" type="button" data-qcms-prototype-action="explore"><strong>Request Service Review - Explore QCMS</strong><span>Review the optional service scope before deciding whether to instruct Quaerens.</span></button>
+  </section>
+  </main>
+</section>
+<section class="prototype-panel" id="fixture-incomplete" data-fixture-panel="incomplete" hidden>
+  <h2>Incomplete fixture</h2>
+  <main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+    <section class="qcms-complete" aria-labelledby="qcms-complete-title">
+      <p class="qcms-kicker">Complaint Pack completion</p>
+      <h1 id="qcms-complete-title">Your Complaint Pack is complete.</h1>
+      <p>You can download your Complaint Pack and submit it yourself free of charge. If you would prefer Quaerens to review, prepare and manage the complaint process for you, you may explore the optional Quaerens Complaint Management Service(TM) below.</p>
+      <p id="free-diy" class="qcms-free-message">Your Complaint Pack is complete. You can download it and submit it yourself free of charge.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-summary-title">
+      <h2 id="qcms-summary-title">Your Complaint Summary</h2>
+      <dl class="qcms-summary-grid"><div class="qcms-summary-row"><dt>Current Complaint Stage</dt><dd>Not yet recorded</dd></div><div class="qcms-summary-row"><dt>Last Updated</dt><dd>2026-07-28T23:12:42.862Z</dd></div></dl>
+      <p class="qcms-muted">The Case Summary organises the information provided. It does not predict whether the complaint will succeed.</p>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-health-title">
+      <h2 id="qcms-health-title">Case Health indicators</h2>
+      <p class="qcms-disclaimer">These indicators measure how complete and organised your Complaint Pack appears based on the information you provided. This does not assess legal merit, predict the result or guarantee any outcome.</p>
+      <div class="qcms-health-grid"><article class="qcms-health-card" aria-label="Evidence Completeness: {&quot;status&quot;:&quot;Limited&quot;,&quot;score&quot;:0,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}">
+    <span class="qcms-health-label">Evidence Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Limited&quot;,&quot;score&quot;:0,&quot;explanation&quot;:&quot;Measures whether expected evidence has been recorded. It does not assess the strength or outcome of the complaint.&quot;}</strong>
+    <p>Shows whether essential, recommended and optional evidence appears available or still needs review.</p>
+  </article><article class="qcms-health-card" aria-label="Chronology Completeness: {&quot;status&quot;:&quot;Limited&quot;,&quot;eventCount&quot;:0,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}">
+    <span class="qcms-health-label">Chronology Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Limited&quot;,&quot;eventCount&quot;:0,&quot;explanation&quot;:&quot;Measures whether key dates and events have been recorded.&quot;}</strong>
+    <p>Shows whether the sequence of events appears clear enough for complaint preparation.</p>
+  </article><article class="qcms-health-card" aria-label="Financial Information Completeness: {&quot;status&quot;:&quot;Limited&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}">
+    <span class="qcms-health-label">Financial Information Completeness</span>
+    <strong>{&quot;status&quot;:&quot;Limited&quot;,&quot;hasFinancialReconstructionNeed&quot;:false,&quot;explanation&quot;:&quot;Measures whether relevant amounts and losses have been recorded. It is not a recovery estimate.&quot;}</strong>
+    <p>Shows whether figures and supporting financial records appear organised.</p>
+  </article><article class="qcms-health-card" aria-label="Complaint Readiness: Information Incomplete">
+    <span class="qcms-health-label">Complaint Readiness</span>
+    <strong>Information Incomplete</strong>
+    <p>Shows the current preparation stage of the Complaint Pack.</p>
+  </article><article class="qcms-health-card" aria-label="Complexity: Enhanced Review Required">
+    <span class="qcms-health-label">Complexity</span>
+    <strong>Enhanced Review Required</strong>
+    <p>Shows the likely administrative complexity, not legal merit.</p>
+  </article><article class="qcms-health-card" aria-label="Overall Case Health: Organised enough to review">
+    <span class="qcms-health-label">Overall Case Health</span>
+    <strong>Organised enough to review</strong>
+    <p>A plain-English summary of preparation status, not a prediction.</p>
+  </article><article class="qcms-health-card" aria-label="Estimated Administration: 8+ hours / Manual Review">
+    <span class="qcms-health-label">Estimated Administration</span>
+    <strong>8+ hours / Manual Review</strong>
+    <p>Estimated Quaerens administration time if a managed service is later instructed.</p>
+  </article></div>
+    </section>
+    <section class="qcms-section" aria-labelledby="qcms-evidence-title">
+      <h2 id="qcms-evidence-title">Evidence and missing information</h2>
+      <div class="qcms-evidence-group"><h4>Essential before submission</h4><ul class="qcms-list"><li>Core complaint evidence - missing. This may help support or verify the complaint route.</li></ul></div>
+      <div class="qcms-missing-panel"><h3>Information to Review</h3><p>Your Complaint Pack may be easier to review or submit if you add the following information.</p><ul class="qcms-list"><li>Respondent or supplier details</li><li>Complaint type</li><li>Chronology or key dates</li><li>Financial values where relevant</li><li>Core complaint evidence</li><li>complaintCategory</li><li>complaintType</li><li>complaintTitle</li><li>complaintIssues</li></ul></div>
+    </section>
+    <section class="qcms-section qcms-recommendation" aria-labelledby="qcms-recommended-service">
+    <p class="qcms-kicker">Recommended Service</p>
+    <h2 id="qcms-recommended-service">Service Review Required</h2>
+    <div class="qcms-rec-grid">
+      <div><span>Indicative Service Fee</span><strong>Manual review required</strong></div>
+      <div><span>Complexity</span><strong>Enhanced Review Required</strong></div>
+      <div><span>Estimated Administration</span><strong>8+ hours / Manual Review</strong></div>
+      <div><span>Manual Review</span><strong>Required</strong></div>
+    </div>
+    <p>Your complaint may fall outside the standard fixed-fee service levels. This may be because it involves court proceedings, several unrelated complaints, an unclear jurisdiction, specialist technical evidence or a scope that requires individual review.</p>
+    <p><strong>Reason:</strong> Some core information appears to be missing or unclear.</p>
+    <p class="qcms-muted">The final service scope and fee will be confirmed before any instruction or payment is accepted.</p>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-why-service">
+    <h2 id="qcms-why-service">Why this service has been recommended</h2>
+    <ul class="qcms-check-list"><li>Some core information appears to be missing or unclear.</li><li>The correct complaint or escalation route should be checked before submission.</li></ul>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-scope">
+    <h2 id="qcms-scope">Service scope</h2>
+    <div class="qcms-scope-grid">
+      <article><h3>Included in your recommended service</h3><ul class="qcms-list"><li>Individual service-scope review before any fee is suggested</li><li>Confirmation that no automatic payment is being offered</li><li>The free DIY route remains available</li></ul></article>
+      <article><h3>Not included</h3><ul class="qcms-list"><li>Automatic fixed-fee checkout</li><li>Payment collection</li><li>Legal representation unless separately confirmed</li><li>Any instruction before a future agreement is accepted</li></ul></article>
+      <article><h3>May require a separate agreement</h3><ul class="qcms-list"><li>Any managed service after scope review</li><li>Specialist or regulated support if needed</li></ul></article>
+      <article><h3>Platform User responsibilities</h3><ul class="qcms-list"><li>Providing accurate information</li><li>Supplying requested documents</li><li>Checking factual accuracy</li><li>Responding to reasonable information requests</li><li>Informing Quaerens of relevant correspondence</li><li>Retaining original records</li></ul></article>
+    </div>
+  </section>
+    <section class="qcms-section" aria-labelledby="qcms-comparison">
+    <h2 id="qcms-comparison">Submit It Yourself or use Quaerens Complaint Management Service&trade;</h2>
+    <p>Some Platform Users prefer to submit complaints themselves. Others prefer Quaerens to manage the administration. The choice is entirely yours.</p>
+    <div class="qcms-table-wrap"><table class="qcms-comparison-table">
+      <thead><tr><th>Support area</th><th>Submit It Yourself</th><th>Quaerens Complaint Management Service&trade;</th></tr></thead>
+      <tbody><tr><th scope="row">Complaint Pack generated</th><td>Included</td><td>Included</td></tr><tr><th scope="row">PDF/RTF/TXT downloads</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Evidence checklist</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Timeline</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Official routes</th><td>Included</td><td>Included</td></tr><tr><th scope="row">Review by Quaerens</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Missing information identified by a person</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Submission handled</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Portal form completed where included</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Supporting documents organised</th><td>Platform User handles this</td><td>Quaerens handles this where included</td></tr><tr><th scope="row">Initial complaint monitored</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr><tr><th scope="row">Follow-up included where specified</th><td>Platform User handles this</td><td>Depends on confirmed scope</td></tr></tbody>
+    </table></div>
+  </section>
+    <section class="qcms-section qcms-privacy" aria-labelledby="qcms-privacy">
+      <h2 id="qcms-privacy">Privacy and transfer position</h2>
+      <p>Your Complaint Pack currently remains stored locally in your browser. Exploring QCMS does not send your information to Quaerens. Nothing will be transferred unless you later give clear permission during the instruction process.</p>
+      <p><strong>Transfer status:</strong> LOCAL_ONLY</p>
+      <p>No information has been sent to Quaerens.</p>
+    </section>
+    <section class="qcms-section qcms-consent-preview" aria-labelledby="qcms-consent-preview">
+    <p class="qcms-kicker">Coming in the instruction stage</p>
+    <h2 id="qcms-consent-preview">Before Quaerens can manage your complaint</h2>
+    <ul class="qcms-list"><li>Review your Case Summary</li><li>Confirm the service scope</li><li>Authorise transfer of the Complaint Pack</li><li>Confirm information accuracy</li><li>Agree to the Service Agreement</li><li>Sign digitally</li><li>Make secure payment</li></ul>
+    <p class="qcms-muted">These confirmations are not collected during QCMS Version 1.0 Part 1B.</p>
+  </section>
+    <section class="qcms-actions" aria-label="Choose your next step">
+    <a class="qcms-action qcms-action-free" href="#free-diy"><strong>Continue with Free DIY</strong><span>Download your Complaint Pack and submit it independently.</span></a>
+    <button class="qcms-action qcms-action-qcms" type="button" data-qcms-prototype-action="explore"><strong>Request Service Review - Explore QCMS</strong><span>Review the optional service scope before deciding whether to instruct Quaerens.</span></button>
+  </section>
+  </main>
+</section>
+  </main>
+  <script>
+    document.querySelectorAll('[data-fixture-target]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = button.getAttribute('data-fixture-target');
+        document.querySelectorAll('[data-fixture-target]').forEach((item) => item.classList.toggle('is-active', item === button));
+        document.querySelectorAll('[data-fixture-panel]').forEach((panel) => {
+          const active = panel.getAttribute('data-fixture-panel') === target;
+          panel.hidden = !active;
+          panel.classList.toggle('is-active', active);
+        });
+      });
+    });
+  </script>
 </body>
 </html>

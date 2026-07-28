@@ -159,9 +159,82 @@ const manualReviewFixture = normaliseCaseSummary({
   }
 });
 
+const holidayFixture = normaliseCaseSummary({
+  caseId: "QCMS-FIXTURE-HOLIDAY",
+  sourceBuilder: "holiday",
+  sourceBuilderVersion: "1.0.0",
+  complaintCategory: "Travel",
+  complaintType: "Holiday and package travel complaint",
+  complaintTitle: "Accommodation not as described and refund refused",
+  respondent: "Fictional Travel Company Ltd",
+  complaintIssues: ["Accommodation not as described", "Missing facilities", "Refund refused"],
+  complaintSummary: "A fictional Platform User has booking documents, photos and complaint correspondence about a package holiday where the accommodation did not match the booking description.",
+  chronology: [
+    { date: "04/07/2026", event: "Holiday booking confirmed." },
+    { date: "18/07/2026", event: "Platform User arrived and recorded missing facilities." },
+    { date: "20/07/2026", event: "Complaint raised with the travel company." },
+    { date: "05/08/2026", event: "Refund request refused without a full explanation." }
+  ],
+  financialPosition: {
+    currency: "GBP",
+    disputedValuePence: 120000,
+    documentedLossPence: 45000,
+    refundRequestedPence: null,
+    hasFinancialReconstructionNeed: false
+  },
+  requestedOutcomes: ["Review refund refusal", "Organise evidence", "Prepare complaint route"],
+  evidenceItems: [
+    evidence("Holiday booking confirmation", "contract/booking documents", R.REQUIRED, A.AVAILABLE),
+    evidence("Listing screenshots", "contract/booking documents", R.RECOMMENDED, A.AVAILABLE),
+    evidence("Accommodation photographs", "photos/screenshots", R.REQUIRED, A.AVAILABLE),
+    evidence("Complaint correspondence", "correspondence", R.REQUIRED, A.AVAILABLE),
+    evidence("Final response", "final response/deadlock letter", R.RECOMMENDED, A.MISSING),
+    evidence("Extra accommodation receipts", "financial loss evidence", R.RECOMMENDED, A.UNCLEAR)
+  ],
+  generatedDocuments: ["Complaint pack", "Evidence checklist", "Timeline"],
+  officialRoute: {
+    routeName: "Travel company complaint route",
+    routeType: "travel complaint",
+    requiresPortal: false,
+    verificationStatus: "verified"
+  }
+});
+
+const incompleteFixture = normaliseCaseSummary({
+  caseId: "QCMS-FIXTURE-INCOMPLETE",
+  sourceBuilder: "unknown",
+  sourceBuilderVersion: "1.0.0",
+  complaintCategory: "",
+  complaintType: "",
+  complaintTitle: "",
+  respondent: "",
+  complaintIssues: [],
+  complaintSummary: "",
+  chronology: [],
+  financialPosition: {
+    currency: "GBP",
+    disputedValuePence: null,
+    documentedLossPence: null,
+    refundRequestedPence: null,
+    hasFinancialReconstructionNeed: false
+  },
+  evidenceItems: [
+    evidence("Core complaint evidence", "correspondence", R.REQUIRED, A.MISSING)
+  ],
+  generatedDocuments: [],
+  officialRoute: {
+    routeName: null,
+    routeType: "unknown",
+    requiresPortal: false,
+    verificationStatus: "requires verification"
+  }
+});
+
 module.exports = {
   energyFixture,
   flightFixture,
   carFinanceFixture,
-  manualReviewFixture
+  manualReviewFixture,
+  holidayFixture,
+  incompleteFixture
 };
