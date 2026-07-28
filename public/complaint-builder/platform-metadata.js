@@ -221,6 +221,33 @@
       draftSchemaVersion: 1,
       lastVerified: "2026-07-27",
       knownLimitations: ["Saved drafts are browser-local and device-specific."]
+    },
+    {
+      id: "energy",
+      internalName: "energy",
+      productName: "Energy Supplier Complaint Pack",
+      packName: "Energy Supplier Complaint Pack™",
+      shortName: "Energy",
+      shortDescription: "Organise supplier, switching, billing, smart meter, payment and complaint-handling issues.",
+      category: "Everyday Utilities",
+      canonicalUrl: "https://www.quaerens.co.uk/energy-switch.html",
+      dashboardUrl: "https://www.quaerens.co.uk/my-complaint-packs.html",
+      storageNamespace: "qcbf-energy",
+      storageKeys: ["qcbf-energy-draft"],
+      packPrefix: "QE",
+      version: "1.0",
+      frameworkVersion: "QCBF 1.2",
+      status: "Live",
+      isLive: true,
+      isFree: true,
+      dashboardVisible: true,
+      icon: "E",
+      image: "/images/hero-energy3.jpg",
+      accentLabel: "Free Complaint Pack",
+      supportedExports: ["PDF", "Word/RTF", "TXT", "Print", "Copy"],
+      draftSchemaVersion: 1,
+      lastVerified: "2026-07-28",
+      knownLimitations: ["Saved drafts are browser-local and device-specific."]
     }
   ];
 

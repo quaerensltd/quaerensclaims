@@ -31,7 +31,7 @@ assert.strictEqual(platformMetadata.outputName, "Quaerens Complaint Packs™", "
 assert.strictEqual(platformMetadata.evidenceEngineName, "Powered by the Quaerens Evidence Engine™", "Evidence Engine attribution");
 assert.ok(!JSON.stringify(platformMetadata).includes("®"), "metadata must not use registered trademark symbol");
 
-const expectedProducts = ["flight", "holiday", "baggage", "train", "parking", "car-finance", "gym", "cruise"];
+const expectedProducts = ["flight", "holiday", "baggage", "train", "parking", "car-finance", "gym", "cruise", "energy"];
 expectedProducts.forEach((id) => {
   const entry = registry.get(id);
   assert.ok(entry, id + " registered");

@@ -38,6 +38,7 @@
     const architecture = root.querySelector("[data-energy-architecture]");
     let currentStep = 0;
     let data = state.load() || {};
+    const qcbf = window.QCBF || {};
 
     if (!data.packReference) {
       data.packReference = `${config.packPrefix}-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -129,6 +130,43 @@
       renderRows(target, rows, "energy-table");
     }
 
+    function filenameBase() {
+      const ref = (data.packReference || `${config.packPrefix}-${new Date().getFullYear()}`).toLowerCase();
+      return `quaerens-energy-complaint-pack-${ref}`.replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function downloadBlob(name, type, content) {
+      if (qcbf.downloadBlob) {
+        qcbf.downloadBlob(name, type, content);
+        return;
+      }
+      const blob = new Blob([content], { type });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function downloadPack(kind) {
+      const base = filenameBase();
+      const full = docs.build(data);
+      const txt = docs.buildTxt(data);
+      if (kind === "pdf") {
+        if (qcbf.downloadPdf) qcbf.downloadPdf(`${base}.pdf`, "Quaerens Consumer Complaint File", full);
+        else window.print();
+        return;
+      }
+      if (kind === "rtf") {
+        const rtf = qcbf.textToRtf ? qcbf.textToRtf(full) : `{\\rtf1\\ansi\\deff0\n${full.replace(/[\\{}]/g, "\\$&").replace(/\n/g, "\\line\n")}\n}`;
+        downloadBlob(`${base}.rtf`, "application/rtf", rtf);
+        return;
+      }
+      downloadBlob(`${base}.txt`, "text/plain;charset=utf-8", txt.fullComplaint || full);
+    }
+
     function update() {
       const analysis = analysisEngine.analyse(data);
       if (preview) preview.textContent = docs.build(data);
@@ -183,6 +221,7 @@
       setTimeout(() => btn.textContent = btn.dataset.originalLabel || "Copy", 1400);
     }));
     root.querySelectorAll("[data-energy-print]").forEach((btn) => btn.addEventListener("click", () => window.print()));
+    root.querySelectorAll("[data-energy-download]").forEach((btn) => btn.addEventListener("click", () => downloadPack(btn.dataset.energyDownload)));
 
     restore();
     update();

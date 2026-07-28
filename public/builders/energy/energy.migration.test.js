@@ -154,13 +154,33 @@ assert.ok(copy.energyOmbudsmanForm.includes("Energy Ombudsman form summary"), "O
 assert.ok(copy.complaintPortal.includes("Complaint portal summary"), "Complaint portal copy missing");
 assert.ok(!/<[a-z][\s\S]*>/i.test(Object.values(copy).join("")), "Copy output contains HTML");
 
+const hostileData = {
+  ...fullData,
+  customerName: "Sam <script>alert(1)</script>",
+  supplierName: "Example <Energy>",
+  issueSummary: "Long narrative with <img src=x onerror=alert(1)> and a disputed charge of £123.45 on 28/07/2026.",
+  financialSummary: "The supplier says the account is £123.45 in arrears, but the bill and Direct Debit records do not match.",
+  preferredOutcome: "Correct the account, refund £123.45 where supported, and explain the calculation."
+};
+const hostileOutput = [
+  docs.build(hostileData),
+  ...Object.values(docs.buildTxt(hostileData)),
+  ...Object.values(docs.buildCopy(hostileData))
+].join("\n");
+assert.ok(!/<script|<\/script|<img|onerror=|<Energy>/i.test(hostileOutput), "Hostile HTML-like input was not neutralised");
+assert.ok(hostileOutput.includes("£123.45"), "Pound value formatting lost in hostile-input output");
+assert.ok(hostileOutput.includes("28/07/2026"), "UK date formatting lost in hostile-input output");
+assert.ok(!/\b(undefined|null)\b/i.test(hostileOutput), "Hostile-input output contains undefined or null");
+
 assert.strictEqual(docs.architectures.pdf.status, "Prepared", "PDF architecture not prepared");
 assert.strictEqual(docs.architectures.word.status, "Prepared", "Word architecture not prepared");
 assert.strictEqual(docs.architectures.txt.status, "Prepared", "TXT architecture not prepared");
 assert.strictEqual(docs.architectures.print.status, "Prepared", "Print architecture not prepared");
+assert.deepStrictEqual(config.exports, ["PDF", "RTF", "TXT", "Copy", "Print"], "Energy export support not exposed in config");
 
 assert.strictEqual(config.h1, "Problems With Your Energy Supplier, Bill or Switch?", "Public H1 config not updated");
 assert.strictEqual(config.packName, "Energy Supplier Complaint Pack™", "Public pack name not updated");
+assert.strictEqual(config.builderVersion, "1.0", "Energy builder version should be frozen at 1.0 for production acceptance");
 assert.ok(config.publicDisclaimer.includes("Quaerens does not automatically submit complaints."), "Public disclaimer missing");
 
 assert.ok(resources.sources.length >= 8, "Official source directory too small");
@@ -216,11 +236,16 @@ assert.ok(publicPage.includes("builders/energy/energy.resources.js"), "Energy re
 assert.ok(publicPage.includes("data-energy-source-list"), "Official source list mount missing");
 assert.ok(publicPage.includes("data-energy-supplier-list"), "Supplier directory mount missing");
 assert.ok(publicPage.includes("data-energy-faq-list"), "FAQ mount missing");
+assert.ok(publicPage.includes("data-energy-download=\"pdf\""), "PDF download button missing");
+assert.ok(publicPage.includes("data-energy-download=\"rtf\""), "RTF download button missing");
+assert.ok(publicPage.includes("data-energy-download=\"txt\""), "TXT download button missing");
+assert.ok(publicPage.includes("complaint-builder/browser/qcbf-browser.js"), "Shared QCBF browser helper missing");
 assert.ok(publicPage.includes("\"@type\": \"FAQPage\""), "FAQ schema renderer missing");
 assert.ok(publicPage.includes("\"@type\": \"BreadcrumbList\""), "Breadcrumb schema renderer missing");
 assert.ok(publicPage.includes("\"@type\": \"Organization\""), "Organisation schema renderer missing");
 assert.ok(publicPage.includes("\"@type\": \"WebApplication\""), "WebApplication schema renderer missing");
 assert.ok(!publicPage.includes("QCBF Energy Builder"), "Internal builder name visible on public page");
+assert.ok(!/local build|local Part|Part 2A|next phase|reserved for|architecture prepared/i.test(publicPage), "Internal phase wording visible on public page");
 assert.ok(!/"@type":\s*"(AggregateRating|Review|Product|Offer|LegalService|Attorney|MedicalBusiness)"/.test(publicPage), "Forbidden schema type found");
 
-console.log(`Energy Part 2A migration tests passed: ${scenarios.length} fictional scenarios plus official source, supplier, SEO, schema and export checks`);
+console.log(`Energy Version 1.0 production acceptance tests passed: ${scenarios.length} fictional scenarios plus official source, supplier, SEO, schema and export checks`);

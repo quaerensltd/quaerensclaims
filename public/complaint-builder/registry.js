@@ -10,6 +10,7 @@ const trainConfig = require("../builders/train/train.config");
 const parkingConfig = require("../builders/parking/parking.config");
 const gymConfig = require("../builders/gym/gym.config");
 const cruiseConfig = require("../builders/cruise/cruise.config");
+const energyConfig = require("../builders/energy/energy.config");
 
 let carFinanceConfig = null;
 try {
@@ -85,6 +86,14 @@ const registry = createDefaultRegistry([
     modules: ["config", "questions", "analysis", "itinerary", "cabin", "excursions", "financial", "evidence", "resources", "submission", "documents", "page", "tests"],
     resources: ["cruise-evidence-guidance", "planned-vs-actual-itinerary-review", "cruise-smart-submission", "official-cruise-resources"],
     exportSupport: cruiseConfig.exports
+  },
+  {
+    config: energyConfig,
+    publicMeta: metadataById.get("energy"),
+    status: "migrated",
+    modules: ["config", "questions", "analysis", "evidence", "resources", "documents", "page", "tests"],
+    resources: ["energy-supplier-directory", "official-energy-resources", "energy-evidence-guidance", "energy-smart-submission"],
+    exportSupport: energyConfig.exports
   },
   {
     config: carFinanceConfig,

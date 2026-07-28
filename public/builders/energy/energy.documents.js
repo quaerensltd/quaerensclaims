@@ -6,9 +6,18 @@
     return Array.isArray(value) ? value : value ? [value] : [];
   }
 
+  function clean(value) {
+    return String(value || "")
+      .replace(/\bon[a-z]+\s*=/gi, "event-attribute-removed=")
+      .replace(/javascript\s*:/gi, "javascript-removed:")
+      .replace(/[<>]/g, (char) => (char === "<" ? "‹" : "›"))
+      .replace(/\u0000/g, "")
+      .trim();
+  }
+
   function value(v, fallback) {
-    if (Array.isArray(v)) return v.length ? v.join(", ") : fallback;
-    return v || fallback;
+    if (Array.isArray(v)) return v.length ? v.map(clean).filter(Boolean).join(", ") : fallback;
+    return v ? clean(v) : fallback;
   }
 
   function line(label, val, fallback) {
@@ -22,12 +31,12 @@
   }
 
   function bullets(items, fallback) {
-    const list = arr(items).filter(Boolean);
+    const list = arr(items).map(clean).filter(Boolean);
     return list.length ? list.map((item) => `- ${item}`).join("\n") : fallback;
   }
 
   function table(rows) {
-    return arr(rows).map((row) => `${row[0] || row.label}: ${row[1] || row.value}`).join("\n");
+    return arr(rows).map((row) => `${clean(row[0] || row.label)}: ${clean(row[1] || row.value)}`).join("\n");
   }
 
   function officialResourceLines() {
@@ -46,11 +55,11 @@
 
   function buildComplaintLetter(data, analysis) {
     return [
-      `Dear ${data.supplierName || "Energy Supplier"},`,
+      `Dear ${value(data.supplierName, "Energy Supplier")},`,
       "",
       "I am writing to raise a formal complaint about the energy account issue summarised in this pack.",
       `The main issue currently appears to be: ${analysis.issueType}.`,
-      data.issueSummary || "The detailed facts still need to be completed before this letter is sent.",
+      value(data.issueSummary, "The detailed facts still need to be completed before this letter is sent."),
       "",
       "Please review the account records, bills, meter information, payment history and correspondence connected with this complaint.",
       "I ask that you provide a clear written response, explain the account position and consider the requested outcome where the evidence supports it.",
@@ -58,14 +67,14 @@
       "This complaint pack is prepared for self-service use. I will attach the relevant evidence before submitting it.",
       "",
       "Yours faithfully,",
-      data.customerName || data.consumerName || "[Name]"
+      value(data.customerName || data.consumerName, "[Name]")
     ].join("\n");
   }
 
   function packSections(data) {
     const analysis = analysisEngine.analyse(data || {});
     const generated = new Date().toLocaleDateString("en-GB");
-    const timelineRows = analysis.timeline.events.map((event) => `${event.date || "Date not recorded"} | ${event.organisation || data.supplierName || "Organisation not recorded"} | ${event.event || "Event"} | ${event.description || ""}`);
+    const timelineRows = analysis.timeline.events.map((event) => `${value(event.date, "Date not recorded")} | ${value(event.organisation || data.supplierName, "Organisation not recorded")} | ${value(event.event, "Event")} | ${value(event.description, "")}`);
     const financialRows = analysis.financialSchedule.entries.map((entry) => `${entry.date || "Date not recorded"} | ${entry.category || "Category"} | ${entry.description || "Description"} | ${entry.currency || "GBP"} ${entry.amount}`);
 
     const sections = [
@@ -109,19 +118,19 @@
         bullets(data.issueGroups, "No issue selection has been recorded."),
         "",
         "What happened:",
-        data.issueSummary || data.problemSummary || "A factual summary has not yet been added."
+        value(data.issueSummary || data.problemSummary, "A factual summary has not yet been added.")
       ]),
       relevant(data, /switch|transfer/) && section("Switching Analysis", [
         line("Switch requested", data.switchRequestedDate || data.issueStartDate, "Switch request date has not yet been recorded"),
         line("Switch completed", data.switchCompletedDate, "Switch completion date has not yet been recorded"),
-        line("Supplier roles", `${data.supplierName || "Current supplier not recorded"} / ${data.previousSupplier || data.newSupplier || "Other supplier not recorded"}`),
+        line("Supplier roles", `${value(data.supplierName, "Current supplier not recorded")} / ${value(data.previousSupplier || data.newSupplier, "Other supplier not recorded")}`),
         "Compare supplier roles, switch dates, opening readings and final bills before submitting."
       ]),
       relevant(data, /bill|balance|historical|back-billing|estimated/) && section("Billing Analysis", [
         line("Bill date", data.billDate, "Relevant bill date has not yet been recorded"),
         line("Recorded account balance", data.recordedAccountBalance, "Recorded account balance has not yet been recorded"),
         line("Disputed amount", data.disputedAmount, "Disputed amount has not yet been recorded"),
-        data.financialSummary || "Billing explanation has not yet been added."
+        value(data.financialSummary, "Billing explanation has not yet been added.")
       ]),
       relevant(data, /meter|reading|smart|prepayment/) && section("Meter Analysis", [
         line("Meter type", data.meterType, "Meter type has not yet been recorded"),
@@ -140,7 +149,7 @@
       analysis.timeline.events.length && section("Energy Timeline", timelineRows.concat(analysis.timeline.warnings.map((warning) => `Timeline warning: ${warning}`))),
       section("Requested Outcome", [
         bullets(data.requestedOutcomes, "No requested outcome has been selected yet."),
-        data.preferredOutcome || ""
+        value(data.preferredOutcome, "")
       ]),
       section("Evidence Position", [
         line("Evidence position", analysis.evidencePosition),
@@ -186,7 +195,7 @@
       "ENERGY SUPPLIER COMPLAINT",
       line("Supplier", data.supplierName, "Supplier not recorded"),
       line("Issue", analysis.issueType),
-      data.issueSummary || "Issue summary not yet recorded.",
+      value(data.issueSummary, "Issue summary not yet recorded."),
       "Requested outcome:",
       bullets(data.requestedOutcomes, "Requested outcome not yet selected.")
     ].join("\n");
@@ -206,7 +215,7 @@
   function buildCopy(data) {
     const txt = buildTxt(data || {});
     const analysis = analysisEngine.analyse(data || {});
-    const supplier = data.supplierName || "Energy Supplier";
+    const supplier = value(data.supplierName, "Energy Supplier");
     const email = [
       `Dear ${supplier},`,
       "",
@@ -217,12 +226,12 @@
       "Please review the account records, evidence and requested outcome set out above.",
       "",
       "Yours faithfully,",
-      data.customerName || data.consumerName || "Customer"
+      value(data.customerName || data.consumerName, "Customer")
     ].join("\n");
     const supplierPortal = [
       `Issue: ${analysis.issueType}`,
       `Supplier: ${supplier}`,
-      `Requested outcome: ${arr(data.requestedOutcomes).join(", ") || "Please review and respond to the complaint."}`,
+      `Requested outcome: ${value(data.requestedOutcomes, "Please review and respond to the complaint.")}`,
       "",
       txt.fullComplaint
     ].join("\n");
