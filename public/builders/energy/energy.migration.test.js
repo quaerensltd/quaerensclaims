@@ -2,6 +2,7 @@ const assert = require("assert");
 const config = require("./energy.config");
 const analysis = require("./energy.analysis");
 const docs = require("./energy.documents");
+const resources = require("./energy.resources");
 
 const scenarios = [
   ["Delayed electricity switch", { whatHappened: ["My switch was delayed"], energyType: "Electricity only", jurisdiction: "England", propertyCountry: "England", accountResidential: "Domestic residential", consumerName: "A", supplierName: "Supplier", requestedOutcomes: ["Complete the switch"] }, /switch/i],
@@ -158,4 +159,68 @@ assert.strictEqual(docs.architectures.word.status, "Prepared", "Word architectur
 assert.strictEqual(docs.architectures.txt.status, "Prepared", "TXT architecture not prepared");
 assert.strictEqual(docs.architectures.print.status, "Prepared", "Print architecture not prepared");
 
-console.log(`Energy Part 1B-B migration tests passed: ${scenarios.length} fictional scenarios plus export architecture checks`);
+assert.strictEqual(config.h1, "Problems With Your Energy Supplier, Bill or Switch?", "Public H1 config not updated");
+assert.strictEqual(config.packName, "Energy Supplier Complaint Pack™", "Public pack name not updated");
+assert.ok(config.publicDisclaimer.includes("Quaerens does not automatically submit complaints."), "Public disclaimer missing");
+
+assert.ok(resources.sources.length >= 8, "Official source directory too small");
+resources.sources.forEach((source) => {
+  ["title", "organisation", "officialUrl", "publicationOrUpdateDate", "jurisdiction", "topic", "lastVerified", "limitations"].forEach((key) => {
+    assert.ok(source[key], `Official source missing ${key}`);
+  });
+  assert.ok(/^https:\/\/.+/i.test(source.officialUrl), `Official source URL is not HTTPS: ${source.officialUrl}`);
+});
+
+[
+  "British Gas",
+  "EDF",
+  "E.ON Next",
+  "Octopus Energy",
+  "OVO Energy",
+  "ScottishPower",
+  "Utilita",
+  "Utility Warehouse",
+  "Good Energy",
+  "Ecotricity",
+  "Outfox the Market",
+  "So Energy",
+  "Tomato Energy",
+  "Shell Energy",
+  "SSE"
+].forEach((supplier) => assert.ok(resources.findSupplier(supplier), `Supplier directory missing ${supplier}`));
+assert.ok(resources.suppliers.every((supplier) => supplier.officialSource && supplier.lastVerified), "Supplier verification metadata missing");
+assert.ok(resources.faqs.length >= 30, "Energy FAQ set should include at least 30 questions");
+
+const verifiedRoute = analysis.routeAnalysis({
+  supplierName: "Octopus Energy",
+  issueGroups: ["switching"],
+  whatHappened: ["My switch was delayed"],
+  jurisdiction: "England"
+});
+assert.ok(verifiedRoute.some((route) => route.organisation === "Octopus Energy" && route.status === "Verified"), "Verified supplier routing missing");
+assert.ok(verifiedRoute.some((route) => route.organisation === "Ofgem" && /Switching/i.test(route.role)), "Ofgem switching guidance route missing");
+
+const officialPack = docs.build({ ...fullData, supplierName: "Octopus Energy" });
+assert.ok(officialPack.includes("Official source records last verified"), "Official source verification text missing from pack");
+assert.ok(!officialPack.includes("Official route verification is reserved"), "Old official route placeholder still present");
+
+const fs = require("fs");
+const path = require("path");
+const publicPage = fs.readFileSync(path.join(__dirname, "..", "..", "energy-switch.html"), "utf8");
+assert.ok(publicPage.includes("<meta charset=\"UTF-8\">"), "UTF-8 charset missing");
+assert.ok(publicPage.includes("<title>Free Energy Supplier Complaint & Switching Pack Builder | Quaerens</title>"), "Title not updated");
+assert.ok(publicPage.includes("Build a free Energy Supplier Complaint Pack. Organise bills, switching problems, smart meter issues, payments and evidence before submitting your complaint."), "Meta description not updated");
+assert.ok(publicPage.includes("<h1>Problems With Your Energy Supplier, Bill or Switch?</h1>"), "H1 not updated");
+assert.ok(publicPage.includes("https://www.quaerens.co.uk/energy-switch.html"), "Canonical or schema URL missing");
+assert.ok(publicPage.includes("builders/energy/energy.resources.js"), "Energy resources script missing");
+assert.ok(publicPage.includes("data-energy-source-list"), "Official source list mount missing");
+assert.ok(publicPage.includes("data-energy-supplier-list"), "Supplier directory mount missing");
+assert.ok(publicPage.includes("data-energy-faq-list"), "FAQ mount missing");
+assert.ok(publicPage.includes("\"@type\": \"FAQPage\""), "FAQ schema renderer missing");
+assert.ok(publicPage.includes("\"@type\": \"BreadcrumbList\""), "Breadcrumb schema renderer missing");
+assert.ok(publicPage.includes("\"@type\": \"Organization\""), "Organisation schema renderer missing");
+assert.ok(publicPage.includes("\"@type\": \"WebApplication\""), "WebApplication schema renderer missing");
+assert.ok(!publicPage.includes("QCBF Energy Builder"), "Internal builder name visible on public page");
+assert.ok(!/"@type":\s*"(AggregateRating|Review|Product|Offer|LegalService|Attorney|MedicalBusiness)"/.test(publicPage), "Forbidden schema type found");
+
+console.log(`Energy Part 2A migration tests passed: ${scenarios.length} fictional scenarios plus official source, supplier, SEO, schema and export checks`);

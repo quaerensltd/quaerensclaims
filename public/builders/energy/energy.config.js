@@ -5,17 +5,18 @@
   return {
     id: "energy",
     productName: "Free Energy Supplier Complaint & Switching Pack Builder",
-    packName: "Energy Supplier Complaint Pack(TM)",
+    packName: "Energy Supplier Complaint Pack\u2122",
     pageTitle: "Free Energy Supplier Complaint & Switching Pack Builder | Quaerens",
-    h1: "Problems With an Energy Supplier, Bill or Switch?",
+    h1: "Problems With Your Energy Supplier, Bill or Switch?",
     heroHeading: "Build Your Free Energy Supplier Complaint Pack",
     canonical: "https://www.quaerens.co.uk/energy-switch.html",
     storageNamespace: "qcbf-energy",
     storageKey: "qcbf-energy-draft",
     schemaVersion: 1,
-    builderVersion: "1.0-part-1a-local",
+    builderVersion: "1.0-part-2a-local",
     frameworkVersion: "QCBF 1.2",
-    migrationStatus: "Part 1A local implementation - awaiting Part 1B",
+    migrationStatus: "Part 2A local verification - awaiting Part 2B",
+    resourcesVersion: "2026-07-28-official-sources",
     packPrefix: "QE",
     heroImage: "/images/hero-energy3.jpg",
     logo: "/images/logo-energytemp.png",
@@ -55,6 +56,12 @@
       "Review, Downloads & Submission"
     ],
     officialBoundary:
-      "Energy Ombudsman escalation may be relevant. Current eligibility, timing and scheme scope must be checked before submission."
+      "Energy Ombudsman escalation may be relevant. Current eligibility, timing and scheme scope must be checked before submission.",
+    publicDisclaimer: [
+      "This free Complaint Pack helps organise information and prepare a structured complaint.",
+      "Quaerens does not automatically submit complaints.",
+      "Quaerens does not guarantee refunds, compensation or any particular outcome.",
+      "Complex legal matters may require additional professional advice."
+    ]
   };
 });

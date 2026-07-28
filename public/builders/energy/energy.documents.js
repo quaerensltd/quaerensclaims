@@ -1,7 +1,7 @@
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) module.exports = factory(require("./energy.config"), require("./energy.analysis"));
-  else root.QCBFEnergyDocuments = factory(root.QCBFEnergyConfig, root.QCBFEnergyAnalysis);
-})(typeof self !== "undefined" ? self : this, function (config, analysisEngine) {
+  if (typeof module === "object" && module.exports) module.exports = factory(require("./energy.config"), require("./energy.analysis"), require("./energy.resources"));
+  else root.QCBFEnergyDocuments = factory(root.QCBFEnergyConfig, root.QCBFEnergyAnalysis, root.QCBFEnergyResources);
+})(typeof self !== "undefined" ? self : this, function (config, analysisEngine, resources) {
   function arr(value) {
     return Array.isArray(value) ? value : value ? [value] : [];
   }
@@ -28,6 +28,16 @@
 
   function table(rows) {
     return arr(rows).map((row) => `${row[0] || row.label}: ${row[1] || row.value}`).join("\n");
+  }
+
+  function officialResourceLines() {
+    if (!resources || !Array.isArray(resources.sources)) {
+      return ["Official route records are unavailable in this build. Check Ofgem, the supplier and the Energy Ombudsman before submitting."];
+    }
+    return [
+      `Official source records last verified: ${resources.verifiedOn || "not recorded"}.`,
+      ...resources.sources.map((source, index) => `${index + 1}. ${source.organisation} - ${source.title}: ${source.officialUrl} (${source.limitations})`)
+    ];
   }
 
   function relevant(data, pattern) {
@@ -151,8 +161,8 @@
         "Quaerens does not submit complaints automatically."
       ]),
       section("Official Resources", [
-        "Official route verification is reserved for the next Energy prompt phase.",
-        "Do not rely on any escalation route until the supplier or official complaint route has been checked."
+        ...officialResourceLines(),
+        "Check the supplier's current complaint page, any relevant Ofgem guidance and Energy Ombudsman eligibility before submission."
       ]),
       section("Self-Service Disclaimer", [
         "This pack organises account records, bills, payments and correspondence.",

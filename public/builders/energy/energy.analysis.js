@@ -1,7 +1,7 @@
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) module.exports = factory(require("./energy.config"), require("./energy.evidence"));
-  else root.QCBFEnergyAnalysis = factory(root.QCBFEnergyConfig, root.QCBFEnergyEvidence);
-})(typeof self !== "undefined" ? self : this, function (config, evidence) {
+  if (typeof module === "object" && module.exports) module.exports = factory(require("./energy.config"), require("./energy.evidence"), require("./energy.resources"));
+  else root.QCBFEnergyAnalysis = factory(root.QCBFEnergyConfig, root.QCBFEnergyEvidence, root.QCBFEnergyResources);
+})(typeof self !== "undefined" ? self : this, function (config, evidence, resources) {
   function arr(value) {
     return Array.isArray(value) ? value : value ? [value] : [];
   }
@@ -298,32 +298,42 @@
         ["Complaint History", status(data.complaintDate || arr(data.evidence).includes("complaint"), "Complete", "Needs Information")],
         ["Evidence Position", evidenceStatus],
         ["Complaint Pack", completeness.status === "Ready to Submit" ? "Complete" : "Needs Review"],
-        ["Official Route", data.officialRouteVerified ? "Verified" : "Requires Verification"],
+        ["Official Route", data.officialRouteVerified || (resources && resources.findSupplier && resources.findSupplier(data.supplierName)) ? "Verified" : "Requires Verification"],
         ["Pack Status", completeness.status]
       ]
     };
   }
 
   function routeAnalysis(data) {
-    const routes = [];
+    const routes = resources && typeof resources.routeFor === "function" ? resources.routeFor(data || {}) : [];
+    if (routes.length) {
+      if (/meter|unsafe|network/i.test(text(data))) {
+        routes.push({ organisation: data.networkOperator || "Network or meter operator", role: "Meter or supply safety evidence", status: "Requires Verification", officialUrl: "", limitation: "Emergency, safety or network routes should be checked before relying on the pack." });
+      }
+      if (isUrgent(data)) {
+        routes.push({ organisation: "Emergency, court or advice route", role: "Urgent boundary", status: "Requires urgent review", officialUrl: "", limitation: "Strict deadlines or safety steps may apply outside this self-service pack." });
+      }
+      return routes;
+    }
+    const routesFallback = [];
     const supplier = data.supplierName || "Current or relevant supplier";
-    routes.push({ organisation: supplier, role: "Supplier complaint route", status: "Primary factual complaint route" });
+    routesFallback.push({ organisation: supplier, role: "Supplier complaint route", status: "Primary factual complaint route" });
     if (/switch|transfer|both suppliers|old supplier/i.test(arr(data.whatHappened).concat(data.issueGroups || []).join(" "))) {
-      routes.push({ organisation: data.previousSupplier || "Previous or new supplier", role: "Switching or transfer evidence", status: "Check supplier roles before submission" });
+      routesFallback.push({ organisation: data.previousSupplier || "Previous or new supplier", role: "Switching or transfer evidence", status: "Check supplier roles before submission" });
     }
     if (/meter|unsafe|network/i.test(text(data))) {
-      routes.push({ organisation: data.networkOperator || "Network or meter operator", role: "Meter or supply safety evidence", status: "Official route requires verification" });
+      routesFallback.push({ organisation: data.networkOperator || "Network or meter operator", role: "Meter or supply safety evidence", status: "Official route requires verification" });
     }
     if (/payment|refund|credit|direct debit/i.test(text(data))) {
-      routes.push({ organisation: "Payment provider", role: "Payment evidence", status: "Only relevant where payment evidence supports it" });
+      routesFallback.push({ organisation: "Payment provider", role: "Payment evidence", status: "Only relevant where payment evidence supports it" });
     }
     if (/deadlock|ignored|escalate|ombudsman/i.test(text(data))) {
-      routes.push({ organisation: "Energy Ombudsman", role: "Possible escalation", status: config.officialBoundary });
+      routesFallback.push({ organisation: "Energy Ombudsman", role: "Possible escalation", status: config.officialBoundary });
     }
     if (isUrgent(data)) {
-      routes.push({ organisation: "Emergency, court or advice route", role: "Urgent boundary", status: "Strict deadlines or safety steps may apply outside this self-service pack" });
+      routesFallback.push({ organisation: "Emergency, court or advice route", role: "Urgent boundary", status: "Strict deadlines or safety steps may apply outside this self-service pack" });
     }
-    return routes;
+    return routesFallback;
   }
 
   function summaryCards(data) {
