@@ -55,7 +55,7 @@ function assertSafePublicOutput(html) {
 }
 
 function run() {
-  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.3");
+  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.4");
   assert.strictEqual(SCHEMA_VERSION, "1.0.0");
 
   const flight = recommendQCMSService(flightFixture);
@@ -147,7 +147,7 @@ function run() {
 
   assertIncludes(flightHtml, "qcms-health-grid");
   assertIncludes(flightHtml, "qcms-comparison-table");
-  assertIncludes(flightHtml, "data-qcms-architecture=\"1.0.0-alpha.3\"");
+  assertIncludes(flightHtml, "data-qcms-architecture=\"1.0.0-alpha.4\"");
 
   const deterministicA = renderQCMSExperience(holidayFixture);
   const deterministicB = renderQCMSExperience(holidayFixture);

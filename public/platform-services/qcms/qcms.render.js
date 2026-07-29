@@ -1,4 +1,4 @@
-const { SCHEMA_VERSION, TRANSFER_STATES, VALUE_STATES, PUBLIC_REASON_TEXT } = require("./qcms.config");
+const { SCHEMA_VERSION, ARCHITECTURE_VERSION, TRANSFER_STATES, VALUE_STATES, PUBLIC_REASON_TEXT } = require("./qcms.config");
 const { validateCaseSummary } = require("./qcms.validation");
 const { recommendQCMSService } = require("./qcms.recommendation");
 const { getServiceLevel } = require("./qcms.pricing");
@@ -261,7 +261,7 @@ function renderQCMSExperience(input, options = {}) {
     ["Estimated Administration", safeRecommendation.administrationEstimate]
   ].map(([label, value]) => renderHealthCard(label, value)).join("");
 
-  return `<main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.3">
+  return `<main class="qcms-experience" data-qcms-architecture="${ARCHITECTURE_VERSION}">
     <section class="qcms-complete" aria-labelledby="qcms-complete-title">
       <p class="qcms-kicker">Complaint Pack completion</p>
       <h1 id="qcms-complete-title">${escapeHtml(QCMS_PUBLIC_COPY.completionTitle)}</h1>

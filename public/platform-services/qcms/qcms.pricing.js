@@ -1,4 +1,4 @@
-const { SERVICE_LEVELS } = require("./qcms.config");
+const { SERVICE_LEVELS } = typeof require === "function" ? require("./qcms.config") : window.QuaerensQCMSConfig;
 
 function getPricingConfig() {
   return SERVICE_LEVELS;
@@ -15,8 +15,11 @@ function formatIndicativeFee(serviceLevel) {
   return `${serviceLevel.currency} ${(serviceLevel.standardFeePence / 100).toFixed(0)}`;
 }
 
-module.exports = {
+const QCMS_PRICING_API = {
   getPricingConfig,
   getServiceLevel,
   formatIndicativeFee
 };
+
+if (typeof module === "object" && module.exports) module.exports = QCMS_PRICING_API;
+if (typeof window !== "undefined") window.QuaerensQCMSPricing = QCMS_PRICING_API;

@@ -7,9 +7,9 @@ const {
   PUBLIC_REASON_TEXT,
   FREE_DIY_MESSAGE,
   CASE_SUMMARY_DISCLAIMER
-} = require("./qcms.config");
-const { validateCaseSummary } = require("./qcms.validation");
-const { getServiceLevel, formatIndicativeFee } = require("./qcms.pricing");
+} = typeof require === "function" ? require("./qcms.config") : window.QuaerensQCMSConfig;
+const { validateCaseSummary } = typeof require === "function" ? require("./qcms.validation") : window.QuaerensQCMSValidation;
+const { getServiceLevel, formatIndicativeFee } = typeof require === "function" ? require("./qcms.pricing") : window.QuaerensQCMSPricing;
 
 function countMissingRequiredEvidence(evidenceItems) {
   return evidenceItems.filter((item) => {
@@ -195,7 +195,7 @@ function recommendQCMSService(input) {
   };
 }
 
-module.exports = {
+const QCMS_RECOMMENDATION_API = {
   assessEvidenceCompleteness,
   assessChronologyCompleteness,
   assessFinancialCompleteness,
@@ -204,3 +204,6 @@ module.exports = {
   estimateAdministration,
   recommendQCMSService
 };
+
+if (typeof module === "object" && module.exports) module.exports = QCMS_RECOMMENDATION_API;
+if (typeof window !== "undefined") window.QuaerensQCMSRecommendation = QCMS_RECOMMENDATION_API;

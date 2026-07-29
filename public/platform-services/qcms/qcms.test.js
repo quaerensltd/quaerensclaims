@@ -28,7 +28,7 @@ function assertNoOutcomePrediction(text) {
 }
 
 function run() {
-  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.3");
+  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.4");
   assert.strictEqual(SCHEMA_VERSION, "1.0.0");
   assert(QCMS_CASE_SUMMARY_FIELDS.includes("platformUser"));
   assert(QCMS_CASE_SUMMARY_FIELDS.includes("recommendedFee"));
@@ -145,7 +145,7 @@ function run() {
   assert.strictEqual(prices["QCMS-L3"].standardFeePence, 34900);
 
   const instruction = createInstructionWorkflow(flightFixture, flight);
-  assert.strictEqual(instruction.architectureVersion, "1.0.0-alpha.3");
+  assert.strictEqual(instruction.architectureVersion, "1.0.0-alpha.4");
   assert.strictEqual(instruction.schemaVersion, "1.0.0");
   assert.strictEqual(instruction.serviceConfirmation.complaintPack, flightFixture.complaintTitle);
   assert.strictEqual(instruction.authority.checkboxRequired, true);

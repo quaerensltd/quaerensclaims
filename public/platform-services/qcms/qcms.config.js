@@ -1,4 +1,4 @@
-const ARCHITECTURE_VERSION = "1.0.0-alpha.3";
+const ARCHITECTURE_VERSION = "1.0.0-alpha.4";
 const SCHEMA_VERSION = "1.0.0";
 
 const VALUE_STATES = Object.freeze({
@@ -221,7 +221,7 @@ const FREE_DIY_MESSAGE = "Your Complaint Pack is complete. You can download it a
 const CASE_SUMMARY_DISCLAIMER = "The Case Summary organises the information provided. It does not predict whether the complaint will succeed.";
 const PART1A_LOCAL_ONLY_NOTICE = "Part 1A keeps all QCMS prototype data local. It does not submit information to Quaerens, collect payment, create a CRM case or create a QCMS instruction.";
 
-module.exports = {
+const QCMS_CONFIG_API = {
   ARCHITECTURE_VERSION,
   SCHEMA_VERSION,
   VALUE_STATES,
@@ -242,3 +242,6 @@ module.exports = {
   CASE_SUMMARY_DISCLAIMER,
   PART1A_LOCAL_ONLY_NOTICE
 };
+
+if (typeof module === "object" && module.exports) module.exports = QCMS_CONFIG_API;
+if (typeof window !== "undefined") window.QuaerensQCMSConfig = QCMS_CONFIG_API;

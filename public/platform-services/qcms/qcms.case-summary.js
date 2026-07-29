@@ -1,9 +1,10 @@
 const {
+  ARCHITECTURE_VERSION,
   SCHEMA_VERSION,
   CONSENT_STATES,
   TRANSFER_STATES,
   VALUE_STATES
-} = require("./qcms.config");
+} = typeof require === "function" ? require("./qcms.config") : window.QuaerensQCMSConfig;
 
 const QCMS_CASE_SUMMARY_FIELDS = Object.freeze([
   "schemaVersion",
@@ -143,7 +144,7 @@ function createEmptyCaseSummary(overrides = {}) {
       completionDate: null,
       savedDraftId: null,
       complaintRoute: null,
-      architectureVersion: "1.0.0-alpha.1",
+      architectureVersion: ARCHITECTURE_VERSION,
       localOnly: true
     },
     ...overrides,
@@ -173,7 +174,7 @@ function normaliseCaseSummary(input = {}) {
   return base;
 }
 
-module.exports = {
+const QCMS_CASE_SUMMARY_API = {
   QCMS_CASE_SUMMARY_FIELDS,
   PLATFORM_USER_FIELDS,
   createCaseId,
@@ -183,3 +184,6 @@ module.exports = {
   unknownValue,
   notApplicableValue
 };
+
+if (typeof module === "object" && module.exports) module.exports = QCMS_CASE_SUMMARY_API;
+if (typeof window !== "undefined") window.QuaerensQCMSCaseSummary = QCMS_CASE_SUMMARY_API;

@@ -3,8 +3,8 @@ const {
   CONSENT_STATES,
   TRANSFER_STATES,
   EVIDENCE_STATUSES
-} = require("./qcms.config");
-const { QCMS_CASE_SUMMARY_FIELDS, normaliseCaseSummary } = require("./qcms.case-summary");
+} = typeof require === "function" ? require("./qcms.config") : window.QuaerensQCMSConfig;
+const { QCMS_CASE_SUMMARY_FIELDS, normaliseCaseSummary } = typeof require === "function" ? require("./qcms.case-summary") : window.QuaerensQCMSCaseSummary;
 
 function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -89,6 +89,9 @@ function validateCaseSummary(input) {
   };
 }
 
-module.exports = {
+const QCMS_VALIDATION_API = {
   validateCaseSummary
 };
+
+if (typeof module === "object" && module.exports) module.exports = QCMS_VALIDATION_API;
+if (typeof window !== "undefined") window.QuaerensQCMSValidation = QCMS_VALIDATION_API;

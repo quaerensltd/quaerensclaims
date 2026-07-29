@@ -8,6 +8,7 @@
     const config = window.QCBFEnergyConfig;
     const analysisEngine = window.QCBFEnergyAnalysis;
     const docs = window.QCBFEnergyDocuments;
+    const qcmsAdapter = window.QCBFEnergyQCMSAdapter;
     if (!config || !analysisEngine || !docs) return;
 
     const root = document.querySelector("[data-energy-builder]");
@@ -36,6 +37,7 @@
     const timeline = root.querySelector("[data-energy-timeline]");
     const smartSubmission = root.querySelector("[data-energy-smart-submission]");
     const architecture = root.querySelector("[data-energy-architecture]");
+    const qcmsPanel = root.querySelector("[data-energy-qcms]");
     let currentStep = 0;
     let data = state.load() || {};
     const qcbf = window.QCBF || {};
@@ -193,6 +195,12 @@
         smartSubmission.insertAdjacentHTML("afterbegin", `<p class="small">${escape(analysis.smartSubmission.message)}</p>`);
       }
       renderArchitecture(architecture);
+      if (qcmsPanel && qcmsAdapter && qcmsAdapter.renderEnergyQCMSCompletion) {
+        qcmsPanel.innerHTML = qcmsAdapter.renderEnergyQCMSCompletion(data);
+        if (analysis.completeness && analysis.completeness.status === "Ready to Submit" && qcmsAdapter.saveEnergyQCMSHandoff) {
+          qcmsAdapter.saveEnergyQCMSHandoff(data);
+        }
+      }
     }
 
     root.addEventListener("input", collect);
@@ -200,6 +208,23 @@
     tabs.forEach((tab, i) => tab.addEventListener("click", () => showStep(i, true)));
     root.querySelectorAll("[data-energy-next], [data-next]").forEach((btn) => btn.addEventListener("click", () => showStep(currentStep + 1, true)));
     root.querySelectorAll("[data-energy-prev], [data-back]").forEach((btn) => btn.addEventListener("click", () => showStep(currentStep - 1, true)));
+    root.addEventListener("click", function (event) {
+      const explore = event.target.closest("[data-energy-qcms-explore]");
+      if (explore) {
+        const previewPanel = root.querySelector("[data-energy-qcms-instruction-preview]");
+        if (previewPanel) previewPanel.hidden = false;
+        explore.setAttribute("aria-expanded", "true");
+        if (qcmsAdapter && qcmsAdapter.saveEnergyQCMSHandoff) qcmsAdapter.saveEnergyQCMSHandoff(data);
+      }
+      const diy = event.target.closest("[data-energy-qcms-diy]");
+      if (diy) {
+        const download = root.querySelector("[data-energy-download='pdf']");
+        if (download) {
+          download.scrollIntoView({ behavior: "smooth", block: "center" });
+          download.focus();
+        }
+      }
+    });
     root.querySelectorAll("[data-energy-reset], [data-reset]").forEach((btn) => btn.addEventListener("click", () => {
       if (!confirm("Delete the saved Energy Complaint Pack draft on this device?")) return;
       state.clear();
