@@ -7,6 +7,15 @@ const { getPricingConfig } = require("./qcms.pricing");
 const { safeParse, PART1A_STORAGE_POLICY } = require("./qcms.storage");
 const { adaptBuilderStateToQCMSCaseSummary } = require("./qcms.adapter");
 const {
+  AGREEMENT_SECTIONS,
+  PAYMENT_PROVIDERS,
+  CRM_PAYLOAD_FIELDS,
+  AUDIT_EVENT_TYPES,
+  FAILURE_STATES,
+  createInstructionWorkflow,
+  canCreateCRMCase
+} = require("./qcms.instruction");
+const {
   energyFixture,
   flightFixture,
   carFinanceFixture,
@@ -19,7 +28,7 @@ function assertNoOutcomePrediction(text) {
 }
 
 function run() {
-  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.2");
+  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.3");
   assert.strictEqual(SCHEMA_VERSION, "1.0.0");
   assert(QCMS_CASE_SUMMARY_FIELDS.includes("platformUser"));
   assert(QCMS_CASE_SUMMARY_FIELDS.includes("recommendedFee"));
@@ -134,6 +143,29 @@ function run() {
   assert.strictEqual(prices["QCMS-L1"].standardFeePence, 5900);
   assert.strictEqual(prices["QCMS-L2"].standardFeePence, 19900);
   assert.strictEqual(prices["QCMS-L3"].standardFeePence, 34900);
+
+  const instruction = createInstructionWorkflow(flightFixture, flight);
+  assert.strictEqual(instruction.architectureVersion, "1.0.0-alpha.3");
+  assert.strictEqual(instruction.schemaVersion, "1.0.0");
+  assert.strictEqual(instruction.serviceConfirmation.complaintPack, flightFixture.complaintTitle);
+  assert.strictEqual(instruction.authority.checkboxRequired, true);
+  assert.strictEqual(instruction.authority.preSelected, false);
+  assert(instruction.authority.text.includes("solely for the purpose"));
+  assert.strictEqual(instruction.accuracy.checkboxRequired, true);
+  assert(instruction.accuracy.text.includes("true and accurate"));
+  assert.deepStrictEqual(instruction.agreement.sections, AGREEMENT_SECTIONS);
+  assert(instruction.agreement.sections.includes("Refund policy placeholder"));
+  assert.strictEqual(instruction.agreement.finalLegalTerms, false);
+  assert.deepStrictEqual(instruction.payment.providers, PAYMENT_PROVIDERS);
+  assert.strictEqual(instruction.payment.implementation, false);
+  assert(instruction.signature.ipPlaceholder.includes("not collected"));
+  assert.deepStrictEqual(instruction.crm.fields, CRM_PAYLOAD_FIELDS);
+  assert.strictEqual(instruction.crm.connectionEnabled, false);
+  assert(AUDIT_EVENT_TYPES.includes("Payment successful"));
+  assert(instruction.auditTrail.every((entry) => entry.timestamp && entry.event && entry.status));
+  assert(FAILURE_STATES.some((state) => state.code === "CRM_UNAVAILABLE"));
+  assert(instruction.privacyGate.includes("Nothing is transferred until"));
+  assert.strictEqual(canCreateCRMCase(instruction), false);
 
   [energy, flight, carFinance, manual].forEach((result) => {
     assert(result.freeDIYMessage.includes("free of charge"));

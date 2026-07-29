@@ -2,6 +2,7 @@ const { SCHEMA_VERSION, TRANSFER_STATES, VALUE_STATES, PUBLIC_REASON_TEXT } = re
 const { validateCaseSummary } = require("./qcms.validation");
 const { recommendQCMSService } = require("./qcms.recommendation");
 const { getServiceLevel } = require("./qcms.pricing");
+const { createInstructionWorkflow } = require("./qcms.instruction");
 const {
   QCMS_PUBLIC_COPY,
   PLATFORM_USER_RESPONSIBILITIES,
@@ -163,6 +164,57 @@ function renderConsentPreview() {
   </section>`;
 }
 
+function renderInstructionWorkflow(summary, recommendation) {
+  const workflow = createInstructionWorkflow(summary, recommendation);
+  const confirmation = workflow.serviceConfirmation;
+  const crmRows = workflow.crm.fields.map((field) => `<li>${escapeHtml(field)}</li>`).join("");
+  const auditRows = workflow.auditEventTypes.map((event) => `<tr><td>${escapeHtml(event)}</td><td>timestamp</td><td>status</td></tr>`).join("");
+  const failureCards = workflow.failureStates.map((state) => `<article class="qcms-failure-card"><h4>${escapeHtml(state.label)}</h4><p>${escapeHtml(state.recovery)}</p></article>`).join("");
+  const paymentCards = workflow.payment.interfaces.map((payment) => `<article><h4>${escapeHtml(payment.provider)}</h4><p>Interface contract only. No payment implementation is enabled.</p></article>`).join("");
+  return `<section class="qcms-section qcms-instruction" aria-labelledby="qcms-instruction-title">
+    <p class="qcms-kicker">Instruction architecture</p>
+    <h2 id="qcms-instruction-title">Quaerens Complaint Management Service&trade;</h2>
+    <p>This universal workflow shows how a Platform User may later become a Client after service scope, authority, agreement, signature and payment are complete.</p>
+    <div class="qcms-rec-grid">
+      <div><span>Complaint Pack</span><strong>${escapeHtml(confirmation.complaintPack)}</strong></div>
+      <div><span>Recommended Service</span><strong>${escapeHtml(confirmation.recommendedService)}</strong></div>
+      <div><span>Indicative Fee</span><strong>${escapeHtml(confirmation.indicativeFee)}</strong></div>
+      <div><span>Estimated Administration</span><strong>${escapeHtml(confirmation.estimatedAdministration)}</strong></div>
+    </div>
+    <div class="qcms-instruction-flow" aria-label="Universal QCMS workflow">
+      <span>Complaint Pack Complete</span><span>Case Summary</span><span>Recommendation</span><span>Explore QCMS</span><span>Service Scope</span><span>Authority</span><span>Accuracy Confirmation</span><span>Service Agreement</span><span>Digital Signature</span><span>Secure Payment</span><span>CRM Case</span><span>Client</span>
+    </div>
+    <div class="qcms-scope-grid">
+      <article><h3>${escapeHtml(workflow.authority.heading)}</h3><p>${escapeHtml(workflow.authority.text)}</p><p>${escapeHtml(workflow.authority.ownershipText)}</p><p><strong>Checkbox:</strong> required and not pre-selected.</p></article>
+      <article><h3>${escapeHtml(workflow.accuracy.heading)}</h3><p>${escapeHtml(workflow.accuracy.text)}</p><p>${escapeHtml(workflow.accuracy.relianceText)}</p><p><strong>Checkbox:</strong> required and not pre-selected.</p></article>
+      <article><h3>Service Agreement</h3>${list(workflow.agreement.sections)}<p class="qcms-muted">Architecture placeholder only. Final legal terms are not drafted in this phase.</p></article>
+      <article><h3>Digital Signature</h3>${list(["Typed name", "Date", "Timestamp", workflow.signature.ipPlaceholder, workflow.signature.browserPlaceholder, workflow.signature.devicePlaceholder])}</article>
+    </div>
+    <section class="qcms-nested-panel" aria-labelledby="qcms-payment-architecture">
+      <h3 id="qcms-payment-architecture">Secure payment architecture</h3>
+      <div class="qcms-scope-grid">${paymentCards}</div>
+    </section>
+    <section class="qcms-nested-panel" aria-labelledby="qcms-crm-schema">
+      <h3 id="qcms-crm-schema">CRM handover payload schema</h3>
+      <p>No CRM connection is enabled. The schema defines the future handover contract only.</p>
+      <ul class="qcms-list qcms-columns">${crmRows}</ul>
+    </section>
+    <section class="qcms-nested-panel" aria-labelledby="qcms-audit-model">
+      <h3 id="qcms-audit-model">Audit trail model</h3>
+      <div class="qcms-table-wrap"><table class="qcms-comparison-table"><thead><tr><th>Event</th><th>Timestamp</th><th>Status</th></tr></thead><tbody>${auditRows}</tbody></table></div>
+    </section>
+    <section class="qcms-nested-panel" aria-labelledby="qcms-failure-states">
+      <h3 id="qcms-failure-states">Failure and recovery states</h3>
+      <div class="qcms-failure-grid">${failureCards}</div>
+    </section>
+    <section class="qcms-privacy" aria-labelledby="qcms-instruction-privacy">
+      <h3 id="qcms-instruction-privacy">Privacy gate</h3>
+      <p>${escapeHtml(workflow.privacyGate)}</p>
+      <p>${escapeHtml(workflow.noAutomationNotice)}</p>
+    </section>
+  </section>`;
+}
+
 function renderQCMSExperience(input, options = {}) {
   const validation = validateCaseSummary(input || {});
   const summary = validation.normalisedData;
@@ -209,7 +261,7 @@ function renderQCMSExperience(input, options = {}) {
     ["Estimated Administration", safeRecommendation.administrationEstimate]
   ].map(([label, value]) => renderHealthCard(label, value)).join("");
 
-  return `<main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.2">
+  return `<main class="qcms-experience" data-qcms-architecture="1.0.0-alpha.3">
     <section class="qcms-complete" aria-labelledby="qcms-complete-title">
       <p class="qcms-kicker">Complaint Pack completion</p>
       <h1 id="qcms-complete-title">${escapeHtml(QCMS_PUBLIC_COPY.completionTitle)}</h1>
@@ -242,6 +294,7 @@ function renderQCMSExperience(input, options = {}) {
       ${safeRecommendation.manualReviewRequired ? `<p>${escapeHtml(QCMS_PUBLIC_COPY.manualReviewNoTransfer)}</p>` : ""}
     </section>
     ${renderConsentPreview()}
+    ${renderInstructionWorkflow(summary, safeRecommendation)}
     ${renderActions(safeRecommendation)}
   </main>`;
 }

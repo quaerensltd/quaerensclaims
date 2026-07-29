@@ -40,8 +40,7 @@ function assertSafePublicOutput(html) {
     "claim now",
     "buy now",
     "win probability",
-    "success score",
-    "client"
+    "success score"
   ].forEach((phrase) => assertNotIncludes(html.toLowerCase(), phrase.toLowerCase()));
   assertNotIncludes(html, "<script>");
   assertIncludes(html, "does not assess legal merit, predict the result or guarantee any outcome");
@@ -50,10 +49,13 @@ function assertSafePublicOutput(html) {
   assertIncludes(html, "Continue with Free DIY");
   assertIncludes(html, "Explore QCMS");
   assertIncludes(html, "Exploring QCMS does not send your information to Quaerens");
+  assertIncludes(html, "Nothing is transferred until");
+  assertIncludes(html, "No CRM connection is enabled");
+  assertIncludes(html, "No payment implementation is enabled");
 }
 
 function run() {
-  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.2");
+  assert.strictEqual(ARCHITECTURE_VERSION, "1.0.0-alpha.3");
   assert.strictEqual(SCHEMA_VERSION, "1.0.0");
 
   const flight = recommendQCMSService(flightFixture);
@@ -61,6 +63,10 @@ function run() {
   const flightHtml = renderQCMSExperience(flightFixture);
   assertIncludes(flightHtml, "Complaint Submission Service");
   assertIncludes(flightHtml, "£ 59");
+  assertIncludes(flightHtml, "Authority to Use My Complaint Pack");
+  assertIncludes(flightHtml, "Information Accuracy");
+  assertIncludes(flightHtml, "Digital Signature");
+  assertIncludes(flightHtml, "CRM handover payload schema");
   assertSafePublicOutput(flightHtml);
 
   const energy = recommendQCMSService(energyFixture);
@@ -141,7 +147,7 @@ function run() {
 
   assertIncludes(flightHtml, "qcms-health-grid");
   assertIncludes(flightHtml, "qcms-comparison-table");
-  assertIncludes(flightHtml, "data-qcms-architecture=\"1.0.0-alpha.2\"");
+  assertIncludes(flightHtml, "data-qcms-architecture=\"1.0.0-alpha.3\"");
 
   const deterministicA = renderQCMSExperience(holidayFixture);
   const deterministicB = renderQCMSExperience(holidayFixture);
