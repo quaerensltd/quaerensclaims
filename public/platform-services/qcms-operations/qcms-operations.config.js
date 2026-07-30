@@ -20,7 +20,8 @@
 
   return {
     productName: "QCMS Operations",
-    version: "1.2.0-foundation",
+    version: "1.3.0-alpha.1",
+    releaseName: "Operations Centre",
     stages,
     serviceLevels: [
       "Complaint Submission Service",
@@ -28,11 +29,14 @@
       "Enhanced Managed Complaint Service"
     ],
     complaintRoutes: [
+      "Flight Delay",
+      "Lost Luggage",
       "Solar",
       "Spray Foam Insulation",
-      "Energy",
+      "Energy Switch",
       "Caravan/Holiday Park",
       "Section 75",
+      "Cruise",
       "Car Finance",
       "Broadband/Mobile",
       "Travel"
@@ -40,7 +44,7 @@
     priorities: ["Critical", "High", "Medium", "Low"],
     managers: ["Amelia Hart", "Daniel Price", "Priya Shah"],
     navigation: [
-      ["dashboard", "Dashboard"],
+      ["dashboard", "Operations Centre"],
       ["cases", "Cases"],
       ["new-instructions", "New Instructions"],
       ["assigned-cases", "Assigned Cases"],

@@ -1,233 +1,252 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
+    const config = require("./qcms-operations.config.js");
     const model = require("./qcms-operations.model.js");
-    module.exports = factory(model);
+    module.exports = factory(config, model);
   } else {
-    root.QCMSOperationsRender = factory(root.QCMSOperationsModel);
+    root.QCMSOperationsRender = factory(root.QCMSOperationsConfig, root.QCMSOperationsModel);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (model) {
-  const esc = function (value) {
-    return String(value == null ? "" : value)
+})(typeof globalThis !== "undefined" ? globalThis : this, function (config, model) {
+  function escapeHtml(value) {
+    return String(value || "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  };
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 
-  function badge(value) {
-    const key = String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    return '<span class="qops-badge qops-badge-' + esc(key) + '">' + esc(value) + "</span>";
+  function badge(value, tone) {
+    const slug = tone || String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return '<span class="qops-badge qops-badge-' + escapeHtml(slug) + '">' + escapeHtml(value) + "</span>";
+  }
+
+  function fmtDate(value) {
+    return value || "Not set";
+  }
+
+  function openButton(reference, label) {
+    return '<a class="qops-button qops-button-small" href="#case/' + encodeURIComponent(reference) + '">' + (label || "Open Case") + "</a>";
+  }
+
+  function nav(active) {
+    return config.navigation.map(function (item) {
+      const id = item[0];
+      const label = item[1];
+      return '<a class="' + (id === active ? "qops-nav-active" : "") + '" href="#' + escapeHtml(id) + '">' + escapeHtml(label) + "</a>";
+    }).join("");
   }
 
   function layout(active, content) {
-    const nav = model.config.navigation.map(function (item) {
-      const current = item[0] === active ? " aria-current=\"page\"" : "";
-      return '<a class="qops-nav-link" href="#' + esc(item[0]) + '"' + current + ">" + esc(item[1]) + "</a>";
-    }).join("");
-    return [
-      '<div class="qops-shell">',
-      '<aside class="qops-sidebar" aria-label="QCMS Operations navigation">',
-      '<a class="qops-brand" href="/"><img src="/images/quaerens-logo.png" alt="Quaerens"><span>QCMS Operations</span></a>',
-      '<nav>' + nav + "</nav>",
-      '<p class="qops-boundary">Complaint Manager workspace for instructed QCMS cases only.</p>',
-      "</aside>",
-      '<main class="qops-main" tabindex="-1">' + content + "</main>",
-      "</div>"
-    ].join("");
+    return '' +
+      '<div class="qops-shell">' +
+        '<aside class="qops-sidebar">' +
+          '<a class="qops-brand" href="index.html" aria-label="Quaerens home"><img src="images/quaerens-logo.png" alt="Quaerens"></a>' +
+          '<p class="qops-release">' + escapeHtml(config.releaseName) + ' · ' + escapeHtml(config.version) + '</p>' +
+          '<nav class="qops-nav" aria-label="QCMS Operations navigation">' + nav(active) + '</nav>' +
+          '<div class="qops-boundary"><strong>Operational boundary</strong><p>QCMS Operations is for instructed complaint work only. Lead and business workflows remain outside this workspace.</p></div>' +
+        '</aside>' +
+        '<main class="qops-main">' + content + '</main>' +
+      '</div>';
   }
 
-  function metric(label, value, tone) {
-    return '<article class="qops-metric ' + esc(tone || "") + '"><span>' + esc(label) + '</span><strong>' + esc(value) + "</strong></article>";
+  function panel(title, body, meta) {
+    return '<section class="qops-panel">' +
+      '<div class="qops-panel-head"><div>' +
+      (meta ? '<p class="qops-eyebrow">' + escapeHtml(meta) + '</p>' : '') +
+      '<h2>' + escapeHtml(title) + '</h2></div></div>' +
+      body +
+    '</section>';
   }
 
-  function dashboard() {
-    const cases = model.fixtures.cases;
-    const stats = model.workload(cases);
-    const stageCounts = model.byStage(cases);
-    const priority = model.priorityActions(cases);
-    const today = model.todayActions(cases);
-    const newCases = cases.filter(function (item) { return item.status === "New Instruction"; }).slice(0, 5);
-    const recent = model.activity(cases);
-
-    return layout("dashboard", [
-      '<section class="qops-hero"><p class="qops-eyebrow">Dashboard</p><h1>Good morning, Martijn</h1><p>Operational overview for instructed QCMS cases. This prototype uses mock local data only.</p></section>',
-      '<section class="qops-metrics" aria-label="Workload summary">',
-      metric("Active Cases", stats.active),
-      metric("New Instructions", stats.newInstructions, "blue"),
-      metric("Awaiting Client", stats.awaitingClient, "amber"),
-      metric("Ready for Submission", stats.readyForSubmission, "green"),
-      metric("Awaiting Response", stats.awaitingResponse),
-      metric("High Priority", stats.highPriority, "red"),
-      "</section>",
-      '<section class="qops-grid qops-grid-two">',
-      panel("My Priority Actions", actionList(priority)),
-      panel("Today I Can Complete", actionList(today, true)),
-      "</section>",
-      '<section class="qops-grid qops-grid-two">',
-      panel("New Instructions", compactCases(newCases)),
-      panel("My Cases Summary", stageSummary(stageCounts)),
-      "</section>",
-      panel("Recent Activity", activityList(recent))
-    ].join(""));
+  function missionCard(mission, startCase) {
+    return '<section class="qops-mission">' +
+      '<div class="qops-mission-copy">' +
+        '<p class="qops-eyebrow">GOOD MORNING, ' + escapeHtml(mission.managerName.toUpperCase()) + '</p>' +
+        '<h1>Today\'s Mission</h1>' +
+        '<p class="qops-lead">Focus on the complaints that can be completed, moved forward or unblocked today.</p>' +
+        '<div class="qops-mission-grid">' +
+          '<div><strong>' + mission.completeToday + '</strong><span>Complete complaints today</span></div>' +
+          '<div><strong>' + mission.moveForward + '</strong><span>Move complaints forward</span></div>' +
+          '<div><strong>' + escapeHtml(mission.workload) + '</strong><span>Estimated workload</span></div>' +
+        '</div>' +
+        (startCase ? '<a class="qops-button qops-start" href="#case/' + encodeURIComponent(startCase.reference) + '">START WORKING</a>' : '') +
+      '</div>' +
+      '<div class="qops-summary-pills" aria-label="Operational summary">' +
+        '<div class="qops-summary-pill qops-pill-red"><strong>' + mission.summary.immediateActions + '</strong><span>Immediate Actions</span></div>' +
+        '<div class="qops-summary-pill qops-pill-amber"><strong>' + mission.summary.waitingOnClient + '</strong><span>Waiting on Clients</span></div>' +
+        '<div class="qops-summary-pill qops-pill-green"><strong>' + mission.summary.readyForSubmission + '</strong><span>Ready for Submission</span></div>' +
+        '<div class="qops-summary-pill qops-pill-blue"><strong>' + mission.summary.newInstructions + '</strong><span>New Instructions</span></div>' +
+      '</div>' +
+    '</section>';
   }
 
-  function panel(title, body) {
-    return '<section class="qops-panel"><h2>' + esc(title) + "</h2>" + body + "</section>";
+  function instructionInbox(items) {
+    if (!items.length) return '<p class="qops-empty-good">No new instructions are waiting to be opened.</p>';
+    return '<div class="qops-inbox-grid">' + items.map(function (item) {
+      return '<article class="qops-instruction-card">' +
+        '<div class="qops-card-top">' + badge(item.priority) + badge(item.assignedState) + '</div>' +
+        '<h3>' + escapeHtml(item.complaintType) + '</h3>' +
+        '<p><strong>' + escapeHtml(item.client) + '</strong></p>' +
+        '<p>Current stage: ' + escapeHtml(item.status) + '</p>' +
+        '<div class="qops-card-actions">' + openButton(item.reference) + '</div>' +
+      '</article>';
+    }).join("") + '</div>';
   }
 
-  function actionList(items, effort) {
-    return '<div class="qops-list">' + items.map(function (item, index) {
-      return '<a class="qops-list-row" href="#case/' + esc(item.reference) + '">' +
-        '<span><strong>' + esc(item.reference) + " - " + esc(item.client) + "</strong><small>" + esc(item.complaintType) + " / " + esc(item.priority) + "</small></span>" +
-        '<span><b>' + esc(item.nextAction) + '</b><small>Due ' + esc(item.dueDate) + (effort ? " / " + (index + 1) * 15 + " mins" : "") + "</small></span>" +
-        "</a>";
-    }).join("") + "</div>";
+  function actionTable(items, mode) {
+    if (!items.length) return '<p class="qops-empty-good">No cases need action in this queue.</p>';
+    const columns = mode === "ready"
+      ? ["Client", "Complaint Type", "Remaining Action", "Estimated Effort", ""]
+      : mode === "overdue"
+      ? ["Client", "Complaint Type", "Overdue Reason", "Days Overdue", "Required Action", ""]
+      : ["Client", "Complaint Type", "Why Action Is Required", "Due Date", "Recommended Next Action", ""];
+
+    return '<div class="qops-table-wrap"><table class="qops-op-table"><thead><tr>' +
+      columns.map(function (col) { return '<th>' + escapeHtml(col) + '</th>'; }).join("") +
+      '</tr></thead><tbody>' +
+      items.map(function (item) {
+        if (mode === "ready") {
+          return '<tr><td>' + escapeHtml(item.client) + '</td><td>' + escapeHtml(item.complaintType) + '</td><td>' + escapeHtml(item.recommendedNextAction) + '</td><td>' + item.estimatedEffortMinutes + ' minutes</td><td>' + openButton(item.reference) + '</td></tr>';
+        }
+        if (mode === "overdue") {
+          return '<tr><td>' + escapeHtml(item.client) + '</td><td>' + escapeHtml(item.complaintType) + '</td><td>' + escapeHtml(item.waitingReason) + '</td><td>' + item.daysOverdue + ' days</td><td>' + escapeHtml(item.recommendedNextAction) + '</td><td>' + openButton(item.reference) + '</td></tr>';
+        }
+        return '<tr><td>' + escapeHtml(item.client) + '</td><td>' + escapeHtml(item.complaintType) + '</td><td>' + escapeHtml(item.waitingReason) + '</td><td>' + fmtDate(item.dueDate) + '</td><td>' + escapeHtml(item.recommendedNextAction) + '</td><td>' + openButton(item.reference) + '</td></tr>';
+      }).join("") +
+      '</tbody></table></div>';
   }
 
-  function compactCases(items) {
-    return '<div class="qops-list">' + items.map(function (item) {
-      return '<a class="qops-list-row" href="#case/' + esc(item.reference) + '"><span><strong>' + esc(item.client) + "</strong><small>" + esc(item.reference) + " / " + esc(item.complaintType) + "</small></span>" + badge(item.priority) + "</a>";
-    }).join("") + "</div>";
+  function waitingGroups(groups) {
+    if (!groups.length) return '<p class="qops-empty-good">No cases are currently waiting on others.</p>';
+    return '<div class="qops-waiting-grid">' + groups.map(function (group) {
+      return '<article class="qops-waiting-card">' +
+        '<h3>' + escapeHtml(group.label) + '</h3>' +
+        '<strong>' + group.cases.length + '</strong>' +
+        '<ul>' + group.cases.map(function (item) {
+          return '<li><a href="#case/' + encodeURIComponent(item.reference) + '">' + escapeHtml(item.client) + ' · ' + escapeHtml(item.complaintType) + '</a></li>';
+        }).join("") + '</ul>' +
+      '</article>';
+    }).join("") + '</div>';
   }
 
-  function stageSummary(counts) {
-    return '<div class="qops-stage-grid">' + Object.keys(counts).map(function (stage) {
-      return '<div><span>' + esc(stage) + '</span><strong>' + esc(counts[stage]) + "</strong></div>";
-    }).join("") + "</div>";
+  function operationalSummary(cases) {
+    const stages = model.byStage(cases);
+    const workload = model.workload(cases);
+    return '<div class="qops-summary-panel">' +
+      '<div>' + badge(cases.length + " active cases", "blue") + '</div>' +
+      '<div>' + badge(workload.immediateActions + " actions today", "amber") + '</div>' +
+      '<div>' + badge(workload.readyForSubmission + " ready for submission", "green") + '</div>' +
+      '<div>' + badge(workload.overdue + " overdue", "red") + '</div>' +
+    '</div><div class="qops-stage-grid">' +
+      Object.keys(stages).map(function (stage) {
+        return '<div><strong>' + stages[stage] + '</strong><span>' + escapeHtml(stage) + '</span></div>';
+      }).join("") +
+    '</div>';
   }
 
   function activityList(items) {
-    return '<ol class="qops-activity">' + items.map(function (item) {
-      return '<li><strong>' + esc(item.action) + '</strong><span>' + esc(item.reference) + " - " + esc(item.client) + "</span><small>" + esc(item.at) + " by " + esc(item.actor) + ": " + esc(item.detail) + "</small></li>";
-    }).join("") + "</ol>";
+    return '<ol class="qops-feed">' + items.map(function (item) {
+      return '<li><strong>' + escapeHtml(item.client) + '</strong><span>' + escapeHtml(item.action) + ': ' + escapeHtml(item.detail) + '</span><small>' + escapeHtml(item.at) + '</small></li>';
+    }).join("") + '</ol>';
   }
 
-  function casesRegister(filters) {
-    const filtered = model.sortCases(model.filterCases(model.fixtures.cases, filters || {}), (filters || {}).sort);
-    return layout("cases", [
-      '<section class="qops-hero compact"><p class="qops-eyebrow">Cases Register</p><h1>Instructed QCMS Cases</h1><p>Search and filter local mock cases. Rows open the case workspace shell.</p></section>',
-      filterBar(filters || {}),
-      '<section class="qops-panel qops-table-panel"><div class="qops-table-wrap"><table class="qops-table"><thead><tr>',
-      [
-        "Case Reference", "Client", "Complaint Type", "Service Level", "Current Status",
-        "Priority", "Complaint Manager", "Case Health", "Next Action", "Due Date", "Last Activity"
-      ].map(function (heading) { return "<th>" + esc(heading) + "</th>"; }).join(""),
-      "</tr></thead><tbody>",
-      filtered.map(caseRow).join(""),
-      "</tbody></table></div></section>"
-    ].join(""));
+  function dashboard() {
+    const cases = model.allCases();
+    const mission = model.mission(cases);
+    const startCase = model.highestPriorityActionable(cases);
+    const content =
+      missionCard(mission, startCase) +
+      panel("New Complaint Instructions", instructionInbox(model.newInstructions(cases)), "Section 1") +
+      panel("Immediate Action Required", actionTable(model.immediateActions(cases), "immediate"), "Section 2") +
+      panel("Waiting On Others", waitingGroups(model.waitingGroups(cases)), "Section 3") +
+      panel("Ready To Complete Today", actionTable(model.readyToCompleteToday(cases), "ready"), "Section 4") +
+      panel("Overdue", actionTable(model.overdueCases(cases), "overdue"), "Section 5") +
+      panel("Operational Summary", operationalSummary(cases), "Section 6") +
+      panel("Operational Feed", activityList(model.activity(cases, 5)) + '<a class="qops-link-action" href="#activity">View Full Activity</a>', "Section 7");
+    return layout("dashboard", content);
   }
 
   function filterBar(filters) {
-    function options(values, selected) {
-      return '<option value="">All</option>' + values.map(function (value) {
-        return '<option value="' + esc(value) + '"' + (value === selected ? " selected" : "") + ">" + esc(value) + "</option>";
-      }).join("");
-    }
-    return '<form class="qops-filters" data-qops-filters>' +
-      '<label>Search<input name="query" value="' + esc(filters.query || "") + '" placeholder="Client, reference, provider, postcode"></label>' +
-      '<label>Status<select name="status">' + options(model.config.stages, filters.status) + "</select></label>" +
-      '<label>Complaint type<select name="type">' + options(model.config.complaintRoutes, filters.type) + "</select></label>" +
-      '<label>Priority<select name="priority">' + options(model.config.priorities, filters.priority) + "</select></label>" +
-      '<label>Manager<select name="manager">' + options(model.config.managers, filters.manager) + "</select></label>" +
-      '<label>Sort<select name="sort">' + options(["dueDate", "reference", "client", "status", "priority"], filters.sort || "dueDate") + "</select></label>" +
-      '<button type="submit">Apply</button><a class="qops-button secondary" href="#cases">Clear</a>' +
-      "</form>";
+    filters = filters || {};
+    return '<form class="qops-filter-bar" data-qops-filters>' +
+      '<input name="query" value="' + escapeHtml(filters.query || "") + '" placeholder="Search client, reference or complaint type">' +
+      '<select name="status"><option value="">All statuses</option>' + config.stages.map(function (status) { return '<option value="' + escapeHtml(status) + '"' + (filters.status === status ? " selected" : "") + '>' + escapeHtml(status) + '</option>'; }).join("") + '</select>' +
+      '<select name="type"><option value="">All complaint types</option>' + config.complaintRoutes.map(function (type) { return '<option value="' + escapeHtml(type) + '"' + (filters.type === type ? " selected" : "") + '>' + escapeHtml(type) + '</option>'; }).join("") + '</select>' +
+      '<select name="priority"><option value="">All priorities</option>' + config.priorities.map(function (priority) { return '<option value="' + escapeHtml(priority) + '"' + (filters.priority === priority ? " selected" : "") + '>' + escapeHtml(priority) + '</option>'; }).join("") + '</select>' +
+      '<select name="sort"><option value="dueDate">Due date</option><option value="caseAgeDays">Case age</option><option value="priority">Priority</option><option value="lastActivity">Last activity</option></select>' +
+      '<button class="qops-button qops-button-small" type="submit">Apply</button>' +
+    '</form>';
   }
 
-  function caseRow(item) {
-    return '<tr data-href="#case/' + esc(item.reference) + '"><td><a href="#case/' + esc(item.reference) + '">' + esc(item.reference) + "</a></td>" +
-      "<td>" + esc(item.client) + "</td><td>" + esc(item.complaintType) + "</td><td>" + esc(item.serviceLevel) + "</td>" +
-      "<td>" + badge(item.status) + "</td><td>" + badge(item.priority) + "</td><td>" + esc(item.manager) + "</td><td>" + badge(item.caseHealth) + "</td>" +
-      "<td>" + esc(item.nextAction) + "</td><td>" + esc(item.dueDate) + "</td><td>" + esc(item.dates.lastActivity) + "</td></tr>";
+  function casesRegister(filters) {
+    const cases = model.sortCases(model.filterCases(model.allCases(), filters), (filters && filters.sort) || "dueDate");
+    const rows = cases.map(function (item) {
+      return '<tr data-href="#case/' + escapeHtml(item.reference) + '">' +
+        '<td><a href="#case/' + encodeURIComponent(item.reference) + '">' + escapeHtml(item.reference) + '</a></td>' +
+        '<td>' + escapeHtml(item.client) + '</td>' +
+        '<td>' + escapeHtml(item.complaintType) + '</td>' +
+        '<td>' + escapeHtml(item.serviceLevel) + '</td>' +
+        '<td>' + badge(item.status) + '</td>' +
+        '<td>' + badge(item.priority) + '</td>' +
+        '<td>' + escapeHtml(item.manager) + '</td>' +
+        '<td>' + badge(item.caseHealth) + '</td>' +
+        '<td>' + badge(item.waitingStatus) + '</td>' +
+        '<td>' + item.caseAgeDays + ' days</td>' +
+        '<td>' + escapeHtml(item.nextAction) + '</td>' +
+        '<td>' + fmtDate(item.dueDate) + '</td>' +
+        '<td>' + fmtDate(item.dates.lastActivity) + '</td>' +
+      '</tr>';
+    }).join("");
+    const content = '<section class="qops-page-head"><p class="qops-eyebrow">CASE REGISTER</p><h1>All instructed QCMS cases</h1><p>Track operational readiness, waiting status, case age and the next complaint-manager action.</p></section>' +
+      filterBar(filters) +
+      '<div class="qops-table-wrap"><table class="qops-register"><thead><tr><th>Case Reference</th><th>Client</th><th>Complaint Type</th><th>Service Level</th><th>Current Status</th><th>Priority</th><th>Complaint Manager</th><th>Operational Readiness</th><th>Waiting Status</th><th>Case Age</th><th>Next Action</th><th>Due Date</th><th>Last Activity</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    return layout("cases", content);
+  }
+
+  function workspaceTab(caseItem, tab) {
+    if (tab === "timeline") {
+      return '<div class="qops-timeline">' + caseItem.timeline.map(function (event) { return '<div><strong>' + escapeHtml(event.date) + '</strong><p>' + escapeHtml(event.title) + '</p><small>' + escapeHtml(event.detail) + '</small></div>'; }).join("") + '</div>';
+    }
+    if (tab === "documents") {
+      return '<div class="qops-doc-grid">' + caseItem.evidence.map(function (doc) { return '<div><strong>' + escapeHtml(doc.name) + '</strong>' + badge(doc.status) + '</div>'; }).join("") + '</div>';
+    }
+    if (tab === "messages") return '<p class="qops-empty-good">Messages module is reserved for a later operational release.</p>';
+    if (tab === "notes") return '<form class="qops-note-form" data-qops-note="' + escapeHtml(caseItem.reference) + '"><textarea name="note" placeholder="Add a mock internal note"></textarea><button class="qops-button" type="submit">Add Note</button><div id="qops-note-result"></div></form>';
+    return '<div class="qops-overview-grid">' +
+      '<div><span>Provider/respondent</span><strong>' + escapeHtml(caseItem.provider) + '</strong></div>' +
+      '<div><span>Important dates</span><strong>' + escapeHtml(caseItem.dates.instructed + " to " + caseItem.dueDate) + '</strong></div>' +
+      '<div><span>Case age</span><strong>' + caseItem.caseAgeDays + ' days</strong></div>' +
+      '<div><span>Financial value</span><strong>£' + escapeHtml(caseItem.value) + '</strong></div>' +
+      '<div><span>Current stage</span><strong>' + escapeHtml(caseItem.status) + '</strong></div>' +
+      '<div><span>Responsible person</span><strong>' + escapeHtml(caseItem.manager) + '</strong></div>' +
+      '<div><span>Waiting status</span><strong>' + escapeHtml(caseItem.waitingStatus) + '</strong></div>' +
+      '<div><span>Expected milestone</span><strong>' + escapeHtml(caseItem.nextAction) + '</strong></div>' +
+    '</div><div class="qops-highlight"><strong>Recommended next action</strong><p>' + escapeHtml(caseItem.recommendedNextAction) + '</p></div>';
   }
 
   function caseWorkspace(reference, tab) {
-    const item = model.findCase(reference);
-    const current = tab || "overview";
-    const tabs = ["Overview", "Client", "Timeline", "Evidence", "Complaint", "Documents", "Messages", "Internal Notes", "Activity"];
-    const tabLinks = tabs.map(function (name) {
-      const key = name.toLowerCase().replace(/\s+/g, "-");
-      return '<a href="#case/' + esc(item.reference) + "/" + key + '"' + (key === current ? ' aria-current="page"' : "") + ">" + esc(name) + "</a>";
-    }).join("");
-    return layout("cases", [
-      '<section class="qops-case-head"><div><p class="qops-eyebrow">Case Workspace</p><h1>' + esc(item.reference) + " - " + esc(item.client) + "</h1><p>" + esc(item.summary) + "</p></div>",
-      '<div class="qops-case-meta">' + badge(item.status) + badge(item.priority) + badge(item.caseHealth) + "</div></section>",
-      '<section class="qops-panel"><div class="qops-case-strip">',
-      '<span><b>Complaint type</b>' + esc(item.complaintType) + "</span>",
-      '<span><b>Service level</b>' + esc(item.serviceLevel) + "</span>",
-      '<span><b>Complaint Manager</b>' + esc(item.manager) + "</span>",
-      '<span><b>Recommended next action</b>' + esc(item.nextAction) + "</span>",
-      "</div></section>",
-      '<nav class="qops-tabs" aria-label="Case workspace tabs">' + tabLinks + "</nav>",
-      renderTab(item, current)
-    ].join(""));
-  }
-
-  function renderTab(item, tab) {
-    if (tab === "timeline") return panel("Timeline", timeline(item.timeline));
-    if (tab === "evidence") return panel("Evidence", evidence(item.evidence));
-    if (tab === "internal-notes") return panel("Internal Notes", notesForm(item));
-    if (tab === "activity") return panel("Activity", activityList(item.activity.map(function (entry) { return Object.assign({ reference: item.reference, client: item.client }, entry); })));
-    if (tab === "client") return panel("Client", '<div class="qops-detail-grid"><p><b>Client</b>' + esc(item.client) + '</p><p><b>Postcode</b>' + esc(item.postcode) + '</p><p><b>Authority status</b>' + esc(item.authorityStatus) + "</p></div>");
-    if (tab === "complaint" || tab === "documents" || tab === "messages") return panel(tab.replace("-", " "), '<p class="qops-placeholder">Structured ' + esc(tab.replace("-", " ")) + ' workspace placeholder. No live data, emails or document systems are connected in Release 1.2 foundation.</p>');
-    return overview(item);
-  }
-
-  function overview(item) {
-    return panel("Case Overview", [
-      '<div class="qops-detail-grid">',
-      '<p><b>Provider/respondent</b>' + esc(item.provider) + "</p>",
-      '<p><b>Important dates</b>Instructed ' + esc(item.dates.instructed) + ", due " + esc(item.dates.due) + "</p>",
-      '<p><b>Financial value</b>Approx. GBP ' + esc(item.value.toLocaleString("en-GB")) + "</p>",
-      '<p><b>Current stage</b>' + esc(item.status) + "</p>",
-      '<p><b>Responsible person</b>' + esc(item.responsible) + "</p>",
-      '<p><b>Expected milestone</b>' + esc(item.milestone) + "</p>",
-      "</div>",
-      '<div class="qops-progress"><span style="width:' + esc(item.progress) + '%"></span></div><p class="qops-muted">Operational progress: ' + esc(item.progress) + "% complete. This is not a success prediction.</p>",
-      '<div class="qops-health">',
-      health("Evidence Completeness", item.evidenceCompleteness),
-      health("Complaint Readiness", item.complaintReadiness),
-      health("Authority Status", item.authorityStatus),
-      health("Timeline Completeness", item.timelineCompleteness),
-      health("Overall Case Health", item.caseHealth),
-      "</div>",
-      '<h3>Outstanding requirements</h3><ul>' + item.outstanding.map(function (entry) { return "<li>" + esc(entry) + "</li>"; }).join("") + "</ul>"
-    ].join(""));
-  }
-
-  function health(label, value) {
-    return '<div><span>' + esc(label) + '</span><strong>' + esc(value) + "</strong></div>";
-  }
-
-  function timeline(items) {
-    return '<ol class="qops-activity">' + items.map(function (item) {
-      return '<li><strong>' + esc(item.title) + '</strong><span>' + esc(item.date) + '</span><small>' + esc(item.detail) + "</small></li>";
-    }).join("") + "</ol>";
-  }
-
-  function evidence(items) {
-    return '<div class="qops-stage-grid">' + items.map(function (item) {
-      return '<div><span>' + esc(item.name) + '</span><strong>' + esc(item.status) + "</strong></div>";
-    }).join("") + "</div>";
-  }
-
-  function notesForm(item) {
-    return '<form class="qops-note-form" data-qops-note="' + esc(item.reference) + '"><label>Add internal note<textarea name="note" placeholder="Mock note only. This is not persisted."></textarea></label><button type="submit">Add Mock Note</button></form><div id="qops-note-result"></div>';
+    const caseItem = model.findCase(reference);
+    const tabs = ["overview", "timeline", "documents", "messages", "notes"];
+    const activeTab = tab || "overview";
+    const content = '<section class="qops-case-head"><div><p class="qops-eyebrow">' + escapeHtml(caseItem.reference) + '</p><h1>' + escapeHtml(caseItem.client) + '</h1><p>' + escapeHtml(caseItem.complaintType) + ' · ' + escapeHtml(caseItem.serviceLevel) + '</p></div><div class="qops-case-badges">' + badge(caseItem.status) + badge(caseItem.priority) + badge(caseItem.caseHealth) + badge(caseItem.waitingStatus) + '</div></section>' +
+      '<section class="qops-case-strip"><div><span>Complaint Type</span><strong>' + escapeHtml(caseItem.complaintType) + '</strong></div><div><span>Service Level</span><strong>' + escapeHtml(caseItem.serviceLevel) + '</strong></div><div><span>Complaint Manager</span><strong>' + escapeHtml(caseItem.manager) + '</strong></div><div><span>Waiting status</span><strong>' + escapeHtml(caseItem.waitingStatus) + '</strong></div><div><span>Case age</span><strong>' + caseItem.caseAgeDays + ' days</strong></div><div><span>Operational Readiness</span><strong>' + escapeHtml(caseItem.caseHealth) + '</strong></div></section>' +
+      '<nav class="qops-tabs">' + tabs.map(function (item) { return '<a class="' + (item === activeTab ? "qops-tab-active" : "") + '" href="#case/' + encodeURIComponent(caseItem.reference) + '/' + item + '">' + escapeHtml(item) + '</a>'; }).join("") + '</nav>' +
+      '<section class="qops-panel">' + workspaceTab(caseItem, activeTab) + '</section>';
+    return layout("cases", content);
   }
 
   function placeholder(route) {
-    const label = model.config.navigation.find(function (item) { return item[0] === route; });
-    return layout(route, '<section class="qops-hero compact"><p class="qops-eyebrow">Foundation Module</p><h1>' + esc(label ? label[1] : "QCMS Operations") + '</h1><p>This Release 1.2 foundation screen is intentionally a labelled prototype. No production data or external services are connected.</p></section>');
+    return layout(route, '<section class="qops-page-head"><p class="qops-eyebrow">FOUNDATION MODULE</p><h1>' + escapeHtml(route) + '</h1><p>This Release 1.3 Operations Centre module is reserved for the next implementation phase.</p></section>');
   }
 
   return {
     layout,
+    badge,
     dashboard,
+    filterBar,
     casesRegister,
     caseWorkspace,
-    placeholder,
-    badge,
-    filterBar
+    placeholder
   };
 });
