@@ -34,6 +34,94 @@
     ["QCMS-2026-0020", "James Scott", "Car Finance", "Enhanced Managed Complaint Service", "Response Received", "High", "Daniel Price", "Good", "Assess final response gaps", "2026-08-01", "Meridian Vehicle Credit", "LE1 3AB", 86, 7400, "Waiting on Complaint Manager", "Final response needs gap analysis", "Assess final response gaps", 45]
   ];
 
+  function journeyState(status, caseHealth, stage) {
+    const order = ["Instruction", "Authority", "Evidence", "Timeline", "Complaint", "Submitted", "Response", "Outcome"];
+    const statusIndex = {
+      "New Instruction": 1,
+      "Evidence Requested": 2,
+      "Evidence Review": 2,
+      "Complaint Preparation": 4,
+      "Ready for Submission": 4,
+      "Submitted": 5,
+      "Awaiting Response": 6,
+      "Response Received": 6,
+      "Resolved": 7,
+      "Closed": 7
+    };
+    const activeIndex = statusIndex[status] || 1;
+    const stageIndex = order.indexOf(stage);
+    if (caseHealth === "Blocked" && stage === "Evidence") return "Blocked";
+    if (stageIndex < activeIndex) return "Complete";
+    if (stageIndex === activeIndex) return "Current";
+    return "Future";
+  }
+
+  function buildJourney(row) {
+    const labels = ["Instruction", "Authority", "Evidence", "Timeline", "Complaint", "Submitted", "Response", "Outcome"];
+    return labels.map(function (label) {
+      return {
+        label,
+        state: journeyState(row[4], row[7], label),
+        description: label === "Evidence" ? row[15] : "Workspace stage for " + label.toLowerCase() + "."
+      };
+    });
+  }
+
+  function buildComplaintSummary(row) {
+    return {
+      problem: row[2] + " complaint involving " + row[10],
+      service: row[3],
+      financialPosition: "Indicative matter value: " + row[13].toLocaleString("en-GB") + ".",
+      currentPosition: row[14] + " - " + row[15],
+      objective: "Move the case from " + row[4].toLowerCase() + " to the next safe operational milestone."
+    };
+  }
+
+  function buildTodaysTask(row) {
+    return {
+      currentTask: row[8],
+      recommendedNextAction: row[16],
+      estimatedEffortMinutes: row[17],
+      responsiblePerson: row[6],
+      expectedOutcome: row[4] === "Ready for Submission" ? "Ready to submit after final manager review." : "Case moves forward with clearer evidence and next-step position.",
+      deadline: row[9],
+      primaryActionLabel: row[4] === "New Instruction" ? "Open Instruction" : "Start Task"
+    };
+  }
+
+  function buildReadiness(row) {
+    const authority = row[6] === "Unassigned" ? 70 : 100;
+    const evidence = row[7] === "Blocked" ? 35 : row[7] === "Needs Evidence" ? 55 : row[7] === "Good" ? 80 : 95;
+    const complaint = row[4] === "Ready for Submission" || row[4] === "Submitted" || row[4] === "Awaiting Response" || row[4] === "Response Received" || row[4] === "Resolved" || row[4] === "Closed" ? 90 : row[12];
+    return [
+      { label: "Authority", score: authority, status: authority === 100 ? "Complete" : "Needs Review" },
+      { label: "Evidence", score: evidence, status: row[7] === "Blocked" || row[7] === "Needs Evidence" ? "Needs Evidence" : "Supported" },
+      { label: "Timeline", score: row[12] > 70 ? 90 : 60, status: row[12] > 70 ? "Complete" : "Needs Work" },
+      { label: "Complaint Pack", score: complaint, status: complaint > 85 ? "Ready for Review" : "Needs Review" }
+    ];
+  }
+
+  function buildEvidenceChecklist(row) {
+    const needsEvidence = row[7] === "Blocked" || row[7] === "Needs Evidence";
+    return [
+      { label: "Authority to Act", status: "Complete", owner: "QCMS" },
+      { label: "Client Agreement", status: "Complete", owner: "QCMS" },
+      { label: "Core Evidence", status: needsEvidence ? "Needs Evidence" : "Supported", owner: needsEvidence ? "Client" : "Complaint Manager" },
+      { label: "Complaint Timeline", status: row[12] > 70 ? "Complete" : "Developing", owner: "Complaint Manager" },
+      { label: "Provider Response", status: row[4] === "Response Received" || row[4] === "Resolved" || row[4] === "Closed" ? "Complete" : "Future", owner: row[10] }
+    ];
+  }
+
+  function buildMilestone(row) {
+    return {
+      title: row[8],
+      dueDate: row[9],
+      owner: row[6],
+      successMeasure: "The next operational position is recorded and the case owner can see the following action.",
+      blocker: row[7] === "Blocked" ? row[15] : ""
+    };
+  }
+
   const cases = rows.map(function (row, index) {
     const ref = row[0];
     const instructed = "2026-07-" + String(8 + (index % 17)).padStart(2, "0");
@@ -67,7 +155,21 @@
       evidenceCompleteness: row[7] === "Blocked" ? "Needs Evidence" : row[7],
       complaintReadiness: row[12] > 80 ? "Ready" : row[12] > 45 ? "Good" : "Needs Information",
       timelineCompleteness: row[12] > 70 ? "Complete" : "Needs Work",
-      summary: "Instructed QCMS case for " + row[2].toLowerCase() + " support involving " + row[10] + ".",
+      summary: buildComplaintSummary(row),
+      journey: buildJourney(row),
+      todaysTask: buildTodaysTask(row),
+      readiness: buildReadiness(row),
+      evidenceChecklist: buildEvidenceChecklist(row),
+      expectedMilestone: buildMilestone(row),
+      workspaceActions: ["Generate Complaint", "Request Evidence", "Send Reminder", "Assign Complaint", "Record Response", "Close Complaint"],
+      messages: [
+        { from: "Client", subject: "Evidence upload question", detail: "Client asked which documents should be uploaded next.", status: row[14] },
+        { from: "Complaint Manager", subject: "Next action note", detail: row[16], status: "Draft" }
+      ],
+      notes: [
+        { author: row[6], text: row[15], visibility: "Internal" },
+        { author: "QCMS", text: "Keep complaint management separate from other operational workspaces.", visibility: "Internal" }
+      ],
       outstanding: [
         "Confirm the latest client instruction position",
         "Check evidence against the service scope",

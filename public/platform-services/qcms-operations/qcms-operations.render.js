@@ -25,6 +25,10 @@
     return value || "Not set";
   }
 
+  function money(value) {
+    return "&pound;" + Number(value || 0).toLocaleString("en-GB");
+  }
+
   function openButton(reference, label) {
     return '<a class="qops-button qops-button-small" href="#case/' + encodeURIComponent(reference) + '">' + (label || "Open Case") + "</a>";
   }
@@ -42,7 +46,7 @@
       '<div class="qops-shell">' +
         '<aside class="qops-sidebar">' +
           '<a class="qops-brand" href="index.html" aria-label="Quaerens home"><img src="images/quaerens-logo.png" alt="Quaerens"></a>' +
-          '<p class="qops-release">' + escapeHtml(config.releaseName) + ' · ' + escapeHtml(config.version) + '</p>' +
+          '<p class="qops-release">' + escapeHtml(config.releaseName) + ' &middot; ' + escapeHtml(config.version) + '</p>' +
           '<nav class="qops-nav" aria-label="QCMS Operations navigation">' + nav(active) + '</nav>' +
           '<div class="qops-boundary"><strong>Operational boundary</strong><p>QCMS Operations is for instructed complaint work only. Lead and business workflows remain outside this workspace.</p></div>' +
         '</aside>' +
@@ -124,7 +128,7 @@
         '<h3>' + escapeHtml(group.label) + '</h3>' +
         '<strong>' + group.cases.length + '</strong>' +
         '<ul>' + group.cases.map(function (item) {
-          return '<li><a href="#case/' + encodeURIComponent(item.reference) + '">' + escapeHtml(item.client) + ' · ' + escapeHtml(item.complaintType) + '</a></li>';
+          return '<li><a href="#case/' + encodeURIComponent(item.reference) + '">' + escapeHtml(item.client) + ' &middot; ' + escapeHtml(item.complaintType) + '</a></li>';
         }).join("") + '</ul>' +
       '</article>';
     }).join("") + '</div>';
@@ -190,7 +194,7 @@
         '<td>' + badge(item.status) + '</td>' +
         '<td>' + badge(item.priority) + '</td>' +
         '<td>' + escapeHtml(item.manager) + '</td>' +
-        '<td>' + badge(item.caseHealth) + '</td>' +
+          '<td>' + badge(item.complaintReadiness) + '</td>' +
         '<td>' + badge(item.waitingStatus) + '</td>' +
         '<td>' + item.caseAgeDays + ' days</td>' +
         '<td>' + escapeHtml(item.nextAction) + '</td>' +
@@ -198,46 +202,124 @@
         '<td>' + fmtDate(item.dates.lastActivity) + '</td>' +
       '</tr>';
     }).join("");
-    const content = '<section class="qops-page-head"><p class="qops-eyebrow">CASE REGISTER</p><h1>All instructed QCMS cases</h1><p>Track operational readiness, waiting status, case age and the next complaint-manager action.</p></section>' +
+    const content = '<section class="qops-page-head"><p class="qops-eyebrow">CASE REGISTER</p><h1>All instructed QCMS cases</h1><p>Track complaint readiness, waiting status, case age and the next complaint-manager action.</p></section>' +
       filterBar(filters) +
-      '<div class="qops-table-wrap"><table class="qops-register"><thead><tr><th>Case Reference</th><th>Client</th><th>Complaint Type</th><th>Service Level</th><th>Current Status</th><th>Priority</th><th>Complaint Manager</th><th>Operational Readiness</th><th>Waiting Status</th><th>Case Age</th><th>Next Action</th><th>Due Date</th><th>Last Activity</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<div class="qops-table-wrap"><table class="qops-register"><thead><tr><th>Case Reference</th><th>Client</th><th>Complaint Type</th><th>Service Level</th><th>Current Status</th><th>Priority</th><th>Complaint Manager</th><th>Complaint Readiness</th><th>Waiting Status</th><th>Case Age</th><th>Next Action</th><th>Due Date</th><th>Last Activity</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
     return layout("cases", content);
   }
 
-  function workspaceTab(caseItem, tab) {
-    if (tab === "timeline") {
-      return '<div class="qops-timeline">' + caseItem.timeline.map(function (event) { return '<div><strong>' + escapeHtml(event.date) + '</strong><p>' + escapeHtml(event.title) + '</p><small>' + escapeHtml(event.detail) + '</small></div>'; }).join("") + '</div>';
-    }
-    if (tab === "documents") {
-      return '<div class="qops-doc-grid">' + caseItem.evidence.map(function (doc) { return '<div><strong>' + escapeHtml(doc.name) + '</strong>' + badge(doc.status) + '</div>'; }).join("") + '</div>';
-    }
-    if (tab === "messages") return '<p class="qops-empty-good">Messages module is reserved for a later operational release.</p>';
-    if (tab === "notes") return '<form class="qops-note-form" data-qops-note="' + escapeHtml(caseItem.reference) + '"><textarea name="note" placeholder="Add a mock internal note"></textarea><button class="qops-button" type="submit">Add Note</button><div id="qops-note-result"></div></form>';
-    return '<div class="qops-overview-grid">' +
-      '<div><span>Provider/respondent</span><strong>' + escapeHtml(caseItem.provider) + '</strong></div>' +
-      '<div><span>Important dates</span><strong>' + escapeHtml(caseItem.dates.instructed + " to " + caseItem.dueDate) + '</strong></div>' +
-      '<div><span>Case age</span><strong>' + caseItem.caseAgeDays + ' days</strong></div>' +
-      '<div><span>Financial value</span><strong>£' + escapeHtml(caseItem.value) + '</strong></div>' +
-      '<div><span>Current stage</span><strong>' + escapeHtml(caseItem.status) + '</strong></div>' +
-      '<div><span>Responsible person</span><strong>' + escapeHtml(caseItem.manager) + '</strong></div>' +
-      '<div><span>Waiting status</span><strong>' + escapeHtml(caseItem.waitingStatus) + '</strong></div>' +
-      '<div><span>Expected milestone</span><strong>' + escapeHtml(caseItem.nextAction) + '</strong></div>' +
-    '</div><div class="qops-highlight"><strong>Recommended next action</strong><p>' + escapeHtml(caseItem.recommendedNextAction) + '</p></div>';
+  function journey(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">CASE WORKSPACE</p><h2>Complaint Journey</h2></div><div class="qops-journey" role="list">' +
+      caseItem.journey.map(function (stage) {
+        return '<div class="qops-journey-stage qops-journey-' + escapeHtml(stage.state.toLowerCase()) + '" role="listitem"><span class="qops-journey-marker"></span><strong>' + escapeHtml(stage.label) + '</strong><small>' + escapeHtml(stage.state) + '</small><p>' + escapeHtml(stage.description) + '</p></div>';
+      }).join("") +
+    '</div></section>';
   }
 
-  function caseWorkspace(reference, tab) {
+  function complaintSummary(caseItem) {
+    const summary = caseItem.summary || {};
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">SUMMARY</p><h2>Complaint Summary</h2></div><div class="qops-summary-list">' +
+      '<div><span>Problem</span><strong>' + escapeHtml(summary.problem) + '</strong></div>' +
+      '<div><span>Service</span><strong>' + escapeHtml(summary.service) + '</strong></div>' +
+      '<div><span>Financial position</span><strong>' + escapeHtml(summary.financialPosition) + '</strong></div>' +
+      '<div><span>Current position</span><strong>' + escapeHtml(summary.currentPosition) + '</strong></div>' +
+      '<div><span>Objective</span><strong>' + escapeHtml(summary.objective) + '</strong></div>' +
+    '</div></section>';
+  }
+
+  function todaysTask(caseItem) {
+    const task = caseItem.todaysTask || {};
+    return '<section class="qops-task-panel"><div><p class="qops-eyebrow">TODAY</p><h2>Today\'s Task</h2><p>' + escapeHtml(task.currentTask) + '</p></div>' +
+      '<dl class="qops-task-grid">' +
+        '<div><dt>Recommended next action</dt><dd>' + escapeHtml(task.recommendedNextAction) + '</dd></div>' +
+        '<div><dt>Responsible person</dt><dd>' + escapeHtml(task.responsiblePerson) + '</dd></div>' +
+        '<div><dt>Estimated effort</dt><dd>' + escapeHtml(task.estimatedEffortMinutes) + ' minutes</dd></div>' +
+        '<div><dt>Expected outcome</dt><dd>' + escapeHtml(task.expectedOutcome) + '</dd></div>' +
+        '<div><dt>Deadline</dt><dd>' + escapeHtml(task.deadline) + '</dd></div>' +
+      '</dl><button class="qops-button" type="button">' + escapeHtml(task.primaryActionLabel || "Start Task") + '</button></section>';
+  }
+
+  function readiness(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">QUALITY CHECK</p><h2>Complaint Readiness</h2></div><div class="qops-readiness">' +
+      (caseItem.readiness || []).map(function (item) {
+        const score = Math.max(0, Math.min(100, item.score || 0));
+        return '<div class="qops-progress-row"><div><strong>' + escapeHtml(item.label) + '</strong><span>' + escapeHtml(item.status) + '</span></div><div class="qops-progress-track"><span style="width:' + score + '%"></span></div><em>' + score + '%</em></div>';
+      }).join("") +
+    '</div></section>';
+  }
+
+  function evidenceChecklist(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">EVIDENCE</p><h2>Evidence Checklist</h2></div><div class="qops-checklist">' +
+      (caseItem.evidenceChecklist || []).map(function (item) {
+        return '<article class="qops-check-item"><strong>' + escapeHtml(item.label) + '</strong>' + badge(item.status) + '<small>Owner: ' + escapeHtml(item.owner) + '</small></article>';
+      }).join("") +
+    '</div></section>';
+  }
+
+  function operationalTimeline(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">HISTORY</p><h2>Operational Timeline</h2></div><ol class="qops-pro-timeline">' +
+      caseItem.timeline.map(function (event) {
+        return '<li><time>' + escapeHtml(event.date) + '</time><strong>' + escapeHtml(event.title) + '</strong><p>' + escapeHtml(event.detail) + '</p></li>';
+      }).join("") +
+    '</ol></section>';
+  }
+
+  function expectedMilestone(caseItem) {
+    const milestone = caseItem.expectedMilestone || {};
+    return '<section class="qops-workspace-card qops-milestone"><div class="qops-card-heading"><p class="qops-eyebrow">NEXT</p><h2>Expected Next Milestone</h2></div><strong>' + escapeHtml(milestone.title) + '</strong><p>Owner: ' + escapeHtml(milestone.owner) + ' &middot; Due: ' + escapeHtml(milestone.dueDate) + '</p><p>' + escapeHtml(milestone.successMeasure) + '</p>' + (milestone.blocker ? '<div class="qops-warning"><strong>Blocker</strong><p>' + escapeHtml(milestone.blocker) + '</p></div>' : '') + '</section>';
+  }
+
+  function workspaceActions(caseItem) {
+    return '<aside class="qops-actions-panel"><p class="qops-eyebrow">ACTIONS</p><h2>Workspace Actions</h2><p>Use these mock actions to show the intended Release 1.4 operational flow. No live systems are connected.</p>' +
+      '<div class="qops-action-buttons">' + (caseItem.workspaceActions || []).map(function (label) {
+        return '<button class="qops-button qops-button-outline" type="button">' + escapeHtml(label) + '</button>';
+      }).join("") + '</div></aside>';
+  }
+
+  function messagesPanel(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">COMMUNICATIONS</p><h2>Messages</h2></div><div class="qops-message-thread">' +
+      (caseItem.messages || []).map(function (message) {
+        return '<article><strong>' + escapeHtml(message.subject) + '</strong><p>' + escapeHtml(message.detail) + '</p><small>' + escapeHtml(message.from) + ' &middot; ' + escapeHtml(message.status) + '</small></article>';
+      }).join("") +
+    '</div></section>';
+  }
+
+  function notesPanel(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">INTERNAL</p><h2>Internal Notes</h2></div><div class="qops-note-list">' +
+      (caseItem.notes || []).map(function (note) {
+        return '<article><strong>' + escapeHtml(note.author) + '</strong><p>' + escapeHtml(note.text) + '</p><small>' + escapeHtml(note.visibility) + '</small></article>';
+      }).join("") +
+      '</div><form class="qops-note-form" data-qops-note="' + escapeHtml(caseItem.reference) + '"><textarea name="note" placeholder="Add a mock internal note"></textarea><button class="qops-button" type="submit">Add Note</button><div id="qops-note-result"></div></form></section>';
+  }
+
+  function activityPanel(caseItem) {
+    return '<section class="qops-workspace-card"><div class="qops-card-heading"><p class="qops-eyebrow">AUDIT</p><h2>Activity</h2></div><ol class="qops-feed qops-feed-compact">' +
+      caseItem.activity.map(function (item) {
+        return '<li><strong>' + escapeHtml(item.action) + '</strong><span>' + escapeHtml(item.detail) + '</span><small>' + escapeHtml(item.at) + ' &middot; ' + escapeHtml(item.actor) + '</small></li>';
+      }).join("") +
+    '</ol></section>';
+  }
+
+  function caseWorkspace(reference) {
     const caseItem = model.findCase(reference);
-    const tabs = ["overview", "timeline", "documents", "messages", "notes"];
-    const activeTab = tab || "overview";
-    const content = '<section class="qops-case-head"><div><p class="qops-eyebrow">' + escapeHtml(caseItem.reference) + '</p><h1>' + escapeHtml(caseItem.client) + '</h1><p>' + escapeHtml(caseItem.complaintType) + ' · ' + escapeHtml(caseItem.serviceLevel) + '</p></div><div class="qops-case-badges">' + badge(caseItem.status) + badge(caseItem.priority) + badge(caseItem.caseHealth) + badge(caseItem.waitingStatus) + '</div></section>' +
-      '<section class="qops-case-strip"><div><span>Complaint Type</span><strong>' + escapeHtml(caseItem.complaintType) + '</strong></div><div><span>Service Level</span><strong>' + escapeHtml(caseItem.serviceLevel) + '</strong></div><div><span>Complaint Manager</span><strong>' + escapeHtml(caseItem.manager) + '</strong></div><div><span>Waiting status</span><strong>' + escapeHtml(caseItem.waitingStatus) + '</strong></div><div><span>Case age</span><strong>' + caseItem.caseAgeDays + ' days</strong></div><div><span>Operational Readiness</span><strong>' + escapeHtml(caseItem.caseHealth) + '</strong></div></section>' +
-      '<nav class="qops-tabs">' + tabs.map(function (item) { return '<a class="' + (item === activeTab ? "qops-tab-active" : "") + '" href="#case/' + encodeURIComponent(caseItem.reference) + '/' + item + '">' + escapeHtml(item) + '</a>'; }).join("") + '</nav>' +
-      '<section class="qops-panel">' + workspaceTab(caseItem, activeTab) + '</section>';
+    const content = '<section class="qops-case-head"><div><p class="qops-eyebrow">' + escapeHtml(caseItem.reference) + '</p><h1>' + escapeHtml(caseItem.client) + '</h1><p>' + escapeHtml(caseItem.complaintType) + ' &middot; ' + escapeHtml(caseItem.serviceLevel) + '</p></div><div class="qops-case-badges">' + badge(caseItem.status) + badge(caseItem.priority) + badge(caseItem.caseHealth) + badge(caseItem.waitingStatus) + '</div></section>' +
+      '<section class="qops-case-strip"><div><span>Complaint Type</span><strong>' + escapeHtml(caseItem.complaintType) + '</strong></div><div><span>Service Level</span><strong>' + escapeHtml(caseItem.serviceLevel) + '</strong></div><div><span>Complaint Manager</span><strong>' + escapeHtml(caseItem.manager) + '</strong></div><div><span>Waiting status</span><strong>' + escapeHtml(caseItem.waitingStatus) + '</strong></div><div><span>Case age</span><strong>' + caseItem.caseAgeDays + ' days</strong></div><div><span>Complaint Readiness</span><strong>' + escapeHtml(caseItem.complaintReadiness) + '</strong></div><div><span>Financial value</span><strong>' + money(caseItem.value) + '</strong></div></section>' +
+      '<div class="qops-workspace"><div class="qops-workspace-main">' +
+        journey(caseItem) +
+        complaintSummary(caseItem) +
+        todaysTask(caseItem) +
+        readiness(caseItem) +
+        evidenceChecklist(caseItem) +
+        operationalTimeline(caseItem) +
+        expectedMilestone(caseItem) +
+        '<div class="qops-activity-split">' + messagesPanel(caseItem) + notesPanel(caseItem) + '</div>' +
+        activityPanel(caseItem) +
+      '</div>' + workspaceActions(caseItem) + '</div>';
     return layout("cases", content);
   }
 
   function placeholder(route) {
-    return layout(route, '<section class="qops-page-head"><p class="qops-eyebrow">FOUNDATION MODULE</p><h1>' + escapeHtml(route) + '</h1><p>This Release 1.3 Operations Centre module is reserved for the next implementation phase.</p></section>');
+    return layout(route, '<section class="qops-page-head"><p class="qops-eyebrow">FOUNDATION MODULE</p><h1>' + escapeHtml(route) + '</h1><p>This Release 1.4 Case Workspace module is reserved for the next implementation phase.</p></section>');
   }
 
   return {

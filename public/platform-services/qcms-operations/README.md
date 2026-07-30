@@ -1,155 +1,91 @@
-# QCMS Operations™
+# QCMS Operations - Release 1.4 Case Workspace
 
-Version: 1.3.0-alpha.1  
-Release name: Operations Centre  
+Version: 1.4.0-alpha.1
+Release name: Case Workspace
 Status: Local prototype, isolated from production systems
 
 ## Purpose
 
-QCMS Operations™ is the operational workspace for instructed QCMS complaint cases. It is designed for Complaint Managers who need to open new instructions, move active complaints forward, identify blocked files, prepare complaint material, monitor responses and complete cases.
+QCMS Operations is the operational workspace for instructed QCMS complaint cases. Release 1.4 turns each mock case into an action-first Case Workspace for Complaint Managers who need to understand the case, move it forward, request evidence, prepare complaint material and record internal activity.
 
-This module is intentionally separate from Operations CRM™. Operations CRM™ remains the existing business workflow platform for lead and internal operational activity. QCMS Operations™ focuses only on instructed complaint-management work.
+This module remains separate from Operations CRM. Operations CRM continues to handle business workflow activity. QCMS Operations focuses only on instructed complaint-management work.
 
-## Why The Dashboard Became An Operations Centre
+## Release 1.4 Improvements
 
-Release 1.3 changes the top-level experience from a generic statistics view into a working operational cockpit. The first screen now answers:
+The Case Workspace now includes:
 
-- What needs doing today?
-- Which cases can be completed?
-- Which cases can be moved forward?
-- Which cases are waiting on somebody else?
-- Which case should the Complaint Manager open first?
+- Complaint Journey;
+- Complaint Summary;
+- Today's Task;
+- Complaint Readiness;
+- Evidence Checklist;
+- Operational Timeline;
+- Expected Next Milestone;
+- Messages;
+- Internal Notes;
+- Workspace Actions.
 
-General statistics are still present, but they are deliberately lower on the page. The primary purpose is daily execution, not passive reporting.
+The previous tab-led case view has been replaced with a practical workspace layout. The page now answers what the case is about, where it is in the complaint journey, what the Complaint Manager should do today and what evidence is still missing.
 
-## Operations Centre Sections
+## Case Workspace Modules
 
-The Operations Centre is organised in the order a Complaint Manager is likely to work:
+### Complaint Journey
 
-1. Today's Mission
-2. New Complaint Instructions
-3. Immediate Action Required
-4. Waiting On Others
-5. Ready To Complete Today
-6. Overdue
-7. Operational Summary
-8. Operational Feed
+Shows the case across the operational stages used by QCMS Operations:
 
-## Today’s Mission
+1. Instructed
+2. Triage
+3. Evidence
+4. Complaint Draft
+5. Ready for Submission
+6. Submitted
+7. Awaiting Response
+8. Resolved
 
-The mission area shows:
+### Complaint Summary
 
-- complaints that can be completed today;
-- complaints that can be moved forward;
-- estimated workload;
-- immediate actions;
-- waiting-on-client count;
-- ready-for-submission count;
-- new instructions.
+Displays the issue, desired outcome, financial exposure, current status and next action in a compact summary panel.
 
-The START WORKING button opens the highest-priority actionable mock case.
+### Today's Task
 
-## New Complaint Instructions
+Highlights the single most useful next action, who owns it, the due date and why it matters.
 
-New instructions are presented like an inbox. Each item shows:
+### Complaint Readiness
 
-- complaint type;
-- client;
-- priority;
-- current stage;
-- assigned or unassigned state;
-- an Open Case action.
+Uses progress rows for authority, evidence, complaint preparation, response monitoring and outcome position. This is deliberately complaint-management language rather than sales pipeline language.
 
-The mock data includes real complaint areas such as Flight Delay, Lost Luggage, Energy Switch, Spray Foam, Solar, Car Finance, Section 75, Cruise, Broadband and Caravan.
+### Evidence Checklist
 
-## Immediate Action Required
+Lists expected evidence items and whether they are received, requested, partial, missing or not applicable.
 
-This replaces the older priority-action language. The table explains:
+### Workspace Actions
 
-- client;
-- complaint type;
-- why action is required;
-- due date;
-- recommended next action;
-- Open Case.
+Mock action buttons are available for future operational flows:
 
-## Waiting On Others
+- Generate Complaint
+- Request Evidence
+- Send Reminder
+- Assign Complaint
+- Record Response
+- Close Complaint
 
-Cases are grouped by operational waiting reason:
+These buttons are local UI placeholders only. They do not connect to production systems.
 
-- Waiting on Client
-- Waiting on Business
-- Waiting on Partner
-- Waiting on Authority
-- Waiting on Finance
-- Waiting on Documents
+## Architecture Guardrails
 
-This makes blocked work visible without mixing it into the active action queue.
+Release 1.4 does not:
 
-## Ready To Complete Today
-
-This section identifies cases where a practical closing or submission action is available today. Each row shows the remaining action, estimated effort and case link.
-
-## Overdue
-
-Overdue work is separated from normal priority work so it cannot disappear inside the broader register. If no case is overdue, the UI displays a positive empty state.
-
-## Operational Feed
-
-The Operational Feed shows the latest five activity events and a View Full Activity link for the future full activity view.
-
-## Case Register
-
-The Case Register now includes:
-
-- Case Age;
-- Waiting Status;
-- Operational Readiness;
-- Current Status;
-- Priority;
-- Complaint Manager;
-- Next Action;
-- Due Date;
-- Last Activity.
-
-Case Age is calculated from the instruction date against the current local prototype date.
-
-## Case Workspace
-
-The case workspace retains the foundation tabs and adds 1.3 operational context:
-
-- Waiting status;
-- Case age;
-- Operational Readiness;
-- Recommended next action;
-- key case details;
-- timeline;
-- documents;
-- messages;
-- internal notes.
-
-## Readiness Language
-
-Release 1.3 replaces the older evidence labels with operational readiness language:
-
-- Excellent
-- Good
-- Needs Evidence
-- Blocked
-
-This is more useful for day-to-day complaint work because it describes what a Complaint Manager can do with the file.
+- connect to Firebase;
+- connect to Stripe;
+- connect to production client data;
+- modify Operations CRM;
+- create APIs;
+- implement Client Portal or Partner Portal features;
+- deploy any production changes.
 
 ## Data Boundary
 
-This release uses mock local data only. It does not connect to:
-
-- production client records;
-- payment systems;
-- signature systems;
-- external complaint portals;
-- existing CRM data.
-
-No deployment is required for this release.
+All case information is mock local data in `qcms-operations.fixtures.js`. It exists only to support UI, workflow and regression testing.
 
 ## Files
 
@@ -170,4 +106,4 @@ Run:
 node public\platform-services\qcms-operations\qcms-operations.test.js
 ```
 
-The regression test confirms the Operations Centre sections, new readiness language, waiting status, case age, highest-priority action routing and architectural guardrails.
+The regression test confirms the Release 1.4 version, Operations Centre dashboard, Case Register, Case Workspace modules, fixture data shape and architectural guardrails.
