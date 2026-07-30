@@ -20,8 +20,8 @@
 
   return {
     productName: "QCMS Operations",
-    version: "1.4.0-alpha.1",
-    releaseName: "Case Workspace",
+    version: "1.4.1-alpha.1",
+    releaseName: "Workspace Interaction & Navigation Polish",
     stages,
     serviceLevels: [
       "Complaint Submission Service",

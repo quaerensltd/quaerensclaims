@@ -37,7 +37,8 @@
     return config.navigation.map(function (item) {
       const id = item[0];
       const label = item[1];
-      return '<a class="' + (id === active ? "qops-nav-active" : "") + '" href="#' + escapeHtml(id) + '">' + escapeHtml(label) + "</a>";
+      const current = id === active ? ' aria-current="page"' : "";
+      return '<a class="qops-nav-item' + (id === active ? " qops-nav-active" : "") + '" href="#' + escapeHtml(id) + '"' + current + '><span class="qops-nav-icon" aria-hidden="true"></span><span>' + escapeHtml(label) + "</span></a>";
     }).join("");
   }
 
@@ -49,6 +50,7 @@
           '<p class="qops-release">' + escapeHtml(config.releaseName) + ' &middot; ' + escapeHtml(config.version) + '</p>' +
           '<nav class="qops-nav" aria-label="QCMS Operations navigation">' + nav(active) + '</nav>' +
           '<div class="qops-boundary"><strong>Operational boundary</strong><p>QCMS Operations is for instructed complaint work only. Lead and business workflows remain outside this workspace.</p></div>' +
+          '<button class="qops-reset-button" type="button" data-qops-reset>Reset mock data</button>' +
         '</aside>' +
         '<main class="qops-main">' + content + '</main>' +
       '</div>';
@@ -272,8 +274,77 @@
   function workspaceActions(caseItem) {
     return '<aside class="qops-actions-panel"><p class="qops-eyebrow">ACTIONS</p><h2>Workspace Actions</h2><p>Use these mock actions to show the intended Release 1.4 operational flow. No live systems are connected.</p>' +
       '<div class="qops-action-buttons">' + (caseItem.workspaceActions || []).map(function (label) {
-        return '<button class="qops-button qops-button-outline" type="button">' + escapeHtml(label) + '</button>';
+        const key = model.actionKey(label);
+        return '<button class="qops-button qops-button-outline" type="button" data-qops-action="' + escapeHtml(key) + '" data-qops-case="' + escapeHtml(caseItem.reference) + '">' + escapeHtml(label) + '</button>';
       }).join("") + '</div></aside>';
+  }
+
+  function field(label, name, type, value, required) {
+    return '<label>' + escapeHtml(label) + '<input name="' + escapeHtml(name) + '" type="' + (type || "text") + '" value="' + escapeHtml(value || "") + '"' + (required ? " required" : "") + '></label>';
+  }
+
+  function selectField(label, name, options, value, required) {
+    return '<label>' + escapeHtml(label) + '<select name="' + escapeHtml(name) + '"' + (required ? " required" : "") + '>' + options.map(function (option) {
+      return '<option value="' + escapeHtml(option) + '"' + (option === value ? " selected" : "") + '>' + escapeHtml(option) + '</option>';
+    }).join("") + '</select></label>';
+  }
+
+  function textArea(label, name, value) {
+    return '<label>' + escapeHtml(label) + '<textarea name="' + escapeHtml(name) + '">' + escapeHtml(value || "") + '</textarea></label>';
+  }
+
+  function actionDialog(caseItem, actionKey) {
+    const title = {
+      "generate-complaint": "Generate Complaint",
+      "request-evidence": "Request Evidence",
+      "send-reminder": "Send Reminder",
+      "assign-complaint": "Assign Complaint",
+      "record-response": "Record Response",
+      "close-complaint": "Close Complaint"
+    }[actionKey] || "Workspace Action";
+    let fields = "";
+
+    if (actionKey === "generate-complaint") {
+      fields = selectField("Complaint type", "complaintType", config.complaintRoutes, caseItem.complaintType, true) +
+        field("Current case", "caseReference", "text", caseItem.reference, true) +
+        field("Template or complaint route", "route", "text", caseItem.complaintType + " complaint route", true) +
+        field("Prepared by", "preparedBy", "text", caseItem.manager, true) +
+        textArea("Optional internal note", "note", "");
+    } else if (actionKey === "request-evidence") {
+      fields = field("Evidence item requested", "evidenceItem", "text", "Missing supporting evidence", true) +
+        field("Recipient", "recipient", "text", caseItem.client, true) +
+        field("Due date", "dueDate", "date", caseItem.dueDate, true) +
+        textArea("Message or reason", "reason", "");
+    } else if (actionKey === "send-reminder") {
+      fields = field("Recipient", "recipient", "text", caseItem.client, true) +
+        selectField("Reminder type", "reminderType", ["Evidence reminder", "Response reminder", "Document reminder", "Review reminder"], "Evidence reminder", true) +
+        field("Due or follow-up date", "followUpDate", "date", caseItem.dueDate, true) +
+        textArea("Optional message", "message", "");
+    } else if (actionKey === "assign-complaint") {
+      fields = selectField("Complaint Manager", "manager", config.managers, caseItem.manager, true);
+    } else if (actionKey === "record-response") {
+      fields = field("Respondent", "respondent", "text", caseItem.provider, true) +
+        field("Response date", "responseDate", "date", model.today, true) +
+        selectField("Response type", "responseType", ["Final response", "Holding response", "Evidence response", "Offer", "Rejection"], "Final response", true) +
+        textArea("Outcome summary", "outcomeSummary", "") +
+        field("Reference number", "referenceNumber", "text", "", false) +
+        '<label class="qops-checkbox"><input name="followUpRequired" type="checkbox" value="yes"> Follow-up required</label>';
+    } else if (actionKey === "close-complaint") {
+      fields = field("Closure reason", "closureReason", "text", "Outcome recorded", true) +
+        selectField("Outcome", "outcome", ["Resolved", "Closed"], "Resolved", true) +
+        field("Financial benefit, if any", "financialBenefit", "number", "", false) +
+        textArea("Final note", "finalNote", "") +
+        '<label class="qops-checkbox"><input name="confirmClose" type="checkbox" value="yes" required> I confirm this mock case should be closed</label>';
+    }
+
+    return '<div class="qops-modal-backdrop" data-qops-modal role="presentation">' +
+      '<section class="qops-action-modal" role="dialog" aria-modal="true" aria-labelledby="qops-action-title">' +
+        '<div class="qops-modal-head"><div><p class="qops-eyebrow">LOCAL MOCK ACTION</p><h2 id="qops-action-title">' + escapeHtml(title) + '</h2><p>' + escapeHtml(caseItem.reference) + ' &middot; ' + escapeHtml(caseItem.client) + '</p></div><button class="qops-modal-close" type="button" data-qops-close aria-label="Close action dialog">Close</button></div>' +
+        '<form class="qops-action-form" data-qops-action-form="' + escapeHtml(actionKey) + '" data-qops-case="' + escapeHtml(caseItem.reference) + '">' + fields +
+          '<div class="qops-modal-actions"><button class="qops-button qops-button-outline" type="button" data-qops-close>Cancel</button><button class="qops-button" type="submit">Confirm mock action</button></div>' +
+        '</form>' +
+      '</section>' +
+    '</div>';
   }
 
   function messagesPanel(caseItem) {
@@ -330,5 +401,6 @@
     casesRegister,
     caseWorkspace,
     placeholder
+    ,actionDialog
   };
 });

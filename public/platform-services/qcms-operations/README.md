@@ -1,7 +1,7 @@
-# QCMS Operations - Release 1.4 Case Workspace
+# QCMS Operations - Release 1.4.1 Workspace Interaction & Navigation Polish
 
-Version: 1.4.0-alpha.1
-Release name: Case Workspace
+Version: 1.4.1-alpha.1
+Release name: Workspace Interaction & Navigation Polish
 Status: Local prototype, isolated from production systems
 
 ## Purpose
@@ -10,7 +10,20 @@ QCMS Operations is the operational workspace for instructed QCMS complaint cases
 
 This module remains separate from Operations CRM. Operations CRM continues to handle business workflow activity. QCMS Operations focuses only on instructed complaint-management work.
 
-## Release 1.4 Improvements
+## Release 1.4.1 Improvements
+
+Release 1.4.1 keeps the Release 1.4 Case Workspace and adds interaction polish:
+
+- application-style left navigation with active, hover and keyboard focus states;
+- local mock action dialogs for Generate Complaint, Request Evidence, Send Reminder, Assign Complaint, Record Response and Close Complaint;
+- mock state updates for case status, manager, readiness, next action, evidence checklist, activity and operational timeline;
+- localStorage persistence for prototype sessions;
+- reset control to restore original fixture data;
+- accessible dialog behavior with Escape close, focus return and keyboard traversal.
+
+No live operational system is connected. The actions demonstrate intended workflow behavior only.
+
+## Release 1.4 Workspace Modules
 
 The Case Workspace now includes:
 
@@ -69,7 +82,13 @@ Mock action buttons are available for future operational flows:
 - Record Response
 - Close Complaint
 
-These buttons are local UI placeholders only. They do not connect to production systems.
+These buttons now open local mock forms. Confirming a form updates only the browser prototype state and fixture-derived mock data.
+
+## State Persistence
+
+The browser prototype stores changed mock case data in localStorage under a QCMS Operations release-specific key. The reset mock data button clears this browser state and restores `qcms-operations.fixtures.js`.
+
+Tests use in-memory state only and reset fixtures between action checks.
 
 ## Architecture Guardrails
 
@@ -106,4 +125,4 @@ Run:
 node public\platform-services\qcms-operations\qcms-operations.test.js
 ```
 
-The regression test confirms the Release 1.4 version, Operations Centre dashboard, Case Register, Case Workspace modules, fixture data shape and architectural guardrails.
+The regression test confirms the Release 1.4.1 version, Operations Centre dashboard, Case Register, Case Workspace modules, navigation polish, mock action behavior, reset behavior, fixture data shape and architectural guardrails.
