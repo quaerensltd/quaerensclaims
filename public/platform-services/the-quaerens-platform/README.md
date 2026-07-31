@@ -7,7 +7,7 @@ Status: Production page, not linked from global navigation
 
 This directory supports `/the-quaerens-platform.html`, the public explanation page for The Quaerens Platform&trade;.
 
-The page explains how Quaerens connects free public self-service tools, QCMS professional support, QCMS Operations, future portals and future intelligence capabilities into one evidence-first consumer complaint ecosystem.
+The page explains how Quaerens connects public self-service tools, QCMS professional support, QCMS Operations, future portals and future intelligence capabilities into one evidence-first consumer complaint ecosystem.
 
 ## Structure
 
@@ -17,19 +17,17 @@ The page explains how Quaerens connects free public self-service tools, QCMS pro
 
 ## Design Rationale
 
-The page uses a calm, premium Quaerens style rather than a heavy promotional layout. It is built around the governing platform question:
+The page uses a calm, premium Quaerens style rather than a heavy promotional layout. The redesign reduces long article-style text and uses coded visual systems so visitors can understand the platform quickly. It is built around the governing platform question:
 
 Does this help someone resolve a complaint more efficiently or with greater confidence?
 
 The visual system is intentionally structured around:
 
-- Trust
-- Logic
-- People
-- Solutions
-- Knowledge before action
-- Evidence before argument
-- Choice before payment
+- Trust, Logic, People and Solutions as platform pillars.
+- A central approved Quaerens logo platform diagram.
+- Four ecosystem groups with clear availability labels.
+- A seven-stage Complaint Journey.
+- Knowledge before action, evidence before argument and choice before payment.
 
 ## Colour Roles
 
@@ -62,7 +60,7 @@ The page includes:
 
 The layout is designed for desktop and mobile:
 
-- Desktop uses a split hero, four-value strip, ecosystem panels and horizontal journey layout.
+- Desktop uses a split hero, pillar feed, central ecosystem diagram and horizontal journey layout.
 - Tablet stacks wider sections where needed.
 - Mobile uses vertical sections, full-width buttons and stacked journey stages.
 
@@ -70,10 +68,10 @@ Target widths considered: 360px, 390px, 768px, 1024px and 1440px.
 
 ## CTA Destinations
 
-- `Start Your Free Complaint Pack` links to `/complaint-platform.html`.
-- `Explore How the Platform Works` scrolls to the Complaint Journey section.
-- `Explore QCMS` links to `/complaint-platform.html#qcms`.
-- `Explore Consumer Complaint Centres` links to `/consumer-rights-knowledge-centre.html`.
+- `Start with Complaint Packs` links to `/complaint-platform.html`.
+- `See the Ecosystem` scrolls to the ecosystem diagram.
+- `Understand QCMS Professional Support` links to `/complaint-platform.html`.
+- `Explore the Knowledge Centre` links to `/consumer-rights-knowledge-centre.html`.
 
 ## Future Extension
 

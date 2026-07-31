@@ -46,7 +46,9 @@
       const selected = button.dataset.focusEcosystem;
 
       ecosystemButtons.forEach((control) => {
-        control.setAttribute("aria-pressed", String(control === button));
+        const isSelected = control.dataset.focusEcosystem === selected;
+        control.setAttribute("aria-pressed", String(isSelected));
+        control.classList.toggle("is-active", isSelected);
       });
 
       ecosystemPanels.forEach((panel) => {
