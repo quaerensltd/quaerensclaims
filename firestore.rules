@@ -3,6 +3,81 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function crm2Membership() {
+      return get(/databases/$(database)/documents/crm2Memberships/$(request.auth.uid));
+    }
+
+    function isCrm2Member() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/crm2Memberships/$(request.auth.uid))
+        && crm2Membership().data.active == true
+        && crm2Membership().data.workspaceId == "CRM2";
+    }
+
+    function crm2RoleIs(role) {
+      return isCrm2Member() && crm2Membership().data.role == role;
+    }
+
+    function crm2WorkspaceUnchanged() {
+      return request.resource.data.workspaceId == "CRM2"
+        && resource.data.workspaceId == "CRM2"
+        && request.resource.data.source == "manual_crm2"
+        && resource.data.source == "manual_crm2"
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    // Memberships are issued only by trusted Admin SDK code. Client writes are never allowed.
+    match /crm2Memberships/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || request.auth.token.platformAdmin == true);
+      allow write: if false;
+    }
+
+    match /crm2Leads/{leadId} {
+      allow read: if isCrm2Member()
+        && (!crm2RoleIs("closer")
+          || resource.data.status in ["approved", "closer-assigned", "appointment-booked", "onboarded"]);
+      allow create: if isCrm2Member()
+        && (crm2RoleIs("lister") || crm2RoleIs("manager") || crm2RoleIs("administrator"))
+        && request.resource.data.workspaceId == "CRM2"
+        && request.resource.data.source == "manual_crm2"
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == "new";
+      allow update: if crm2WorkspaceUnchanged()
+        && (
+          crm2RoleIs("administrator")
+          || (crm2RoleIs("manager")
+            && request.resource.data.status in ["awaiting-manager-review", "information-requested", "approved", "rejected"])
+          || (crm2RoleIs("lister")
+            && resource.data.status in ["new", "information-requested", "awaiting-manager-review"]
+            && request.resource.data.status in ["new", "information-requested", "awaiting-manager-review"])
+          || (crm2RoleIs("closer")
+            && resource.data.status in ["approved", "closer-assigned", "appointment-booked", "onboarded"]
+            && request.resource.data.status in ["approved", "closer-assigned", "appointment-booked", "onboarded"])
+        );
+      allow delete: if crm2RoleIs("administrator");
+    }
+
+    match /crm2Assessments/{assessmentId} {
+      allow read: if isCrm2Member()
+        && (!crm2RoleIs("closer")
+          || get(/databases/$(database)/documents/crm2Leads/$(resource.data.caseId)).data.status
+            in ["approved", "closer-assigned", "appointment-booked", "onboarded"]);
+      allow create: if isCrm2Member()
+        && request.resource.data.workspaceId == "CRM2"
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.assessmentRoute in ["solar", "spray-foam"]
+        && exists(/databases/$(database)/documents/crm2Leads/$(request.resource.data.caseId));
+      allow update: if isCrm2Member()
+        && request.resource.data.workspaceId == "CRM2"
+        && resource.data.workspaceId == "CRM2"
+        && request.resource.data.caseId == resource.data.caseId
+        && request.resource.data.assessmentRoute == resource.data.assessmentRoute
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if crm2RoleIs("administrator");
+    }
+
     // Client portal cases created by Quaerens admin and opened by clients using email + access code.
     match /clientPortalCases/{caseId} {
       allow read: if true;
@@ -32,8 +107,11 @@ service cloud.firestore {
 
     // Existing public CRM pages use client-side Firebase reads/writes.
     // Keep current behaviour working while we test the portal.
-    match /{document=**} {
-      allow read, write: if true;
+    match /{collection}/{document=**} {
+      allow read, write: if !isCrm2Member()
+        && collection != "crm2Memberships"
+        && collection != "crm2Leads"
+        && collection != "crm2Assessments";
     }
   }
 }

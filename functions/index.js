@@ -1,7 +1,7 @@
 ﻿require("dotenv").config();
 
 const admin = require("firebase-admin");
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { Resend } = require("resend");
 const crypto = require("crypto");
@@ -12,6 +12,68 @@ const { lookupFlightWithAeroDataBox } = require("./services/flight-data/flightLo
 admin.initializeApp({ storageBucket: STORAGE_BUCKET });
 
 const db = admin.firestore();
+
+const CRM2_ROLES = new Set(["lister", "manager", "closer", "administrator"]);
+
+exports.crm2AdminCreateUser = onCall(async request => {
+  if (!request.auth || request.auth.token.platformAdmin !== true) {
+    throw new HttpsError("permission-denied", "Platform administrator access is required.");
+  }
+
+  const data = request.data || {};
+  const email = String(data.email || "").trim().toLowerCase();
+  const displayName = String(data.displayName || "").trim();
+  const role = String(data.role || "").trim().toLowerCase();
+
+  if (!email || !email.includes("@")) throw new HttpsError("invalid-argument", "A valid email is required.");
+  if (!displayName) throw new HttpsError("invalid-argument", "A display name is required.");
+  if (!CRM2_ROLES.has(role)) throw new HttpsError("invalid-argument", "Select a valid CRM2 role.");
+
+  let user;
+  try {
+    user = await admin.auth().getUserByEmail(email);
+  } catch (error) {
+    if (error.code !== "auth/user-not-found") throw error;
+    user = await admin.auth().createUser({ email, displayName, emailVerified: false });
+  }
+
+  await db.collection("crm2Memberships").doc(user.uid).set({
+    uid: user.uid,
+    email,
+    displayName,
+    role,
+    workspaceId: "CRM2",
+    workspaceAccess: ["CRM2"],
+    active: true,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdBy: request.auth.uid,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  const resetLink = await admin.auth().generatePasswordResetLink(email);
+  return { uid: user.uid, email, role, workspaceId: "CRM2", resetLink };
+});
+
+exports.crm2AdminUpdateMembership = onCall(async request => {
+  if (!request.auth || request.auth.token.platformAdmin !== true) {
+    throw new HttpsError("permission-denied", "Platform administrator access is required.");
+  }
+  const data = request.data || {};
+  const uid = String(data.uid || "").trim();
+  const role = String(data.role || "").trim().toLowerCase();
+  if (!uid || !CRM2_ROLES.has(role) || typeof data.active !== "boolean") {
+    throw new HttpsError("invalid-argument", "A user, role and active state are required.");
+  }
+  await db.collection("crm2Memberships").doc(uid).set({
+    role,
+    active: data.active,
+    workspaceId: "CRM2",
+    workspaceAccess: ["CRM2"],
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedBy: request.auth.uid
+  }, { merge: true });
+  return { uid, role, active: data.active, workspaceId: "CRM2" };
+});
 
 if (!process.env.RESEND_API_KEY) {
   console.error("Missing RESEND_API_KEY");
