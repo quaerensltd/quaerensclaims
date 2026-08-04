@@ -31,6 +31,14 @@ requireText(html, "data-qcb-copy-letter", "copy-letter action present");
 requireText(html, "data-qcb-copy-email", "copy-email action present");
 requireText(html, "data-qcb-print", "print action present");
 requireText(html, "Gateway integration pending", "Gateway boundary stated professionally");
+requireText(html, 'class="holiday-reassurance-section"', "overlapping reassurance section present");
+requireText(html, 'class="holiday-reassurance-panel"', "shared reassurance outer panel present");
+requireText(html, 'grid-template-columns:repeat(5,minmax(0,1fr))', "five equal desktop columns present");
+requireText(html, 'min-height:132px', "equal-height premium cards present");
+requireText(html, '@media(max-width:900px)', "tablet reassurance reflow present");
+requireText(html, '@media(max-width:520px)', "mobile reassurance stack present");
+requireText(html, 'margin-top:-2.5rem', "hero-boundary overlap present");
+requireText(html, 'holiday-reassurance-section + .section', "next-section spacing controlled");
 rejectText(html, "/builders/holiday/holiday.page.js", "legacy standalone Holiday runtime is not loaded");
 requireText(runtime, 'const isHoliday = builderId === "holiday"', "Holiday category configuration present");
 requireText(runtime, "ATOL certificate", "holiday evidence catalogue present");
@@ -47,4 +55,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("Holiday Complaint Pack Framework v1 static checks passed (32/32).");
+console.log("Holiday Complaint Pack Framework v1 static checks passed (40/40).");
