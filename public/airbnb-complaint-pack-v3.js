@@ -21,6 +21,7 @@
   let timeline = [];
   let losses = [];
   let evidence = {};
+  let previewTimer;
 
   const esc = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const text = (value, fallback = "Not provided") => String(value || "").trim() || fallback;
@@ -150,6 +151,11 @@
     persist();
   }
 
+  function schedulePreview() {
+    window.clearTimeout(previewTimer);
+    previewTimer = window.setTimeout(renderPreview, 220);
+  }
+
   function renderTimeline() {
     $("[data-qcb-timeline]").innerHTML = timeline.map((row, index) => `<div class="qcb-timeline-row" data-index="${index}"><label>Date<input type="date" data-field="date" value="${esc(row.date)}"></label><label>Category<select data-field="category"><option>Booking</option><option>Host communication</option><option>Airbnb communication</option><option>Property issue</option><option>Payment</option><option>Refund</option><option>Other</option></select></label><label>Description<textarea rows="2" data-field="description" placeholder="What happened?">${esc(row.description)}</textarea></label><label>Evidence reference<input data-field="evidence" value="${esc(row.evidence)}" placeholder="e.g. Photo 3, message A"></label><div class="qcb-row-actions"><button type="button" class="qcb-btn ghost" data-move="up" aria-label="Move event up">↑</button><button type="button" class="qcb-btn ghost" data-move="down" aria-label="Move event down">↓</button><button type="button" class="qcb-btn ghost" data-delete aria-label="Delete event">Delete</button></div></div>`).join("");
     $$('[data-qcb-timeline] [data-field="category"]').forEach((select, index) => { select.value = timeline[index].category || "Booking"; });
@@ -270,7 +276,7 @@
   function handleCollection(event, collection, render) {
     const row = event.target.closest("[data-index]"); if (!row) return false;
     const index = Number(row.dataset.index); const field = event.target.dataset.field;
-    if (field) { collection[index][field] = event.target.value; renderPreview(); return true; }
+    if (field) { collection[index][field] = event.target.value; schedulePreview(); return true; }
     if (event.target.closest("[data-delete]")) { collection.splice(index, 1); render(); renderPreview(); return true; }
     const move = event.target.closest("[data-move]")?.dataset.move;
     if (move) { const target = move === "up" ? index - 1 : index + 1; if (target >= 0 && target < collection.length) [collection[index], collection[target]] = [collection[target], collection[index]]; render(); renderPreview(); return true; }
@@ -282,7 +288,8 @@
   if (!losses.length) losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" });
   renderTimeline(); renderLosses(); renderEvidence(); showStep(1); renderPreview();
 
-  form.addEventListener("input", (event) => { if (event.target.name?.startsWith("evidence-")) { evidence[event.target.name.replace("evidence-", "")] = event.target.value; } renderPreview(); });
+  form.addEventListener("input", (event) => { if (event.target.name?.startsWith("evidence-")) { evidence[event.target.name.replace("evidence-", "")] = event.target.value; } schedulePreview(); });
+  form.addEventListener("change", renderPreview);
   $("[data-qcb-timeline]").addEventListener("input", (event) => handleCollection(event, timeline, renderTimeline));
   $("[data-qcb-timeline]").addEventListener("click", (event) => handleCollection(event, timeline, renderTimeline));
   $("[data-qcb-losses]").addEventListener("input", (event) => handleCollection(event, losses, renderLosses));
