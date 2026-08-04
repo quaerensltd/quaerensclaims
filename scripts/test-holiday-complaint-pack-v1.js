@@ -13,6 +13,7 @@ requireText(html, '<link rel="canonical" href="https://www.quaerens.co.uk/freeho
 requireText(html, "FAQPage", "FAQ schema preserved");
 requireText(html, 'data-qcb-builder="holiday" data-qcb-version="4"', "Holiday configured implementation enabled");
 requireText(html, "/complaint-builder/styles/framework-v1-builder.css", "shared framework presentation loaded");
+requireText(html, "framework-v1-builder.css?v=20260804-shell", "cache-versioned framework stylesheet loaded");
 requireText(html, "/airbnb-complaint-pack-v3.js", "shared Framework v1 runtime loaded");
 requireText(html, "Free Holiday Compensation Complaint Pack Builder&trade;", "approved product name used");
 requireText(html, "Package Holiday", "package-holiday question present");
@@ -39,6 +40,11 @@ requireText(html, '@media(max-width:900px)', "tablet reassurance reflow present"
 requireText(html, '@media(max-width:520px)', "mobile reassurance stack present");
 requireText(html, 'margin-top:-2.5rem', "hero-boundary overlap present");
 requireText(html, 'holiday-reassurance-section + .section', "next-section spacing controlled");
+requireText(html, "qcb-builder-grid qcb-airbnb-shell", "shared two-column shell class restored");
+requireText(html, "qcb-form qcb-airbnb-stage", "shared builder panel class restored");
+requireText(html, "qcb-preview qcb-airbnb-preview", "shared preview panel class restored");
+requireText(html, "qcb-step-pills qcb-step-map", "shared step-map class restored");
+requireText(html, "qcb-field-grid qcb-form-grid", "shared field-grid class restored");
 rejectText(html, "/builders/holiday/holiday.page.js", "legacy standalone Holiday runtime is not loaded");
 requireText(runtime, 'const isHoliday = builderId === "holiday"', "Holiday category configuration present");
 requireText(runtime, "ATOL certificate", "holiday evidence catalogue present");
@@ -49,10 +55,13 @@ requireText(runtime, "window.setTimeout(renderPreview, 220)", "220ms preview deb
 requireText(runtime, "Holiday Complaint File", "12-page holiday case model present");
 requireText(css, "prefers-reduced-motion", "reduced-motion support preserved");
 requireText(css, "@media(max-width:760px)", "mobile reflow preserved");
+requireText(css, ".qcb-builder-wrap{max-width:1480px", "shared framework wrapper base present");
+requireText(css, ".qcb-btn{display:inline-flex", "shared framework button base present");
+requireText(css, ".qcb-airbnb-shell{display:grid", "shared desktop grid present");
 
 if (failures.length) {
   console.error(`Holiday Framework v1 checks failed:\n- ${failures.join("\n- ")}`);
   process.exit(1);
 }
 
-console.log("Holiday Complaint Pack Framework v1 static checks passed (40/40).");
+console.log("Holiday Complaint Pack Framework v1 static checks passed (49/49).");
