@@ -44,3 +44,4 @@ Each ADR should include:
 - ADR-0003: Evidence-First Platform
 - ADR-0004: Action-Driven Operations
 - ADR-0005: The Quaerens Philosophy
+- ADR-0006: Framework-First Platform Development

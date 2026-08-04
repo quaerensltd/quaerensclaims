@@ -372,6 +372,8 @@ The release fails if Airbnb changes unexpectedly in:
 
 Airbnb-specific changes must not be used as an undocumented way to alter the shared framework.
 
+The regression obligation also protects every configured implementation, including Section 75, Holiday Park, Spray Foam, Solar and future Complaint Pack Builders. An approved shared release cannot proceed while any migrated category has an unexplained regression.
+
 ## 15. New-category implementation sequence
 
 Before implementation:
@@ -413,14 +415,19 @@ Versioning rules:
 When an improvement benefits more than one category:
 
 1. propose it as a framework change;
-2. implement it once in the shared boundary;
-3. increment the framework version as required;
-4. update this document;
-5. run shared and Airbnb regression tests;
-6. verify every migrated category;
-7. release migration notes.
+2. explain why it belongs in the framework;
+3. document the effect on every existing Complaint Pack Builder;
+4. wait for explicit approval before changing shared framework behaviour;
+5. after approval, implement it once in the shared boundary;
+6. increment the framework version as required;
+7. update this document;
+8. run shared, Airbnb and configured-category regression tests;
+9. verify every migrated category;
+10. release migration notes.
 
 When a change is category-specific, it must remain in category configuration and must not alter shared behaviour.
+
+Before beginning any Quaerens Platform development, classify the work under the Shared CRM Framework or the Quaerens Complaint Pack Framework™. Reuse the applicable framework and do not duplicate architecture, components or workflows.
 
 ## 18. Definition of conformance
 
