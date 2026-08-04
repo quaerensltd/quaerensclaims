@@ -389,6 +389,7 @@
       updateDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -466,6 +467,8 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let currentAssignmentCollection = "closerAssignments";
     let allAssignments = [];
     let processingAssignmentIds = new Set();
     let selectedAssignment = null;
@@ -509,7 +512,7 @@
     };
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     function showToast(message) {
@@ -611,6 +614,7 @@
     }
 
     function processingLabel(item) {
+      if (isCrm2(currentContext)) return `<span class="badge badge-slate">Integration Pending</span>`;
       return processingSent(item)
         ? `<span class="badge badge-violet">Sent to Processing</span>`
         : `<span class="badge badge-slate">Not Sent</span>`;
@@ -775,16 +779,8 @@
     }
 
     async function checkCloserAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found for this account.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
       if (userData.role !== "closer" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -793,6 +789,19 @@
 
       currentUser = user;
       currentUserData = userData;
+      currentContext = context;
+      currentAssignmentCollection = crmCollection(context,"closerAssignments");
+      applyWorkspaceChrome(context);
+      if (isCrm2(context)) {
+        const processingCard = sentToProcessingStat?.parentElement;
+        if (processingCard) {
+          processingCard.querySelector("div")?.replaceChildren(document.createTextNode("Processing — Integration Pending"));
+          sentToProcessingStat.textContent = "—";
+        }
+        processingFilter.innerHTML = '<option value="all">Integration Pending</option>';
+        processingFilter.disabled = true;
+        panelProcessingNotes.closest("div")?.classList.add("hidden");
+      }
       staffStatus.textContent = "Logged in as Closer";
       staffEmail.textContent = user.email || "";
       logoutBtn.classList.remove("hidden");
@@ -801,6 +810,7 @@
 
     async function loadProcessingLinks() {
       processingAssignmentIds = new Set();
+      if(isCrm2(currentContext))return;
 
       try {
         const processingCasesSnap = await getDocs(collection(db, "processingCases"));
@@ -840,6 +850,7 @@
     }
 
     async function createOrUpdateProcessingRecords(item, saveData) {
+      if(isCrm2(currentContext))throw new Error("Send to Processing — Integration Pending");
       const existingProcessingFile = await findProcessingFileByAssignmentId(item.id);
       const existingProcessingCase = await findProcessingCaseByAssignmentId(item.id);
 
@@ -972,15 +983,12 @@
     async function loadAssignments() {
       try {
         const assignmentsQuery = query(
-          collection(db, "closerAssignments"),
-          where("closer.uid", "==", currentUser.uid)
+          collection(db,currentAssignmentCollection),
+          where(isCrm2(currentContext)?"assignedUserId":"closer.uid", "==", currentUser.uid)
         );
 
         const snapshot = await getDocs(assignmentsQuery);
-        allAssignments = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data()
-        }));
+        allAssignments = snapshot.docs.map(docSnap => normalizeCrmRecord(currentContext,docSnap.id,docSnap.data()));
 
         allAssignments.sort(sortByAppointment);
 
@@ -998,8 +1006,12 @@
         renderAssignments();
         renderSelectedAssignment();
       } catch (error) {
-        console.error("Failed to load closer assignments:", error);
-        resultsSummary.textContent = `Could not load assignments: ${error.code || error.message || "Unknown error"}`;
+        console.warn("Closer assignments are not currently available.");
+        allAssignments = [];
+        renderStats();
+        renderAssignments();
+        renderSelectedAssignment();
+        resultsSummary.textContent = isCrm2(currentContext) ? "No CRM2 assignments are currently available." : "No assignments are currently available.";
       }
     }
 
@@ -1011,7 +1023,7 @@
       closedDealsStat.textContent = String(allAssignments.filter(x => isClosedDeal(x)).length);
       callbacksStat.textContent = String(allAssignments.filter(x => outcomeValue(x) === "Call Back").length);
       noAnswerStat.textContent = String(allAssignments.filter(x => outcomeValue(x) === "No Answer").length);
-      sentToProcessingStat.textContent = String(allAssignments.filter(x => processingSent(x)).length);
+      sentToProcessingStat.textContent = isCrm2(currentContext) ? "—" : String(allAssignments.filter(x => processingSent(x)).length);
     }
 
     function renderAssignments() {
@@ -1091,13 +1103,13 @@
 
       selectedAssignmentSection.classList.remove("hidden");
       clearSelectedBtn.classList.remove("hidden");
-      writeAgreementPanelLink.href = "/agreement-generator.html?source=closerAssignments&id=" + encodeURIComponent(selectedAssignment.id);
+      writeAgreementPanelLink.href = "/agreement-generator.html?source="+encodeURIComponent(currentAssignmentCollection)+"&id=" + encodeURIComponent(selectedAssignment.id);
       writeAgreementPanelLink.classList.remove("hidden");
 
       const timelinePanelLink = document.getElementById("timelinePanelLink");
       if (timelinePanelLink) {
         const nameForTimeline = clientName(selectedAssignment);
-        timelinePanelLink.href = "/client-file.html?source=closerAssignments&id=" + encodeURIComponent(selectedAssignment.id) + "&clientName=" + encodeURIComponent(nameForTimeline);
+        timelinePanelLink.href = "/client-file.html?source="+encodeURIComponent(currentAssignmentCollection)+"&id=" + encodeURIComponent(selectedAssignment.id) + "&clientName=" + encodeURIComponent(nameForTimeline);
         timelinePanelLink.classList.remove("hidden");
       }
 
@@ -1181,6 +1193,7 @@
             name: currentUserData.name || ""
           }
         };
+        if(isCrm2(currentContext))payload.status=panelOutcomeSelect.value==="Closed Deal"?"onboarded":(panelStatusSelect.value==="Appointment Booked"?"appointment-booked":"closer-assigned");
 
         if (panelOutcomeSelect.value === "Closed Deal") {
           payload.closedAt = serverTimestamp();
@@ -1191,10 +1204,10 @@
           };
         }
 
-        await updateDoc(doc(db, "closerAssignments", selectedAssignment.id), payload);
+        await updateDoc(doc(db,currentAssignmentCollection,selectedAssignment.id),payload);
 
         const shouldSendToProcessing =
-          panelOutcomeSelect.value === "Closed Deal" ||
+          (!isCrm2(currentContext)&&panelOutcomeSelect.value === "Closed Deal") ||
           processingSent(selectedAssignment);
 
         if (shouldSendToProcessing) {
@@ -1234,7 +1247,7 @@
       }
 
       try {
-        await updateDoc(doc(db, "closerAssignments", selectedAssignment.id), {
+        await updateDoc(doc(db,currentAssignmentCollection,selectedAssignment.id),{
           closerEmailSubject: emailSubjectInput.value || "",
           closerEmailBody: emailBodyInput.value || "",
           lastUpdatedAt: serverTimestamp()
@@ -1308,9 +1321,9 @@
             subject,
             text: body,
             attachment,
-            source: "closerAssignments",
+            source: currentAssignmentCollection,
             sourceId: selectedAssignment.id,
-            clientKey: "closerAssignments:" + selectedAssignment.id
+            clientKey: currentAssignmentCollection + ":" + selectedAssignment.id
           })
         });
 
@@ -1389,7 +1402,7 @@
       } catch (error) {
         console.error(error);
         if (typeof hideLoader === "function") hideLoader();
-        alert(`Could not load closer panel: ${error.code || error.message || "Unknown error"}`);
+        resultsSummary.textContent = isCrm2(currentContext) ? "The CRM2 Closer Panel is temporarily unavailable. Please refresh and try again." : "The Closer Panel is temporarily unavailable. Please refresh and try again.";
       }
     });
 

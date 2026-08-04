@@ -204,6 +204,7 @@
       getDocs,
       collection
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -238,9 +239,10 @@
     let currentWeekDates = [];
     let autoRefreshInterval = null;
     let refreshInProgress = false;
+    let currentContext = null;
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     function toIsoDate(date) {
@@ -361,23 +363,15 @@
     }
 
     async function checkAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
-      if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+      currentContext=await resolveCrmWorkspace(db,user);
+      if (currentContext.role !== "manager" && currentContext.role !== "admin") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
 
       logoutBtn.classList.remove("hidden");
+      applyWorkspaceChrome(currentContext);
       return true;
     }
 
@@ -386,13 +380,16 @@
       refreshInProgress = true;
 
       try {
-        const [usersSnap, attendanceSnap] = await Promise.all([
-          getDocs(collection(db, "users")),
-          getDocs(collection(db, "staffAttendance"))
+        const results = await Promise.allSettled([
+          getDocs(collection(db, isCrm2(currentContext)?"crm2Memberships":"users")),
+          getDocs(collection(db, crmCollection(currentContext,"staffAttendance")))
         ]);
+        const usersSnap = results[0].status === "fulfilled" ? results[0].value : { docs: [] };
+        const attendanceSnap = results[1].status === "fulfilled" ? results[1].value : { docs: [] };
+        if (results.some(result => result.status === "rejected")) console.warn("Some workspace attendance information is not currently available.");
 
         staffUsers = usersSnap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
+          .map(d => ({ id:d.id,...d.data(),role:isCrm2(currentContext)&&d.data().role==="lister"?"staff":d.data().role,name:d.data().name||d.data().displayName||"" }))
           .filter(u => u.role === "staff");
 
         attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));

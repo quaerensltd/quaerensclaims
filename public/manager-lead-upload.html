@@ -221,6 +221,7 @@
       where,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -250,12 +251,14 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let leadCollection = "leadAssignments";
     let parsedRows = [];
     let normalizedRows = [];
     let listers = [];
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     function showMessage(text, isError = false) {
@@ -402,17 +405,9 @@
     }
 
     async function checkManagerAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
-      if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+      currentContext = await resolveCrmWorkspace(db,user);
+      const userData = currentContext.userData;
+      if (currentContext.role !== "manager" && currentContext.role !== "admin") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -420,13 +415,26 @@
 
       currentUser = user;
       currentUserData = userData;
+      leadCollection = crmCollection(currentContext,"leadAssignments");
+      applyWorkspaceChrome(currentContext);
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadListers() {
-      const q = query(collection(db, "users"), where("role", "==", "staff"));
-      const snapshot = await getDocs(q);
+      const q = isCrm2(currentContext)
+        ? query(collection(db,"crm2Memberships"),where("role","==","lister"),where("active","==",true))
+        : query(collection(db, "users"), where("role", "==", "staff"));
+      let snapshot;
+      try {
+        snapshot = await getDocs(q);
+      } catch (error) {
+        console.warn("Workspace lister directory is not currently available.");
+        listerSelect.innerHTML = '<option value="">CRM2 lister list is temporarily unavailable</option>';
+        listerSelect.disabled = true;
+        showMessage("The CRM2 lister list is temporarily unavailable. Existing CRM2 data remains isolated.", true);
+        return;
+      }
 
       listers = snapshot.docs.map(d => ({
         uid: d.id,
@@ -563,8 +571,10 @@
       importBtn.textContent = "Importing...";
 
       try {
+        const batchId = "CRM2-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2,8).toUpperCase();
         for (const row of rowsToImport) {
-          await addDoc(collection(db, "leadAssignments"), {
+          await addDoc(collection(db, leadCollection), {
+            ...(isCrm2(currentContext)?{workspaceId:"CRM2",workspaceLabel:"CRM2",sourceWorkspace:"CRM2",source:"lead_upload_crm2",createdBy:currentUser.uid,createdByName:currentUserData.name||currentUserData.displayName||currentUser.email||"",status:"new",batchId,uploadedBy:currentUser.uid,audit:[{action:"lead_uploaded",at:new Date().toISOString(),byUid:currentUser.uid,details:"CRM2 batch upload"}]}:{}),
             assignedToUid: lister.uid,
             assignedToName: lister.name || "",
             assignedToEmail: lister.email || "",

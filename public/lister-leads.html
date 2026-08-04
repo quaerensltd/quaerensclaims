@@ -215,7 +215,7 @@
           </div>
 
           <div class="flex items-end">
-            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Leads</button>
+            <div class="grid gap-2 w-full"><button id="createManualLeadBtn" class="btn btn-primary w-full hidden" type="button">Create Manual Lead</button><button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Leads</button></div>
           </div>
         </div>
       </section>
@@ -264,6 +264,8 @@
       </section>
     </main>
   </div>
+
+  <dialog id="manualLeadDialog" class="card p-6 rounded-2xl backdrop:bg-slate-950/50 w-[min(92vw,640px)]"><form id="manualLeadForm" method="dialog" class="grid md:grid-cols-2 gap-4"><div class="md:col-span-2"><h2 class="text-2xl font-extrabold text-blue-900">Create Manual Lead</h2><p class="text-sm text-slate-500">This record is created only in the active CRM2 workspace.</p></div><label class="font-bold text-blue-900">Forename<input class="input mt-2" name="forename" required></label><label class="font-bold text-blue-900">Surname<input class="input mt-2" name="surname" required></label><label class="font-bold text-blue-900">Telephone<input class="input mt-2" name="telephone" type="tel"></label><label class="font-bold text-blue-900">Email<input class="input mt-2" name="email" type="email"></label><label class="font-bold text-blue-900 md:col-span-2">Claim type<select class="input mt-2" name="claimType" required><option value="Solar PV / Renewable Energy">Solar PV / Renewable Energy</option><option value="Spray Foam Loft Insulation">Spray Foam Loft Insulation</option><option value="Other instructed matter">Other instructed matter</option></select></label><label class="font-bold text-blue-900 md:col-span-2">Notes<textarea class="input mt-2" name="notes" rows="4"></textarea></label><div class="md:col-span-2 flex gap-3 justify-end"><button class="btn btn-secondary" value="cancel" type="button" id="cancelManualLeadBtn">Cancel</button><button class="btn btn-primary" type="submit">Create Lead</button></div></form></dialog>
 
   <div id="leadModal" class="fixed inset-0 bg-black/40 hidden z-50">
     <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -452,7 +454,9 @@
       serverTimestamp,
       arrayUnion,
       setDoc
+      ,addDoc
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -592,6 +596,8 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let currentLeadCollection = "leadAssignments";
     let allLeads = [];
     let selectedLead = null;
     let attendanceHeartbeatInterval = null;
@@ -812,9 +818,9 @@
             clientName,
             subject: template.subject,
             text: template.body,
-            source: "leadAssignments",
+            source: currentLeadCollection,
             sourceId: selectedLead.id,
-            clientKey: "leadAssignments:" + selectedLead.id,
+            clientKey: currentLeadCollection + ":" + selectedLead.id,
             emailType: "staff_client_email"
           })
         });
@@ -824,7 +830,7 @@
           throw new Error(result.error || "Email failed.");
         }
 
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           email: to,
           emailAddress: to,
           lastClientEmailTemplate: templateKey,
@@ -898,11 +904,11 @@
 
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
 
       if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
           uid: currentUser.uid,
           name: currentUserData.name || "",
           email: currentUser.email || "",
@@ -937,7 +943,7 @@
           updateData.totalLoggedInMs = 0;
         }
 
-        await setDoc(attendanceRef, updateData, { merge: true });
+        await setDoc(attendanceRef, {...updateData,workspaceId:currentContext.workspaceId}, { merge: true });
       }
     }
 
@@ -945,9 +951,9 @@
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
 
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
 
-      await setDoc(attendanceRef, {
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
         uid: currentUser.uid,
         name: currentUserData.name || "",
         email: currentUser.email || "",
@@ -976,11 +982,11 @@
       if (!currentUser) return;
 
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
 
       if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
           uid: currentUser.uid,
           lastLogoutAt: serverTimestamp(),
           isOnline: false
@@ -1000,7 +1006,7 @@
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
 
-      await setDoc(attendanceRef, {
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
         uid: currentUser.uid,
         totalLoggedInMs: newTotal,
         currentSessionStartAt: null,
@@ -1128,16 +1134,8 @@
     }
 
     async function checkStaffAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No staff profile found for this account.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
 
       if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
@@ -1147,19 +1145,20 @@
 
       currentUser = user;
       currentUserData = userData;
+      currentContext = context;
+      currentLeadCollection = crmCollection(context,"leadAssignments");
+      applyWorkspaceChrome(context);
+      if(isCrm2(context))document.getElementById("createManualLeadBtn").classList.remove("hidden");
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadLeads() {
       try {
-        const leadsQuery = query(
-          collection(db, "leadAssignments"),
-          where("assignedToUid", "==", currentUser.uid)
-        );
+        const leadsQuery = isCrm2(currentContext)?collection(db,currentLeadCollection):query(collection(db,currentLeadCollection),where("assignedToUid", "==", currentUser.uid));
 
         const snapshot = await getDocs(leadsQuery);
-        allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        allLeads = snapshot.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
 
         populateCampaignFilter();
         renderStats();
@@ -1316,7 +1315,7 @@
         `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "Lead Detail";
       document.getElementById("modalLeadSubtitle").textContent = `Lead ID: ${selectedLead.id}`;
       if (openClientFileBtn) {
-        openClientFileBtn.href = `/client-file.html?source=leadAssignments&id=${encodeURIComponent(selectedLead.id)}`;
+        openClientFileBtn.href = `/client-file.html?source=${encodeURIComponent(currentLeadCollection)}&id=${encodeURIComponent(selectedLead.id)}`;
       }
 
       document.getElementById("lead_name").textContent =
@@ -1367,8 +1366,9 @@
       if (!selectedLead) return;
 
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          ...patch,
+        const scopedPatch=isCrm2(currentContext)&&patch.leadStatus?{...patch,status:({no_answer:"information-requested",callback_required:"information-requested",intro_email_needed:"information-requested",intake_in_progress:"information-requested",qualified:"awaiting-manager-review",awaiting_manager:"awaiting-manager-review",closed:"rejected"}[patch.leadStatus]||selectedLead.status||"new")}:patch;
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
+          ...scopedPatch,
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
             action: historyAction,
@@ -1393,7 +1393,7 @@
       try {
         const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
 
-        await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
+        if(!isCrm2(currentContext))await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
           originalLeadId: selectedLead.id,
           archiveReason: reason,
@@ -1423,7 +1423,7 @@
           ]
         });
 
-        await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
+        if(isCrm2(currentContext)){await updateDoc(doc(db,currentLeadCollection,selectedLead.id),{status:"rejected",leadStatus:"closed",closed:true,updatedAt:serverTimestamp()})}else{await deleteDoc(doc(db,currentLeadCollection,selectedLead.id))}
         leadModal.classList.add("hidden");
         selectedLead = null;
         await loadLeads();
@@ -1439,7 +1439,7 @@
       try {
         const chosenClaimType = normalizeClaimType(leadClaimTypeSelect.value || "");
 
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: chosenClaimType || "",
           intakeClaimType: chosenClaimType || "",
@@ -1512,7 +1512,7 @@
           return;
         }
 
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           leadStatus: "intake_in_progress",
           claimType: chosenClaimType,
           intakeClaimType: chosenClaimType,
@@ -1625,7 +1625,7 @@
       try {
         const chosenClaimType = normalizeClaimType(leadClaimTypeSelect.value || "");
 
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: chosenClaimType || "",
           intakeClaimType: chosenClaimType || "",
@@ -1691,7 +1691,7 @@
       try {
         const chosenClaimType = normalizeClaimType(leadClaimTypeSelect.value || "");
 
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: chosenClaimType || "",
           intakeClaimType: chosenClaimType || "",
@@ -1782,6 +1782,10 @@
     claimTypeFilter.addEventListener("change", renderLeads);
     searchInput.addEventListener("input", renderLeads);
     refreshBtn.addEventListener("click", loadLeads);
+    const manualLeadDialog=document.getElementById("manualLeadDialog"),manualLeadForm=document.getElementById("manualLeadForm");
+    document.getElementById("createManualLeadBtn").addEventListener("click",()=>manualLeadDialog.showModal());
+    document.getElementById("cancelManualLeadBtn").addEventListener("click",()=>manualLeadDialog.close());
+    manualLeadForm.addEventListener("submit",async event=>{event.preventDefault();if(!isCrm2(currentContext))return;const values=Object.fromEntries(new FormData(manualLeadForm).entries()),createdAt=serverTimestamp(),clientName=[values.forename,values.surname].filter(Boolean).join(" ");await addDoc(collection(db,currentLeadCollection),{workspaceId:"CRM2",workspaceLabel:"CRM2",sourceWorkspace:"CRM2",source:"manual_crm2",clientName,forename:values.forename.trim(),surname:values.surname.trim(),telephone:values.telephone.trim(),phone:values.telephone.trim(),email:values.email.trim().toLowerCase(),claimType:values.claimType,issue:values.claimType,campaign:"manual_crm2",notes:values.notes.trim(),assignedUserId:currentUser.uid,assignedUserName:currentUserData.name||currentUserData.displayName||currentUser.email||"",assignedToUid:currentUser.uid,assignedToName:currentUserData.name||currentUserData.displayName||currentUser.email||"",status:"new",leadStatus:"new",createdBy:currentUser.uid,createdByName:currentUserData.name||currentUserData.displayName||currentUser.email||"",createdAt,updatedAt:createdAt,lastUpdatedAt:createdAt,audit:[{action:"lead-created",at:new Date().toISOString(),byUid:currentUser.uid,details:"Manual CRM2 lead created in shared CRM"}]});manualLeadForm.reset();manualLeadDialog.close();await loadLeads();});
 
     const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll('a[href]').forEach(link => {

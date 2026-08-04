@@ -91,7 +91,7 @@
         <div class="grid md:grid-cols-2 gap-4">
           <div><label class="label" for="agreementDate">Agreement date</label><input id="agreementDate" class="input" type="date" /></div>
           <div><label class="label" for="signatureDate">Date at bottom</label><input id="signatureDate" class="input" type="date" /></div>
-          <div><label class="label" for="serviceFee">Service fee amount</label><input id="serviceFee" class="input" value="�750" /></div>
+          <div><label class="label" for="serviceFee">Service fee amount</label><input id="serviceFee" class="input" value="&pound;750" /></div>
           <div><label class="label" for="successFee">Success fee percentage</label><input id="successFee" class="input" value="25%" /></div>
           <div><label class="label" for="claimType">Claim type / matter</label><input id="claimType" class="input" /></div>
           <div><label class="label" for="clientEmail">Client email</label><input id="clientEmail" class="input" type="email" /></div>
@@ -127,6 +127,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, workspaceWrite, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = { apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA", authDomain: "quaerensclaims.firebaseapp.com", projectId: "quaerensclaims" };
     const app = initializeApp(firebaseConfig);
@@ -136,10 +137,11 @@
     const params = new URLSearchParams(window.location.search);
     const source = params.get("source") || "closerAssignments";
     const sourceId = params.get("id") || "";
-    const safeSources = ["closerAssignments", "leadAssignments", "agendaItems", "processingCases", "processingFiles"];
+    const safeSources = ["closerAssignments", "leadAssignments", "crm2Leads", "agendaItems", "processingCases", "processingFiles"];
     const allowedRoles = ["closer", "manager", "admin", "processing"];
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
     let clientRecord = null;
     let clientKey = "";
 
@@ -277,8 +279,8 @@
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
-      const ref = await addDoc(collection(db, "agreementRecords"), agreementData);
-      await addDoc(collection(db, "clientTimeline"), {
+      const ref = await addDoc(collection(db, crmCollection(currentContext,"agreementRecords")), workspaceWrite(currentContext,"agreementRecords",agreementData));
+      await addDoc(collection(db, crmCollection(currentContext,"clientTimeline")), workspaceWrite(currentContext,"clientTimeline",{
         clientKey, source, sourceId,
         type: "agreement",
         title: status === "sent" ? "Agreement sent to client" : "Agreement created",
@@ -288,7 +290,7 @@
         createdByUid: currentUser.uid,
         createdByEmail: currentUser.email || "",
         createdByName: currentUserData?.name || currentUser.email || ""
-      });
+      }));
       return ref.id;
     }
 
@@ -309,7 +311,7 @@
             text: els.emailBody.value,
             pdfBase64: pdf.base64,
             pdfFileName: pdf.fileName,
-            source, sourceId, clientKey
+            source, sourceId, clientKey, workspaceId:currentContext.workspaceId
           })
         });
         const result = await response.json().catch(() => ({}));
@@ -318,7 +320,8 @@
         showToast("Agreement sent and logged to client file.");
       } catch (error) {
         console.error(error);
-        alert("Could not send agreement: " + (error.message || "Unknown error"));
+        console.warn("Agreement could not be sent.");
+        showToast("The agreement could not be sent. Please check the client details and try again.");
       } finally {
         els.sendEmailBtn.disabled = false;
         els.sendEmailBtn.textContent = "Send to Client";
@@ -329,7 +332,7 @@
       if (!sourceId || !safeSources.includes(source)) throw new Error("Missing or invalid client reference.");
       const snap = await getDoc(doc(db, source, sourceId));
       if (!snap.exists()) throw new Error("Client record not found.");
-      clientRecord = { id: snap.id, ...snap.data() };
+      clientRecord = normalizeCrmRecord(currentContext,snap.id,snap.data());
       clientKey = makeClientKey();
       const name = fullName(clientRecord);
       els.clientName.value = name;
@@ -352,15 +355,17 @@
       if (!user) { setTimeout(() => { if (!auth.currentUser) redirectToLogin(); }, 1600); return; }
       try {
         currentUser = user;
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        currentUserData = userSnap.exists() ? userSnap.data() : {};
-        const role = roleOf(currentUserData);
+        currentContext = await resolveCrmWorkspace(db,user);
+        currentUserData = currentContext.userData;
+        const role = currentContext.role;
         if (!allowedRoles.includes(role)) { alert("You do not have access to agreements."); redirectToLogin(); return; }
         els.logoutBtn.classList.remove("hidden");
+        applyWorkspaceChrome(currentContext);
         await loadClient();
       } catch (error) {
         console.error("Could not load agreement page:", error);
-        alert("Could not load agreement page: " + (error.code || error.message || "Unknown error"));
+        console.warn("Agreement page is not currently available.");
+        showToast(isCrm2(currentContext) ? "The CRM2 agreement is temporarily unavailable. Please refresh and try again." : "The agreement is temporarily unavailable. Please refresh and try again.");
       } finally { els.authLoader.style.display = "none"; }
     });
 

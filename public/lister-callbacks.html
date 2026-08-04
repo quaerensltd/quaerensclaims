@@ -332,6 +332,7 @@
       arrayUnion,
       setDoc
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -456,6 +457,8 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let currentLeadCollection = "leadAssignments";
     let callbackLeads = [];
     let selectedLead = null;
     let attendanceHeartbeatInterval = null;
@@ -641,11 +644,11 @@
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
 
       if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
           uid: currentUser.uid,
           name: currentUserData.name || "",
           email: currentUser.email || "",
@@ -677,15 +680,15 @@
         if (typeof existingData.totalLoggedInMs !== "number") {
           updateData.totalLoggedInMs = 0;
         }
-        await setDoc(attendanceRef, updateData, { merge: true });
+        await setDoc(attendanceRef, {...updateData,workspaceId:currentContext.workspaceId}, { merge: true });
       }
     }
 
     async function updateStaffHeartbeat() {
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
-      await setDoc(attendanceRef, {
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
         uid: currentUser.uid,
         name: currentUserData.name || "",
         email: currentUser.email || "",
@@ -710,11 +713,11 @@
     async function recordStaffLogout() {
       if (!currentUser) return;
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
 
       if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
           uid: currentUser.uid,
           lastLogoutAt: serverTimestamp(),
           isOnline: false
@@ -734,7 +737,7 @@
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
 
-      await setDoc(attendanceRef, {
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
         uid: currentUser.uid,
         totalLoggedInMs: newTotal,
         currentSessionStartAt: null,
@@ -744,16 +747,8 @@
     }
 
     async function checkStaffAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No staff profile found for this account.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role};
       if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -762,19 +757,18 @@
 
       currentUser = user;
       currentUserData = userData;
+      currentContext=context;
+      currentLeadCollection=crmCollection(context,"leadAssignments");
+      applyWorkspaceChrome(context);
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadCallbacks() {
       try {
-        const callbacksQuery = query(
-          collection(db, "leadAssignments"),
-          where("assignedToUid", "==", currentUser.uid),
-          where("callbackRequired", "==", true)
-        );
+        const callbacksQuery = isCrm2(currentContext)?query(collection(db,currentLeadCollection),where("assignedUserId","==",currentUser.uid)):query(collection(db,currentLeadCollection),where("assignedToUid","==",currentUser.uid),where("callbackRequired","==",true));
         const snapshot = await getDocs(callbacksQuery);
-        callbackLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callbackLeads = snapshot.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data())).filter(lead=>!isCrm2(currentContext)||lead.callbackRequired===true||lead.leadStatus==="callback_required");
         populateCampaignFilter();
         renderStats();
         renderCallbacks();
@@ -1012,8 +1006,9 @@
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
-          ...patch,
+        const scopedPatch=isCrm2(currentContext)&&patch.leadStatus?{...patch,status:({no_answer:"information-requested",callback_required:"information-requested",intro_email_needed:"information-requested",intake_in_progress:"information-requested",qualified:"awaiting-manager-review",awaiting_manager:"awaiting-manager-review",closed:"rejected"}[patch.leadStatus]||selectedLead.status||"new")}:patch;
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
+          ...scopedPatch,
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
             action: historyAction,
@@ -1034,6 +1029,7 @@
     async function archiveAndRemoveLead(reason, notes = "") {
       if (!selectedLead) return;
       try {
+        if(isCrm2(currentContext)){await updateDoc(doc(db,currentLeadCollection,selectedLead.id),{status:"rejected",leadStatus:"closed",closed:true,usable:false,callbackRequired:false,archiveReason:reason,archiveNotes:notes,lastUpdatedAt:serverTimestamp()});callbackModal.classList.add("hidden");selectedLead=null;await loadCallbacks();return}
         const archivedDocId = `closed_${selectedLead.id}_${Date.now()}`;
         await setDoc(doc(db, "closedLeadsArchive", archivedDocId), {
           ...selectedLead,
@@ -1065,7 +1061,7 @@
           ]
         });
 
-        await deleteDoc(doc(db, "leadAssignments", selectedLead.id));
+        await deleteDoc(doc(db, currentLeadCollection, selectedLead.id));
         callbackModal.classList.add("hidden");
         selectedLead = null;
         await loadCallbacks();
@@ -1078,7 +1074,7 @@
     async function saveLeadCoreFields(extraPatch = {}) {
       if (!selectedLead) return false;
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: leadClaimTypeSelect.value || "",
           intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
@@ -1140,7 +1136,7 @@
           return;
         }
 
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           leadStatus: "intake_in_progress",
           callbackRequired: false,
           intakeClaimType: normalizedIntakeType,
@@ -1220,7 +1216,7 @@
     saveLeadBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: leadClaimTypeSelect.value || "",
           intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),
@@ -1280,7 +1276,7 @@
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           campaign: campaignNameInput.value.trim() || "",
           claimType: leadClaimTypeSelect.value || "",
           intakeClaimType: normalizeIntakeClaimType(leadClaimTypeSelect.value || ""),

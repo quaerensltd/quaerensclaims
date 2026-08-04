@@ -248,6 +248,7 @@
       query,
       where
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -264,6 +265,7 @@
     const refreshBtn = document.getElementById("refreshBtn");
 
     let currentUser = null;
+    let currentContext = null;
     let allAssignments = [];
     let processingAssignmentIds = new Set();
 
@@ -306,7 +308,7 @@
     };
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     function cleanValue(value) {
@@ -433,16 +435,8 @@
     }
 
     async function checkCloserAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found for this account.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
       if (userData.role !== "closer" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -450,12 +444,24 @@
       }
 
       currentUser = user;
+      currentContext = context;
+      applyWorkspaceChrome(context);
+      if (isCrm2(context)) {
+        const subtitle = document.querySelector("header p");
+        if (subtitle) subtitle.textContent = "Appointments, callbacks, closed deals, and follow-up overview";
+        const processingCard = document.getElementById("sentToProcessingStat")?.parentElement;
+        if (processingCard) {
+          processingCard.querySelector("div")?.replaceChildren(document.createTextNode("Processing — Integration Pending"));
+          document.getElementById("sentToProcessingStat").textContent = "—";
+        }
+      }
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadProcessingLinks() {
       processingAssignmentIds = new Set();
+      if(isCrm2(currentContext))return;
 
       try {
         const processingCasesSnap = await getDocs(collection(db, "processingCases"));
@@ -481,13 +487,11 @@
     }
 
     async function loadData() {
-      const assignmentsQuery = query(
-        collection(db, "closerAssignments"),
-        where("closer.uid", "==", currentUser.uid)
-      );
+      const assignmentCollection=crmCollection(currentContext,"closerAssignments");
+      const assignmentsQuery = isCrm2(currentContext)?query(collection(db,assignmentCollection),where("assignedUserId","==",currentUser.uid)):query(collection(db,assignmentCollection),where("closer.uid", "==", currentUser.uid));
 
       const assignmentsSnap = await getDocs(assignmentsQuery);
-      allAssignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allAssignments = assignmentsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
       allAssignments.sort(sortByAppointment);
 
       await loadProcessingLinks();
@@ -659,7 +663,7 @@
       } catch (error) {
         console.error(error);
         if (typeof hideLoader === "function") hideLoader();
-        alert(`Could not load closer dashboard: ${error.code || error.message || "Unknown error"}`);
+        showToast(isCrm2(currentContext) ? "The CRM2 Closer dashboard is temporarily unavailable. Please refresh and try again." : "The Closer dashboard is temporarily unavailable. Please refresh and try again.");
       }
     });
 
@@ -668,7 +672,7 @@
         await loadData();
       } catch (error) {
         console.error(error);
-        alert("Could not refresh closer dashboard.");
+        showToast("The Closer dashboard could not be refreshed. Please try again.");
       }
     });
 

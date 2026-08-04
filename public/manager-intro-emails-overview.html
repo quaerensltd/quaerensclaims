@@ -314,6 +314,7 @@
       serverTimestamp,
       arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -367,12 +368,14 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let currentLeadCollection = "leadAssignments";
     let allLeads = [];
     let allUsers = [];
     let selectedLead = null;
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     function showToast(message) {
@@ -477,17 +480,8 @@ Quaerens`;
     }
 
     async function checkManagerAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
-      if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+      const context=await resolveCrmWorkspace(db,user),userData={...context.userData,role:context.role};
+      if (context.role !== "manager" && context.role !== "admin") {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -495,17 +489,26 @@ Quaerens`;
 
       currentUser = user;
       currentUserData = userData;
+      currentContext=context;
+      currentLeadCollection=crmCollection(context,"leadAssignments");
+      applyWorkspaceChrome(context);
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadData() {
-      const usersSnap = await getDocs(collection(db, "users"));
-      allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let userDocs = [];
+      try {
+        const usersSnap = await getDocs(collection(db, isCrm2(currentContext)?"crm2Memberships":"users"));
+        userDocs = usersSnap.docs;
+      } catch (error) {
+        console.warn("Workspace team directory is not currently available.");
+      }
+      allUsers = userDocs.map(d => ({ id: d.id, ...d.data(),role:isCrm2(currentContext)&&d.data().role==="lister"?"staff":d.data().role,name:d.data().name||d.data().displayName||"" }));
 
-      const leadsSnap = await getDocs(collection(db, "leadAssignments"));
+      const leadsSnap = await getDocs(collection(db, currentLeadCollection));
       allLeads = leadsSnap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
+        .map(d => normalizeCrmRecord(currentContext,d.id,d.data()))
         .filter(lead => lead.introEmailNeeded || lead.introEmailSent || lead.introEmailBody);
 
       populateListerFilter();
@@ -702,7 +705,7 @@ Quaerens`;
       if (!selectedLead) return;
 
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           ...patch,
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
@@ -849,7 +852,7 @@ Quaerens`;
       if (!selectedLead) return;
 
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
           managerNotes: notesBox.value || "",
           introEmailBody: leadEmailBody.value || "",
           callbackDate: callbackDate.value || "",

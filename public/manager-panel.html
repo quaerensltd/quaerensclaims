@@ -378,6 +378,7 @@
       serverTimestamp,
       arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -502,6 +503,9 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let currentLeadCollection = "leadAssignments";
+    let currentSubmissionCollection = "claimSubmissions";
     let allSubmissions = [];
     let selectedSubmission = null;
     let selectedLinkedLead = null;
@@ -594,16 +598,8 @@
     }
 
     async function checkManagerAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No manager profile found for this account.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
 
       if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
@@ -613,6 +609,10 @@
 
       currentUser = user;
       currentUserData = userData;
+      currentContext = context;
+      currentLeadCollection = crmCollection(context,"leadAssignments");
+      currentSubmissionCollection = crmCollection(context,"claimSubmissions");
+      applyWorkspaceChrome(context);
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -630,9 +630,10 @@
     }
 
     async function loadStaffUsers() {
-      const snap = await getDocs(collection(db, "users"));
+      const snap = await getDocs(collection(db, isCrm2(currentContext)?"crm2Memberships":"users"));
       staffUsers = snap.docs
         .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+        .map(user=>isCrm2(currentContext)?{...user,role:user.role==="lister"?"staff":user.role}:user)
         .filter(user => cleanValue(user.role).toLowerCase() === "staff")
         .sort((a, b) => getStaffLabel(a).localeCompare(getStaffLabel(b)));
     }
@@ -692,6 +693,7 @@
 
     async function loadInternetRequests() {
       if (!internetGeneratedBody) return;
+      if(isCrm2(currentContext)){internetGeneratedBody.closest("section")?.remove();internetRequests=[];return}
       internetGeneratedBody.innerHTML = '<div class="text-slate-500">Loading internet generated leads...</div>';
       try {
         if (!staffUsers.length) await loadStaffUsers();
@@ -793,8 +795,8 @@
 async function loadSubmissions() {
       try {
         resultsSummary.textContent = "Loading submissions...";
-        const snap = await getDocs(query(collection(db, "claimSubmissions")));
-        allSubmissions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const snap = await getDocs(query(collection(db,currentSubmissionCollection)));
+        allSubmissions = snap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
 
         allSubmissions.sort((a, b) => {
           const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
@@ -943,7 +945,7 @@ async function loadSubmissions() {
       }
 
       try {
-        const snap = await getDoc(doc(db, "leadAssignments", leadId));
+        const snap = await getDoc(doc(db,currentLeadCollection,leadId));
         if (snap.exists()) {
           selectedLinkedLead = { id: snap.id, ...snap.data() };
           return;
@@ -1181,10 +1183,10 @@ async function loadSubmissions() {
 
         if (finalDecision) {
           patch.managerDecision = finalDecision;
-          patch.status = finalDecision;
+          patch.status = isCrm2(currentContext)?({more_info_needed:"information-requested"}[finalDecision]||finalDecision):finalDecision;
         }
 
-        await updateDoc(doc(db, "claimSubmissions", selectedSubmission.id), patch);
+        await updateDoc(doc(db,currentSubmissionCollection,selectedSubmission.id),patch);
 
         if (selectedSubmission.sourceLeadId) {
           const leadPatch = {
@@ -1213,7 +1215,8 @@ async function loadSubmissions() {
           }
 
           try {
-            await updateDoc(doc(db, "leadAssignments", selectedSubmission.sourceLeadId), leadPatch);
+            if(isCrm2(currentContext)){leadPatch.status=finalDecision==="more_info_needed"?"information-requested":finalDecision}
+            await updateDoc(doc(db,currentLeadCollection,selectedSubmission.sourceLeadId),leadPatch);
           } catch (leadError) {
             console.error("Manager review saved, but linked lead could not be updated:", leadError);
             showModalMessage(`Review saved, but linked lead update failed: ${leadError.code || leadError.message || "Unknown error"}`, true);

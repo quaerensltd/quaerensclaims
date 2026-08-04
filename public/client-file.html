@@ -81,6 +81,7 @@
         <div class="flex gap-3 flex-wrap">
           <a id="callPrimaryBtn" href="#" class="btn btn-green py-3 px-5">Call Primary</a>
           <button id="copyPhoneBtn" class="btn btn-secondary py-3 px-5" type="button">Copy Phone</button>
+          <a id="solarAssessmentBtn" class="btn btn-secondary py-3 px-5 hidden" href="#">Solar Assessment</a><a id="foamAssessmentBtn" class="btn btn-secondary py-3 px-5 hidden" href="#">Spray Foam Assessment</a>
         </div>
       </div>
     </section>
@@ -149,6 +150,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmRouteFor, crmCollection, normalizeCrmRecord, workspaceWrite, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = { apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA", authDomain: "quaerensclaims.firebaseapp.com", projectId: "quaerensclaims" };
     const app = initializeApp(firebaseConfig);
@@ -160,10 +162,11 @@
     const params = new URLSearchParams(window.location.search);
     const source = params.get("source") || "leadAssignments";
     const id = params.get("id") || "";
-    const safeSources = ["leadAssignments", "agendaItems", "processingCases", "processingFiles", "closerAssignments", "claimSubmissions", "managerAssessments"];
+    const safeSources = ["leadAssignments", "crm2Leads", "crm2Activities", "agendaItems", "processingCases", "processingFiles", "closerAssignments", "claimSubmissions", "managerAssessments"];
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
     let client = null;
     let clientKey = "";
     let relatedProcessingCases = [];
@@ -263,6 +266,7 @@
     }
 
     async function loadRelatedProcessingCases() {
+      if (isCrm2(currentContext)) { relatedProcessingCases = []; return; }
       const cases = [];
       const seen = new Set();
 
@@ -288,8 +292,14 @@
       const events = [];
       const seen = new Set();
       baseEvents().forEach((event) => addUniqueEvent(events, seen, event));
+      if(isCrm2(currentContext)){const assessments=await collectDocs(query(collection(db,"crm2Assessments"),where("caseId","==",id)));assessments.forEach(item=>addUniqueEvent(events,seen,{key:"crm2Assessments:"+item.id,type:"document",title:(item.assessmentRoute==="spray-foam"?"Spray Foam":"Solar")+" assessment",body:"Status: "+(item.status||"draft"),at:item.updatedAt||item.createdAt,by:item.createdByName||"",href:"/crm2-assessment-builder.html?caseId="+encodeURIComponent(id)+"&assessmentId="+encodeURIComponent(item.id)}))}
 
-      const manual = await collectDocs(query(collection(db, "clientTimeline"), where("clientKey", "==", clientKey)));
+      const timelineCollection = crmCollection(currentContext, "clientTimeline");
+      const emailCollection = crmCollection(currentContext, "sentEmails");
+      const agendaCollection = crmCollection(currentContext, "agendaItems");
+      const agreementCollection = crmCollection(currentContext, "agreementRecords");
+      const typed = (items, type) => isCrm2(currentContext) ? items.filter((item) => item.activityType === type) : items;
+      const manual = typed(await collectDocs(query(collection(db, timelineCollection), where("clientKey", "==", clientKey))), "clientTimeline");
       const manualEmailSubjects = new Set();
       manual.forEach((item) => {
         if ((item.type || "").toLowerCase() === "email") {
@@ -307,8 +317,8 @@
         });
       });
 
-      const sentEmailsByClientKey = await collectDocs(query(collection(db, "sentEmails"), where("clientKey", "==", clientKey)));
-      const sentEmailsBySourceId = await collectDocs(query(collection(db, "sentEmails"), where("sourceId", "==", id)));
+      const sentEmailsByClientKey = typed(await collectDocs(query(collection(db, emailCollection), where("clientKey", "==", clientKey))), "sentEmails");
+      const sentEmailsBySourceId = typed(await collectDocs(query(collection(db, emailCollection), where("sourceId", "==", id))), "sentEmails");
       [...sentEmailsByClientKey, ...sentEmailsBySourceId].forEach((item) => {
         const subject = String(item.subject || "").trim();
         if (subject && manualEmailSubjects.has(subject.toLowerCase())) return;
@@ -323,9 +333,9 @@
         });
       });
 
-      const agendaByClientKey = await collectDocs(query(collection(db, "agendaItems"), where("clientKey", "==", clientKey)));
-      const agendaBySourceId = await collectDocs(query(collection(db, "agendaItems"), where("sourceId", "==", id)));
-      const agendaByLeadId = await collectDocs(query(collection(db, "agendaItems"), where("sourceLeadId", "==", id)));
+      const agendaByClientKey = typed(await collectDocs(query(collection(db, agendaCollection), where("clientKey", "==", clientKey))), "agendaItems");
+      const agendaBySourceId = typed(await collectDocs(query(collection(db, agendaCollection), where("sourceId", "==", id))), "agendaItems");
+      const agendaByLeadId = typed(await collectDocs(query(collection(db, agendaCollection), where("sourceLeadId", "==", id))), "agendaItems");
       [...agendaByClientKey, ...agendaBySourceId, ...agendaByLeadId].forEach((item) => addUniqueEvent(events, seen, {
         key: "agendaItems:" + item.id,
         type: "agenda",
@@ -336,8 +346,8 @@
         href: "/agenda.html"
       }));
 
-      const agreements = (await collectDocs(query(collection(db, "agreementRecords"), where("clientKey", "==", clientKey))))
-        .concat(await collectDocs(query(collection(db, "agreementRecords"), where("sourceId", "==", id))));
+      const agreements = typed((await collectDocs(query(collection(db, agreementCollection), where("clientKey", "==", clientKey))))
+        .concat(await collectDocs(query(collection(db, agreementCollection), where("sourceId", "==", id)))), "agreementRecords");
       agreements.forEach((item) => addUniqueEvent(events, seen, {
         key: "agreementRecords:" + item.id,
         type: "agreement",
@@ -418,7 +428,7 @@
       if (!id || !safeSources.includes(source)) throw new Error("Missing or invalid client file reference.");
       const snap = await getDoc(doc(db, source, id));
       if (!snap.exists()) throw new Error("Client record not found.");
-      client = { id:snap.id, ...snap.data() };
+      client = normalizeCrmRecord(currentContext, snap.id, snap.data());
       clientKey = makeClientKey(source, id);
       renderClient();
       await loadTimeline();
@@ -426,35 +436,53 @@
 
     async function saveNote(e) {
       e.preventDefault();
-      await addDoc(collection(db, "clientTimeline"), { clientKey, source, sourceId:id, type:els.noteType.value, title:els.noteTitle.value.trim(), body:els.noteBody.value.trim(), createdAt:serverTimestamp(), createdByUid:currentUser.uid, createdByEmail:currentUser.email || "", createdByName:currentUserData?.name || currentUser.email || "" });
-      els.noteForm.reset();
-      showToast("Timeline note saved.");
-      await loadTimeline();
+      try {
+        await addDoc(collection(db, crmCollection(currentContext,"clientTimeline")), workspaceWrite(currentContext,"clientTimeline",{ clientKey, source, sourceId:id, type:els.noteType.value, title:els.noteTitle.value.trim(), body:els.noteBody.value.trim(), createdAt:serverTimestamp(), createdByUid:currentUser.uid, createdByEmail:currentUser.email || "", createdByName:currentUserData?.name || currentUser.email || "" }));
+        els.noteForm.reset();
+        showToast("Timeline note saved.");
+        await loadTimeline();
+      } catch (error) {
+        console.warn("Timeline note could not be saved.");
+        showToast(isCrm2(currentContext) ? "The CRM2 note could not be saved. Please try again." : "The note could not be saved. Please try again.");
+      }
     }
 
     async function saveFollowUp(e) {
       e.preventDefault();
-      await addDoc(collection(db, "agendaItems"), { clientName:clientName(client), clientPhone:primaryPhone(client), clientEmail:first(client.email, client.clientEmail), claimType:claimType(client), nextAction:els.followAction.value, nextActionDate:els.followDate.value, nextActionTime:els.followTime.value, notes:"Follow-up created from client file.", status:"open", source, sourceId:id, clientKey, ownerUid:currentUser.uid, ownerEmail:currentUser.email || "", ownerName:currentUserData?.name || currentUser.email || "", ownerRole:roleOf(currentUserData), createdAt:serverTimestamp(), updatedAt:serverTimestamp() });
-      await addDoc(collection(db, "clientTimeline"), { clientKey, source, sourceId:id, type:"agenda", title:"Follow-up booked", body:els.followAction.value + " on " + els.followDate.value + (els.followTime.value ? " at " + els.followTime.value : ""), createdAt:serverTimestamp(), createdByUid:currentUser.uid, createdByEmail:currentUser.email || "", createdByName:currentUserData?.name || currentUser.email || "" });
-      showToast("Follow-up added to agenda.");
-      await loadTimeline();
+      try {
+        await addDoc(collection(db, crmCollection(currentContext,"agendaItems")), workspaceWrite(currentContext,"agendaItems",{ clientName:clientName(client), clientPhone:primaryPhone(client), clientEmail:first(client.email, client.clientEmail), claimType:claimType(client), nextAction:els.followAction.value, nextActionDate:els.followDate.value, nextActionTime:els.followTime.value, notes:"Follow-up created from client file.", status:"open", source, sourceId:id, clientKey, ownerUid:currentUser.uid, ownerEmail:currentUser.email || "", ownerName:currentUserData?.name || currentUser.email || "", ownerRole:roleOf(currentUserData), createdAt:serverTimestamp(), updatedAt:serverTimestamp() }));
+        await addDoc(collection(db, crmCollection(currentContext,"clientTimeline")), workspaceWrite(currentContext,"clientTimeline",{ clientKey, source, sourceId:id, type:"agenda", title:"Follow-up booked", body:els.followAction.value + " on " + els.followDate.value + (els.followTime.value ? " at " + els.followTime.value : ""), createdAt:serverTimestamp(), createdByUid:currentUser.uid, createdByEmail:currentUser.email || "", createdByName:currentUserData?.name || currentUser.email || "" }));
+        showToast("Follow-up added to agenda.");
+        await loadTimeline();
+      } catch (error) {
+        console.warn("Follow-up could not be saved.");
+        showToast(isCrm2(currentContext) ? "The CRM2 follow-up could not be saved. Please try again." : "The follow-up could not be saved. Please try again.");
+      }
     }
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) { setTimeout(() => { if (!auth.currentUser) redirectToLogin(); }, 1600); return; }
       try {
         currentUser = user;
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        currentUserData = userSnap.exists() ? userSnap.data() : {};
-        const role = roleOf(currentUserData);
+        currentContext = await resolveCrmWorkspace(db,user);
+        currentUserData = currentContext.userData;
+        const role = currentContext.role;
         if (!allowedRoles.includes(role)) { alert("You do not have access to client files."); redirectToLogin(); return; }
-        els.dashboardLink.href = roleDashboard[role] || "/staff-dashboard.html";
+        els.dashboardLink.href = crmRouteFor(currentContext);
+        applyWorkspaceChrome(currentContext);
+        if(isCrm2(currentContext)){
+          for(const [button,route]of [[document.getElementById("solarAssessmentBtn"),"solar"],[document.getElementById("foamAssessmentBtn"),"spray-foam"]]){button.classList.remove("hidden");button.href="/crm2-assessment-builder.html?caseId="+encodeURIComponent(id)+"&route="+route}
+          Array.from(document.querySelectorAll("#followAction option")).filter(option=>option.textContent.includes("Processing")).forEach(option=>option.remove());
+          const timelineHelp=document.querySelector("#timelineCount")?.parentElement?.querySelector("p");
+          if(timelineHelp) timelineHelp.textContent="Calls, notes, emails, agreements, documents and agenda follow-ups in one place.";
+        }
         els.logoutBtn.classList.remove("hidden");
         await loadClient();
       } catch (error) {
-        console.error("Could not load client file:", error);
-        alert("Could not load client file: " + (error.code || error.message || "Unknown error"));
-      } finally { els.authLoader.style.display = "none"; }
+        console.warn("Client file is not currently available.");
+        if (els.clientName) els.clientName.textContent = isCrm2(currentContext) ? "CRM2 client file unavailable" : "Client file unavailable";
+        if (els.clientMeta) els.clientMeta.textContent = "Please refresh and try again.";
+      } finally { if (els.authLoader) els.authLoader.style.display = "none"; }
     });
 
     els.noteForm.addEventListener("submit", saveNote);

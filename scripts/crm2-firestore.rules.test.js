@@ -7,6 +7,7 @@ const now = Timestamp.fromDate(new Date("2026-08-03T12:00:00Z"));
 const member = (uid, role) => ({ uid, role, active:true, workspaceId:"CRM2", workspaceAccess:["CRM2"], displayName:role });
 const lead = (uid, overrides={}) => ({ workspaceId:"CRM2", workspaceLabel:"CRM2", sourceWorkspace:"CRM2", source:"manual_crm2", clientName:"Security Test", telephone:"", email:"", issue:"Solar PV / Renewable Energy", notes:"", preferredContactTime:"", assignedUserName:"", assignedUserId:"", status:"new", reference:"CRM2-TEST", createdBy:uid, createdByName:"Test", createdAt:now, updatedAt:now, audit:[], ...overrides });
 const assessment = (uid, caseId, route="solar", overrides={}) => ({ workspaceId:"CRM2", workspaceLabel:"CRM2", sourceWorkspace:"CRM2", caseId, assessmentRoute:route, status:"draft", clientName:"Security Test", reference:"CRM2-TEST", flags:[], createdBy:uid, createdByName:"Test", createdAt:now, updatedAt:now, audit:[], ...overrides });
+const activity = (uid, type="agendaItems", overrides={}) => ({ workspaceId:"CRM2", activityType:type, ownerUid:uid, createdByUid:uid, clientKey:"crm2Leads:approved-case", source:"crm2Leads", sourceId:"approved-case", status:"open", createdAt:now, updatedAt:now, ...overrides });
 
 (async () => {
   const env = await initializeTestEnvironment({ projectId, firestore:{ rules:fs.readFileSync("firestore.rules","utf8") } });
@@ -47,6 +48,7 @@ const assessment = (uid, caseId, route="solar", overrides={}) => ({ workspaceId:
     await assertFails(getDoc(doc(lister,"leadAssignments","legacy-crm-record")));
 
     const manager = env.authenticatedContext("manager").firestore();
+    await assertSucceeds(getDoc(doc(manager,"crm2Memberships","lister")));
     await assertSucceeds(getDoc(doc(manager,"crm2Leads","new-case")));
     for (const status of ["information-requested","awaiting-manager-review","approved","rejected"]) {
       await env.withSecurityRulesDisabled(async context => setDoc(doc(context.firestore(),"crm2Leads",`manager-${status}`),lead("lister",{status:"awaiting-manager-review"})));
@@ -81,6 +83,17 @@ const assessment = (uid, caseId, route="solar", overrides={}) => ({ workspaceId:
     await assertFails(updateDoc(doc(lister,"crm2Assessments","solar-create"),{createdBy:"manager"}));
     await assertFails(getDoc(doc(crm,"crm2Assessments","solar-create")));
     await assertSucceeds(getDoc(doc(closer,"crm2Assessments","solar-existing")));
+    await assertSucceeds(setDoc(doc(lister,"crm2Activities","agenda-create"),activity("lister")));
+    await assertSucceeds(getDoc(doc(manager,"crm2Activities","agenda-create")));
+    await assertSucceeds(updateDoc(doc(lister,"crm2Activities","agenda-create"),{status:"completed",updatedAt:now}));
+    await assertFails(setDoc(doc(lister,"crm2Activities","bad-activity-workspace"),activity("lister","agendaItems",{workspaceId:"CRM"})));
+    await assertFails(setDoc(doc(lister,"crm2Activities","bad-activity-type"),activity("lister","processingCases")));
+    await assertFails(getDoc(doc(crm,"crm2Activities","agenda-create")));
+    await assertSucceeds(setDoc(doc(lister,"crm2Attendance","lister_2026-08-04"),{workspaceId:"CRM2",uid:"lister",date:"2026-08-04",isOnline:true}));
+    await assertSucceeds(getDoc(doc(manager,"crm2Attendance","lister_2026-08-04")));
+    await assertFails(setDoc(doc(lister,"crm2Attendance","manager_2026-08-04"),{workspaceId:"CRM2",uid:"manager",date:"2026-08-04",isOnline:true}));
+    await assertFails(setDoc(doc(lister,"crm2Attendance","bad-workspace"),{workspaceId:"CRM",uid:"lister",date:"2026-08-04"}));
+    await assertFails(getDoc(doc(crm,"crm2Attendance","lister_2026-08-04")));
     console.log("CRM2 Firestore security matrix passed.");
   } finally { await env.cleanup(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -51,6 +51,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmRouteFor, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = { apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA", authDomain: "quaerensclaims.firebaseapp.com", projectId: "quaerensclaims" };
     const app = initializeApp(firebaseConfig);
@@ -58,15 +59,17 @@
     const db = getFirestore(app);
     const allowedRoles = ["admin", "manager", "staff", "closer", "processing"];
     const roleDashboards = { admin: "/admin-dashboard.html", manager: "/manager-dashboard.html", staff: "/staff-dashboard.html", closer: "/closer-dashboard.html", processing: "/processing-dashboard.html" };
-    const collectionsToSearch = [
+    const crmCollectionsToSearch = [
       { key: "leadAssignments", label: "Lead", openPath: "/manager-leads-overview.html?lead=" },
       { key: "closerAssignments", label: "Closer File", openPath: "/closer-panel.html?id=" },
       { key: "processingCases", label: "Processing Case", openPath: "/processing-case-detail.html?id=" },
       { key: "claimSubmissions", label: "Claim Submission", openPath: "/assessment-detail.html?id=" }
     ];
+    let collectionsToSearch = crmCollectionsToSearch;
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
     let records = [];
     let filteredRecords = [];
     const els = {
@@ -102,7 +105,7 @@
     async function loadCollection(collectionConfig) {
       try {
         const snap = await getDocs(collection(db, collectionConfig.key));
-        return snap.docs.map((documentSnap) => recordFromDoc(collectionConfig.key, documentSnap.id, documentSnap.data()));
+        return snap.docs.map((documentSnap) => recordFromDoc(collectionConfig.key, documentSnap.id, normalizeCrmRecord(currentContext,documentSnap.id,documentSnap.data())));
       } catch (error) {
         console.warn("Could not load " + collectionConfig.key, error);
         return [];
@@ -115,7 +118,7 @@
       const sets = await Promise.all(collectionsToSearch.map(loadCollection));
       records = sets.flat();
       els.loadedCount.textContent = records.length.toLocaleString("en-GB");
-      els.leadCount.textContent = records.filter((item) => item.source === "leadAssignments").length.toLocaleString("en-GB");
+      els.leadCount.textContent = records.filter((item) => item.source === (isCrm2(currentContext)?"crm2Leads":"leadAssignments")).length.toLocaleString("en-GB");
       els.processingCount.textContent = records.filter((item) => item.source === "processingCases").length.toLocaleString("en-GB");
       els.refreshBtn.disabled = false;
       els.refreshBtn.textContent = "Refresh";
@@ -170,11 +173,17 @@
       if (!user) { redirectToLogin(); return; }
       try {
         currentUser = user;
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        currentUserData = userSnap.exists() ? userSnap.data() : {};
-        const role = roleOf(currentUserData);
+        currentContext = await resolveCrmWorkspace(db,user);
+        currentUserData = currentContext.userData;
+        const role = currentContext.role;
         if (!allowedRoles.includes(role)) { alert("You do not have access to client search."); redirectToLogin(); return; }
-        els.dashboardLink.href = roleDashboards[role] || "/staff-dashboard.html";
+        if(isCrm2(currentContext)){
+          collectionsToSearch=[{key:"crm2Leads",label:"Lead",openPath:"/client-file.html?source=crm2Leads&id="}];
+          els.sourceFilter.innerHTML='<option value="all">All records</option><option value="crm2Leads">Leads</option>';
+          els.processingCount.closest(".card")?.remove();
+        }
+        els.dashboardLink.href = crmRouteFor(currentContext);
+        applyWorkspaceChrome(currentContext);
         els.logoutBtn.classList.remove("hidden");
         await loadRecords();
         hideLoader();

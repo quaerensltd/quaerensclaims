@@ -197,6 +197,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { resolveCrmWorkspace, isCrm2 } from "/crm-workspace.js";
     import {
       getFirestore,
       collection,
@@ -746,6 +747,7 @@
     });
 
     onAuthStateChanged(auth, async (user) => {
+      if(user){const context=await resolveCrmWorkspace(db,user);if(isCrm2(context)){document.body.innerHTML='<main style="max-width:760px;margin:80px auto;padding:32px;font-family:Arial,sans-serif"><h1>Dialler — CRM2</h1><p>The Dialler is deliberately disabled for CRM2 until call transport, call outcomes and callback writes are proven workspace-isolated.</p><p>No CRM1 records or internet leads have been loaded.</p><a href="'+({staff:'/staff-dashboard.html',manager:'/manager-dashboard.html',closer:'/closer-dashboard.html',admin:'/manager-dashboard.html'}[context.role]||'/login.html')+'">Return to dashboard</a></main>';return}}
       if (!user) {
         window.location.href = "/login.html";
         return;

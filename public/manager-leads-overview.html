@@ -411,6 +411,7 @@
       query,
       where
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -484,6 +485,8 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let leadCollection="leadAssignments",submissionCollection="claimSubmissions",closerCollection="closerAssignments",assessmentCollection="managerAssessments";
     let allLeads = [];
     let allUsers = [];
     let listerUsers = [];
@@ -1013,17 +1016,8 @@
 
     async function checkManagerAccess(user) {
       try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          alert("No staff profile found for this account.");
-          window.location.href = "/login.html";
-          return false;
-        }
-
-        const userData = userSnap.data();
-        if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+        const context=await resolveCrmWorkspace(db,user),userData={...context.userData,role:context.role};
+        if (context.role !== "manager" && context.role !== "admin") {
           alert("You do not have permission to access this page.");
           window.location.href = "/login.html";
           return false;
@@ -1031,6 +1025,7 @@
 
         currentUser = user;
         currentUserData = userData;
+        currentContext=context;leadCollection=crmCollection(context,"leadAssignments");submissionCollection=crmCollection(context,"claimSubmissions");closerCollection=crmCollection(context,"closerAssignments");assessmentCollection=crmCollection(context,"assessments");applyWorkspaceChrome(context);
         staffStatus.textContent = "Logged in as Manager";
         staffEmail.textContent = user.email || "";
         logoutBtn.classList.remove("hidden");
@@ -1044,13 +1039,17 @@
 
     async function loadLeads() {
       try {
-        const [leadSnap, userSnap] = await Promise.all([
-          getDocs(collection(db, "leadAssignments")),
-          getDocs(collection(db, "users"))
-        ]);
+        const leadSnap = await getDocs(collection(db, leadCollection));
+        let userDocs = [];
+        try {
+          const userSnap = await getDocs(collection(db, isCrm2(currentContext)?"crm2Memberships":"users"));
+          userDocs = userSnap.docs;
+        } catch (error) {
+          console.warn("Workspace team directory is not currently available.");
+        }
 
-        allLeads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allUsers = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allLeads = leadSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
+        allUsers = userDocs.map(d => ({ id:d.id,...d.data(),role:isCrm2(currentContext)&&d.data().role==="lister"?"staff":d.data().role,name:d.data().name||d.data().displayName||"" }));
         listerUsers = allUsers.filter(user => user.role === "staff");
         closerUsers = allUsers.filter(user => user.role === "closer");
 
@@ -1200,7 +1199,7 @@
     }
 
     async function findAssessmentForLead(leadId) {
-      const q = query(collection(db, "managerAssessments"), where("leadId", "==", leadId));
+      const q = query(collection(db, assessmentCollection), where(isCrm2(currentContext)?"caseId":"leadId", "==", leadId));
       const snap = await getDocs(q);
       if (snap.empty) return null;
 
@@ -1219,7 +1218,7 @@
       if (!submissionId) return null;
 
       try {
-        const snap = await getDoc(doc(db, "claimSubmissions", submissionId));
+        const snap = await getDoc(doc(db, submissionCollection, submissionId));
         if (snap.exists()) {
           selectedSubmissionData = { id: snap.id, ...snap.data() };
           return selectedSubmissionData;
@@ -1347,7 +1346,7 @@
     async function updateLead(patch, historyAction, notes = "") {
       if (!selectedLead) return;
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, leadCollection, selectedLead.id), {
           ...patch,
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
@@ -1373,12 +1372,14 @@
       if (!closerUid || !closerUser) {
         throw new Error("No closer selected.");
       }
+      if(isCrm2(currentContext)){await updateDoc(doc(db,leadCollection,lead.id),{assignedUserId:closerUid,assignedUserName:closerUser.name||closerUser.email||"",assignedToUid:closerUid,assignedToName:closerUser.name||closerUser.email||"",status:mode==="book"?"appointment-booked":"closer-assigned",appointmentDate:appointmentDate.value||"",appointmentTime:appointmentTime.value||"",updatedAt:serverTimestamp(),lastUpdatedAt:serverTimestamp()});return}
 
       const leadClaimType = lead.claimType || lead.type || "";
       const statusValue = mode === "book" ? "Appointment Booked" : "Assigned";
       const client = selectedSubmissionData?.client || {};
 
       const payload = {
+        ...(isCrm2(currentContext)?{workspaceId:"CRM2",workspaceLabel:"CRM2",sourceWorkspace:"CRM2",caseId:selectedLead.id,assessmentRoute:String(selectedLead.claimType||selectedLead.issue||"").toLowerCase().includes("foam")?"spray-foam":"solar",status:"draft",clientName:[selectedLead.forename,selectedLead.surname].filter(Boolean).join(" ")||selectedLead.clientName||"",reference:selectedLead.reference||selectedLead.id,flags:[]} : {}),
         sourceLeadId: lead.id,
         leadAssignmentId: lead.id,
         closer: {
@@ -1437,13 +1438,13 @@
         }
       };
 
-      const existingQuery = query(collection(db, "closerAssignments"), where("sourceLeadId", "==", lead.id));
+      const existingQuery = query(collection(db, closerCollection), where("sourceLeadId", "==", lead.id));
       const existingSnap = await getDocs(existingQuery);
 
       if (!existingSnap.empty) {
-        await updateDoc(doc(db, "closerAssignments", existingSnap.docs[0].id), payload);
+        await updateDoc(doc(db, closerCollection, existingSnap.docs[0].id), payload);
       } else {
-        await addDoc(collection(db, "closerAssignments"), {
+        await addDoc(collection(db, closerCollection), {
           ...payload,
           createdAt: serverTimestamp()
         });
@@ -1520,15 +1521,15 @@
       };
 
       if (existing) {
-        await updateDoc(doc(db, "managerAssessments", existing.id), payload);
+        await updateDoc(doc(db, assessmentCollection, existing.id), payload);
         selectedAssessmentPack = { id: existing.id, ...payload };
         return existing.id;
       }
 
-      const newDoc = await addDoc(collection(db, "managerAssessments"), {
+      const newDoc = await addDoc(collection(db, assessmentCollection), {
         ...payload,
         createdAt: serverTimestamp(),
-        createdBy: {
+        createdBy: isCrm2(currentContext)?currentUser.uid:{
           uid: currentUser.uid,
           name: currentUserData.name || "",
           email: currentUser.email || ""
@@ -1791,7 +1792,7 @@
     saveNotesBtn.addEventListener("click", async () => {
       if (!selectedLead) return;
       try {
-        await updateDoc(doc(db, "leadAssignments", selectedLead.id), {
+        await updateDoc(doc(db, leadCollection, selectedLead.id), {
           managerNotes: notesBox.value || "",
           introEmailSubject: emailSubjectInput.value.trim(),
           introEmailBody: emailBodyBox.value.trim(),

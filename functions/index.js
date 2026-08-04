@@ -24,10 +24,13 @@ exports.crm2AdminCreateUser = onCall(async request => {
   const email = String(data.email || "").trim().toLowerCase();
   const displayName = String(data.displayName || "").trim();
   const role = String(data.role || "").trim().toLowerCase();
+  const active = data.active === undefined ? true : data.active;
 
   if (!email || !email.includes("@")) throw new HttpsError("invalid-argument", "A valid email is required.");
   if (!displayName) throw new HttpsError("invalid-argument", "A display name is required.");
   if (!CRM2_ROLES.has(role)) throw new HttpsError("invalid-argument", "Select a valid CRM2 role.");
+  if (typeof active !== "boolean") throw new HttpsError("invalid-argument", "Active access must be true or false.");
+  if (data.workspaceId !== undefined && data.workspaceId !== "CRM2") throw new HttpsError("invalid-argument", "Only the CRM2 workspace may be assigned.");
 
   let user;
   try {
@@ -44,7 +47,7 @@ exports.crm2AdminCreateUser = onCall(async request => {
     role,
     workspaceId: "CRM2",
     workspaceAccess: ["CRM2"],
-    active: true,
+    active,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     createdBy: request.auth.uid,
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -63,6 +66,12 @@ exports.crm2AdminUpdateMembership = onCall(async request => {
   const role = String(data.role || "").trim().toLowerCase();
   if (!uid || !CRM2_ROLES.has(role) || typeof data.active !== "boolean") {
     throw new HttpsError("invalid-argument", "A user, role and active state are required.");
+  }
+  if (data.workspaceId !== undefined && data.workspaceId !== "CRM2") {
+    throw new HttpsError("invalid-argument", "Only the CRM2 workspace may be assigned.");
+  }
+  if (request.auth.uid === uid) {
+    throw new HttpsError("failed-precondition", "Administrators cannot change their own CRM2 role or active access.");
   }
   await db.collection("crm2Memberships").doc(uid).set({
     role,

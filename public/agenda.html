@@ -175,6 +175,7 @@
       getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc,
       query, where, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmRouteFor, crmCollection, workspaceWrite, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -197,6 +198,8 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
+    let agendaCollection = "agendaItems";
     let allItems = [];
 
     const els = {
@@ -270,11 +273,11 @@
       const view = els.viewMode.value;
       let snap;
       if (view === "all" && canViewAll()) {
-        snap = await getDocs(collection(db, "agendaItems"));
+        snap = await getDocs(collection(db, agendaCollection));
       } else {
-        snap = await getDocs(query(collection(db, "agendaItems"), where("ownerUid", "==", currentUser.uid)));
+        snap = await getDocs(query(collection(db, agendaCollection), where("ownerUid", "==", currentUser.uid)));
       }
-      allItems = snap.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+      allItems = snap.docs.map((entry) => ({ id: entry.id, ...entry.data() })).filter((item) => !isCrm2(currentContext) || item.activityType === "agendaItems");
       render();
     }
 
@@ -310,13 +313,13 @@
               <div class="flex items-center gap-2 flex-wrap">${statusBadge(item)} <span class="badge badge-slate">${escapeHtml(item.nextAction || "Follow-up")}</span></div>
               <h3 class="text-2xl font-extrabold text-blue-950 mt-3">${escapeHtml(item.clientName || "Unnamed client")}</h3>
               <p class="muted mt-1">${escapeHtml(item.claimType || "General")} ${item.ownerName ? "- " + escapeHtml(item.ownerName) : ""}</p>
-              <a class="btn btn-primary py-2 px-4 mt-4" href="/client-file.html?source=agendaItems&id=${item.id}">Open Client File</a>
+              <a class="btn btn-primary py-2 px-4 mt-4" href="/client-file.html?source=${agendaCollection}&id=${item.id}">Open Client File</a>
             </div>
             <div class="text-right text-sm text-slate-600">
               <div class="font-extrabold text-blue-900">${escapeHtml(item.nextActionDate || "-")} ${escapeHtml(item.nextActionTime || "")}</div>
               <div>${escapeHtml(item.clientPhone || "No phone")}</div>
               <div>${escapeHtml(item.clientEmail || "")}</div>
-              <a href="/client-file.html?source=agendaItems&id=${item.id}" style="display:inline-flex;margin-top:12px;background:#2563eb;color:#fff;font-weight:800;padding:10px 14px;border-radius:12px;text-decoration:none;">OPEN CLIENT FILE</a>
+              <a href="/client-file.html?source=${agendaCollection}&id=${item.id}" style="display:inline-flex;margin-top:12px;background:#2563eb;color:#fff;font-weight:800;padding:10px 14px;border-radius:12px;text-decoration:none;">OPEN CLIENT FILE</a>
             </div>
           </div>
           <div class="mt-4 grid md:grid-cols-2 gap-4">
@@ -342,7 +345,7 @@
 
     async function updateAgendaItem(card, changes) {
       const id = card.dataset.id;
-      await updateDoc(doc(db, "agendaItems", id), {
+      await updateDoc(doc(db, agendaCollection, id), {
         ...changes,
         updatedAt: serverTimestamp(),
         updatedByUid: currentUser.uid,
@@ -360,7 +363,7 @@
         return;
       }
       const nextDate = document.getElementById("nextActionDate").value || todayIso();
-      await addDoc(collection(db, "agendaItems"), {
+      await addDoc(collection(db, agendaCollection), workspaceWrite(currentContext,"agendaItems",{
         clientName,
         clientPhone: document.getElementById("clientPhone").value.trim(),
         clientEmail: document.getElementById("clientEmail").value.trim(),
@@ -376,7 +379,7 @@
         ownerRole: roleOf(currentUserData),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      }));
       els.quickForm.reset();
       document.getElementById("nextActionDate").value = nextDate;
       els.agendaDate.value = nextDate;
@@ -393,15 +396,17 @@
       }
       try {
         currentUser = user;
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        currentUserData = userSnap.exists() ? userSnap.data() : {};
-        const role = roleOf(currentUserData);
+        currentContext = await resolveCrmWorkspace(db,user);
+        currentUserData = currentContext.userData;
+        agendaCollection = crmCollection(currentContext,"agendaItems");
+        const role = currentContext.role;
         if (!allowedRoles.includes(role)) {
           alert("You do not have access to the agenda.");
           redirectToLogin();
           return;
         }
-        els.dashboardLink.href = roleDashboard[role] || "/staff-dashboard.html";
+        els.dashboardLink.href = crmRouteFor(currentContext);
+        applyWorkspaceChrome(currentContext);
         if (!canViewAll()) {
           els.viewMode.value = "mine";
           els.viewMode.querySelector('option[value="all"]').disabled = true;
@@ -412,10 +417,12 @@
         els.logoutBtn.classList.remove("hidden");
         await loadItems();
       } catch (error) {
-        console.error("Could not load agenda:", error);
-        alert("Could not load agenda: " + (error.code || error.message || "Unknown error"));
+        console.warn("CRM agenda items are not currently available.");
+        const emptyMessage = currentContext && isCrm2(currentContext) ? "No CRM2 agenda items are currently available." : "No agenda items are currently available.";
+        if (els.agendaSummary) els.agendaSummary.textContent = emptyMessage;
+        if (els.agendaList) els.agendaList.innerHTML = `<div class="empty">${emptyMessage}</div>`;
       } finally {
-        els.authLoader.style.display = "none";
+        if (els.authLoader) els.authLoader.style.display = "none";
       }
     });
 

@@ -10,10 +10,10 @@ export const db = getFirestore(app);
 export const functions = getFunctions(app);
 
 export const roleRoutes = Object.freeze({
-  lister: "/crm2-lister.html",
-  manager: "/crm2-manager.html",
-  closer: "/crm2-closer.html",
-  administrator: "/crm2-admin.html"
+  lister: "/staff-dashboard.html",
+  manager: "/manager-dashboard.html",
+  closer: "/closer-dashboard.html",
+  administrator: "/manager-dashboard.html"
 });
 
 export function loginRoute() {

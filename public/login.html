@@ -96,6 +96,7 @@
       setDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -140,6 +141,7 @@
 
     async function recordStaffLogin(user, userData) {
       if (userData.role !== "staff") return;
+      if (userData.workspaceId === "CRM2") return;
 
       const today = new Date().toISOString().slice(0, 10);
       const attendanceId = getTodayAttendanceId(user.uid);
@@ -212,6 +214,11 @@
         return;
       }
 
+      if (role === "admin") {
+        window.location.href = "/manager-dashboard.html";
+        return;
+      }
+
       await signOut(auth);
       showMessage("No valid role found for this account.", true);
       setLoading(false);
@@ -235,18 +242,8 @@
         const credential = await signInWithEmailAndPassword(auth, email, password);
         const user = credential.user;
 
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          await signOut(auth);
-          showMessage("No user profile found for this account.", true);
-          setLoading(false);
-          return;
-        }
-
-        const userData = userSnap.data();
-        await redirectByRole(user, userData);
+        const context = await resolveCrmWorkspace(db,user);
+        await redirectByRole(user, {...context.userData,role:context.role,workspaceId:context.workspaceId});
       } catch (error) {
         console.error("Login failed:", error);
 
@@ -272,12 +269,8 @@
       if (!user) return;
 
       try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return;
-
-        const userData = userSnap.data();
-        await redirectByRole(user, userData);
+        const context = await resolveCrmWorkspace(db,user);
+        await redirectByRole(user, {...context.userData,role:context.role,workspaceId:context.workspaceId});
       } catch (error) {
         console.error("Auto-redirect failed:", error);
       }

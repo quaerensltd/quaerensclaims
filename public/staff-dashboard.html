@@ -395,6 +395,7 @@
       serverTimestamp,
       arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -412,6 +413,7 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentContext = null;
     let allLeads = [];
     let attendanceHeartbeatInterval = null;
 
@@ -447,11 +449,11 @@
 
       const today = todayIso();
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
 
       if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
           uid: currentUser.uid,
           name: currentUserData.name || "",
           email: currentUser.email || "",
@@ -485,7 +487,7 @@
           updateData.totalLoggedInMs = 0;
         }
 
-        await setDoc(attendanceRef, updateData, { merge: true });
+        await setDoc(attendanceRef, {...updateData,workspaceId:currentContext.workspaceId}, { merge: true });
       }
     }
 
@@ -493,9 +495,9 @@
       if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
 
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
 
-      await setDoc(attendanceRef, {
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
         uid: currentUser.uid,
         name: currentUserData.name || "",
         email: currentUser.email || "",
@@ -524,11 +526,11 @@
       if (!currentUser) return;
 
       const attendanceId = getTodayAttendanceId(currentUser.uid);
-      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
       const attendanceSnap = await getDoc(attendanceRef);
 
       if (!attendanceSnap.exists()) {
-        await setDoc(attendanceRef, {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
           uid: currentUser.uid,
           lastLogoutAt: serverTimestamp(),
           isOnline: false
@@ -548,7 +550,7 @@
       const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
       const newTotal = existingTotal + extraMs;
 
-      await setDoc(attendanceRef, {
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
         uid: currentUser.uid,
         totalLoggedInMs: newTotal,
         currentSessionStartAt: null,
@@ -617,9 +619,10 @@
 
     async function updateLeadQuick(id, patch, historyAction, successMessage, notes = "") {
       try {
-        const leadRef = doc(db, "leadAssignments", id);
+        const leadRef = doc(db, crmCollection(currentContext,"leadAssignments"), id);
+        const scopedPatch = isCrm2(currentContext) && patch.leadStatus ? {...patch,status:({no_answer:"information-requested",qualified:"awaiting-manager-review",awaiting_manager:"awaiting-manager-review",closed:"rejected"}[patch.leadStatus]||patch.leadStatus)} : patch;
         await updateDoc(leadRef, {
-          ...patch,
+          ...scopedPatch,
           lastAction: historyAction,
           lastUpdatedAt: serverTimestamp(),
           actionHistory: arrayUnion({
@@ -704,16 +707,8 @@
     }
 
     async function checkStaffAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context = await resolveCrmWorkspace(db,user);
+      const userData = {...context.userData,role:context.role,workspaceId:context.workspaceId};
       if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
@@ -722,18 +717,18 @@
 
       currentUser = user;
       currentUserData = userData;
+      currentContext = context;
+      applyWorkspaceChrome(context);
       logoutBtn.classList.remove("hidden");
       return true;
     }
 
     async function loadLeads() {
-      const leadsQuery = query(
-        collection(db, "leadAssignments"),
-        where("assignedToUid", "==", currentUser.uid)
-      );
+      const leadCollection=crmCollection(currentContext,"leadAssignments");
+      const leadsQuery = isCrm2(currentContext) ? collection(db,leadCollection) : query(collection(db,leadCollection),where("assignedToUid", "==", currentUser.uid));
 
       const snapshot = await getDocs(leadsQuery);
-      allLeads = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      allLeads = snapshot.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
 
       renderStats();
       renderUntouchedLeads();

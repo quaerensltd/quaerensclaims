@@ -115,6 +115,7 @@
           <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
           <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
           <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <a id="crm2AdminNav" href="#crm2UserAdministration" class="btn btn-secondary py-2 px-4 hidden">CRM2 User Administration</a>
           <button id="refreshDashboardBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Dashboard</button>
           <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
         </div>
@@ -313,6 +314,39 @@
           </table>
         </div>
       </section>
+
+      <section id="crm2UserAdministration" class="card p-6 hidden" aria-labelledby="crm2AdminHeading">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-6">
+          <div>
+            <p class="text-sm font-bold uppercase tracking-wide text-blue-600">Administrator only</p>
+            <h2 id="crm2AdminHeading" class="text-xl font-extrabold text-blue-900 mt-1">CRM2 User Administration</h2>
+            <p class="text-sm text-slate-500 mt-1">Create secure CRM2 access and manage protected workspace memberships.</p>
+          </div>
+          <button id="refreshMembershipsBtn" class="btn btn-secondary" type="button">Refresh Memberships</button>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+          <form id="crm2CreateUserForm" class="lg:col-span-1 rounded-2xl border border-blue-100 bg-blue-50 p-5 space-y-4">
+            <h3 class="text-lg font-extrabold text-blue-900">Create CRM2 User</h3>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="crm2AdminDisplayName">Name</label><input id="crm2AdminDisplayName" name="displayName" class="w-full rounded-xl border border-blue-200 bg-white px-4 py-3" required /></div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="crm2AdminEmail">Email</label><input id="crm2AdminEmail" name="email" type="email" class="w-full rounded-xl border border-blue-200 bg-white px-4 py-3" autocomplete="off" required /></div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="crm2AdminRole">Role</label><select id="crm2AdminRole" name="role" class="w-full rounded-xl border border-blue-200 bg-white px-4 py-3"><option value="administrator">Administrator</option><option value="manager">Manager</option><option value="lister">Lister</option><option value="closer">Closer</option></select></div>
+            <label class="flex items-center gap-3 text-sm font-bold text-blue-900"><input id="crm2AdminActive" name="active" type="checkbox" class="h-5 w-5" checked /> Active access</label>
+            <button id="crm2CreateUserBtn" class="btn btn-primary w-full" type="submit">Create CRM2 User</button>
+            <p class="text-xs text-slate-500">Authentication accounts are created only by the protected Cloud Function. No passwords are collected here.</p>
+          </form>
+
+          <div class="lg:col-span-2">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead><tr class="bg-blue-50 text-blue-900"><th class="text-left p-3">User</th><th class="text-left p-3">Role</th><th class="text-left p-3">Access</th><th class="text-left p-3">Action</th></tr></thead>
+                <tbody id="crm2MembershipsBody"><tr><td class="p-3 text-slate-500" colspan="4">Loading CRM2 memberships...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <p id="crm2AdminMessage" class="text-sm font-semibold text-slate-600 mt-5" role="status"></p>
+      </section>
     </main>
   </div>
 
@@ -321,7 +355,8 @@
     import {
       getAuth,
       onAuthStateChanged,
-      signOut
+      signOut,
+      getIdTokenResult
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import {
       getFirestore,
@@ -330,6 +365,8 @@
       getDocs,
       collection
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -340,6 +377,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const functions = getFunctions(app);
 
     const authLoader = document.getElementById("authLoader");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -349,6 +387,13 @@
     const attendanceSummary = document.getElementById("attendanceSummary");
     const leadSummaryBody = document.getElementById("leadSummaryBody");
     const autoRefreshStatus = document.getElementById("autoRefreshStatus");
+    const crm2AdminNav = document.getElementById("crm2AdminNav");
+    const crm2UserAdministration = document.getElementById("crm2UserAdministration");
+    const crm2CreateUserForm = document.getElementById("crm2CreateUserForm");
+    const crm2CreateUserBtn = document.getElementById("crm2CreateUserBtn");
+    const crm2MembershipsBody = document.getElementById("crm2MembershipsBody");
+    const refreshMembershipsBtn = document.getElementById("refreshMembershipsBtn");
+    const crm2AdminMessage = document.getElementById("crm2AdminMessage");
 
     const LATE_CUTOFF_HOUR = 10;
     const LATE_CUTOFF_MINUTE = 0;
@@ -360,17 +405,22 @@
     let claimSubmissions = [];
     let autoRefreshInterval = null;
     let refreshInProgress = false;
+    let currentContext = null;
+    let platformAdminEnabled = false;
+    const CRM2_ADMIN_ROLES = ["administrator", "manager", "lister", "closer"];
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     async function safeGetCollection(collectionName) {
       try {
-        return await getDocs(collection(db, collectionName));
+        const scopedName=crmCollection(currentContext,collectionName);
+        if(!scopedName)return {docs:[]};
+        return await getDocs(collection(db,scopedName));
       } catch (error) {
-        console.error(`Could not load ${collectionName}:`, error);
-        showToast(`Could not load ${collectionName}. Some dashboard figures may be incomplete.`);
+        console.warn(`Workspace collection unavailable: ${collectionName}`);
+        showToast(isCrm2(currentContext) ? "Some CRM2 dashboard information is not currently available." : "Some dashboard information is not currently available.");
         return { docs: [] };
       }
     }
@@ -510,7 +560,132 @@
     function findUserName(uid) {
       if (!uid) return "-";
       const user = findUserById(uid);
-      return user?.name || user?.email || uid;
+      return user?.name || user?.email || (isCrm2(currentContext) ? "CRM2 team member" : uid);
+    }
+
+    function setAdminMessage(message, isError = false) {
+      crm2AdminMessage.textContent = message || "";
+      crm2AdminMessage.className = `text-sm font-semibold mt-5 ${isError ? "text-red-700" : "text-slate-600"}`;
+    }
+
+    function membershipRoleSelect(member) {
+      const select = document.createElement("select");
+      select.className = "rounded-xl border border-blue-200 bg-white px-3 py-2";
+      select.setAttribute("aria-label", `Role for ${member.email || member.uid}`);
+      for (const role of CRM2_ADMIN_ROLES) {
+        const option = document.createElement("option");
+        option.value = role;
+        option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        option.selected = member.role === role;
+        select.appendChild(option);
+      }
+      return select;
+    }
+
+    function membershipActiveSelect(member) {
+      const select = document.createElement("select");
+      select.className = "rounded-xl border border-blue-200 bg-white px-3 py-2";
+      select.setAttribute("aria-label", `Access for ${member.email || member.uid}`);
+      for (const [value, label] of [["true", "Active"], ["false", "Inactive"]]) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        option.selected = Boolean(member.active) === (value === "true");
+        select.appendChild(option);
+      }
+      return select;
+    }
+
+    async function updateCrm2Membership(member, roleSelect, activeSelect, button) {
+      if (!platformAdminEnabled) return;
+      button.disabled = true;
+      setAdminMessage("Updating protected CRM2 membership...");
+      try {
+        const updateMembership = httpsCallable(functions, "crm2AdminUpdateMembership");
+        await updateMembership({ uid:member.uid, role:roleSelect.value, active:activeSelect.value === "true", workspaceId:"CRM2" });
+        setAdminMessage(`CRM2 membership updated for ${member.email || "the selected user"}.`);
+        await loadCrm2Memberships();
+      } catch (error) {
+        console.warn("CRM2 membership update was rejected.");
+        setAdminMessage("The CRM2 membership could not be updated. Confirm platform administrator access and try again.", true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function renderCrm2Memberships(members) {
+      crm2MembershipsBody.replaceChildren();
+      if (!members.length) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 4;
+        cell.className = "p-3 text-slate-500";
+        cell.textContent = "No CRM2 memberships found.";
+        row.appendChild(cell);
+        crm2MembershipsBody.appendChild(row);
+        return;
+      }
+      for (const member of members) {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        const userCell = document.createElement("td");
+        userCell.className = "p-3";
+        const userName = document.createElement("strong");
+        userName.className = "text-blue-900";
+        userName.textContent = member.displayName || member.name || "CRM2 user";
+        const userEmail = document.createElement("div");
+        userEmail.className = "text-xs text-slate-500 mt-1";
+        userEmail.textContent = member.email || "Email unavailable";
+        userCell.append(userName, userEmail);
+        const roleCell = document.createElement("td");
+        roleCell.className = "p-3";
+        const roleSelect = membershipRoleSelect(member);
+        roleCell.appendChild(roleSelect);
+        const activeCell = document.createElement("td");
+        activeCell.className = "p-3";
+        const activeSelect = membershipActiveSelect(member);
+        activeCell.appendChild(activeSelect);
+        const actionCell = document.createElement("td");
+        actionCell.className = "p-3";
+        const saveButton = document.createElement("button");
+        saveButton.type = "button";
+        saveButton.className = "btn btn-secondary py-2 px-3";
+        saveButton.textContent = "Save";
+        saveButton.addEventListener("click", () => updateCrm2Membership(member, roleSelect, activeSelect, saveButton));
+        actionCell.appendChild(saveButton);
+        row.append(userCell, roleCell, activeCell, actionCell);
+        crm2MembershipsBody.appendChild(row);
+      }
+    }
+
+    async function loadCrm2Memberships() {
+      if (!platformAdminEnabled) return;
+      refreshMembershipsBtn.disabled = true;
+      try {
+        const snapshot = await getDocs(collection(db, "crm2Memberships"));
+        const members = snapshot.docs.map(item => ({ uid:item.id, ...item.data() })).sort((a,b) => String(a.email || "").localeCompare(String(b.email || "")));
+        renderCrm2Memberships(members);
+        setAdminMessage(`${members.length} CRM2 membership${members.length === 1 ? "" : "s"} loaded.`);
+      } catch (error) {
+        console.warn("CRM2 memberships are not currently available.");
+        renderCrm2Memberships([]);
+        setAdminMessage("CRM2 memberships could not be loaded. Confirm platform administrator access and try again.", true);
+      } finally {
+        refreshMembershipsBtn.disabled = false;
+      }
+    }
+
+    async function enablePlatformAdminTools(user) {
+      platformAdminEnabled = false;
+      crm2AdminNav.classList.add("hidden");
+      crm2UserAdministration.classList.add("hidden");
+      if (!isCrm2(currentContext) || currentContext.membershipRole !== "administrator") return;
+      const token = await getIdTokenResult(user);
+      if (token.claims.platformAdmin !== true) return;
+      platformAdminEnabled = true;
+      crm2AdminNav.classList.remove("hidden");
+      crm2UserAdministration.classList.remove("hidden");
+      await loadCrm2Memberships();
     }
 
     function isLocked(lead) {
@@ -592,22 +767,16 @@
     }
 
     async function checkAccess(user) {
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("No user profile found.");
-        window.location.href = "/login.html";
-        return false;
-      }
-
-      const userData = userSnap.data();
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
       if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
       }
 
+      currentContext=context;
+      applyWorkspaceChrome(context);
       logoutBtn.classList.remove("hidden");
       return true;
     }
@@ -637,10 +806,10 @@
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(d => d.date === today);
 
-        leadAssignments = leadSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        leadAssignments = leadSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
         userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        closerAssignments = closerAssignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        claimSubmissions = claimSubmissionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        closerAssignments = closerAssignmentsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data())).filter(item=>!isCrm2(currentContext)||["approved","closer-assigned","appointment-booked","onboarded"].includes(item.status));
+        claimSubmissions = claimSubmissionsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
 
         renderStats();
         renderAwaitingManager();
@@ -1006,13 +1175,15 @@
         const allowed = await checkAccess(user);
         if (!allowed) return;
 
+        await enablePlatformAdminTools(user);
+
         await loadDashboardData(true);
         startAutoRefresh();
         hideLoader();
       } catch (error) {
         console.error(error);
         hideLoader();
-        alert(`Could not load manager dashboard: ${error.code || error.message || "Unknown error"}`);
+        showToast(isCrm2(currentContext) ? "The CRM2 Manager dashboard is temporarily unavailable. Please refresh and try again." : "The Manager dashboard is temporarily unavailable. Please refresh and try again.");
       }
     });
 
@@ -1028,6 +1199,35 @@
 
     refreshDashboardBtn.addEventListener("click", async () => {
       await refreshDashboard(true);
+    });
+
+    refreshMembershipsBtn.addEventListener("click", loadCrm2Memberships);
+
+    crm2CreateUserForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!platformAdminEnabled) return;
+      crm2CreateUserBtn.disabled = true;
+      setAdminMessage("Creating secure CRM2 access...");
+      try {
+        const values = Object.fromEntries(new FormData(crm2CreateUserForm).entries());
+        const createUser = httpsCallable(functions, "crm2AdminCreateUser");
+        const response = await createUser({
+          displayName:String(values.displayName || "").trim(),
+          email:String(values.email || "").trim().toLowerCase(),
+          role:String(values.role || ""),
+          active:document.getElementById("crm2AdminActive").checked,
+          workspaceId:"CRM2"
+        });
+        crm2CreateUserForm.reset();
+        document.getElementById("crm2AdminActive").checked = true;
+        setAdminMessage(`Secure CRM2 access created for ${response.data.email}. Use the protected password-setup process to complete authentication.`);
+        await loadCrm2Memberships();
+      } catch (error) {
+        console.warn("CRM2 user creation was rejected.");
+        setAdminMessage("CRM2 access could not be created. Check the user details and platform administrator permission, then try again.", true);
+      } finally {
+        crm2CreateUserBtn.disabled = false;
+      }
     });
 
     logoutBtn.addEventListener("click", async () => {
