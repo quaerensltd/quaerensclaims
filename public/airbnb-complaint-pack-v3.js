@@ -1,14 +1,27 @@
 (function () {
   "use strict";
 
-  const root = document.querySelector('[data-qcb-builder="airbnb"][data-qcb-version="4"]');
-  if (!root) return;
+  function initialiseComplaintPack(root) {
+  const builderId = root.dataset.qcbBuilder;
+  const isSection75 = builderId === "section75";
 
   const form = root.querySelector(".qcb-form");
   const $ = (selector) => root.querySelector(selector);
   const $$ = (selector) => Array.from(root.querySelectorAll(selector));
-  const STORAGE_KEY = "quaerens-airbnb-complaint-pack-v3";
-  const evidenceItems = [
+  const STORAGE_KEY = isSection75 ? "quaerens-section75-complaint-pack-v1" : "quaerens-airbnb-complaint-pack-v3";
+  const evidenceItems = isSection75 ? [
+    ["statement", "Credit card statement", "The statement showing the card payment to the supplier"],
+    ["invoice", "Purchase invoice", "The supplier invoice identifying the goods or services and cash price"],
+    ["receipt", "Receipt or order confirmation", "The purchase receipt, order confirmation or deposit record"],
+    ["contract", "Contract", "The signed agreement or contract governing the purchase"],
+    ["terms", "Terms and Conditions", "The terms supplied at the time of purchase"],
+    ["correspondence", "Supplier correspondence", "Emails, letters or messages showing what was promised and what happened"],
+    ["complaint", "Complaint correspondence", "The complaint sent to the supplier or card provider and any acknowledgements"],
+    ["final", "Final response", "The card provider's final response, rejection or other substantive decision"],
+    ["expert", "Expert reports", "Independent technical findings where the condition or performance is disputed"],
+    ["photos", "Photographs", "Dated images showing faults, damage, non-conformity or incomplete work"],
+    ["quotes", "Independent quotations", "Repair or replacement quotations supporting the financial schedule"]
+  ] : [
     ["booking", "Booking confirmation", "Airbnb reservation details and payment confirmation"],
     ["listing", "Listing screenshots", "Photos, description, amenities, location and cancellation terms"],
     ["host", "Host messages", "The complete dated conversation with the host"],
@@ -37,8 +50,8 @@
 
   function caseData() {
     const f = fields();
-    const bookingPosition = Math.max(0, (Number(f.bookingPrice) || 0) - (Number(f.refundReceived) || 0));
-    const statedOutstanding = Number(f.refundOutstanding) || 0;
+    const bookingPosition = Math.max(0, (Number(isSection75 ? f.purchasePrice : f.bookingPrice) || 0) - (Number(f.refundReceived) || 0));
+    const statedOutstanding = Number(isSection75 ? f.outstandingAmount : f.refundOutstanding) || 0;
     const extra = losses.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
     const available = evidenceItems.filter(([key]) => evidence[key] === "available").length;
     const relevant = evidenceItems.filter(([key]) => evidence[key] !== "na").length;
@@ -56,7 +69,16 @@
   function qualityScore(d) {
     const completedTimeline = d.timeline.filter((row) => row.date && row.description).length;
     const supportedLosses = d.losses.filter((row) => row.description && Number(row.amount) > 0 && row.evidence).length;
-    const checks = [
+    const checks = isSection75 ? [
+      [Boolean(d.f.supplierName), 7], [Boolean(d.f.cardProvider), 7],
+      [Boolean(d.f.purchaseDate && d.f.purchasePrice), 8], [Boolean(d.f.cardType), 5],
+      [d.issues.length > 0, 10], [Boolean(d.f.promised && d.f.actual), 12],
+      [completedTimeline > 0, 8], [d.score >= 40, 8], [d.score >= 70, 7],
+      [Boolean(d.f.supplierResponse || d.f.cardProviderResponse), 6],
+      [Boolean(d.f.requestedOutcome), 8], [d.routes.length > 0, 5],
+      [d.losses.every((row) => !row.description || supportedLosses > 0), 4],
+      [Boolean(d.f.cashPriceConfirmed), 5]
+    ] : [
       [Boolean(d.f.bookingRef), 10], [Boolean(d.f.propertyName), 7],
       [Boolean(d.f.checkIn && d.f.checkOut), 8], [d.issues.length > 0, 10],
       [Boolean(d.f.issueDetails), 12], [completedTimeline > 0, 10],
@@ -75,7 +97,25 @@
     return "Complete the core case details to improve pack quality.";
   }
 
+  function eligibilityResult(d) {
+    if (!isSection75) return { label: "Not assessed", summary: "" };
+    const f = d.f;
+    const creditCard = f.cardType === "Personal credit card" || f.cardType === "Credit card — unsure of type";
+    const price = Number(f.purchasePrice) || 0;
+    const priceInTypicalRange = price >= 100 && price <= 30000;
+    const supplierLink = f.supplierRelationship === "Paid supplier directly" || f.supplierRelationship === "Supplier-arranged payment";
+    if (creditCard && priceInTypicalRange && supplierLink) return { label: "Potentially within the usual Section 75 route", summary: "The recorded payment type, cash price and supplier relationship indicate that Section 75 may be relevant, but eligibility is not confirmed and must be assessed against the complete facts." };
+    if (f.cardType && f.purchasePrice && f.supplierRelationship) return { label: "Further eligibility review needed", summary: "One or more recorded facts may complicate Section 75 eligibility. Check the credit arrangement, cash price and debtor-creditor-supplier relationship before relying on this route." };
+    return { label: "Insufficient information to assess", summary: "The builder cannot yet indicate whether Section 75 may be relevant because key payment, cash-price or supplier-relationship facts are missing." };
+  }
+
   function executiveSummary(d) {
+    if (isSection75) {
+      const issuePhrase = d.issues.length ? d.issues.map((issue) => issue.toLowerCase()).join(", ") : "the purchase concerns recorded in this file";
+      const evidenceAssessment = d.score >= 70 ? "The available records are well organised and provide a strong documentary foundation" : d.score >= 40 ? "The available records provide a useful foundation, although the missing items in the evidence schedule should be obtained where possible" : "Further payment, contract and complaint records would materially improve the presentation";
+      const financialAssessment = d.total > 0 ? `The current estimated financial exposure is ${money(d.total)}, subject to verification against statements, invoices, receipts and any refund already received.` : "The financial schedule should be completed and checked against the underlying payment records.";
+      return `This prepared complaint concerns a purchase from ${text(d.f.supplierName, "the recorded supplier")} and ${issuePhrase}. ${evidenceAssessment}. ${eligibilityResult(d).summary} ${financialAssessment} This is organisational guidance only: Section 75 eligibility and the outcome remain for the card provider or other appropriate decision-maker to determine.`;
+    }
     const issuePhrase = d.issues.length ? d.issues.map((issue) => issue.toLowerCase()).join(", ") : "the concerns recorded in this file";
     const evidenceAssessment = d.score >= 70 ? "The supporting material appears well organised and provides a strong documentary foundation" : d.score >= 40 ? "The available material provides a useful foundation, although the missing items identified in the evidence schedule should be obtained where possible" : "The complaint is capable of being organised, but further supporting records would materially improve the presentation";
     const timelineAssessment = d.timeline.filter((row) => row.date && row.description).length > 1 ? "The chronology presents the relevant events in a clear sequence" : "The chronology would benefit from further dated entries before the file is submitted";
@@ -85,6 +125,12 @@
 
   function complaintLetter(d) {
     const f = d.f;
+    if (isSection75) {
+      const issues = d.issues.length ? d.issues.join(", ") : "the purchase problems described below";
+      const events = d.timeline.length ? d.timeline.map((event) => `${date(event.date)} — ${text(event.category, "Event")}: ${text(event.description)}`).join("\n") : "A detailed chronology is enclosed in the complaint pack.";
+      const lossLine = d.total ? `The current estimated financial exposure is ${money(d.total)}, subject to verification against the enclosed records and deduction of any refund already received.` : "I ask that the financial position and appropriate redress are assessed from the enclosed records.";
+      return `Subject: Formal Section 75 complaint concerning purchase from ${text(f.supplierName)}\n\nDear Complaints Team,\n\nI am asking ${text(f.cardProvider, "the card provider")} to investigate this matter as a formal complaint and to consider potential joint liability under section 75 of the Consumer Credit Act 1974. The purchase concerned ${text(f.goodsServices, "the goods or services recorded in the enclosed file")}, supplied by ${text(f.supplierName)}, with a recorded cash price of ${money(f.purchasePrice)} and ${money(f.cardAmount)} paid using the recorded credit-card arrangement.\n\nPurchase and problem\nThe complaint concerns ${issues}.\n\nWhat was promised\n${text(f.promised, "The relevant contractual promises are set out in the enclosed evidence.")}\n\nWhat actually happened\n${text(f.actual, "The relevant breach of contract or misrepresentation concerns are set out in the enclosed chronology.")}\n\nMaterial chronology\n${events}\n\nSupplier response\n${text(f.supplierResponse, "No substantive supplier response has been recorded in this file.")}\n\nCard provider response\n${text(f.cardProviderResponse, "No substantive card-provider response has been recorded in this file.")}\n\nEvidence and financial impact\nThe enclosed pack contains the payment record, transaction summary, chronology, evidence schedule and financial schedule. ${lossLine}\n\nRequested resolution\n${text(f.requestedOutcome, "Please investigate the complaint fairly, explain your Section 75 position in writing and provide any redress found due.")}\n\nPlease acknowledge receipt, confirm the complaint reference and provide a reasoned written response. If you conclude that Section 75 does not apply, please identify the basis relied upon and issue the appropriate complaint response.\n\nYours faithfully,\nCardholder`;
+    }
     const issues = d.issues.length ? d.issues.join(", ") : "the booking and refund issues described below";
     const events = d.timeline.length ? d.timeline.map((e) => `${date(e.date)} — ${text(e.category, "Event")}: ${text(e.description)}`).join("\n") : "A detailed chronology is enclosed in the complaint pack.";
     const lossLine = d.total ? `The current documented amount sought is ${money(d.total)}, subject to any correction supported by the enclosed records.` : "I ask that the appropriate refund and documented losses are assessed from the enclosed records.";
@@ -92,6 +138,7 @@
   }
 
   function coverEmail(d) {
+    if (isSection75) return `Subject: Section 75 complaint file — ${text(d.f.supplierName)}\n\nDear Complaints Team,\n\nPlease find attached my structured Section 75 Complaint Pack concerning a purchase from ${text(d.f.supplierName)}. It contains the transaction facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and tell me the expected response date.\n\nKind regards,\nCardholder`;
     return `Subject: Complaint file — Airbnb booking ${text(d.f.bookingRef)}\n\nDear Complaints Team,\n\nPlease find attached my structured complaint file concerning booking ${text(d.f.bookingRef)} at ${text(d.f.propertyName, "the booked property")}. It contains the booking facts, chronology, evidence schedule, financial loss schedule and formal complaint letter.\n\nPlease acknowledge receipt and confirm the case reference and expected response date.\n\nKind regards,\nAirbnb guest`;
   }
 
@@ -107,6 +154,24 @@
     const f = d.f;
     const evidenceRows = evidenceItems.map(([key, label, recommendation]) => [label, evidence[key] === "available" ? "Available" : evidence[key] === "na" ? "Not applicable" : "Missing", recommendation]);
     const missing = evidenceRows.filter((row) => row[1] === "Missing").map((row) => row[0]);
+    if (isSection75) {
+      const eligibility = eligibilityResult(d);
+      const guidance = d.routes.length ? d.routes : ["Card provider formal complaint", "Financial Ombudsman Service after the provider's complaint process", "Supplier complaint or other official consumer route where appropriate"];
+      return [
+        { title: "Section 75 Complaint File", cover: true, body: `<span class="qcb-confidential">CONFIDENTIAL</span><p class="qcb-cover-title">FREE SECTION 75 COMPLAINT PACK&trade;</p><p class="qcb-cover-subtitle">Prepared for the Cardholder</p><div class="qcb-cover-grid"><div><span>Supplier</span><strong>${esc(text(f.supplierName))}</strong></div><div><span>Prepared date</span><strong>${esc(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}</strong></div><div><span>Evidence readiness</span><strong>${d.score}%</strong></div><div><span>Complaint status</span><strong>${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}</strong></div><div><span>Card provider</span><strong>${esc(text(f.cardProvider))}</strong></div><div><span>Estimated financial exposure</span><strong>${esc(money(d.total))}</strong></div></div>` },
+        { title: "Executive Summary", body: `<div class="qcb-strength"><strong>${qualityScore(d)}%</strong><span>Complaint Pack Quality<br>${esc(qualityLabel(qualityScore(d)))}</span></div><p>${esc(executiveSummary(d))}</p><p><strong>Eligibility guide:</strong> ${esc(eligibility.label)}. This is not a decision on legal entitlement or likely outcome.</p>` },
+        { title: "Transaction Summary", body: summaryGrid([["Merchant", text(f.merchantName)], ["Supplier", text(f.supplierName)], ["Card provider", text(f.cardProvider)], ["Card type", text(f.cardType)], ["Purchase date", date(f.purchaseDate)], ["Purchase cash price", money(f.purchasePrice)], ["Paid by credit card", money(f.cardAmount)], ["Goods or services", text(f.goodsServices)], ["Supplier relationship", text(f.supplierRelationship)], ["Refund received", money(f.refundReceived)], ["Outstanding amount", money(f.outstandingAmount)], ["Final response", text(f.finalResponse)]]) },
+        { title: "Chronology", body: rowTable(["Date", "Category", "Event", "Evidence"], d.timeline.map((event) => [date(event.date), text(event.category), text(event.description), text(event.evidence, "Not cross-referenced")])) },
+        { title: "Supporting Evidence", body: `<div class="qcb-strength"><strong>${d.score}%</strong><span>${evidenceRows.filter((row) => row[1] === "Available").length} available of ${evidenceRows.filter((row) => row[1] !== "Not applicable").length} relevant items</span></div>${rowTable(["Supporting Evidence", "Status", "Recommended Record"], evidenceRows)}<p><strong>Evidence priorities:</strong> ${esc(missing.join(", ") || "No missing items identified")}</p>` },
+        { title: "Financial Impact", body: `${rowTable(["Description", "Amount", "Supporting Evidence", "Status"], d.losses.map((loss) => [text(loss.description), money(loss.amount), text(loss.evidence), text(loss.status)]))}<p><strong>Purchase less refund position:</strong> ${money(d.bookingPosition)}</p><p><strong>Repair, replacement, consequential and additional expenditure:</strong> ${money(d.extra)}</p><p><strong>Estimated financial exposure:</strong> ${money(d.total)}</p>` },
+        { title: "Formal Complaint Letter", body: `<div class="qcb-letter">${esc(complaintLetter(d))}</div>` },
+        { title: "Cover Email", body: `<div class="qcb-letter">${esc(coverEmail(d))}</div>` },
+        { title: "Submission Checklist", body: `<ul><li>Check the supplier, card provider, purchase date, cash price and card-payment amount.</li><li>Attach each item marked available in the evidence schedule.</li><li>Name every attachment clearly and cross-reference it to the chronology.</li><li>Check that the requested resolution and financial schedule do not double count any refund.</li><li>Submit through the card provider's official complaints channel.</li><li>Keep the complete pack, proof of submission and the complaint reference.</li></ul>` },
+        { title: "Response Tracker", body: rowTable(["Date", "Organisation/person", "Action or response", "Deadline", "Status"], [["", "Supplier", "", "", "Awaiting"], ["", "Card provider", "", "", "Awaiting"], ["", "Financial Ombudsman Service", "", "If applicable", "Not started"], ["", "Other official route", "", "If applicable", ""]]) },
+        { title: "Official Guidance & Routes", body: `<p>This pack organises information and does not determine Section 75 eligibility, provide legal advice or submit a complaint.</p><ul>${guidance.map((route) => `<li><strong>${esc(route)}:</strong> check the current official eligibility, evidence, complaint and deadline requirements before acting.</li>`).join("")}</ul><p>Review the current Consumer Credit Act 1974 section 75 text, the card provider's published complaint process, Financial Ombudsman Service guidance and other official consumer guidance relevant to the transaction.</p>` },
+        { title: "Quaerens Notes", body: `<p><strong>Browser-first privacy:</strong> answers remain in this browser unless you download, print, copy or deliberately use a separate Guided Support route.</p><p><strong>Important:</strong> This self-help pack provides general organisational information. It is not legal advice, an eligibility decision or a prediction of outcome. Verify all facts, figures, rules and deadlines.</p><p><strong>Case preparation notes</strong></p><div style="height:220px;border:1px solid #cbd5e1;background:repeating-linear-gradient(#fff,#fff 27px,#dbeafe 28px)"></div><p>Optional Guided Support must pass through the Quaerens Intake Gateway and remains separate from this free builder.</p>` }
+      ];
+    }
     const guidance = d.routes.length ? d.routes : ["Airbnb complaint process", "Payment-provider options where appropriate", "Independent advice if deadlines or jurisdiction are unclear"];
     return [
       { title: "Airbnb Complaint File", cover: true, body: `<span class="qcb-confidential">CONFIDENTIAL</span><p class="qcb-cover-title">Airbnb Complaint Pack&trade;</p><p class="qcb-cover-subtitle">Prepared for Airbnb Guest</p><div class="qcb-cover-grid"><div><span>Booking reference</span><strong>${esc(text(f.bookingRef))}</strong></div><div><span>Prepared date</span><strong>${esc(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}</strong></div><div><span>Evidence readiness</span><strong>${d.score}%</strong></div><div><span>Complaint status</span><strong>${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}</strong></div><div><span>Property</span><strong>${esc(text(f.propertyName))}</strong></div><div><span>Estimated financial exposure</span><strong>${esc(money(d.total))}</strong></div></div>` },
@@ -144,10 +209,12 @@
     $("[data-qcb-gauge]").style.width = `${d.score}%`;
     $("[data-qcb-readiness-title]").textContent = `Evidence Readiness: ${d.score}%`;
     $("[data-qcb-readiness-copy]").textContent = d.score >= 70 ? "Your evidence file is well prepared. Check every attachment before submission." : d.score >= 40 ? "A useful foundation is present. Add the missing items where available." : "More supporting records are recommended before submission.";
-    const complete = Boolean(d.f.bookingRef && d.f.issueDetails && d.issues.length);
+    const complete = isSection75 ? Boolean(d.f.supplierName && d.f.cardProvider && d.f.promised && d.f.actual && d.issues.length) : Boolean(d.f.bookingRef && d.f.issueDetails && d.issues.length);
     $("[data-qcb-status]").textContent = complete ? "Case file ready to review" : "Needs key information";
     $("[data-qcb-final-status]").textContent = complete ? "Your structured case file is ready for a final accuracy review" : "Complete the key facts to strengthen your pack";
-    $("[data-qcb-final-next]").textContent = !d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the main issue" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the chosen route";
+    $("[data-qcb-final-next]").textContent = isSection75 ? (!d.f.supplierName ? "Add the supplier" : !d.f.cardProvider ? "Add the card provider" : !d.issues.length ? "Select the main problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the card provider's official route") : (!d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the main issue" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the chosen route");
+    const eligibilityNode = $("[data-qcb-eligibility]");
+    if (eligibilityNode) eligibilityNode.textContent = eligibilityResult(d).label;
     persist();
   }
 
@@ -157,12 +224,13 @@
   }
 
   function renderTimeline() {
-    $("[data-qcb-timeline]").innerHTML = timeline.map((row, index) => `<div class="qcb-timeline-row" data-index="${index}"><label>Date<input type="date" data-field="date" value="${esc(row.date)}"></label><label>Category<select data-field="category"><option>Booking</option><option>Host communication</option><option>Airbnb communication</option><option>Property issue</option><option>Payment</option><option>Refund</option><option>Other</option></select></label><label>Description<textarea rows="2" data-field="description" placeholder="What happened?">${esc(row.description)}</textarea></label><label>Evidence reference<input data-field="evidence" value="${esc(row.evidence)}" placeholder="e.g. Photo 3, message A"></label><div class="qcb-row-actions"><button type="button" class="qcb-btn ghost" data-move="up" aria-label="Move event up">↑</button><button type="button" class="qcb-btn ghost" data-move="down" aria-label="Move event down">↓</button><button type="button" class="qcb-btn ghost" data-delete aria-label="Delete event">Delete</button></div></div>`).join("");
-    $$('[data-qcb-timeline] [data-field="category"]').forEach((select, index) => { select.value = timeline[index].category || "Booking"; });
+    const categories = isSection75 ? ["Purchase", "Supplier communication", "Card provider communication", "Problem discovered", "Complaint", "Final response", "Financial loss", "Other"] : ["Booking", "Host communication", "Airbnb communication", "Property issue", "Payment", "Refund", "Other"];
+    $("[data-qcb-timeline]").innerHTML = timeline.map((row, index) => `<div class="qcb-timeline-row" data-index="${index}"><label>Date<input type="date" data-field="date" value="${esc(row.date)}"></label><label>Category<select data-field="category">${categories.map((category) => `<option>${esc(category)}</option>`).join("")}</select></label><label>Description<textarea rows="2" data-field="description" placeholder="What happened?">${esc(row.description)}</textarea></label><label>Evidence reference<input data-field="evidence" value="${esc(row.evidence)}" placeholder="e.g. statement 1, email A"></label><div class="qcb-row-actions"><button type="button" class="qcb-btn ghost" data-move="up" aria-label="Move event up">↑</button><button type="button" class="qcb-btn ghost" data-move="down" aria-label="Move event down">↓</button><button type="button" class="qcb-btn ghost" data-delete aria-label="Delete event">Delete</button></div></div>`).join("");
+    $$('[data-qcb-timeline] [data-field="category"]').forEach((select, index) => { select.value = timeline[index].category || categories[0]; });
   }
 
   function renderLosses() {
-    $("[data-qcb-losses]").innerHTML = losses.map((row, index) => `<div class="qcb-loss-row" data-index="${index}"><label>Description<input data-field="description" value="${esc(row.description)}" placeholder="e.g. replacement hotel"></label><label>Amount (£)<input type="number" min="0" step="0.01" data-field="amount" value="${esc(row.amount)}"></label><label>Evidence<input data-field="evidence" value="${esc(row.evidence)}" placeholder="Receipt or statement reference"></label><label>Status<select data-field="status"><option>Documented</option><option>Evidence needed</option><option>Estimated</option><option>Disputed</option></select></label><div class="qcb-row-actions"><button type="button" class="qcb-btn ghost" data-delete aria-label="Delete loss row">Delete</button></div></div>`).join("");
+    $("[data-qcb-losses]").innerHTML = losses.map((row, index) => `<div class="qcb-loss-row" data-index="${index}"><label>Description<input data-field="description" value="${esc(row.description)}" placeholder="${isSection75 ? "e.g. repair costs or replacement costs" : "e.g. replacement hotel"}"></label><label>Amount (£)<input type="number" min="0" step="0.01" data-field="amount" value="${esc(row.amount)}"></label><label>Supporting Evidence<input data-field="evidence" value="${esc(row.evidence)}" placeholder="Receipt, quotation or statement reference"></label><label>Status<select data-field="status"><option>Documented</option><option>Evidence needed</option><option>Estimated</option><option>Disputed</option></select></label><div class="qcb-row-actions"><button type="button" class="qcb-btn ghost" data-delete aria-label="Delete loss row">Delete</button></div></div>`).join("");
     $$('[data-qcb-losses] [data-field="status"]').forEach((select, index) => { select.value = losses[index].status || "Evidence needed"; });
   }
 
@@ -237,8 +305,10 @@
     packPages.forEach((page, index) => {
       let commands = "";
       if (page.cover) {
-        commands += "0.020 0.149 0.349 rg 0 0 595 842 re f\n0.065 0.365 0.690 rg 0 0 18 842 re f\n1 1 1 rg\nBT /F2 11 Tf 58 780 Td (QUAERENS) Tj ET\n0.48 0.71 0.94 RG 1 w 58 765 m 537 765 l S\nBT /F1 9 Tf 58 730 Td (CONFIDENTIAL) Tj ET\nBT /F2 29 Tf 58 635 Td (AIRBNB COMPLAINT PACK) Tj ET\nBT /F1 11 Tf 58 608 Td (PREPARED FOR AIRBNB GUEST) Tj ET\n";
-        const coverLines = [`Booking reference: ${text(d.f.bookingRef)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Property: ${text(d.f.propertyName)}`, `Estimated financial exposure: ${money(d.total)}`];
+        const pdfTitle = isSection75 ? "FREE SECTION 75 COMPLAINT PACK" : "AIRBNB COMPLAINT PACK";
+        const pdfAudience = isSection75 ? "PREPARED FOR THE CARDHOLDER" : "PREPARED FOR AIRBNB GUEST";
+        commands += `0.020 0.149 0.349 rg 0 0 595 842 re f\n0.065 0.365 0.690 rg 0 0 18 842 re f\n1 1 1 rg\nBT /F2 11 Tf 58 780 Td (QUAERENS) Tj ET\n0.48 0.71 0.94 RG 1 w 58 765 m 537 765 l S\nBT /F1 9 Tf 58 730 Td (CONFIDENTIAL) Tj ET\nBT /F2 29 Tf 58 635 Td (${pdfTitle}) Tj ET\nBT /F1 11 Tf 58 608 Td (${pdfAudience}) Tj ET\n`;
+        const coverLines = isSection75 ? [`Supplier: ${text(d.f.supplierName)}`, `Card provider: ${text(d.f.cardProvider)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Estimated financial exposure: ${money(d.total)}`] : [`Booking reference: ${text(d.f.bookingRef)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Property: ${text(d.f.propertyName)}`, `Estimated financial exposure: ${money(d.total)}`];
         commands += `0.10 0.31 0.58 rg 58 355 479 190 re f\n1 1 1 rg\nBT /F1 11 Tf 78 515 Td ${coverLines.map((line, i) => `${i ? "0 -27 Td " : ""}(${pdfSafe(line)}) Tj`).join(" ")} ET\nBT /F1 9 Tf 58 65 Td (Prepared with the Quaerens Complaint Pack Builder) Tj ET\n`;
       } else {
         const raw = page.body.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>|<\/li>|<\/tr>|<\/div>|<\/h\d>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&pound;/g, "GBP ").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").trim();
@@ -260,14 +330,14 @@
   }
 
   function downloadPdf() {
-    download(buildPdf(caseData()), `Quaerens-Airbnb-Complaint-Pack-${slugDate()}.pdf`);
+    download(buildPdf(caseData()), `Quaerens-${isSection75 ? "Section-75" : "Airbnb"}-Complaint-Pack-${slugDate()}.pdf`);
     status("Your 12-page PDF complaint pack has downloaded.");
   }
 
   function downloadWord() {
     const d = caseData(); const content = pages(d).map((page, index) => `<section class="page ${page.cover ? "cover" : ""}"><header>QUAERENS</header><h1>${page.title}</h1>${page.body}<footer>Quaerens Complaint File • Page ${index + 1} of 12</footer></section>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#1e293b;line-height:1.55}.page{page-break-after:always;min-height:242mm}header{color:#0b3b86;font-size:9pt;font-weight:bold;letter-spacing:2.5px;border-bottom:2px solid #1d5fbf;padding-bottom:10px;margin-bottom:28px}h1{font-family:Georgia;color:#0b3b86;font-size:25px;margin:0 0 22px}p,li{font-size:10pt;line-height:1.65}table{border-collapse:collapse;width:100%;font-size:9pt;margin:14px 0}th{background:#0b3b86;color:white;text-transform:uppercase;font-size:8pt;letter-spacing:.4px}td,th{border:1px solid #ccd8e8;padding:9px;vertical-align:top}.qcb-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qcb-summary-card{border-left:3px solid #1d5fbf;background:#f4f8fc;padding:10px}.qcb-summary-card span{font-size:8pt;color:#64748b;display:block;text-transform:uppercase}.qcb-strength{background:#edf4fc;padding:14px;margin:12px 0 20px}.qcb-strength strong{color:#0b3b86;font-size:20pt}.cover{background:#052659;color:white;padding:24mm;box-sizing:border-box}.cover h1,.cover header,.cover strong{color:white}.cover .qcb-cover-title{font-family:Georgia;font-size:30pt;margin-top:45mm}.cover .qcb-cover-subtitle{letter-spacing:2px;text-transform:uppercase}.cover .qcb-cover-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25mm}.cover .qcb-cover-grid div{border-top:1px solid #7bb6f0;padding:10px 0}.cover .qcb-cover-grid span{display:block;color:#bfdbfe;text-transform:uppercase;font-size:7pt;letter-spacing:1px}.qcb-confidential{border:1px solid #fff;padding:5px 8px;font-size:7pt;letter-spacing:2px}.qcb-letter{white-space:pre-line;font-family:Georgia;line-height:1.65}footer{color:#64748b;border-top:1px solid #ccd8e8;margin-top:24px;padding-top:8px;font-size:8pt}</style></head><body>${content}</body></html>`;
-    download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-Airbnb-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
+    download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-${isSection75 ? "Section-75" : "Airbnb"}-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
   }
 
   function status(message) { const node = $("[data-qcb-copy-status]"); node.textContent = message; node.setAttribute("role", "status"); }
@@ -284,7 +354,7 @@
   }
 
   restore();
-  if (!timeline.length) timeline.push({ date: "", category: "Booking", description: "", evidence: "" });
+  if (!timeline.length) timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" });
   if (!losses.length) losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" });
   renderTimeline(); renderLosses(); renderEvidence(); showStep(1); renderPreview();
 
@@ -294,17 +364,20 @@
   $("[data-qcb-timeline]").addEventListener("click", (event) => handleCollection(event, timeline, renderTimeline));
   $("[data-qcb-losses]").addEventListener("input", (event) => handleCollection(event, losses, renderLosses));
   $("[data-qcb-losses]").addEventListener("click", (event) => handleCollection(event, losses, renderLosses));
-  $("[data-qcb-add-event]").addEventListener("click", () => { timeline.push({ date: "", category: "Booking", description: "", evidence: "" }); renderTimeline(); renderPreview(); });
+  $("[data-qcb-add-event]").addEventListener("click", () => { timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }); renderTimeline(); renderPreview(); });
   $("[data-qcb-add-loss]").addEventListener("click", () => { losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" }); renderLosses(); renderPreview(); });
   $("[data-qcb-next]").addEventListener("click", () => { if (step < 7) showStep(step + 1); else $("[data-qcb-preview]").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("[data-qcb-prev]").addEventListener("click", () => showStep(step - 1));
   $$('[data-qcb-step-pill]').forEach((pill) => { pill.tabIndex = 0; pill.setAttribute("role", "button"); pill.addEventListener("click", () => showStep(Number(pill.dataset.qcbStepPill))); pill.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showStep(Number(pill.dataset.qcbStepPill)); } }); });
   $("[data-qcb-save]").addEventListener("change", () => { if ($("[data-qcb-save]").checked) persist(); else localStorage.removeItem(STORAGE_KEY); });
-  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); timeline = [{ date: "", category: "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser."); });
+  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); timeline = [{ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser."); });
   $("[data-qcb-download-pdf]").addEventListener("click", downloadPdf);
   $("[data-qcb-download-word]").addEventListener("click", downloadWord);
-  $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-Airbnb-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
+  $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-${isSection75 ? "Section-75" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
   $("[data-qcb-copy-letter]").addEventListener("click", () => copy(complaintLetter(caseData()), "Complaint letter copied to your clipboard."));
   $("[data-qcb-copy-email]").addEventListener("click", () => copy(coverEmail(caseData()), "Cover email copied to your clipboard."));
   $("[data-qcb-print]").addEventListener("click", () => window.print());
+  }
+
+  document.querySelectorAll('[data-qcb-version="4"]').forEach(initialiseComplaintPack);
 })();
