@@ -238,7 +238,7 @@
     $("[data-qcb-evidence]").innerHTML = evidenceItems.map(([key, label, recommendation]) => `<fieldset class="qcb-evidence-row"><legend>${esc(label)}</legend><p>${esc(recommendation)}</p><div><label><input type="radio" name="evidence-${key}" value="available" ${evidence[key] === "available" ? "checked" : ""}> Available</label><label><input type="radio" name="evidence-${key}" value="missing" ${evidence[key] === "missing" ? "checked" : ""}> Missing</label><label><input type="radio" name="evidence-${key}" value="na" ${evidence[key] === "na" ? "checked" : ""}> Not applicable</label></div></fieldset>`).join("");
   }
 
-  function showStep(next) {
+  function showStep(next, shouldScroll = true) {
     step = Math.max(1, Math.min(7, next));
     $$('[data-qcb-step]').forEach((panel) => panel.classList.toggle("active", Number(panel.dataset.qcbStep) === step));
     $$('[data-qcb-step-pill]').forEach((pill) => pill.classList.toggle("active", Number(pill.dataset.qcbStepPill) === step));
@@ -247,7 +247,7 @@
     $("[data-qcb-progress]").style.width = `${step / 7 * 100}%`;
     $("[data-qcb-prev]").disabled = step === 1;
     $("[data-qcb-next]").textContent = step === 7 ? "Review Pack" : "Next";
-    root.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (shouldScroll) root.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function serialize() {
@@ -356,7 +356,7 @@
   restore();
   if (!timeline.length) timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" });
   if (!losses.length) losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" });
-  renderTimeline(); renderLosses(); renderEvidence(); showStep(1); renderPreview();
+  renderTimeline(); renderLosses(); renderEvidence(); showStep(1, false); renderPreview();
 
   form.addEventListener("input", (event) => { if (event.target.name?.startsWith("evidence-")) { evidence[event.target.name.replace("evidence-", "")] = event.target.value; } schedulePreview(); });
   form.addEventListener("change", renderPreview);
