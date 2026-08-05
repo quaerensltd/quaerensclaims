@@ -17,6 +17,7 @@ let passed=0;const check=(condition,label)=>{if(!condition)throw new Error(label
  [config.includes('flight: {')&&config.includes('metricsId: "flight-claim"'),"declarative Flight configuration"],
  [config.includes("Boarding pass")&&config.includes("Cancellation notice")&&config.includes("Alternative travel"),"Flight evidence catalogue"],
  [adapter.includes('"/api/flight-lookup"')&&adapter.includes("cloudfunctions.net/lookupFlight"),"protected lookup and fallback"],
+ [adapter.includes("response.results?.[0]")&&adapter.includes("response.matches?.[0]")&&adapter.includes("if (!candidate)"),"lookup response validation"],
  [adapter.includes("Manual entry is always available")||html.includes("Manual entry is always available"),"manual correction path"],
  [adapter.includes("QCBFFlight?.compensation")&&adapter.includes("engine.analyse")&&!adapter.includes("distanceKm <= 1500"),"shared compensation-engine adapter"],
  [compensation.includes("function compensationAmount")&&compensation.includes("const band = currency === \"EUR\" ? [250, 400, 600] : [220, 350, 520]"),"protected UK261 and EC261 guidance bands"],

@@ -29,7 +29,8 @@
         let response;
         try { response = await api.requestFlightLookup(payload, { endpoint: "/api/flight-lookup" }); }
         catch (_) { response = await api.requestFlightLookup(payload, { endpoint: "https://us-central1-quaerensclaims.cloudfunctions.net/lookupFlight" }); }
-        const candidate = response.flight || response.data?.flight || response.items?.[0] || response.flights?.[0] || response;
+        const candidate = response.flight || response.data?.flight || response.results?.[0] || response.matches?.[0] || response.items?.[0] || response.flights?.[0];
+        if (!candidate) throw new Error(response.message || "No verified flight record available");
         lookupRecord = candidate;
         const mapped = api.flightToBuilderAnswers(candidate, payload);
         set(form, "airline", mapped.airline); set(form, "operatingAirline", mapped.operatingAirline); set(form, "flightNumber", mapped.flightNumber);
