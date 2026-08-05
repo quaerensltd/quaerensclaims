@@ -101,6 +101,72 @@ An approved framework change must not break:
 
 Regression includes workflow, documents, exports, privacy, accessibility, desktop, tablet, mobile and category SEO.
 
+## Framework A acceptance rule
+
+A Framework A implementation is not complete, compliant or production-ready unless all of the following are true.
+
+### 1. Self-contained Framework CSS
+
+The shared Framework A stylesheet contains the complete professional builder-shell styling required for the builder wrapper, two-column desktop layout, builder panel, Live Professional Preview panel, progress indicator, step navigation, inputs, buttons, timeline rows, evidence controls, financial rows, completion screen, tablet reflow and mobile reflow.
+
+A configured builder must not depend on hidden page-specific Airbnb, Section 75 or category-level layout rules.
+
+### 2. Shared DOM contract
+
+Every Framework A builder uses the approved shared structural classes and DOM hierarchy required by the framework, including where applicable:
+
+- `qcb-framework-v1`;
+- `qcb-airbnb-shell`;
+- `qcb-airbnb-stage`;
+- `qcb-airbnb-preview`;
+- `qcb-step-map`;
+- `qcb-form-grid`.
+
+Category implementations may change permitted wording and configuration, but must not silently replace the framework shell.
+
+### 3. No category-specific layout dependency
+
+Removing Airbnb-specific page styles must not break Airbnb, Section 75, Free Holiday Compensation or any future Framework A builder. The same shared framework stylesheet must render every configured implementation correctly.
+
+### 4. Reference parity
+
+Every new Framework A implementation is visually and structurally compared against the current Airbnb reference implementation.
+
+Allowed differences are limited to product name, category questions, evidence catalogue, financial terminology, complaint logic, generated wording, official guidance and category-specific content. Workflow, navigation, shell proportions, preview layout, controls, spacing system, responsive behaviour, accessibility patterns, document structure and outputs must remain framework-identical.
+
+### 5. Live visual acceptance
+
+Automated tests alone are insufficient. Before deployment, the live or production-candidate page must be inspected at desktop, tablet and mobile widths. Acceptance confirms there is no raw or default HTML appearance, missing preview, full-width form regression, overlapping label, clipped button, container overflow, excessive spacing or category-specific visual drift.
+
+### 6. Asset validation
+
+Before deployment, verify that:
+
+- the framework stylesheet returns HTTP 200;
+- its content type is `text/css`;
+- cache-versioned asset paths are valid;
+- the JavaScript runtime loads;
+- the builder mount initialises;
+- all 12 preview pages render.
+
+### 7. Regression gate
+
+Every new Framework A implementation must pass regression against all certified reference implementations, including Airbnb, Free Section 75, Free Holiday Compensation and all later certified builders. A new builder is not complete if it damages an existing implementation.
+
+### 8. Completion standard
+
+A Framework A builder is complete only when the shared CSS is self-contained, the approved DOM structure is used, reference visual parity is confirmed, desktop/tablet/mobile acceptance passes, all document outputs work, SEO remains protected, accessibility passes, browser-first privacy remains intact, regression tests pass and live verification passes.
+
+### Current certification status
+
+Framework A is currently validated across:
+
+- Airbnb Complaint Pack Builder Version 4;
+- Free Section 75 Complaint Pack Builder;
+- Free Holiday Compensation Complaint Pack Builder.
+
+Certification is not inherited automatically. Every later configured builder must pass this acceptance rule independently before it may be described as certified, compliant or production-ready.
+
 ## Versioning
 
 Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ v1.0 reference implementation.

@@ -445,7 +445,78 @@ A Complaint Pack Builder conforms only when:
 
 If the output resembles exported form data, conformance fails. If it resembles a professionally prepared consultant case file and preserves the shared product experience, conformance succeeds.
 
-## 19. Final rule
+## 19. Framework A production acceptance rule
+
+A Framework A implementation is not complete, compliant or production-ready unless it satisfies every requirement below.
+
+### 19.1 Self-contained Framework CSS
+
+The shared Framework A stylesheet must contain all professional builder-shell styling for:
+
+- the builder wrapper and two-column desktop layout;
+- the builder panel and Live Professional Preview panel;
+- the progress indicator and step navigation;
+- inputs and buttons;
+- timeline rows, evidence controls and financial rows;
+- the completion screen;
+- tablet and mobile reflow.
+
+No configured builder may rely on hidden Airbnb, Section 75 or category-specific page styles for its framework layout.
+
+### 19.2 Shared DOM contract
+
+Every builder must retain the approved framework hierarchy and, where applicable, these shared structural classes:
+
+- `qcb-framework-v1`;
+- `qcb-airbnb-shell`;
+- `qcb-airbnb-stage`;
+- `qcb-airbnb-preview`;
+- `qcb-step-map`;
+- `qcb-form-grid`.
+
+Permitted category configuration may change content but must not silently replace the shared shell.
+
+### 19.3 No category-specific layout dependency
+
+The shared stylesheet must render Airbnb, Free Section 75, Free Holiday Compensation and every future Framework A implementation correctly without relying on Airbnb-specific page styles. Removing category-specific page CSS must not break another configured builder.
+
+### 19.4 Reference parity
+
+Every configured implementation must be visually and structurally compared with the current Airbnb reference implementation. Differences are limited to product name, category questions, evidence catalogue, financial terminology, complaint logic, generated wording, official guidance and justified category-specific content.
+
+Workflow, navigation, shell proportions, preview layout, controls, spacing system, responsive behaviour, accessibility patterns, document structure and outputs remain framework-identical.
+
+### 19.5 Live visual acceptance
+
+Automated tests alone do not establish conformance. Before deployment, inspect the live or production-candidate builder at desktop, tablet and mobile widths and confirm:
+
+- no raw or default HTML appearance;
+- no missing preview;
+- no full-width form regression;
+- no overlapping labels or clipped buttons;
+- no container overflow;
+- no excessive spacing;
+- no category-specific visual drift.
+
+### 19.6 Asset validation
+
+Before deployment, confirm that the framework stylesheet returns HTTP 200 with a `text/css` content type, cache-versioned asset paths are valid, the JavaScript runtime loads, the builder mount initialises and all 12 preview pages render.
+
+### 19.7 Regression gate
+
+Every new implementation must pass regression against every certified Framework A reference implementation. The currently certified set is:
+
+- Airbnb Complaint Pack Builder Version 4;
+- Free Section 75 Complaint Pack Builder;
+- Free Holiday Compensation Complaint Pack Builder.
+
+All later certified builders join this regression set. A new builder is not complete if an existing implementation is damaged. Certification is never automatic: every configured builder must pass the acceptance rule independently.
+
+### 19.8 Completion standard
+
+A Framework A builder is complete only when its shared CSS is self-contained, its approved DOM structure is present, reference visual parity is confirmed, desktop/tablet/mobile acceptance passes, every document output works, SEO remains protected, accessibility passes, browser-first privacy remains intact, the complete regression suite passes and live verification passes.
+
+## 20. Final rule
 
 Do not build another standalone Complaint Pack Builder.
 
