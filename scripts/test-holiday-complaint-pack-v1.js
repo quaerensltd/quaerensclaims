@@ -4,6 +4,7 @@ const path = require("path");
 const root = process.cwd();
 const html = fs.readFileSync(path.join(root, "public", "freeholidaycompensation.html"), "utf8");
 const runtime = fs.readFileSync(path.join(root, "public", "airbnb-complaint-pack-v3.js"), "utf8");
+const categories = fs.readFileSync(path.join(root, "public", "complaint-builder", "config", "framework-a-categories-v1.4.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "public", "complaint-builder", "styles", "framework-v1-builder.css"), "utf8");
 const failures = [];
 const requireText = (source, value, label) => { if (!source.includes(value)) failures.push(label); };
@@ -47,7 +48,7 @@ requireText(html, "qcb-step-pills qcb-step-map", "shared step-map class restored
 requireText(html, "qcb-field-grid qcb-form-grid", "shared field-grid class restored");
 rejectText(html, "/builders/holiday/holiday.page.js", "legacy standalone Holiday runtime is not loaded");
 requireText(runtime, 'const isHoliday = builderId === "holiday"', "Holiday category configuration present");
-requireText(runtime, "ATOL certificate", "holiday evidence catalogue present");
+requireText(categories, "ATOL certificate", "holiday evidence catalogue present");
 requireText(runtime, "Package Travel and Linked Travel Arrangements Regulations 2018", "holiday official guidance present");
 requireText(runtime, "FREE HOLIDAY COMPENSATION COMPLAINT PACK", "Holiday PDF cover present");
 requireText(runtime, 'isHoliday ? "Holiday" : "Airbnb"', "Holiday export filenames present");

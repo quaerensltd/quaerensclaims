@@ -26,7 +26,7 @@ const GATEWAY_V1_ACTIONS = new Set([
   "add-note"
 ]);
 const FRAMEWORK_A_METRICS_COLLECTION = "frameworkAMetricsDaily";
-const FRAMEWORK_A_BUILDERS = new Set(["airbnb", "section75", "holiday-compensation"]);
+const FRAMEWORK_A_BUILDERS = new Set(["airbnb", "section75", "holiday-compensation", "flight-claim"]);
 const FRAMEWORK_A_EVENTS = new Set([
   "pack_started", "pack_completed", "pdf_downloaded", "word_downloaded",
   "txt_downloaded", "print_selected", "complaint_letter_copied",
@@ -47,14 +47,14 @@ exports.recordFrameworkAMetric = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid metrics request fields.");
   }
   if (!FRAMEWORK_A_BUILDERS.has(data.builder) || !FRAMEWORK_A_EVENTS.has(data.event) ||
-      data.frameworkVersion !== "1.3" || !FRAMEWORK_A_DEVICE_CLASSES.has(data.deviceClass)) {
+      data.frameworkVersion !== "1.4" || !FRAMEWORK_A_DEVICE_CLASSES.has(data.deviceClass)) {
     throw new HttpsError("invalid-argument", "Invalid metrics request values.");
   }
   const reportingDate = new Date().toISOString().slice(0, 10);
   const increment = admin.firestore.FieldValue.increment(1);
   await db.collection(FRAMEWORK_A_METRICS_COLLECTION).doc(reportingDate).set({
     reportingDate,
-    frameworkVersion: "1.3",
+    frameworkVersion: "1.4",
     totals: { [data.event]: increment },
     builders: { [data.builder]: { [data.event]: increment } },
     updatedAt: admin.firestore.FieldValue.serverTimestamp()

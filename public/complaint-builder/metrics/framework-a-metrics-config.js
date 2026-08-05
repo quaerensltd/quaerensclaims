@@ -1,8 +1,9 @@
-export const FRAMEWORK_A_VERSION = "1.3";
+export const FRAMEWORK_A_VERSION = "1.4";
 export const FRAMEWORK_A_BUILDERS = Object.freeze({
   airbnb: "Airbnb",
   section75: "Section 75",
-  "holiday-compensation": "Holiday Compensation"
+  "holiday-compensation": "Holiday Compensation",
+  "flight-claim": "Flight Claim"
 });
 export const FRAMEWORK_A_EVENTS = Object.freeze([
   "pack_started", "pack_completed", "pdf_downloaded", "word_downloaded",

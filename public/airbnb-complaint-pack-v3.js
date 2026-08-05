@@ -3,51 +3,17 @@
 
   function initialiseComplaintPack(root) {
   const builderId = root.dataset.qcbBuilder;
+  const category = window.QCBFrameworkACategories && window.QCBFrameworkACategories.get(builderId);
+  if (!category) throw new Error(`Unsupported Framework A category: ${builderId}`);
   const isSection75 = builderId === "section75";
   const isHoliday = builderId === "holiday";
+  const isFlight = builderId === "flight";
 
   const form = root.querySelector(".qcb-form");
   const $ = (selector) => root.querySelector(selector);
   const $$ = (selector) => Array.from(root.querySelectorAll(selector));
-  const STORAGE_KEY = isSection75 ? "quaerens-section75-complaint-pack-v1" : isHoliday ? "quaerens-holiday-complaint-pack-v1" : "quaerens-airbnb-complaint-pack-v3";
-  const evidenceItems = isSection75 ? [
-    ["statement", "Credit card statement", "The statement showing the card payment to the supplier"],
-    ["invoice", "Purchase invoice", "The supplier invoice identifying the goods or services and cash price"],
-    ["receipt", "Receipt or order confirmation", "The purchase receipt, order confirmation or deposit record"],
-    ["contract", "Contract", "The signed agreement or contract governing the purchase"],
-    ["terms", "Terms and Conditions", "The terms supplied at the time of purchase"],
-    ["correspondence", "Supplier correspondence", "Emails, letters or messages showing what was promised and what happened"],
-    ["complaint", "Complaint correspondence", "The complaint sent to the supplier or card provider and any acknowledgements"],
-    ["final", "Final response", "The card provider's final response, rejection or other substantive decision"],
-    ["expert", "Expert reports", "Independent technical findings where the condition or performance is disputed"],
-    ["photos", "Photographs", "Dated images showing faults, damage, non-conformity or incomplete work"],
-    ["quotes", "Independent quotations", "Repair or replacement quotations supporting the financial schedule"]
-  ] : isHoliday ? [
-    ["booking", "Booking confirmation", "The booking confirmation showing the organiser, dates, travellers and services"],
-    ["invoice", "Invoice", "The invoice and payment schedule for the holiday"],
-    ["atol", "ATOL certificate", "The ATOL certificate where one was issued"],
-    ["abta", "ABTA booking record", "ABTA membership or booking details where relevant"],
-    ["brochure", "Holiday brochure or listing", "The brochure, listing or description showing what was promised"],
-    ["screenshots", "Website screenshots", "Dated screenshots of facilities, room type, itinerary or refund terms"],
-    ["photos", "Photographs", "Dated photographs showing accommodation, cleanliness, safety or missing facilities"],
-    ["videos", "Videos", "Dated video evidence showing the reported problem"],
-    ["medical", "Medical records", "Medical evidence where illness, injury or food poisoning is relevant"],
-    ["receipts", "Receipts", "Receipts for alternative accommodation, travel, food, medical or other costs"],
-    ["alternative", "Alternative accommodation records", "Confirmation and payment evidence for replacement accommodation"],
-    ["transfers", "Transfer receipts", "Receipts and booking records for replacement or disrupted transfers"],
-    ["correspondence", "Correspondence", "Emails, messages and complaint records with the organiser or supplier"],
-    ["refund", "Refund requests", "Dated refund requests and proof of submission"],
-    ["responses", "Supplier responses", "Acknowledgements, decisions, offers and final responses"],
-    ["independent", "Independent reports", "Independent inspection, witness or specialist reports where relevant"]
-  ] : [
-    ["booking", "Booking confirmation", "Airbnb reservation details and payment confirmation"],
-    ["listing", "Listing screenshots", "Photos, description, amenities, location and cancellation terms"],
-    ["host", "Host messages", "The complete dated conversation with the host"],
-    ["airbnb", "Airbnb support replies", "Case references, decisions and escalation replies"],
-    ["photos", "Dated photos or videos", "Condition, safety, access or missing-facility evidence"],
-    ["receipts", "Receipts for additional costs", "Alternative stay, travel or other evidenced losses"],
-    ["payment", "Payment or refund records", "Card statement, refund receipt or transaction evidence"]
-  ];
+  const STORAGE_KEY = category.storageKey;
+  const evidenceItems = category.evidence;
   let step = 1;
   let timeline = [];
   let losses = [];
@@ -74,9 +40,9 @@
 
   function caseData() {
     const f = fields();
-    const basePrice = isSection75 ? f.purchasePrice : isHoliday ? f.holidayPrice : f.bookingPrice;
-    const bookingPosition = Math.max(0, (Number(basePrice) || 0) - (Number(f.refundReceived) || 0));
-    const statedOutstanding = Number(isSection75 ? f.outstandingAmount : isHoliday ? f.outstandingAmount : f.refundOutstanding) || 0;
+    const basePrice = f[category.baseAmount];
+    const bookingPosition = Math.max(0, (Number(basePrice) || 0) - (category.deductRefund === false ? 0 : (Number(f.refundReceived) || 0)));
+    const statedOutstanding = Number(f[category.outstandingAmount]) || 0;
     const extra = losses.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
     const available = evidenceItems.filter(([key]) => evidence[key] === "available").length;
     const relevant = evidenceItems.filter(([key]) => evidence[key] !== "na").length;
@@ -88,14 +54,21 @@
       timeline: [...timeline].sort((a, b) => String(a.date).localeCompare(String(b.date))),
       losses: [...losses], evidence: { ...evidence }, score,
       bookingPosition, extra, total: (statedOutstanding || bookingPosition) + extra,
-      metadata: { frameworkVersion: "1.2", complaintPackReference: f.complaintPackReference, applicantDetails: { title: f.applicantTitle, firstName: f.applicantFirstName, lastName: f.applicantLastName, addressLine1: f.applicantAddress1, addressLine2: f.applicantAddress2, city: f.applicantCity, county: f.applicantCounty, postcode: f.applicantPostcode, country: f.applicantCountry, email: f.applicantEmail, telephone: f.applicantTelephone, preferredContact: f.preferredContact, jointComplaint: f.jointComplaint === "yes", jointApplicant: f.jointComplaint === "yes" ? { title: f.jointTitle, firstName: f.jointFirstName, lastName: f.jointLastName, email: f.jointEmail, telephone: f.jointTelephone, address: f.jointAddressDifferent === "yes" ? f.jointAddress : "Same as primary applicant" } : null } }
+      metadata: { frameworkVersion: window.QCBFrameworkACategories.version, complaintPackReference: f.complaintPackReference, applicantDetails: { title: f.applicantTitle, firstName: f.applicantFirstName, lastName: f.applicantLastName, addressLine1: f.applicantAddress1, addressLine2: f.applicantAddress2, city: f.applicantCity, county: f.applicantCounty, postcode: f.applicantPostcode, country: f.applicantCountry, email: f.applicantEmail, telephone: f.applicantTelephone, preferredContact: f.preferredContact, jointComplaint: f.jointComplaint === "yes", jointApplicant: f.jointComplaint === "yes" ? { title: f.jointTitle, firstName: f.jointFirstName, lastName: f.jointLastName, email: f.jointEmail, telephone: f.jointTelephone, address: f.jointAddressDifferent === "yes" ? f.jointAddress : "Same as primary applicant" } : null } }
     };
   }
 
   function qualityScore(d) {
     const completedTimeline = d.timeline.filter((row) => row.date && row.description).length;
     const supportedLosses = d.losses.filter((row) => row.description && Number(row.amount) > 0 && row.evidence).length;
-    const checks = isSection75 ? [
+    const checks = isFlight ? [
+      [Boolean(d.f.airline), 8], [Boolean(d.f.flightNumber && d.f.flightDate), 9],
+      [Boolean(d.f.departureAirport && d.f.arrivalAirport), 8], [Boolean(d.f.scheduledArrival && d.f.actualArrival), 9],
+      [d.issues.length > 0, 10], [Boolean(d.f.actual), 10], [completedTimeline > 0, 8],
+      [d.score >= 40, 8], [d.score >= 70, 7], [Boolean(d.f.reasonProvided || d.f.airlineResponse), 5],
+      [Boolean(d.f.requestedOutcome), 7], [d.routes.length > 0, 5],
+      [d.losses.every((row) => !row.description || supportedLosses > 0), 6]
+    ] : isSection75 ? [
       [Boolean(d.f.supplierName), 7], [Boolean(d.f.cardProvider), 7],
       [Boolean(d.f.purchaseDate && d.f.purchasePrice), 8], [Boolean(d.f.cardType), 5],
       [d.issues.length > 0, 10], [Boolean(d.f.promised && d.f.actual), 12],
@@ -144,6 +117,11 @@
   }
 
   function executiveSummary(d) {
+    if (isFlight) {
+      const issues = d.issues.length ? d.issues.join(", ").toLowerCase() : "the recorded flight disruption";
+      const amount = d.bookingPosition ? `Possible statutory compensation guidance is ${money(d.bookingPosition)}, shown separately from ${money(d.extra)} of additional recorded expenses.` : `No statutory compensation amount is shown without sufficient route, timing and disruption data; additional recorded expenses are ${money(d.extra)}.`;
+      return `This prepared complaint concerns ${issues} involving flight ${text(d.f.flightNumber)} operated by ${text(d.f.airline)} on ${date(d.f.flightDate)}. Evidence readiness is ${d.score}%. ${amount} These figures are organisational guidance only and do not guarantee UK261 or EC261 entitlement, reimbursement or outcome.`;
+    }
     if (isSection75) {
       const issuePhrase = d.issues.length ? d.issues.map((issue) => issue.toLowerCase()).join(", ") : "the purchase concerns recorded in this file";
       const evidenceAssessment = d.score >= 70 ? "The available records are well organised and provide a strong documentary foundation" : d.score >= 40 ? "The available records provide a useful foundation, although the missing items in the evidence schedule should be obtained where possible" : "Further payment, contract and complaint records would materially improve the presentation";
@@ -166,6 +144,10 @@
 
   function complaintLetterCore(d) {
     const f = d.f;
+    if (isFlight) {
+      const events = d.timeline.length ? d.timeline.map((event) => `${date(event.date)} — ${text(event.category, "Event")}: ${text(event.description)}`).join("\n") : "A detailed chronology is enclosed in the Complaint Pack.";
+      return `Subject: Formal flight disruption complaint — ${text(f.flightNumber)} on ${date(f.flightDate)}\n\nDear Complaints Team,\n\nI am asking ${text(f.airline, "the airline")} to investigate the disruption affecting flight ${text(f.flightNumber)}, travelling from ${text(f.departureAirport)} to ${text(f.arrivalAirport)}. The issues recorded are ${d.issues.length ? d.issues.join(", ") : "set out in the enclosed file"}.\n\nWhat happened\n${text(f.actual, "The material circumstances are set out in the enclosed chronology.")}\n\nReason provided\n${text(f.reasonProvided, "No clear reason has been recorded.")}\n\nMaterial chronology\n${events}\n\nAirline response\n${text(f.airlineResponse, "No substantive response has been recorded.")}\n\nFinancial position\nPossible statutory compensation guidance: ${money(d.bookingPosition)}. Additional documented expenses: ${money(d.extra)}. These amounts are subject to verification and do not establish entitlement.\n\nRequested resolution\n${text(f.requestedOutcome, "Please investigate the disruption, explain the applicable passenger-rights position and provide any compensation, reimbursement, refund or other remedy found due.")}\n\nPlease acknowledge receipt, provide a complaint reference and issue a reasoned written response.\n\nYours faithfully,\nPassenger`;
+    }
     if (isSection75) {
       const issues = d.issues.length ? d.issues.join(", ") : "the purchase problems described below";
       const events = d.timeline.length ? d.timeline.map((event) => `${date(event.date)} — ${text(event.category, "Event")}: ${text(event.description)}`).join("\n") : "A detailed chronology is enclosed in the complaint pack.";
@@ -185,17 +167,18 @@
   }
 
   function coverEmailCore(d) {
+    if (isFlight) return `Subject: Flight complaint file — ${text(d.f.flightNumber)} on ${date(d.f.flightDate)}\n\nDear Complaints Team,\n\nPlease find attached my structured Flight Claim Complaint Pack. It contains the journey facts, chronology, supporting-evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and provide the expected response date.\n\nKind regards,\nPassenger`;
     if (isSection75) return `Subject: Section 75 complaint file — ${text(d.f.supplierName)}\n\nDear Complaints Team,\n\nPlease find attached my structured Section 75 Complaint Pack concerning a purchase from ${text(d.f.supplierName)}. It contains the transaction facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and tell me the expected response date.\n\nKind regards,\nCardholder`;
     if (isHoliday) return `Subject: Holiday complaint file — booking ${text(d.f.bookingRef)}\n\nDear Complaints Team,\n\nPlease find attached my structured Holiday Complaint Pack concerning booking ${text(d.f.bookingRef)} with ${text(d.f.holidayCompany)}. It contains the booking facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and tell me the expected response date.\n\nKind regards,\nHoliday customer`;
     return `Subject: Complaint file — Airbnb booking ${text(d.f.bookingRef)}\n\nDear Complaints Team,\n\nPlease find attached my structured complaint file concerning booking ${text(d.f.bookingRef)} at ${text(d.f.propertyName, "the booked property")}. It contains the booking facts, chronology, evidence schedule, financial loss schedule and formal complaint letter.\n\nPlease acknowledge receipt and confirm the case reference and expected response date.\n\nKind regards,\nAirbnb guest`;
   }
 
   function complaintLetter(d) {
-    return `${applicantNames(d.f)}\n${applicantAddress(d.f)}\nEmail: ${text(d.f.applicantEmail)}\nTelephone: ${text(d.f.applicantTelephone)}\n\nComplaint Pack Reference: ${text(d.f.complaintPackReference)}\n\n${complaintLetterCore(d).replace(/(Cardholder|Holiday customer|Airbnb Guest)$/, applicantNames(d.f))}\n\nDeclaration\n${declaration}`;
+    return `${applicantNames(d.f)}\n${applicantAddress(d.f)}\nEmail: ${text(d.f.applicantEmail)}\nTelephone: ${text(d.f.applicantTelephone)}\n\nComplaint Pack Reference: ${text(d.f.complaintPackReference)}\n\n${complaintLetterCore(d).replace(/(Passenger|Cardholder|Holiday customer|Airbnb Guest)$/, applicantNames(d.f))}\n\nDeclaration\n${declaration}`;
   }
 
   function coverEmail(d) {
-    return `${coverEmailCore(d).replace(/(Cardholder|Holiday customer|Airbnb guest)$/, applicantNames(d.f))}\n\nComplaint Pack Reference: ${text(d.f.complaintPackReference)}`;
+    return `${coverEmailCore(d).replace(/(Passenger|Cardholder|Holiday customer|Airbnb guest)$/, applicantNames(d.f))}\n\nComplaint Pack Reference: ${text(d.f.complaintPackReference)}`;
   }
 
   function rowTable(headers, rows) {
@@ -210,6 +193,24 @@
     const f = d.f;
     const evidenceRows = evidenceItems.map(([key, label, recommendation]) => [label, evidence[key] === "available" ? "Available" : evidence[key] === "na" ? "Not applicable" : "Missing", recommendation]);
     const missing = evidenceRows.filter((row) => row[1] === "Missing").map((row) => row[0]);
+    if (isFlight) {
+      const guidance = d.routes.length ? d.routes : ["Airline formal complaint", "CAA-approved Alternative Dispute Resolution where applicable", "Civil Aviation Authority guidance", "Small claims guidance where appropriate"];
+      const summary = summaryGrid([["Airline", text(f.airline)],["Operating airline", text(f.operatingAirline)],["Flight number", text(f.flightNumber)],["Booking reference", text(f.bookingReference)],["Flight date", date(f.flightDate)],["Departure", text(f.departureAirport)],["Arrival", text(f.arrivalAirport)],["Scheduled arrival", text(f.scheduledArrival)],["Actual arrival", text(f.actualArrival)],["Passengers", text(f.passengerCount,"1")],["Possible compensation guidance", money(d.bookingPosition)],["Additional expenses", money(d.extra)]]);
+      return [
+        { title:"Flight Claim Complaint File",cover:true,body:`<span class="qcb-confidential">CONFIDENTIAL</span><p class="qcb-cover-title">FREE FLIGHT CLAIM COMPLAINT PACK&trade;</p><p class="qcb-cover-subtitle">Prepared for ${esc(applicantNames(f))}</p><div class="qcb-cover-grid"><div><span>Flight</span><strong>${esc(text(f.flightNumber))}</strong></div><div><span>Airline</span><strong>${esc(text(f.airline))}</strong></div><div><span>Prepared date</span><strong>${esc(new Date().toLocaleDateString("en-GB"))}</strong></div><div><span>Evidence readiness</span><strong>${d.score}%</strong></div><div><span>Complaint status</span><strong>${qualityScore(d)>=85?"Ready for review":"In preparation"}</strong></div><div><span>Combined guidance</span><strong>${esc(money(d.total))}</strong></div></div>`},
+        { title:"Executive Summary",body:`<div class="qcb-strength"><strong>${qualityScore(d)}%</strong><span>Complaint Pack Quality<br>${esc(qualityLabel(qualityScore(d)))}</span></div><p>${esc(executiveSummary(d))}</p>`},
+        { title:"Flight and Journey Summary",body:summary},
+        { title:"Chronology",body:rowTable(["Date","Category","Event","Evidence"],d.timeline.map(event=>[date(event.date),text(event.category),text(event.description),text(event.evidence,"Not cross-referenced")]))},
+        { title:"Supporting Evidence",body:`<div class="qcb-strength"><strong>${d.score}%</strong><span>Evidence Readiness</span></div>${rowTable(["Supporting Evidence","Status","Recommended Record"],evidenceRows)}<p><strong>Evidence priorities:</strong> ${esc(missing.join(", ")||"No missing items identified")}</p>`},
+        { title:"Financial Impact",body:`${rowTable(["Description","Amount","Supporting Evidence","Status"],d.losses.map(loss=>[text(loss.description),money(loss.amount),text(loss.evidence),text(loss.status)]))}<p><strong>Possible compensation guidance:</strong> ${money(d.bookingPosition)}</p><p><strong>Additional expenses:</strong> ${money(d.extra)}</p><p><strong>Combined guidance:</strong> ${money(d.total)}</p><p>Compensation guidance, reimbursement and consequential losses are distinct and no entitlement is guaranteed.</p>`},
+        { title:"Formal Complaint Letter",body:`<div class="qcb-letter">${esc(complaintLetter(d))}</div>`},
+        { title:"Cover Email",body:`<div class="qcb-letter">${esc(coverEmail(d))}</div>`},
+        { title:"Submission Checklist",body:"<ul><li>Check the airline, flight number, route, dates and arrival times.</li><li>Attach only relevant evidence marked available.</li><li>Cross-reference key records to the chronology.</li><li>Keep compensation guidance separate from documented expenses.</li><li>Use the airline's official complaint route and retain proof of submission.</li></ul>"},
+        { title:"Response Tracker",body:rowTable(["Date","Organisation/person","Action or response","Deadline","Status"],[["","Airline","","","Awaiting"],["","ADR body","","If applicable","Not started"],["","CAA / other official route","","If applicable",""]])},
+        { title:"Official Guidance & Routes",body:`<p>This pack provides organisational information, not legal advice or a guarantee of entitlement.</p><ul>${guidance.map(route=>`<li><strong>${esc(route)}:</strong> check current eligibility, evidence and deadline requirements before acting.</li>`).join("")}</ul><p>Review current UK261, EC261, Civil Aviation Authority and applicable ADR guidance. Court action should be considered only after checking jurisdiction, limitation and procedural requirements.</p>`},
+        { title:"Quaerens Notes",body:`<p><strong>Browser-first privacy:</strong> answers remain in this browser unless you download, copy, print or deliberately use a separate Guided Support route.</p><p><strong>Important:</strong> Verify every flight fact, calculation, rule and deadline. The lookup may be incomplete and manual corrections remain authoritative.</p><div style="height:220px;border:1px solid #cbd5e1;background:repeating-linear-gradient(#fff,#fff 27px,#dbeafe 28px)"></div>`}
+      ];
+    }
     if (isSection75) {
       const eligibility = eligibilityResult(d);
       const guidance = d.routes.length ? d.routes : ["Card provider formal complaint", "Financial Ombudsman Service after the provider's complaint process", "Supplier complaint or other official consumer route where appropriate"];
@@ -266,7 +267,7 @@
     return pagesCore(d).map((page, index) => {
       const identity = `<div class="qcb-document-identity"><strong>Complaint Pack Reference:</strong> ${esc(text(d.f.complaintPackReference))}${index < 2 ? `<br><strong>Applicant:</strong> ${esc(applicantNames(d.f))}<br><strong>Contact:</strong> ${esc(text(d.f.applicantEmail))} · ${esc(text(d.f.applicantTelephone))}<br><strong>Address:</strong> ${esc(applicantAddress(d.f)).replace(/\n/g, ", ")}` : ""}</div>`;
       const declarationBlock = index === 1 ? `<p><strong>Applicant declaration:</strong> ${esc(declaration)}</p>` : "";
-      const personalisedBody = page.cover ? page.body.replace(/Prepared for (?:the Cardholder|the Holiday Customer|Airbnb Guest)/i, `Prepared for ${esc(applicantNames(d.f))}`) : page.body;
+      const personalisedBody = page.cover ? page.body.replace(/Prepared for (?:Passenger|the Cardholder|the Holiday Customer|Airbnb Guest)/i, `Prepared for ${esc(applicantNames(d.f))}`) : page.body;
       return { ...page, body: `${identity}${personalisedBody}${declarationBlock}` };
     });
   }
@@ -291,10 +292,10 @@
     $("[data-qcb-gauge]").style.width = `${d.score}%`;
     $("[data-qcb-readiness-title]").textContent = `Evidence Readiness: ${d.score}%`;
     $("[data-qcb-readiness-copy]").textContent = d.score >= 70 ? "Your evidence file is well prepared. Check every attachment before submission." : d.score >= 40 ? "A useful foundation is present. Add the missing items where available." : "More supporting records are recommended before submission.";
-    const complete = isSection75 ? Boolean(d.f.supplierName && d.f.cardProvider && d.f.promised && d.f.actual && d.issues.length) : isHoliday ? Boolean(d.f.holidayCompany && d.f.bookingRef && d.f.promised && d.f.actual && d.issues.length) : Boolean(d.f.bookingRef && d.f.issueDetails && d.issues.length);
+    const complete = isFlight ? Boolean(d.f.airline && d.f.flightNumber && d.f.flightDate && d.f.actual && d.issues.length) : isSection75 ? Boolean(d.f.supplierName && d.f.cardProvider && d.f.promised && d.f.actual && d.issues.length) : isHoliday ? Boolean(d.f.holidayCompany && d.f.bookingRef && d.f.promised && d.f.actual && d.issues.length) : Boolean(d.f.bookingRef && d.f.issueDetails && d.issues.length);
     $("[data-qcb-status]").textContent = complete ? "Case file ready to review" : "Needs key information";
     $("[data-qcb-final-status]").textContent = complete ? "Your structured case file is ready for a final accuracy review" : "Complete the key facts to strengthen your pack";
-    $("[data-qcb-final-next]").textContent = isSection75 ? (!d.f.supplierName ? "Add the supplier" : !d.f.cardProvider ? "Add the card provider" : !d.issues.length ? "Select the main problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the card provider's official route") : isHoliday ? (!d.f.holidayCompany ? "Add the holiday company" : !d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the nature of complaint" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the recipient's official route") : (!d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the main issue" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the chosen route");
+    $("[data-qcb-final-next]").textContent = isFlight ? (!d.f.airline ? "Add the airline" : !d.f.flightNumber ? "Add the flight number" : !d.issues.length ? "Select the disruption" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the airline's official route") : isSection75 ? (!d.f.supplierName ? "Add the supplier" : !d.f.cardProvider ? "Add the card provider" : !d.issues.length ? "Select the main problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the card provider's official route") : isHoliday ? (!d.f.holidayCompany ? "Add the holiday company" : !d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the nature of complaint" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the recipient's official route") : (!d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the main issue" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the chosen route");
     const eligibilityNode = $("[data-qcb-eligibility]");
     if (eligibilityNode) eligibilityNode.textContent = eligibilityResult(d).label;
     persist();
@@ -306,7 +307,7 @@
   }
 
   function renderTimeline() {
-    const categories = isSection75 ? ["Purchase", "Supplier communication", "Card provider communication", "Problem discovered", "Complaint", "Final response", "Financial loss", "Other"] : isHoliday ? ["Booking", "Pre-travel change", "Accommodation", "Flight", "Transfer", "Excursion", "Illness", "Supplier communication", "Complaint", "Refund", "Financial loss", "Other"] : ["Booking", "Host communication", "Airbnb communication", "Property issue", "Payment", "Refund", "Other"];
+    const categories = category.timeline;
     $("[data-qcb-timeline]").innerHTML = timeline.map((row, index) => `<div class="qcb-timeline-row" data-index="${index}"><label>Date<input type="date" data-field="date" value="${esc(row.date)}"></label><label>Category<select data-field="category">${categories.map((category) => `<option>${esc(category)}</option>`).join("")}</select></label><label>Description<textarea rows="2" data-field="description" placeholder="What happened?">${esc(row.description)}</textarea></label><label>Evidence reference<input data-field="evidence" value="${esc(row.evidence)}" placeholder="e.g. statement 1, email A"></label><div class="qcb-row-actions"><button type="button" class="qcb-btn ghost" data-move="up" aria-label="Move event up">↑</button><button type="button" class="qcb-btn ghost" data-move="down" aria-label="Move event down">↓</button><button type="button" class="qcb-btn ghost" data-delete aria-label="Delete event">Delete</button></div></div>`).join("");
     $$('[data-qcb-timeline] [data-field="category"]').forEach((select, index) => { select.value = timeline[index].category || categories[0]; });
   }
@@ -389,11 +390,12 @@
     packPages.forEach((page, index) => {
       let commands = "";
       if (page.cover) {
-        const pdfTitle = isSection75 ? "FREE SECTION 75 COMPLAINT PACK" : isHoliday ? "FREE HOLIDAY COMPENSATION COMPLAINT PACK" : "AIRBNB COMPLAINT PACK";
-        const pdfAudience = isSection75 ? "PREPARED FOR THE CARDHOLDER" : isHoliday ? "PREPARED FOR THE HOLIDAY CUSTOMER" : "PREPARED FOR AIRBNB GUEST";
+        const pdfTitle = isFlight ? "FREE FLIGHT CLAIM COMPLAINT PACK" : isSection75 ? "FREE SECTION 75 COMPLAINT PACK" : isHoliday ? "FREE HOLIDAY COMPENSATION COMPLAINT PACK" : "AIRBNB COMPLAINT PACK";
+        const pdfAudience = isFlight ? "PREPARED FOR THE PASSENGER" : isSection75 ? "PREPARED FOR THE CARDHOLDER" : isHoliday ? "PREPARED FOR THE HOLIDAY CUSTOMER" : "PREPARED FOR AIRBNB GUEST";
         commands += `0.020 0.149 0.349 rg 0 0 595 842 re f\n0.065 0.365 0.690 rg 0 0 18 842 re f\n1 1 1 rg\nBT /F2 11 Tf 58 780 Td (QUAERENS) Tj ET\n0.48 0.71 0.94 RG 1 w 58 765 m 537 765 l S\nBT /F1 9 Tf 58 730 Td (CONFIDENTIAL) Tj ET\nBT /F2 29 Tf 58 635 Td (${pdfTitle}) Tj ET\nBT /F1 11 Tf 58 608 Td (${pdfAudience}) Tj ET\n`;
         const coverLines = isSection75 ? [`Supplier: ${text(d.f.supplierName)}`, `Card provider: ${text(d.f.cardProvider)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Estimated financial exposure: ${money(d.total)}`] : isHoliday ? [`Holiday company: ${text(d.f.holidayCompany)}`, `Booking reference: ${text(d.f.bookingRef)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Estimated financial exposure: ${money(d.total)}`] : [`Booking reference: ${text(d.f.bookingRef)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Property: ${text(d.f.propertyName)}`, `Estimated financial exposure: ${money(d.total)}`];
-        commands += `0.10 0.31 0.58 rg 58 355 479 190 re f\n1 1 1 rg\nBT /F1 11 Tf 78 515 Td ${coverLines.map((line, i) => `${i ? "0 -27 Td " : ""}(${pdfSafe(line)}) Tj`).join(" ")} ET\nBT /F1 9 Tf 58 65 Td (Prepared with the Quaerens Complaint Pack Builder) Tj ET\n`;
+        const selectedCoverLines = isFlight ? [`Flight: ${text(d.f.flightNumber)}`, `Airline: ${text(d.f.airline)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Combined guidance: ${money(d.total)}`] : coverLines;
+        commands += `0.10 0.31 0.58 rg 58 355 479 190 re f\n1 1 1 rg\nBT /F1 11 Tf 78 515 Td ${selectedCoverLines.map((line, i) => `${i ? "0 -27 Td " : ""}(${pdfSafe(line)}) Tj`).join(" ")} ET\nBT /F1 9 Tf 58 65 Td (Prepared with the Quaerens Complaint Pack Builder) Tj ET\n`;
       } else {
         const raw = page.body.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>|<\/li>|<\/tr>|<\/div>|<\/h\d>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&pound;/g, "GBP ").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").trim();
         const lines = wrapPdf(raw, 94).slice(0, 52);
@@ -414,14 +416,14 @@
   }
 
   function downloadPdf() {
-    download(buildPdf(caseData()), `Quaerens-${isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.pdf`);
+    download(buildPdf(caseData()), `Quaerens-${isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.pdf`);
     status("Your 12-page PDF complaint pack has downloaded.");
   }
 
   function downloadWord() {
     const d = caseData(); const content = pages(d).map((page, index) => `<section class="page ${page.cover ? "cover" : ""}"><header>QUAERENS</header><h1>${page.title}</h1>${page.body}<footer>${esc(text(d.f.complaintPackReference))} • Page ${index + 1} of 12</footer></section>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#1e293b;line-height:1.55}.page{page-break-after:always;min-height:242mm}header{color:#0b3b86;font-size:9pt;font-weight:bold;letter-spacing:2.5px;border-bottom:2px solid #1d5fbf;padding-bottom:10px;margin-bottom:28px}h1{font-family:Georgia;color:#0b3b86;font-size:25px;margin:0 0 22px}p,li{font-size:10pt;line-height:1.65}table{border-collapse:collapse;width:100%;font-size:9pt;margin:14px 0}th{background:#0b3b86;color:white;text-transform:uppercase;font-size:8pt;letter-spacing:.4px}td,th{border:1px solid #ccd8e8;padding:9px;vertical-align:top}.qcb-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qcb-summary-card{border-left:3px solid #1d5fbf;background:#f4f8fc;padding:10px}.qcb-summary-card span{font-size:8pt;color:#64748b;display:block;text-transform:uppercase}.qcb-strength{background:#edf4fc;padding:14px;margin:12px 0 20px}.qcb-strength strong{color:#0b3b86;font-size:20pt}.cover{background:#052659;color:white;padding:24mm;box-sizing:border-box}.cover h1,.cover header,.cover strong{color:white}.cover .qcb-cover-title{font-family:Georgia;font-size:30pt;margin-top:45mm}.cover .qcb-cover-subtitle{letter-spacing:2px;text-transform:uppercase}.cover .qcb-cover-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25mm}.cover .qcb-cover-grid div{border-top:1px solid #7bb6f0;padding:10px 0}.cover .qcb-cover-grid span{display:block;color:#bfdbfe;text-transform:uppercase;font-size:7pt;letter-spacing:1px}.qcb-confidential{border:1px solid #fff;padding:5px 8px;font-size:7pt;letter-spacing:2px}.qcb-letter{white-space:pre-line;font-family:Georgia;line-height:1.65}footer{color:#64748b;border-top:1px solid #ccd8e8;margin-top:24px;padding-top:8px;font-size:8pt}</style></head><body>${content}</body></html>`;
-    download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-${isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
+    download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-${isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
   }
 
   function status(message) { const node = $("[data-qcb-copy-status]"); node.textContent = message; node.setAttribute("role", "status"); }
@@ -437,9 +439,18 @@
     return false;
   }
 
+  function currentStepIsValid() {
+    const current = root.querySelector(`[data-qcb-step="${step}"]`);
+    if (!current) return true;
+    const controls = Array.from(current.querySelectorAll("input, select, textarea"));
+    const invalid = controls.find((control) => !control.checkValidity());
+    if (invalid) { invalid.reportValidity(); invalid.focus(); return false; }
+    return true;
+  }
+
   restore();
   $("[data-qcb-reference-display]").textContent = form.elements.complaintPackReference.value;
-  if (!timeline.length) timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" });
+  if (!timeline.length) timeline.push({ date: "", category: category.timeline[0], description: "", evidence: "" });
   if (!losses.length) losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" });
   renderTimeline(); renderLosses(); renderEvidence(); showStep(1, false); renderPreview();
 
@@ -449,16 +460,16 @@
   $("[data-qcb-timeline]").addEventListener("click", (event) => handleCollection(event, timeline, renderTimeline));
   $("[data-qcb-losses]").addEventListener("input", (event) => handleCollection(event, losses, renderLosses));
   $("[data-qcb-losses]").addEventListener("click", (event) => handleCollection(event, losses, renderLosses));
-  $("[data-qcb-add-event]").addEventListener("click", () => { timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }); renderTimeline(); renderPreview(); });
+  $("[data-qcb-add-event]").addEventListener("click", () => { timeline.push({ date: "", category: category.timeline[0], description: "", evidence: "" }); renderTimeline(); renderPreview(); });
   $("[data-qcb-add-loss]").addEventListener("click", () => { losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" }); renderLosses(); renderPreview(); });
-  $("[data-qcb-next]").addEventListener("click", () => { if (step === 1 && !form.reportValidity()) return; if (step < MAX_STEP) showStep(step + 1); else $("[data-qcb-preview]").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  $("[data-qcb-next]").addEventListener("click", () => { if (!currentStepIsValid()) return; if (step < MAX_STEP) showStep(step + 1); else $("[data-qcb-preview]").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("[data-qcb-prev]").addEventListener("click", () => showStep(step - 1));
   $$('[data-qcb-step-pill]').forEach((pill) => { pill.tabIndex = 0; pill.setAttribute("role", "button"); pill.addEventListener("click", () => showStep(Number(pill.dataset.qcbStepPill))); pill.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showStep(Number(pill.dataset.qcbStepPill)); } }); });
   $("[data-qcb-save]").addEventListener("change", () => { if ($("[data-qcb-save]").checked) persist(); else localStorage.removeItem(STORAGE_KEY); });
-  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); window.QCBFrameworkAApplicant.regenerate(root); root.dispatchEvent(new CustomEvent("qcb:new-pack")); timeline = [{ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser and a new pack reference was created."); });
+  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); window.QCBFrameworkAApplicant.regenerate(root); root.dispatchEvent(new CustomEvent("qcb:new-pack")); timeline = [{ date: "", category: category.timeline[0], description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser and a new pack reference was created."); });
   $("[data-qcb-download-pdf]").addEventListener("click", downloadPdf);
   $("[data-qcb-download-word]").addEventListener("click", downloadWord);
-  $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-${isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
+  $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-${isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
   $("[data-qcb-copy-letter]").addEventListener("click", () => copy(complaintLetter(caseData()), "Complaint letter copied to your clipboard."));
   $("[data-qcb-copy-email]").addEventListener("click", () => copy(coverEmail(caseData()), "Cover email copied to your clipboard."));
   $("[data-qcb-print]").addEventListener("click", () => window.print());

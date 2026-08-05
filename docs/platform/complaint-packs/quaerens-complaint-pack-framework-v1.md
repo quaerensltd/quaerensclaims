@@ -1,6 +1,6 @@
-# Quaerens Complaint Pack Framework™ v1.3
+# Quaerens Complaint Pack Framework™ v1.4
 
-Framework version: **1.3** — Anonymous Platform Metrics™
+Framework version: **1.4** — Declarative Category Extension Contract
 Status: Permanent product architecture standard  
 Reference implementation: Airbnb Complaint Pack Builder Version 4  
 Framework owner: The Quaerens Platform™  
@@ -8,7 +8,15 @@ Effective date: 5 August 2026
 
 ## 1. Purpose
 
-The Quaerens Complaint Pack Framework™ v1.3 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+The Quaerens Complaint Pack Framework™ v1.4 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+
+### Version 1.4 declarative category contract
+
+Every category is registered once in `public/complaint-builder/config/framework-a-categories-v1.4.js`. The configuration declares the builder identifier, local-storage key, anonymous-metrics identifier, financial field mapping, chronology categories and evidence catalogue. The shared runtime consumes that contract; category pages must not duplicate evidence, chronology, financial, preview or export engines.
+
+Airbnb, Section 75, Holiday Compensation and Flight are the Version 1.4 configured implementations. Airbnb remains the visual and behavioural reference. Flight is the certification implementation for the extension contract and preserves its established public route, FreeFlightClaim identity, authority content and SEO while using the same shared shell, case model and output runtime.
+
+Flight-only external services are connected through thin shared adapters. The Flight lookup adapter delegates to the existing protected lookup module, and the compensation adapter delegates to the existing Flight analysis and compensation engine. Manual correction remains available. Adapters may map fields and present results, but must not reproduce protected calculations or create an alternative document runtime.
 
 ### Version 1.3 anonymous metrics contract
 
@@ -56,6 +64,8 @@ This standard governs all future Complaint Pack Builders. Category configuration
 | --- | --- |
 | `public/airbnb-refunds.html` | Canonical builder shell, seven-step interface, completion experience, live preview container and reference design system. |
 | `public/airbnb-complaint-pack-v3.js` | Airbnb V4 reference runtime: state, evidence, chronology, loss schedule, quality scoring, document model, preview and exports. The filename is historical; its active contract is Version 4. |
+| `public/complaint-builder/config/framework-a-categories-v1.4.js` | Frozen declarative registry for every certified Framework A category. |
+| `public/complaint-builder/adapters/framework-a-flight-adapter.js` | Thin Flight lookup and compensation bridge into the shared runtime; it owns no duplicate calculation or document engine. |
 | `scripts/test-airbnb-complaint-pack-v3.js` | Airbnb reference regression and framework-conformance checks. The filename is historical; tests target Version 4. |
 | `public/complaint-builder/` | Existing QCBF 1.2 technical primitives for state, validation, documents, exports, accessibility and registry. These are reusable infrastructure, but do not supersede the Airbnb V4 product standard. |
 | `public/complaint-builder/components/help-the-next-person.js` | Shared Help the Next Person™ completion component inherited by every configured builder. |
@@ -443,7 +453,7 @@ Before release:
 
 ## 16. Versioning rules
 
-This document establishes **Quaerens Complaint Pack Framework™ v1.3**.
+This document establishes **Quaerens Complaint Pack Framework™ v1.4**.
 
 Versioning rules:
 
@@ -557,6 +567,8 @@ Every new implementation must pass regression against every certified Framework 
 - Free Section 75 Complaint Pack Builder;
 - Free Holiday Compensation Complaint Pack Builder.
 
+Free Flight Claim joins this certified set only after the complete Version 1.4 browser, document, accessibility, responsive and four-builder regression gates pass.
+
 All later certified builders join this regression set. A new builder is not complete if an existing implementation is damaged. Certification is never automatic: every configured builder must pass the acceptance rule independently.
 
 ### 19.8 Completion standard
@@ -567,4 +579,4 @@ A Framework A builder is complete only when its shared CSS is self-contained, it
 
 Do not build another standalone Complaint Pack Builder.
 
-Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.3.
+Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.4.

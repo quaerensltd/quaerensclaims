@@ -1,6 +1,6 @@
 import { FRAMEWORK_A_VERSION, FRAMEWORK_A_BUILDERS, FRAMEWORK_A_EVENTS, METRICS_ENDPOINT } from "./framework-a-metrics-config.js";
 
-const BUILDER_MAP = Object.freeze({ airbnb: "airbnb", section75: "section75", holiday: "holiday-compensation" });
+const BUILDER_MAP = Object.freeze({ airbnb: "airbnb", section75: "section75", holiday: "holiday-compensation", flight: "flight-claim" });
 const ACTIONS = Object.freeze({
   "[data-qcb-download-pdf]": "pdf_downloaded", "[data-qcb-download-word]": "word_downloaded",
   "[data-qcb-download-txt]": "txt_downloaded", "[data-qcb-print]": "print_selected",

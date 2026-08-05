@@ -1,6 +1,6 @@
 # Quaerens Complaint Pack Framework™ — Master Governance Directive
 
-Current framework version: **1.3**
+Current framework version: **1.4**
 Status: Permanent platform standard  
 Authority: The Quaerens Platform™  
 Product specification: `docs/platform/complaint-packs/quaerens-complaint-pack-framework-v1.md`
@@ -12,6 +12,8 @@ The framework is the product. Individual Complaint Pack Builders are configured 
 Applicant Details™ and the Unique Complaint Pack Reference™ are mandatory shared capabilities. Category implementations may not duplicate, rename, suppress or replace them. A QCP reference is the case identity across Framework A, Framework C and Framework B; downstream frameworks inherit it and must not mint a competing reference.
 
 Anonymous Platform Metrics™ is a permanent shared Framework A capability. Categories must inherit the single allow-listed runtime and may not create separate counters or analytics systems. Aggregate metrics remain operationally and technically separate from Framework C, Framework D, applicant information and Complaint Pack content.
+
+The Version 1.4 declarative category contract is mandatory. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category adapters may translate data into an approved existing specialist service, but must not duplicate the service calculation or create a second builder or document engine.
 
 Do not approach a category as another webpage, form or standalone Complaint Pack. Extend the existing framework.
 
@@ -99,7 +101,8 @@ An approved framework change must not break:
 
 - Airbnb;
 - Section 75;
-- Holiday Park;
+- Holiday Compensation;
+- Flight;
 - Spray Foam;
 - Solar;
 - any other current or future configured implementation.

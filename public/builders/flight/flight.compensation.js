@@ -129,5 +129,5 @@
     return parts.length ? parts.join(" plus ") : "No monetary total calculated";
   }
 
-  return { EC261_COUNTRIES, greatCircleKm, regulationAnalysis, distanceBand, money, expenseTotals, analyse, totalRequestedText };
+  return { EC261_COUNTRIES, greatCircleKm, regulationAnalysis, distanceBand, money, compensationAmount, expenseTotals, analyse, totalRequestedText };
 });
