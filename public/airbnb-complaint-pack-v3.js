@@ -53,6 +53,7 @@
   let losses = [];
   let evidence = {};
   let previewTimer;
+  const MAX_STEP = root.querySelectorAll("[data-qcb-step]").length;
 
   const esc = (value) => String(value == null ? "" : value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const text = (value, fallback = "Not provided") => String(value || "").trim() || fallback;
@@ -65,6 +66,11 @@
   const slugDate = () => new Date().toISOString().slice(0, 10);
   const fields = () => Object.fromEntries(new FormData(form).entries());
   const checked = (name) => $$(`input[name="${name}"]:checked`).map((input) => input.value);
+  const applicantName = (f) => [f.applicantTitle, f.applicantFirstName, f.applicantLastName].filter(Boolean).join(" ") || "Applicant";
+  const jointName = (f) => f.jointComplaint === "yes" ? [f.jointTitle, f.jointFirstName, f.jointLastName].filter(Boolean).join(" ") : "";
+  const applicantNames = (f) => [applicantName(f), jointName(f)].filter(Boolean).join(" and ");
+  const applicantAddress = (f) => [f.applicantAddress1, f.applicantAddress2, f.applicantCity, f.applicantCounty, f.applicantPostcode, f.applicantCountry].filter(Boolean).join("\n");
+  const declaration = "I confirm that the information contained in this Complaint Pack is true and accurate to the best of my knowledge.";
 
   function caseData() {
     const f = fields();
@@ -81,7 +87,8 @@
       routes: checked("route"),
       timeline: [...timeline].sort((a, b) => String(a.date).localeCompare(String(b.date))),
       losses: [...losses], evidence: { ...evidence }, score,
-      bookingPosition, extra, total: (statedOutstanding || bookingPosition) + extra
+      bookingPosition, extra, total: (statedOutstanding || bookingPosition) + extra,
+      metadata: { frameworkVersion: "1.2", complaintPackReference: f.complaintPackReference, applicantDetails: { title: f.applicantTitle, firstName: f.applicantFirstName, lastName: f.applicantLastName, addressLine1: f.applicantAddress1, addressLine2: f.applicantAddress2, city: f.applicantCity, county: f.applicantCounty, postcode: f.applicantPostcode, country: f.applicantCountry, email: f.applicantEmail, telephone: f.applicantTelephone, preferredContact: f.preferredContact, jointComplaint: f.jointComplaint === "yes", jointApplicant: f.jointComplaint === "yes" ? { title: f.jointTitle, firstName: f.jointFirstName, lastName: f.jointLastName, email: f.jointEmail, telephone: f.jointTelephone, address: f.jointAddressDifferent === "yes" ? f.jointAddress : "Same as primary applicant" } : null } }
     };
   }
 
@@ -157,7 +164,7 @@
     return `Based on the information provided, this complaint concerns ${issuePhrase}. ${evidenceAssessment}. ${timelineAssessment}. ${financialAssessment} The completed file should be reviewed for factual accuracy and submitted through the selected official complaint route with clearly named attachments.`;
   }
 
-  function complaintLetter(d) {
+  function complaintLetterCore(d) {
     const f = d.f;
     if (isSection75) {
       const issues = d.issues.length ? d.issues.join(", ") : "the purchase problems described below";
@@ -177,10 +184,18 @@
     return `Subject: Formal complaint concerning Airbnb booking ${text(f.bookingRef)}\n\nDear Complaints Team,\n\nI am writing to request a formal review of my Airbnb booking for ${text(f.propertyName, "the booked property")}, scheduled from ${date(f.checkIn)} to ${date(f.checkOut)}. The complaint concerns ${issues}.\n\nBackground\n${text(f.issueDetails, "The relevant circumstances are set out in the enclosed chronology and supporting evidence schedule.")}\n\nMaterial Chronology\n${events}\n\nResponse Received from the Host\n${text(f.hostResponse, "No substantive response from the Host has been recorded in this file.")}\n\nResponse Received from Airbnb\n${text(f.airbnbResponse, "No substantive response from Airbnb has been recorded in this file.")}\n\nFinancial Impact\n${lossLine}\n\nRequested Resolution\n${text(f.requestedOutcome, "I ask that the matter is reviewed fairly, that the decision is explained in writing and that any refund or documented loss found due is paid.")}\n\nPlease acknowledge receipt, preserve the relevant booking and message records, and provide a reasoned written response. The enclosed file presents the booking information, chronology, supporting evidence and financial schedule in one structured record.\n\nYours faithfully,\nAirbnb Guest`;
   }
 
-  function coverEmail(d) {
+  function coverEmailCore(d) {
     if (isSection75) return `Subject: Section 75 complaint file — ${text(d.f.supplierName)}\n\nDear Complaints Team,\n\nPlease find attached my structured Section 75 Complaint Pack concerning a purchase from ${text(d.f.supplierName)}. It contains the transaction facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and tell me the expected response date.\n\nKind regards,\nCardholder`;
     if (isHoliday) return `Subject: Holiday complaint file — booking ${text(d.f.bookingRef)}\n\nDear Complaints Team,\n\nPlease find attached my structured Holiday Complaint Pack concerning booking ${text(d.f.bookingRef)} with ${text(d.f.holidayCompany)}. It contains the booking facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and tell me the expected response date.\n\nKind regards,\nHoliday customer`;
     return `Subject: Complaint file — Airbnb booking ${text(d.f.bookingRef)}\n\nDear Complaints Team,\n\nPlease find attached my structured complaint file concerning booking ${text(d.f.bookingRef)} at ${text(d.f.propertyName, "the booked property")}. It contains the booking facts, chronology, evidence schedule, financial loss schedule and formal complaint letter.\n\nPlease acknowledge receipt and confirm the case reference and expected response date.\n\nKind regards,\nAirbnb guest`;
+  }
+
+  function complaintLetter(d) {
+    return `${applicantNames(d.f)}\n${applicantAddress(d.f)}\nEmail: ${text(d.f.applicantEmail)}\nTelephone: ${text(d.f.applicantTelephone)}\n\nComplaint Pack Reference: ${text(d.f.complaintPackReference)}\n\n${complaintLetterCore(d).replace(/(Cardholder|Holiday customer|Airbnb Guest)$/, applicantNames(d.f))}\n\nDeclaration\n${declaration}`;
+  }
+
+  function coverEmail(d) {
+    return `${coverEmailCore(d).replace(/(Cardholder|Holiday customer|Airbnb guest)$/, applicantNames(d.f))}\n\nComplaint Pack Reference: ${text(d.f.complaintPackReference)}`;
   }
 
   function rowTable(headers, rows) {
@@ -191,7 +206,7 @@
     return `<div class="qcb-summary-grid">${items.map(([label, value]) => `<div class="qcb-summary-card"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("")}</div>`;
   }
 
-  function pages(d) {
+  function pagesCore(d) {
     const f = d.f;
     const evidenceRows = evidenceItems.map(([key, label, recommendation]) => [label, evidence[key] === "available" ? "Available" : evidence[key] === "na" ? "Not applicable" : "Missing", recommendation]);
     const missing = evidenceRows.filter((row) => row[1] === "Missing").map((row) => row[0]);
@@ -247,11 +262,20 @@
     ];
   }
 
+  function pages(d) {
+    return pagesCore(d).map((page, index) => {
+      const identity = `<div class="qcb-document-identity"><strong>Complaint Pack Reference:</strong> ${esc(text(d.f.complaintPackReference))}${index < 2 ? `<br><strong>Applicant:</strong> ${esc(applicantNames(d.f))}<br><strong>Contact:</strong> ${esc(text(d.f.applicantEmail))} · ${esc(text(d.f.applicantTelephone))}<br><strong>Address:</strong> ${esc(applicantAddress(d.f)).replace(/\n/g, ", ")}` : ""}</div>`;
+      const declarationBlock = index === 1 ? `<p><strong>Applicant declaration:</strong> ${esc(declaration)}</p>` : "";
+      const personalisedBody = page.cover ? page.body.replace(/Prepared for (?:the Cardholder|the Holiday Customer|Airbnb Guest)/i, `Prepared for ${esc(applicantNames(d.f))}`) : page.body;
+      return { ...page, body: `${identity}${personalisedBody}${declarationBlock}` };
+    });
+  }
+
   function renderPreview() {
     const d = caseData();
     const quality = qualityScore(d);
     const preview = $("[data-qcb-preview]");
-    preview.innerHTML = pages(d).map((page, index) => `<article class="qcb-page-card${page.cover ? " cover" : ""}" data-footer="Quaerens Complaint File • Page ${index + 1} of 12"><h4>${esc(page.title)}</h4>${page.body}</article>`).join("");
+    preview.innerHTML = pages(d).map((page, index) => `<article class="qcb-page-card${page.cover ? " cover" : ""}" data-footer="${esc(text(d.f.complaintPackReference))} • Page ${index + 1} of 12"><h4>${esc(page.title)}</h4>${page.body}</article>`).join("");
     $("[data-qcb-evidence-score]").textContent = `${d.score}%`;
     $("[data-qcb-preview-total]").textContent = money(d.total);
     $("[data-qcb-route-count]").textContent = d.routes.length;
@@ -297,14 +321,14 @@
   }
 
   function showStep(next, shouldScroll = true) {
-    step = Math.max(1, Math.min(7, next));
+    step = Math.max(1, Math.min(MAX_STEP, next));
     $$('[data-qcb-step]').forEach((panel) => panel.classList.toggle("active", Number(panel.dataset.qcbStep) === step));
     $$('[data-qcb-step-pill]').forEach((pill) => pill.classList.toggle("active", Number(pill.dataset.qcbStepPill) === step));
-    $("[data-qcb-step-label]").textContent = `Step ${step} of 7`;
-    $("[data-qcb-progress-label]").textContent = `${Math.round(step / 7 * 100)}% complete`;
-    $("[data-qcb-progress]").style.width = `${step / 7 * 100}%`;
+    $("[data-qcb-step-label]").textContent = `Step ${step} of ${MAX_STEP}`;
+    $("[data-qcb-progress-label]").textContent = `${Math.round(step / MAX_STEP * 100)}% complete`;
+    $("[data-qcb-progress]").style.width = `${step / MAX_STEP * 100}%`;
     $("[data-qcb-prev]").disabled = step === 1;
-    $("[data-qcb-next]").textContent = step === 7 ? "Review Pack" : "Next";
+    $("[data-qcb-next]").textContent = step === MAX_STEP ? "Review Pack" : "Next";
     if (shouldScroll) root.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -373,7 +397,7 @@
         const lines = wrapPdf(raw, 94).slice(0, 52);
         commands += `0.043 0.231 0.525 rg BT /F2 9 Tf 58 796 Td (QUAERENS  /  CONSUMER COMPLAINT FILE) Tj ET\n0.114 0.373 0.749 RG 1.4 w 58 784 m 537 784 l S\nBT /F2 20 Tf 58 744 Td (${pdfSafe(page.title)}) Tj ET\n0.118 0.161 0.231 rg BT /F1 9 Tf 58 708 Td ${lines.map((line, i) => `${i ? "0 -12.5 Td " : ""}(${pdfSafe(line)}) Tj`).join(" ")} ET\n`;
       }
-      commands += `BT /F1 8 Tf ${page.cover ? "1 1 1" : "0.39 0.45 0.55"} rg 220 25 Td (Quaerens Complaint File - Page ${index + 1} of 12) Tj ET`;
+      commands += `BT /F1 8 Tf ${page.cover ? "1 1 1" : "0.39 0.45 0.55"} rg 150 25 Td (${pdfSafe(text(d.f.complaintPackReference))} - Page ${index + 1} of 12) Tj ET`;
       contentIds.push(add(`<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`)); pageIds.push(add("PENDING"));
     });
     const pagesId = add("PENDING"); const catalogId = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
@@ -393,7 +417,7 @@
   }
 
   function downloadWord() {
-    const d = caseData(); const content = pages(d).map((page, index) => `<section class="page ${page.cover ? "cover" : ""}"><header>QUAERENS</header><h1>${page.title}</h1>${page.body}<footer>Quaerens Complaint File • Page ${index + 1} of 12</footer></section>`).join("");
+    const d = caseData(); const content = pages(d).map((page, index) => `<section class="page ${page.cover ? "cover" : ""}"><header>QUAERENS</header><h1>${page.title}</h1>${page.body}<footer>${esc(text(d.f.complaintPackReference))} • Page ${index + 1} of 12</footer></section>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#1e293b;line-height:1.55}.page{page-break-after:always;min-height:242mm}header{color:#0b3b86;font-size:9pt;font-weight:bold;letter-spacing:2.5px;border-bottom:2px solid #1d5fbf;padding-bottom:10px;margin-bottom:28px}h1{font-family:Georgia;color:#0b3b86;font-size:25px;margin:0 0 22px}p,li{font-size:10pt;line-height:1.65}table{border-collapse:collapse;width:100%;font-size:9pt;margin:14px 0}th{background:#0b3b86;color:white;text-transform:uppercase;font-size:8pt;letter-spacing:.4px}td,th{border:1px solid #ccd8e8;padding:9px;vertical-align:top}.qcb-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qcb-summary-card{border-left:3px solid #1d5fbf;background:#f4f8fc;padding:10px}.qcb-summary-card span{font-size:8pt;color:#64748b;display:block;text-transform:uppercase}.qcb-strength{background:#edf4fc;padding:14px;margin:12px 0 20px}.qcb-strength strong{color:#0b3b86;font-size:20pt}.cover{background:#052659;color:white;padding:24mm;box-sizing:border-box}.cover h1,.cover header,.cover strong{color:white}.cover .qcb-cover-title{font-family:Georgia;font-size:30pt;margin-top:45mm}.cover .qcb-cover-subtitle{letter-spacing:2px;text-transform:uppercase}.cover .qcb-cover-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25mm}.cover .qcb-cover-grid div{border-top:1px solid #7bb6f0;padding:10px 0}.cover .qcb-cover-grid span{display:block;color:#bfdbfe;text-transform:uppercase;font-size:7pt;letter-spacing:1px}.qcb-confidential{border:1px solid #fff;padding:5px 8px;font-size:7pt;letter-spacing:2px}.qcb-letter{white-space:pre-line;font-family:Georgia;line-height:1.65}footer{color:#64748b;border-top:1px solid #ccd8e8;margin-top:24px;padding-top:8px;font-size:8pt}</style></head><body>${content}</body></html>`;
     download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-${isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
   }
@@ -412,6 +436,7 @@
   }
 
   restore();
+  $("[data-qcb-reference-display]").textContent = form.elements.complaintPackReference.value;
   if (!timeline.length) timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" });
   if (!losses.length) losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" });
   renderTimeline(); renderLosses(); renderEvidence(); showStep(1, false); renderPreview();
@@ -424,17 +449,18 @@
   $("[data-qcb-losses]").addEventListener("click", (event) => handleCollection(event, losses, renderLosses));
   $("[data-qcb-add-event]").addEventListener("click", () => { timeline.push({ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }); renderTimeline(); renderPreview(); });
   $("[data-qcb-add-loss]").addEventListener("click", () => { losses.push({ description: "", amount: "", evidence: "", status: "Evidence needed" }); renderLosses(); renderPreview(); });
-  $("[data-qcb-next]").addEventListener("click", () => { if (step < 7) showStep(step + 1); else $("[data-qcb-preview]").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  $("[data-qcb-next]").addEventListener("click", () => { if (step === 1 && !form.reportValidity()) return; if (step < MAX_STEP) showStep(step + 1); else $("[data-qcb-preview]").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("[data-qcb-prev]").addEventListener("click", () => showStep(step - 1));
   $$('[data-qcb-step-pill]').forEach((pill) => { pill.tabIndex = 0; pill.setAttribute("role", "button"); pill.addEventListener("click", () => showStep(Number(pill.dataset.qcbStepPill))); pill.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showStep(Number(pill.dataset.qcbStepPill)); } }); });
   $("[data-qcb-save]").addEventListener("change", () => { if ($("[data-qcb-save]").checked) persist(); else localStorage.removeItem(STORAGE_KEY); });
-  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); timeline = [{ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser."); });
+  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); window.QCBFrameworkAApplicant.regenerate(root); timeline = [{ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser and a new pack reference was created."); });
   $("[data-qcb-download-pdf]").addEventListener("click", downloadPdf);
   $("[data-qcb-download-word]").addEventListener("click", downloadWord);
   $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-${isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
   $("[data-qcb-copy-letter]").addEventListener("click", () => copy(complaintLetter(caseData()), "Complaint letter copied to your clipboard."));
   $("[data-qcb-copy-email]").addEventListener("click", () => copy(coverEmail(caseData()), "Cover email copied to your clipboard."));
   $("[data-qcb-print]").addEventListener("click", () => window.print());
+  root.getFrameworkAHandoffMetadata = () => window.QCBFrameworkAApplicant.metadata(root);
   }
 
   document.querySelectorAll('[data-qcb-version="4"]').forEach(initialiseComplaintPack);

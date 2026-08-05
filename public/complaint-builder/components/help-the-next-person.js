@@ -90,7 +90,10 @@ async function shareTool(button, root) {
 }
 
 function mountHelpTheNextPerson() {
-  document.querySelectorAll('.qcb-step-page[data-qcb-step="7"]').forEach((completion, index) => {
+  document.querySelectorAll('[data-qcb-version="4"]').forEach((builder, index) => {
+    const steps = builder.querySelectorAll('.qcb-step-page[data-qcb-step]');
+    const completion = steps[steps.length - 1];
+    if (!completion) return;
     if (completion.querySelector(COMPONENT_SELECTOR)) return;
     const anchor = completion.querySelector(".qcb-separate-support") || completion.querySelector(".qcb-support-card") || completion.lastElementChild;
     if (!anchor) return;

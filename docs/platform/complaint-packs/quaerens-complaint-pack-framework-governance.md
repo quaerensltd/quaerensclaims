@@ -1,5 +1,6 @@
 # Quaerens Complaint Pack Framework™ — Master Governance Directive
 
+Current framework version: **1.2**
 Status: Permanent platform standard  
 Authority: The Quaerens Platform™  
 Product specification: `docs/platform/complaint-packs/quaerens-complaint-pack-framework-v1.md`
@@ -7,6 +8,8 @@ Product specification: `docs/platform/complaint-packs/quaerens-complaint-pack-fr
 ## First principle
 
 The framework is the product. Individual Complaint Pack Builders are configured implementations of that product.
+
+Applicant Details™ and the Unique Complaint Pack Reference™ are mandatory shared capabilities. Category implementations may not duplicate, rename, suppress or replace them. A QCP reference is the case identity across Framework A, Framework C and Framework B; downstream frameworks inherit it and must not mint a competing reference.
 
 Do not approach a category as another webpage, form or standalone Complaint Pack. Extend the existing framework.
 

@@ -95,7 +95,9 @@ exports.gatewaySubmitPreparedCase = onCall(async request => {
     .update(`${builder.toLowerCase()}|${complaintPackReference.toLowerCase()}`)
     .digest("hex");
   const caseRef = db.collection(GATEWAY_COLLECTION).doc(sourceKey.slice(0, 40));
-  const gatewayReference = `QIG-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${sourceKey.slice(0, 10).toUpperCase()}`;
+  // Framework C inherits the originating Framework A identifier. It must not
+  // create a competing case reference for the same prepared complaint.
+  const gatewayReference = complaintPackReference;
   const now = admin.firestore.FieldValue.serverTimestamp();
 
   const preparedCase = {
@@ -113,6 +115,29 @@ exports.gatewaySubmitPreparedCase = onCall(async request => {
       name: customerName,
       email: customerEmail,
       phone: gatewayText(data.customer && data.customer.phone, 80)
+    },
+    applicantDetails: {
+      title: gatewayText(data.applicantDetails && data.applicantDetails.title, 30),
+      firstName: gatewayText(data.applicantDetails && data.applicantDetails.firstName, 100),
+      lastName: gatewayText(data.applicantDetails && data.applicantDetails.lastName, 100),
+      addressLine1: gatewayText(data.applicantDetails && data.applicantDetails.addressLine1, 200),
+      addressLine2: gatewayText(data.applicantDetails && data.applicantDetails.addressLine2, 200),
+      city: gatewayText(data.applicantDetails && data.applicantDetails.city, 120),
+      county: gatewayText(data.applicantDetails && data.applicantDetails.county, 120),
+      postcode: gatewayText(data.applicantDetails && data.applicantDetails.postcode, 30),
+      country: gatewayText(data.applicantDetails && data.applicantDetails.country, 100),
+      email: gatewayText(data.applicantDetails && data.applicantDetails.email, 254).toLowerCase(),
+      telephone: gatewayText(data.applicantDetails && data.applicantDetails.telephone, 80),
+      preferredContact: gatewayText(data.applicantDetails && data.applicantDetails.preferredContact, 30),
+      jointComplaint: data.applicantDetails && data.applicantDetails.jointComplaint === true,
+      jointApplicant: data.applicantDetails && data.applicantDetails.jointComplaint === true ? {
+        title: gatewayText(data.applicantDetails.jointApplicant && data.applicantDetails.jointApplicant.title, 30),
+        firstName: gatewayText(data.applicantDetails.jointApplicant && data.applicantDetails.jointApplicant.firstName, 100),
+        lastName: gatewayText(data.applicantDetails.jointApplicant && data.applicantDetails.jointApplicant.lastName, 100),
+        email: gatewayText(data.applicantDetails.jointApplicant && data.applicantDetails.jointApplicant.email, 254).toLowerCase(),
+        telephone: gatewayText(data.applicantDetails.jointApplicant && data.applicantDetails.jointApplicant.telephone, 80),
+        address: gatewayText(data.applicantDetails.jointApplicant && data.applicantDetails.jointApplicant.address, 600)
+      } : null
     },
     complaintPackQuality: Math.max(0, Math.min(100, gatewayNumber(data.complaintPackQuality))),
     evidenceReadiness: Math.max(0, Math.min(100, gatewayNumber(data.evidenceReadiness))),

@@ -1,5 +1,6 @@
 # Quaerens Complaint Pack Framework™ v1.1
 
+Framework version: **1.2** — Applicant Details™ and Unique Complaint Pack Reference™
 Status: Permanent product architecture standard  
 Reference implementation: Airbnb Complaint Pack Builder Version 4  
 Framework owner: The Quaerens Platform™  
@@ -7,7 +8,17 @@ Effective date: 5 August 2026
 
 ## 1. Purpose
 
-The Quaerens Complaint Pack Framework™ v1.1 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+The Quaerens Complaint Pack Framework™ v1.2 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+
+### Version 1.2 shared identity contract
+
+Every configured builder begins with the shared Applicant Details™ step. It collects the primary applicant's title, name, postal address, email, telephone and preferred contact method, with conditional joint-applicant details. The data remains browser-first and is never transmitted without a separate, explicit handoff action and consent.
+
+Starting a new pack creates a cryptographically random, non-sequential `QCP-YYYYMMDD-XXXXXXXX` Unique Complaint Pack Reference™ containing no personal data. It remains stable for the pack lifetime, is persisted only with an opted-in local draft, and is regenerated when the user clears the pack. The reference and applicant identity must appear in the professional document set and generated metadata.
+
+Framework C and Framework B inherit the original reference and applicant record. They must not ask for the same identity again or generate a second case reference. Any transfer remains an explicit, consented handoff; Framework A itself creates no CRM record.
+
+The standard declaration is: “I confirm that the information contained in this Complaint Pack is true and accurate to the best of my knowledge.”
 
 Quaerens does not build online forms. Quaerens builds professional case files. The webpage prepares the product; the downloaded Complaint Pack is the product.
 

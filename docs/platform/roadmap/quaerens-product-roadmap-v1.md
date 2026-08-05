@@ -4,6 +4,8 @@ Status: Master product roadmap
 Authority: Subordinate to The Quaerens Platform Constitution™
 Scope: Every current and future Quaerens product
 
+Framework A current baseline: **Version 1.2**, including shared Applicant Details™, joint-applicant support, personalised outputs and the Unique Complaint Pack Reference™ handoff contract for Frameworks C and B.
+
 ## 1. Purpose
 
 This document is the master roadmap for the evolution of The Quaerens Platform.
