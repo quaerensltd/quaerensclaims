@@ -57,7 +57,8 @@ Where a value has not been approved, it must be recorded as **TBD**, not guessed
 
 - **Current status:** Reference Builder Complete
 - **Reference implementation:** Airbnb Complaint Pack Version 4
-- **Framework version:** Quaerens Complaint Pack Framework™ v1.0
+- **Framework version:** Quaerens Complaint Pack Framework™ v1.1
+- **Shared completion value:** Help the Next Person™ Version 1.0 is live and inherited by every configured builder
 
 Every product below is a configured route through Framework A. It must reuse the shared workflow, evidence, chronology, financial, preview, document and export architecture.
 
@@ -65,9 +66,9 @@ Every product below is a configured route through Framework A. It must reuse the
 
 | Name | Priority | Commercial value | Commercial model | Current status | Dependencies | Target version | Estimated effort |
 |---|---|---|---|---|---|---|---|
-| Airbnb Complaint Pack | N/A (reference) | Reference architecture and reusable quality standard | Free DIY | Live | Framework A v1.0 | Version 4 / reference | Completed |
-| Section 75 | Critical (Highest) | High-volume consumer dispute support and Guided Support potential | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
-| Free Holiday Compensation | Critical (Highest) | High public utility and travel-dispute demand | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.0; Airbnb and Section 75 regression | Category v1 / Framework A v1.0 | Completed |
+| Airbnb Complaint Pack | N/A (reference) | Reference architecture and reusable quality standard | Free DIY | Live | Framework A v1.1 | Version 4 / reference | Completed |
+| Section 75 | Critical (Highest) | High-volume consumer dispute support and Guided Support potential | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.1; category evidence and guidance; regression | Category v1 / Framework A v1.1 | Completed |
+| Free Holiday Compensation | Critical (Highest) | High public utility and travel-dispute demand | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.1; Airbnb and Section 75 regression | Category v1 / Framework A v1.1 | Completed |
 | Free Flight Claim | High | High-volume, rules-led consumer support | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
 | Car Finance | High | Significant consumer and professional-support potential | Free DIY; commercial journey via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
 | Train Delay | Medium | Consumer utility and category expansion | Free DIY | Planned | Framework A; route configuration | TBD | TBD |

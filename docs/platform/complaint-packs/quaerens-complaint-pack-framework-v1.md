@@ -1,13 +1,13 @@
-# Quaerens Complaint Pack Framework™ v1.0
+# Quaerens Complaint Pack Framework™ v1.1
 
 Status: Permanent product architecture standard  
 Reference implementation: Airbnb Complaint Pack Builder Version 4  
 Framework owner: The Quaerens Platform™  
-Effective date: 4 August 2026
+Effective date: 5 August 2026
 
 ## 1. Purpose
 
-The Quaerens Complaint Pack Framework™ v1.0 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+The Quaerens Complaint Pack Framework™ v1.1 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
 
 Quaerens does not build online forms. Quaerens builds professional case files. The webpage prepares the product; the downloaded Complaint Pack is the product.
 
@@ -39,6 +39,7 @@ This standard governs all future Complaint Pack Builders. Category configuration
 | `public/airbnb-complaint-pack-v3.js` | Airbnb V4 reference runtime: state, evidence, chronology, loss schedule, quality scoring, document model, preview and exports. The filename is historical; its active contract is Version 4. |
 | `scripts/test-airbnb-complaint-pack-v3.js` | Airbnb reference regression and framework-conformance checks. The filename is historical; tests target Version 4. |
 | `public/complaint-builder/` | Existing QCBF 1.2 technical primitives for state, validation, documents, exports, accessibility and registry. These are reusable infrastructure, but do not supersede the Airbnb V4 product standard. |
+| `public/complaint-builder/components/help-the-next-person.js` | Shared Help the Next Person™ completion component inherited by every configured builder. |
 
 The existing QCBF 1.2 modules and the Airbnb V4 reference must converge through controlled shared-framework work. A new category must not duplicate either implementation while that convergence is in progress. When a shared module does not yet reproduce Airbnb V4 exactly, Airbnb V4 remains the acceptance authority.
 
@@ -139,6 +140,33 @@ Every category must directly reuse the following contracts.
 - Complaint Pack Quality indicator;
 - quality must describe organisation and completeness, never likelihood of success;
 - optional Guided Support after the free product is complete.
+- shared Help the Next Person™ experience after Optional Guided Support;
+- honest-review invitation without sentiment pressure;
+- native sharing with accessible copy-link fallback;
+- identical Framework A thank-you message;
+- no sales, lead-generation, donation, tip, payment or fundraising request.
+
+### Help the Next Person™ Version 1.0
+
+The completion sequence is:
+
+1. Complaint Pack Ready;
+2. downloads;
+3. next steps;
+4. Optional Guided Support;
+5. Help the Next Person™.
+
+The shared component invites only two optional actions: **Leave an Honest Review** and **Share This Tool**. It must explicitly state that Quaerens is not asking for a positive review. Sharing uses the device share sheet where supported and an accessible copy-link fallback elsewhere.
+
+Every builder displays this identical closing message:
+
+> Thank you for using The Quaerens Platform.
+>
+> We believe consumers deserve clear, evidence-first support before they ever feel pressured to pay for help.
+>
+> If today's free Complaint Pack has helped you, thank you for helping the next person.
+
+The component is inherited from the shared runtime and stylesheet. Category code may not duplicate or alter it. It must not request donations, tips, payments or fundraising, and it must not be reframed as sales or lead generation.
 
 ## 5. Common 12-page document structure
 
@@ -396,7 +424,7 @@ Before release:
 
 ## 16. Versioning rules
 
-This document establishes **Quaerens Complaint Pack Framework™ v1.0**.
+This document establishes **Quaerens Complaint Pack Framework™ v1.1**.
 
 Versioning rules:
 
@@ -520,4 +548,4 @@ A Framework A builder is complete only when its shared CSS is self-contained, it
 
 Do not build another standalone Complaint Pack Builder.
 
-Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.0.
+Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.1.

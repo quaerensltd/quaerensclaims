@@ -169,9 +169,23 @@ Certification is not inherited automatically. Every later configured builder mus
 
 ## Versioning
 
-Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ v1.0 reference implementation.
+Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.1.
 
 Shared changes increment the framework version and require documentation, approval and regression. Category-only changes increment only the category version and must not silently alter the framework.
+
+## Help the Next Person™
+
+**Help the Next Person™ Version 1.0** is a permanent Framework A completion component and a platform value, not a category-specific feature.
+
+Every configured Complaint Pack Builder must inherit the component once from the shared framework runtime. It appears after Complaint Pack readiness, downloads, next steps and Optional Guided Support. It must:
+
+- invite an honest review without asking for a positive review;
+- provide accessible desktop and mobile sharing with a safe copy-link fallback;
+- preserve the approved identical thank-you message;
+- remain evidence-first, consumer-first, browser-first, optional and free from pressure;
+- contain no sales request, lead-generation prompt, donation, tip, payment or fundraising request.
+
+Category implementations must not copy, rewrite, relocate or privately replace this component. The shared implementation is regression-protected across Airbnb, Free Section 75, Free Holiday Compensation and every later certified builder.
 
 ## Platform routing rule
 

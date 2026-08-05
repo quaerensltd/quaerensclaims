@@ -13,7 +13,7 @@ requireText(html, '<link rel="canonical" href="https://www.quaerens.co.uk/freeho
 requireText(html, "FAQPage", "FAQ schema preserved");
 requireText(html, 'data-qcb-builder="holiday" data-qcb-version="4"', "Holiday configured implementation enabled");
 requireText(html, "/complaint-builder/styles/framework-v1-builder.css", "shared framework presentation loaded");
-requireText(html, "framework-v1-builder.css?v=20260804-shell", "cache-versioned framework stylesheet loaded");
+requireText(html, "framework-v1-builder.css?v=20260805-help-next-person", "cache-versioned framework stylesheet loaded");
 requireText(html, "/airbnb-complaint-pack-v3.js", "shared Framework v1 runtime loaded");
 requireText(html, "Free Holiday Compensation Complaint Pack Builder&trade;", "approved product name used");
 requireText(html, "Package Holiday", "package-holiday question present");

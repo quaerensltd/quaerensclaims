@@ -439,3 +439,6 @@
 
   document.querySelectorAll('[data-qcb-version="4"]').forEach(initialiseComplaintPack);
 })();
+
+import("/complaint-builder/components/help-the-next-person.js?v=1.0.0")
+  .catch((error) => console.error("Framework A completion component could not load.", error));
