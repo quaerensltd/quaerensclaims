@@ -139,7 +139,8 @@ service cloud.firestore {
     // Existing public CRM pages use client-side Firebase reads/writes.
     // Keep current behaviour working while we test the portal.
     match /{collection}/{document=**} {
-      allow read, write: if !isCrm2Member()
+      allow read, write: if ((request.auth != null && request.auth.token.platformAdmin == true)
+          || !isCrm2Member())
         && collection != "crm2Memberships"
         && collection != "crm2Leads"
         && collection != "crm2Assessments"

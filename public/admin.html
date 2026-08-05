@@ -452,6 +452,16 @@
       <div id="loginStatus"></div>
     </section>
 
+    <section id="accessDenied" class="login-card" style="display:none" role="status" aria-live="polite">
+      <p class="eyebrow">Authorised access required</p>
+      <h2>This submission console is restricted</h2>
+      <p>Your account is authenticated, but it does not have the trusted Platform Administrator capability required to view legacy submission records.</p>
+      <div class="toolbar-actions">
+        <a class="button" href="admin-centre.html">Return to Admin Centre</a>
+        <button class="button secondary" type="button" onclick="logout()">Sign out</button>
+      </div>
+    </section>
+
     <section style="display:none" id="adminContent" class="admin-content">
       <div class="sticky-bar">
         <div class="toolbar-grid">
@@ -516,7 +526,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs, updateDoc, deleteDoc, doc, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOo_Sa242sUuGyZD8jO8kk12V1aBX7wMA",
@@ -532,6 +542,7 @@
     let currentSortDirection = "desc";
 
     const loginForm = document.getElementById("loginForm");
+    const accessDenied = document.getElementById("accessDenied");
     const adminContent = document.getElementById("adminContent");
     const table = document.getElementById("claimsBody");
     const toast = document.getElementById("toast");
@@ -542,14 +553,29 @@
       setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       if (user) {
-        loginForm.style.display = "none";
-        adminContent.style.display = "block";
-        loadClaims();
+        try {
+          const token = await getIdTokenResult(user, true);
+          if (token.claims.platformAdmin === true) {
+            loginForm.style.display = "none";
+            accessDenied.style.display = "none";
+            adminContent.style.display = "block";
+            await loadClaims();
+          } else {
+            loginForm.style.display = "none";
+            adminContent.style.display = "none";
+            accessDenied.style.display = "block";
+          }
+        } catch (_) {
+          loginForm.style.display = "none";
+          adminContent.style.display = "none";
+          accessDenied.style.display = "block";
+        }
       } else {
         loginForm.style.display = "block";
         adminContent.style.display = "none";
+        accessDenied.style.display = "none";
       }
     });
 
@@ -558,6 +584,7 @@
         showToast("ðŸ‘‹ Logged out.");
         loginForm.style.display = "block";
         adminContent.style.display = "none";
+        accessDenied.style.display = "none";
       });
     };
 
@@ -769,9 +796,9 @@
           }
         };
       } catch (error) {
-  console.error("loadClaims error:", error);
-  showToast("✕ " + (error?.message || "Could not load claims."));
-}
+        table.innerHTML = '<tr><td colspan="10"><strong>Submission records are not currently available.</strong><br>Please refresh your administrator session or return to the Admin Centre.</td></tr>';
+        showToast("Submission records are not currently available.");
+      }
     }
 
     window.exportCSV = function () {
@@ -839,7 +866,6 @@
       loadClaims();
     };
 
-    loadClaims();
   </script>
 
 <!-- Client portal quick links -->

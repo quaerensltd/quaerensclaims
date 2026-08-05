@@ -73,6 +73,7 @@ const activity = (uid, type="agendaItems", overrides={}) => ({ workspaceId:"CRM2
     await assertSucceeds(updateDoc(doc(admin,"crm2Leads","new-case"),{status:"approved",updatedAt:now}));
     await assertFails(updateDoc(doc(admin,"crm2Leads","new-case"),{workspaceId:"CRM"}));
     await assertFails(setDoc(doc(admin,"crm2Memberships","self-made"),member("self-made","administrator")));
+    await assertSucceeds(getDoc(doc(admin,"claims","legacy-admin-record")));
 
     await assertSucceeds(setDoc(doc(lister,"crm2Assessments","solar-create"),assessment("lister","approved-case","solar")));
     await assertSucceeds(setDoc(doc(lister,"crm2Assessments","foam-create"),assessment("lister","approved-case","spray-foam")));
