@@ -20,7 +20,7 @@ const checks = [
   [runtime.includes("pdfSafe(text(d.f.complaintPackReference))") && runtime.includes("<footer>${esc(text(d.f.complaintPackReference))}"), "PDF and Word footers carry the pack reference"],
   [runtime.includes("complaintLetterCore(d)") && runtime.includes("coverEmailCore(d)"), "letters and emails are personalised by the shared engine"],
   [pages.every((html) => html.includes("/complaint-builder/components/applicant-details.js?v=1.2.2")), "all certified builders load the shared component"],
-  [pages.every((html) => html.includes("/airbnb-complaint-pack-v3.js?v=1.2.2")), "all certified builders load the same versioned runtime"],
+  [pages.every((html) => html.includes("/airbnb-complaint-pack-v3.js?v=1.3.0")), "all certified builders load the same versioned runtime"],
   [css.includes(".qcb-reference-card") && css.includes(".qcb-conditional-panel[hidden]"), "shared responsive presentation exists"]
 ];
 const failures = checks.filter(([pass]) => !pass);
