@@ -321,6 +321,7 @@
   }
 
   function showStep(next, shouldScroll = true) {
+    const completing = next === MAX_STEP && step !== MAX_STEP;
     step = Math.max(1, Math.min(MAX_STEP, next));
     $$('[data-qcb-step]').forEach((panel) => panel.classList.toggle("active", Number(panel.dataset.qcbStep) === step));
     $$('[data-qcb-step-pill]').forEach((pill) => pill.classList.toggle("active", Number(pill.dataset.qcbStepPill) === step));
@@ -329,6 +330,7 @@
     $("[data-qcb-progress]").style.width = `${step / MAX_STEP * 100}%`;
     $("[data-qcb-prev]").disabled = step === 1;
     $("[data-qcb-next]").textContent = step === MAX_STEP ? "Review Pack" : "Next";
+    if (completing) root.dispatchEvent(new CustomEvent("qcb:pack-completed"));
     if (shouldScroll) root.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -453,7 +455,7 @@
   $("[data-qcb-prev]").addEventListener("click", () => showStep(step - 1));
   $$('[data-qcb-step-pill]').forEach((pill) => { pill.tabIndex = 0; pill.setAttribute("role", "button"); pill.addEventListener("click", () => showStep(Number(pill.dataset.qcbStepPill))); pill.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showStep(Number(pill.dataset.qcbStepPill)); } }); });
   $("[data-qcb-save]").addEventListener("change", () => { if ($("[data-qcb-save]").checked) persist(); else localStorage.removeItem(STORAGE_KEY); });
-  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); window.QCBFrameworkAApplicant.regenerate(root); timeline = [{ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser and a new pack reference was created."); });
+  $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); window.QCBFrameworkAApplicant.regenerate(root); root.dispatchEvent(new CustomEvent("qcb:new-pack")); timeline = [{ date: "", category: isSection75 ? "Purchase" : "Booking", description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser and a new pack reference was created."); });
   $("[data-qcb-download-pdf]").addEventListener("click", downloadPdf);
   $("[data-qcb-download-word]").addEventListener("click", downloadWord);
   $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-${isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
@@ -468,3 +470,5 @@
 
 import("/complaint-builder/components/help-the-next-person.js?v=1.0.0")
   .catch((error) => console.error("Framework A completion component could not load.", error));
+import("/complaint-builder/metrics/framework-a-metrics.js?v=1.3.1")
+  .catch(() => {});

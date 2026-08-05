@@ -4,7 +4,7 @@ Status: Master product roadmap
 Authority: Subordinate to The Quaerens Platform Constitution™
 Scope: Every current and future Quaerens product
 
-Framework A current baseline: **Version 1.2**, including shared Applicant Details™, joint-applicant support, personalised outputs and the Unique Complaint Pack Reference™ handoff contract for Frameworks C and B.
+Framework A current baseline: **Version 1.3**, including shared Applicant Details™, the Unique Complaint Pack Reference™ and privacy-preserving Anonymous Platform Metrics™ with an internal aggregate dashboard.
 
 ## 1. Purpose
 
@@ -59,7 +59,7 @@ Where a value has not been approved, it must be recorded as **TBD**, not guessed
 
 - **Current status:** Reference Builder Complete
 - **Reference implementation:** Airbnb Complaint Pack Version 4
-- **Framework version:** Quaerens Complaint Pack Framework™ v1.1
+- **Framework version:** Quaerens Complaint Pack Framework™ v1.3
 - **Shared completion value:** Help the Next Person™ Version 1.0 is live and inherited by every configured builder
 
 Every product below is a configured route through Framework A. It must reuse the shared workflow, evidence, chronology, financial, preview, document and export architecture.

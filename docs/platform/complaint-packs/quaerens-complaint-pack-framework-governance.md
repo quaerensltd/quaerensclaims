@@ -1,6 +1,6 @@
 # Quaerens Complaint Pack Framework™ — Master Governance Directive
 
-Current framework version: **1.2**
+Current framework version: **1.3**
 Status: Permanent platform standard  
 Authority: The Quaerens Platform™  
 Product specification: `docs/platform/complaint-packs/quaerens-complaint-pack-framework-v1.md`
@@ -10,6 +10,8 @@ Product specification: `docs/platform/complaint-packs/quaerens-complaint-pack-fr
 The framework is the product. Individual Complaint Pack Builders are configured implementations of that product.
 
 Applicant Details™ and the Unique Complaint Pack Reference™ are mandatory shared capabilities. Category implementations may not duplicate, rename, suppress or replace them. A QCP reference is the case identity across Framework A, Framework C and Framework B; downstream frameworks inherit it and must not mint a competing reference.
+
+Anonymous Platform Metrics™ is a permanent shared Framework A capability. Categories must inherit the single allow-listed runtime and may not create separate counters or analytics systems. Aggregate metrics remain operationally and technically separate from Framework C, Framework D, applicant information and Complaint Pack content.
 
 Do not approach a category as another webpage, form or standalone Complaint Pack. Extend the existing framework.
 
@@ -172,7 +174,7 @@ Certification is not inherited automatically. Every later configured builder mus
 
 ## Versioning
 
-Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.1.
+Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.3.
 
 Shared changes increment the framework version and require documentation, approval and regression. Category-only changes increment only the category version and must not silently alter the framework.
 

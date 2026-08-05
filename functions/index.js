@@ -25,6 +25,66 @@ const GATEWAY_V1_ACTIONS = new Set([
   "ready-for-assignment",
   "add-note"
 ]);
+const FRAMEWORK_A_METRICS_COLLECTION = "frameworkAMetricsDaily";
+const FRAMEWORK_A_BUILDERS = new Set(["airbnb", "section75", "holiday-compensation"]);
+const FRAMEWORK_A_EVENTS = new Set([
+  "pack_started", "pack_completed", "pdf_downloaded", "word_downloaded",
+  "txt_downloaded", "print_selected", "complaint_letter_copied",
+  "cover_email_copied", "guided_support_clicked", "honest_review_clicked",
+  "share_tool_clicked"
+]);
+const FRAMEWORK_A_DEVICE_CLASSES = new Set(["desktop", "tablet", "mobile", "unknown"]);
+
+exports.recordFrameworkAMetric = onCall(async (request) => {
+  const data = request.data;
+  const size = Number(request.rawRequest?.headers?.["content-length"] || 0);
+  if (!data || typeof data !== "object" || Array.isArray(data) || size > 2048) {
+    throw new HttpsError("invalid-argument", "Invalid metrics request.");
+  }
+  const keys = Object.keys(data).sort();
+  const allowedKeys = ["builder", "deviceClass", "event", "frameworkVersion"];
+  if (keys.length !== allowedKeys.length || keys.some((key, index) => key !== allowedKeys[index])) {
+    throw new HttpsError("invalid-argument", "Invalid metrics request fields.");
+  }
+  if (!FRAMEWORK_A_BUILDERS.has(data.builder) || !FRAMEWORK_A_EVENTS.has(data.event) ||
+      data.frameworkVersion !== "1.3" || !FRAMEWORK_A_DEVICE_CLASSES.has(data.deviceClass)) {
+    throw new HttpsError("invalid-argument", "Invalid metrics request values.");
+  }
+  const reportingDate = new Date().toISOString().slice(0, 10);
+  const increment = admin.firestore.FieldValue.increment(1);
+  await db.collection(FRAMEWORK_A_METRICS_COLLECTION).doc(reportingDate).set({
+    reportingDate,
+    frameworkVersion: "1.3",
+    totals: { [data.event]: increment },
+    builders: { [data.builder]: { [data.event]: increment } },
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  return { accepted: true };
+});
+
+exports.frameworkAAdminReadMetrics = onCall(async (request) => {
+  requirePlatformAdmin(request);
+  const data = request.data || {};
+  const keys = Object.keys(data).sort();
+  if (keys.length !== 2 || keys[0] !== "from" || keys[1] !== "to" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(data.from || "") || !/^\d{4}-\d{2}-\d{2}$/.test(data.to || "")) {
+    throw new HttpsError("invalid-argument", "A valid reporting date range is required.");
+  }
+  const from = new Date(`${data.from}T00:00:00Z`);
+  const to = new Date(`${data.to}T00:00:00Z`);
+  const days = Math.round((to - from) / 86400000);
+  if (Number.isNaN(days) || days < 0 || days > 366) {
+    throw new HttpsError("invalid-argument", "The reporting range must be between 1 and 367 days.");
+  }
+  const snapshot = await db.collection(FRAMEWORK_A_METRICS_COLLECTION)
+    .where(admin.firestore.FieldPath.documentId(), ">=", data.from)
+    .where(admin.firestore.FieldPath.documentId(), "<=", data.to)
+    .get();
+  return { days: snapshot.docs.map((document) => {
+    const value = document.data();
+    return { date: document.id, totals: value.totals || {}, builders: value.builders || {} };
+  }) };
+});
 
 function requirePlatformAdmin(request) {
   if (!request.auth || request.auth.token.platformAdmin !== true) {

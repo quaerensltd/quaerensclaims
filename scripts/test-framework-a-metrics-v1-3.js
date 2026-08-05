@@ -1,0 +1,27 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const read = file => fs.readFileSync(file, "utf8");
+const runtime = read("public/complaint-builder/metrics/framework-a-metrics.js");
+const config = read("public/complaint-builder/metrics/framework-a-metrics-config.js");
+const builderRuntime = read("public/airbnb-complaint-pack-v3.js");
+const backend = read("functions/index.js");
+const rules = read("firestore.rules");
+const dashboard = read("public/framework-a-metrics.html");
+const admin = read("public/admin-centre.html");
+const privacy = read("public/privacy.html");
+const forbidden = ["applicantFirstName", "applicantEmail", "applicantTelephone", "complaintPackReference", "bookingRef", "refundOutstanding", "issueDetails"];
+
+assert.match(config, /airbnb[\s\S]*section75[\s\S]*holiday-compensation/);
+for (const event of ["pack_started","pack_completed","pdf_downloaded","word_downloaded","txt_downloaded","print_selected","complaint_letter_copied","cover_email_copied","guided_support_clicked","honest_review_clicked","share_tool_clicked"]) assert.ok(config.includes(event), event);
+assert.match(runtime, /JSON\.stringify\(\{ data: \{ builder, event, frameworkVersion: FRAMEWORK_A_VERSION, deviceClass:/);
+for (const field of forbidden) assert.ok(!runtime.includes(field), `public metrics runtime excludes ${field}`);
+assert.ok(!runtime.includes("firebase-firestore") && !runtime.includes("QCP-"));
+assert.match(runtime, /sessionStorage/); assert.match(runtime, /pack_started", true/); assert.match(runtime, /pack_completed", true/);
+assert.match(runtime, /\.catch\(\(\) => \{\}\)/); assert.match(builderRuntime, /qcb:pack-completed/); assert.match(builderRuntime, /qcb:new-pack/);
+assert.match(backend, /FRAMEWORK_A_METRICS_COLLECTION = "frameworkAMetricsDaily"/);
+assert.match(backend, /Object\.keys\(data\)\.sort/); assert.match(backend, /FieldValue\.increment\(1\)/);
+assert.match(backend, /requirePlatformAdmin\(request\)/); assert.match(rules, /match \/frameworkAMetricsDaily\/\{date\}[\s\S]*allow read, write: if false/);
+assert.ok(!backend.match(/FRAMEWORK_A_METRICS_COLLECTION[\s\S]{0,600}(CRM2|intakeGatewayPreparedCases)/));
+assert.match(dashboard, /Today/); assert.match(dashboard, /Yesterday/); assert.match(dashboard, /Last 7 Days/); assert.match(dashboard, /Last 30 Days/); assert.match(dashboard, /Custom Date Range/);
+assert.match(dashboard, /platformAdmin/); assert.match(admin, /framework-a-metrics\.html/); assert.match(privacy, /Anonymous Complaint Pack usage totals/);
+console.log("Framework A Anonymous Platform Metrics v1.3 static privacy and architecture checks passed.");

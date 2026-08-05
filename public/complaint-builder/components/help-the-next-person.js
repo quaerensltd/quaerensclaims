@@ -28,7 +28,7 @@ function componentMarkup(id) {
           <p>Your honest experience helps future users decide whether Quaerens is the right platform for them.</p>
           <p>We are not asking for a positive review.</p>
           <p>We are simply asking for an honest one.</p>
-          <a class="qcb-btn secondary" href="${REVIEW_URL}" target="_blank" rel="noopener noreferrer">Leave an Honest Review</a>
+          <a class="qcb-btn secondary" data-qcb-honest-review href="${REVIEW_URL}" target="_blank" rel="noopener noreferrer">Leave an Honest Review</a>
         </article>
         <article class="qcb-help-card">
           <span class="qcb-help-icon" aria-hidden="true">&#128227;</span>

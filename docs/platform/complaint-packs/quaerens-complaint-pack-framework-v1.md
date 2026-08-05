@@ -1,6 +1,6 @@
-# Quaerens Complaint Pack Framework™ v1.1
+# Quaerens Complaint Pack Framework™ v1.3
 
-Framework version: **1.2** — Applicant Details™ and Unique Complaint Pack Reference™
+Framework version: **1.3** — Anonymous Platform Metrics™
 Status: Permanent product architecture standard  
 Reference implementation: Airbnb Complaint Pack Builder Version 4  
 Framework owner: The Quaerens Platform™  
@@ -8,7 +8,15 @@ Effective date: 5 August 2026
 
 ## 1. Purpose
 
-The Quaerens Complaint Pack Framework™ v1.2 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+The Quaerens Complaint Pack Framework™ v1.3 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+
+### Version 1.3 anonymous metrics contract
+
+Anonymous Platform Metrics™ is a mandatory shared Framework A capability. The shared runtime may emit only the approved aggregate events and the allow-listed builder identifier, event name, framework version and broad device class. The backend derives the reporting date and increments daily aggregate counters by exactly one.
+
+Metrics must never contain Complaint Pack answers, personal or contact details, free text, financial data, chronology, evidence, documents, generated wording, Firebase identity, a QCP reference or a Framework C reference. They must not create event profiles, advertising identifiers, CRM records or Prepared Cases. Public browsers cannot read or write the aggregate store directly.
+
+Every future configured builder registers an approved builder identifier, inherits the shared metrics runtime and disclosure, emits only approved Version 1 events, appears through dashboard configuration and passes privacy, security, duplicate-protection and regression tests. Independent category analytics implementations are prohibited.
 
 ### Version 1.2 shared identity contract
 
@@ -435,7 +443,7 @@ Before release:
 
 ## 16. Versioning rules
 
-This document establishes **Quaerens Complaint Pack Framework™ v1.1**.
+This document establishes **Quaerens Complaint Pack Framework™ v1.3**.
 
 Versioning rules:
 
@@ -559,4 +567,4 @@ A Framework A builder is complete only when its shared CSS is self-contained, it
 
 Do not build another standalone Complaint Pack Builder.
 
-Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.1.
+Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.3.
