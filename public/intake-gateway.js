@@ -306,6 +306,7 @@ document.addEventListener("click", event => {
 byId("refreshButton").addEventListener("click", loadCases);
 byId("closeCaseDialog").addEventListener("click", () => byId("caseDialog").close());
 byId("signOutButton").addEventListener("click", async () => { await signOut(auth); window.location.assign("/login.html?next=/intake-gateway.html"); });
+byId("authSignOutButton").addEventListener("click", async () => { await signOut(auth); window.location.assign("/login.html?next=/intake-gateway.html"); });
 byId("caseSearch").addEventListener("input", applyFilters);
 ["frameworkFilter", "builderFilter", "statusFilter", "commercialFilter", "countryFilter", "priorityFilter", "assignmentFilter"].forEach(id => byId(id).addEventListener("change", applyFilters));
 byId("clearFilters").addEventListener("click", () => {
@@ -324,6 +325,8 @@ onAuthStateChanged(auth, async user => {
     const token = await user.getIdTokenResult(true);
     if (token.claims.platformAdmin !== true) {
       byId("authMessage").textContent = "Your account does not have authorised Intake Gateway access.";
+      byId("authGate").querySelector(".spinner").hidden = true;
+      byId("authActions").hidden = false;
       return;
     }
     byId("userIdentity").textContent = user.email || "Authorised internal user";
@@ -333,5 +336,7 @@ onAuthStateChanged(auth, async user => {
     await loadCases();
   } catch {
     byId("authMessage").textContent = "Authorisation could not be confirmed. Please sign in again.";
+    byId("authGate").querySelector(".spinner").hidden = true;
+    byId("authActions").hidden = false;
   }
 });

@@ -20,8 +20,11 @@ const implementation = read("docs/platform/intake-gateway/quaerens-intake-gatewa
 
 assert(html.includes('meta name="robots" content="noindex, nofollow"'), "Gateway route is noindex");
 assert(admin.includes('href="/intake-gateway.html"') && admin.includes("Quaerens Intake Gateway"), "Admin Centre exposes the internal Gateway route");
+assert(admin.includes("Public Platform Operations") && admin.includes("Prepared Case Control") && admin.includes("Operations Workspaces") && admin.includes("Professional Case Systems") && admin.includes("Administration"), "Admin Centre is organised as the permanent platform directory");
+assert(admin.includes("Partner Workspace 3") && admin.includes("Integration Pending") && admin.includes('aria-disabled="true"'), "Future workspaces are truthful and non-interactive");
 assert(login.includes('requested === "/intake-gateway.html"') && login.includes("platformAdmin"), "Existing login safely returns authorised platform admins to the Gateway");
-assert(js.includes("onAuthStateChanged") && js.includes("token.claims.platformAdmin !== true"), "Gateway reuses authentication and enforces platformAdmin visibility");
+assert(js.includes("onAuthStateChanged") && js.includes("getIdTokenResult(true)") && js.includes("token.claims.platformAdmin !== true"), "Gateway refreshes claims and enforces platformAdmin visibility");
+assert(html.includes("Return to Admin Centre") && html.includes("authSignOutButton"), "Denied access provides professional recovery actions");
 assert(functions.includes("exports.gatewaySubmitPreparedCase") && functions.includes("exports.gatewayAdminListPreparedCases") && functions.includes("exports.gatewayAdminUpdatePreparedCase"), "Prepared Case intake and protected internal callable functions exist");
 assert(functions.includes("guidedSupportConsent !== true") && functions.includes("guidedSupportConsentAt"), "Prepared Case intake requires explicit Guided Support consent");
 assert(functions.includes('status: "new"') && functions.includes('assignmentStatus: "unassigned"'), "Public intake cannot choose status or assignment");
