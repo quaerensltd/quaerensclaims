@@ -21,7 +21,7 @@ If this roadmap conflicts with The Quaerens Platform Constitution™, the Consti
 | The Quaerens Platform Constitution™ | Completed | Highest platform authority |
 | Framework A — Complaint Pack Framework™ | Completed | Shared consumer DIY framework |
 | Framework B — Professional Case Builder Framework™ | Completed | Shared professional case-building framework |
-| Framework C — Quaerens Intake Gateway™ | Completed | Architecture complete; implementation is a planned phase |
+| Framework C — Quaerens Intake Gateway™ | Live | Version 1 operational control layer; manual processing ends at Ready for Assignment |
 | Framework D — Operations CRM™ | Operational | Shared operational platform |
 | CRM2 | Live | Operations CRM workspace |
 | Airbnb Complaint Pack Version 4 | Reference Implementation | Framework A reference builder |
@@ -117,26 +117,26 @@ Framework B routes produce, where applicable:
 
 ### 6.1 Current position
 
-- **Current status:** Architecture Complete
+- **Current status:** Live
 - **Framework version:** Quaerens Intake Gateway™ Framework v1.0
-- **Implementation position:** Future Build / Planned
+- **Implementation position:** Version 1 live; CRM operational-case creation remains a future integration
 
-Architecture completion does not imply that the Gateway application has been built. Implementation must follow the approved Framework C specification and the Constitution.
+Version 1 implements the approved internal control layer through Ready for Assignment. It does not yet create an operational CRM case.
 
 ### 6.2 Capability roadmap
 
 | Capability | Priority | Commercial value | Current status | Dependencies | Target version | Estimated effort |
 |---|---|---|---|---|---|---|
-| Guided Support intake | Critical | Establishes one controlled support entry point | Planned | Framework C; submission contract; security | v1 | TBD |
-| Qualification | Critical | Ensures appropriate service entry | Planned | Guided Support intake; qualification policy | v1 | TBD |
-| Prepared Case handling | Critical | Preserves evidence-first intake | Planned | Framework A contracts; storage and consent controls | v1 | TBD |
+| Guided Support intake | Critical | Establishes one controlled support entry point | Live | Framework C; submission contract; security | v1 | Completed |
+| Qualification | Critical | Ensures appropriate service entry | Live | Guided Support intake; qualification policy | v1 | Completed |
+| Prepared Case handling | Critical | Preserves evidence-first intake | Live | Framework A contracts; storage and consent controls | v1 | Completed |
 | Business Rules | Critical | Enables controlled, configurable decisions | Planned | Qualification; governance; audit | v1 | TBD |
-| Assignment | Critical | Controls operational-case creation | Planned | Business Rules; workspace registry | v1 | TBD |
+| Assignment | Critical | Controls operational-case creation | Live | Manual Version 1 destination preparation; no CRM creation | v1 | Completed |
 | Capacity Management | High | Supports balanced operational allocation | Planned | Assignment; capacity data | TBD | TBD |
 | Pricing Models | High | Controls the commercial journey centrally | Planned | Product configuration; qualification | TBD | TBD |
 | CRM Routing | Critical | Prevents direct website-to-CRM intake | Planned | Assignment; Operations CRM contract | v1 | TBD |
 | Partner Routing | Medium | Enables governed partner expansion | Planned | Partner governance; capacity; contracts | TBD | TBD |
-| Analytics | Medium | Provides intake and allocation insight | Planned | Stable event and status model | TBD | TBD |
+| Analytics | Medium | Provides intake and allocation insight | Live | Version 1 dashboard metrics and builder breakdown | v1 | Completed |
 | AI Qualification | Future | Supports auditable decision assistance | Future | Proven qualification model; AI governance | TBD | TBD |
 | Document Verification | Future | Improves structural intake assurance | Future | Prepared Case contract; verification rules | TBD | TBD |
 | Complaint Quality Validation | Future | Assesses intake readiness consistently | Future | Framework A quality contract; validation policy | TBD | TBD |
@@ -217,7 +217,7 @@ The public builder prepares the consumer's material. Framework C determines the 
 | 1 | Foundation | Completed | Core platform foundations established |
 | 2 | Frameworks | Completed | Framework architectures and governance established |
 | 3 | Product Expansion | Current | Configured products and professional routes expanded |
-| 4 | Intake Gateway Build | Planned | Framework C implemented as the central intake layer |
+| 4 | Intake Gateway Build | In Progress | Version 1 control layer live; controlled CRM creation and later automation remain planned |
 | 5 | Partner Expansion | Planned | Governed CRM workspaces and partner routing expanded |
 | 6 | Platform Intelligence | Future | Approved analytics, validation and decision-support capability introduced |
 

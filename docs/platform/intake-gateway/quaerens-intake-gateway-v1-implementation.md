@@ -1,12 +1,18 @@
 # Quaerens Intake Gateway™ Version 1 implementation
 
-Status: Production candidate
+Status: Live
 
 Framework: C
 
 Framework version: 1.0
 
 Implementation boundary: Prepared Case review through Ready for Assignment
+
+Release date: 5 August 2026
+
+Release commit: `cbad4d6`
+
+Vercel deployment: `4rPvk9rZSArZeuReG1G2ti5bRpHY`
 
 ## 1. Architecture followed
 
@@ -146,6 +152,8 @@ The Version 1 validation script checks:
 - noindex and no-store route controls.
 
 Live authentication, callable-function behaviour and responsive visual acceptance remain deployment-gate checks and must be recorded truthfully after deployment.
+
+The release gate passed on 5 August 2026. The approved Administrator authenticated on the production origin; the protected production queue loaded successfully; dashboard, search, filters and builder queues passed live smoke testing; desktop, tablet and mobile layouts passed; and the browser console remained clear. The production queue contained no Prepared Cases, so no customer case was altered to exercise workflow mutations. Qualification, note and assignment actions remain protected by the tested backend allow-lists and audit contract.
 
 ## 13. Known Version 2 enhancements
 
