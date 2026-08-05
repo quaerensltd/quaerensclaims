@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Quaerens Intake Gateway™</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/intake-gateway.css?v=1.0.0">
+</head>
+<body>
+  <div id="authGate" class="auth-gate" role="status" aria-live="polite">
+    <div class="auth-card">
+      <img src="/images/quaerens-logo.png" alt="Quaerens" class="auth-logo">
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="authMessage">Confirming authorised internal access…</p>
+    </div>
+  </div>
+
+  <div id="gatewayApp" class="app-shell" hidden>
+    <aside class="sidebar" aria-label="Gateway navigation">
+      <a href="/admin-centre.html" class="brand" aria-label="Return to Admin Centre">
+        <img src="/images/quaerens-logo.png" alt="Quaerens">
+      </a>
+      <div class="framework-mark">
+        <span>Framework C</span>
+        <strong>Intake Gateway™</strong>
+        <small>Version 1.0</small>
+      </div>
+      <nav class="nav-list">
+        <button class="nav-item active" type="button" data-view="dashboard">Overview</button>
+        <button class="nav-item" type="button" data-view="cases">Prepared Cases</button>
+        <button class="nav-item" type="button" data-view="queues">Builder Queues</button>
+      </nav>
+      <div class="boundary-note">
+        <strong>Framework boundary</strong>
+        <p>Prepared Cases only. Version 1 stops at Ready for Assignment and never creates CRM records.</p>
+      </div>
+      <button id="signOutButton" class="sign-out" type="button">Sign out</button>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Central operational control layer</p>
+          <h1>Quaerens Intake Gateway™</h1>
+          <p class="subtitle">Review, qualify and prepare completed cases for controlled assignment.</p>
+        </div>
+        <div class="topbar-actions">
+          <span id="userIdentity" class="user-chip"></span>
+          <button id="refreshButton" class="button secondary" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <div id="appMessage" class="app-message" role="status" aria-live="polite" hidden></div>
+
+      <section id="dashboardView" class="view-section" data-view-panel="dashboard">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Live intake position</p>
+            <h2>Prepared Case overview</h2>
+          </div>
+          <span id="lastUpdated" class="last-updated">Not yet refreshed</span>
+        </div>
+
+        <div id="metricGrid" class="metric-grid" aria-label="Gateway metrics"></div>
+
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Priority workflow</p><h3>Cases requiring attention</h3></div>
+              <button class="text-button" type="button" data-open-view="cases">View all</button>
+            </div>
+            <div id="attentionList" class="case-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Configuration-driven</p><h3>Builder breakdown</h3></div>
+            </div>
+            <div id="builderBreakdown" class="breakdown-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="casesView" class="view-section" data-view-panel="cases" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow">Prepared Cases</p><h2>Review and qualification queue</h2></div>
+          <span id="caseCount" class="count-chip">0 cases</span>
+        </div>
+
+        <section class="panel filters-panel" aria-label="Search and filters">
+          <label class="search-field">
+            <span>Search</span>
+            <input id="caseSearch" type="search" placeholder="Reference, customer, builder, framework, country, status or date">
+          </label>
+          <div class="filter-grid">
+            <label><span>Framework</span><select id="frameworkFilter"><option value="">All frameworks</option></select></label>
+            <label><span>Builder</span><select id="builderFilter"><option value="">All builders</option></select></label>
+            <label><span>Status</span><select id="statusFilter"><option value="">All statuses</option></select></label>
+            <label><span>Commercial model</span><select id="commercialFilter"><option value="">All models</option></select></label>
+            <label><span>Country</span><select id="countryFilter"><option value="">All countries</option></select></label>
+            <label><span>Priority</span><select id="priorityFilter"><option value="">All priorities</option></select></label>
+            <label><span>Assignment</span><select id="assignmentFilter"><option value="">All assignments</option><option value="assigned">Destination prepared</option><option value="unassigned">Unassigned</option></select></label>
+          </div>
+          <button id="clearFilters" class="button ghost" type="button">Clear filters</button>
+        </section>
+
+        <section class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Gateway reference</th><th>Customer</th><th>Builder</th><th>Quality</th><th>Evidence</th><th>Status</th><th>Priority</th><th>Assignment</th><th></th></tr></thead>
+              <tbody id="casesTableBody"></tbody>
+            </table>
+          </div>
+          <div id="casesEmpty" class="empty-state" hidden>
+            <strong>No Prepared Cases match this view.</strong>
+            <p>The Gateway receives completed, consented cases—not enquiries or leads.</p>
+          </div>
+        </section>
+      </section>
+
+      <section id="queuesView" class="view-section" data-view-panel="queues" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow">Builder queues</p><h2>Framework A intake breakdown</h2></div>
+        </div>
+        <div id="queueGrid" class="queue-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="caseDialog" class="case-dialog" aria-labelledby="caseDialogTitle">
+    <div class="dialog-shell">
+      <header class="dialog-header">
+        <div><p id="caseDialogReference" class="eyebrow"></p><h2 id="caseDialogTitle">Prepared Case</h2></div>
+        <button id="closeCaseDialog" class="icon-button" type="button" aria-label="Close Prepared Case">×</button>
+      </header>
+      <div id="caseSummary" class="case-summary"></div>
+      <div class="case-layout">
+        <section class="case-content">
+          <div id="caseTabs" class="tab-list" role="tablist" aria-label="Prepared Case documents"></div>
+          <div id="caseDocument" class="document-viewer" role="tabpanel" tabindex="0"></div>
+        </section>
+        <aside class="action-panel">
+          <p class="eyebrow">Manual qualification</p>
+          <h3>Gateway actions</h3>
+          <div class="action-grid">
+            <button class="button secondary" type="button" data-case-action="review">Mark reviewed</button>
+            <button class="button success" type="button" data-case-action="approve">Approve</button>
+            <button class="button danger" type="button" data-case-action="decline">Decline</button>
+            <button class="button secondary" type="button" data-case-action="request-more-information">Request more information</button>
+            <button class="button secondary" type="button" data-case-action="assign-later">Assign later</button>
+          </div>
+          <label class="field"><span>Internal note</span><textarea id="internalNote" rows="4" placeholder="Internal only. Never visible to the customer."></textarea></label>
+          <button class="button secondary full" type="button" data-case-action="add-note">Add internal note</button>
+          <div class="assignment-box">
+            <p class="eyebrow">Version 1 assignment</p>
+            <label class="field"><span>Proposed destination</span><select id="assignmentDestination"><option value="">Select destination</option><option>CRM1</option><option>CRM2</option><option>CRM3</option><option>CRM4</option><option>Future Partner</option></select></label>
+            <button class="button primary full" type="button" data-case-action="ready-for-assignment">Mark Ready for Assignment</button>
+            <p class="microcopy">This records a destination decision only. No CRM record is created.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/intake-gateway.js?v=1.0.0"></script>
+</body>
+</html>

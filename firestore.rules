@@ -99,6 +99,16 @@ service cloud.firestore {
       allow delete: if crm2RoleIs("administrator");
     }
 
+    // Framework C records are accessible only through protected Cloud Functions.
+    // Version 1 never creates an operational CRM record.
+    match /intakeGatewayPreparedCases/{caseId} {
+      allow read, write: if false;
+
+      match /audit/{auditId} {
+        allow read, write: if false;
+      }
+    }
+
     // Client portal cases created by Quaerens admin and opened by clients using email + access code.
     match /clientPortalCases/{caseId} {
       allow read: if true;
@@ -134,7 +144,8 @@ service cloud.firestore {
         && collection != "crm2Leads"
         && collection != "crm2Assessments"
         && collection != "crm2Activities"
-        && collection != "crm2Attendance";
+        && collection != "crm2Attendance"
+        && collection != "intakeGatewayPreparedCases";
     }
   }
 }

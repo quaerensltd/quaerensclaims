@@ -14,6 +14,220 @@ admin.initializeApp({ storageBucket: STORAGE_BUCKET });
 const db = admin.firestore();
 
 const CRM2_ROLES = new Set(["lister", "manager", "closer", "administrator"]);
+const GATEWAY_COLLECTION = "intakeGatewayPreparedCases";
+const GATEWAY_V1_DESTINATIONS = new Set(["CRM1", "CRM2", "CRM3", "CRM4", "Future Partner"]);
+const GATEWAY_V1_ACTIONS = new Set([
+  "review",
+  "approve",
+  "decline",
+  "request-more-information",
+  "assign-later",
+  "ready-for-assignment",
+  "add-note"
+]);
+
+function requirePlatformAdmin(request) {
+  if (!request.auth || request.auth.token.platformAdmin !== true) {
+    throw new HttpsError("permission-denied", "Authorised internal access is required.");
+  }
+}
+
+function gatewayText(value, maxLength = 5000) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function gatewayNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function gatewayDocuments(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    complaintPack: gatewayText(source.complaintPack, 240000),
+    executiveSummary: gatewayText(source.executiveSummary, 40000),
+    timeline: gatewayText(source.timeline, 80000),
+    evidenceSchedule: gatewayText(source.evidenceSchedule, 80000),
+    financialSchedule: gatewayText(source.financialSchedule, 80000),
+    complaintLetter: gatewayText(source.complaintLetter, 80000),
+    coverEmail: gatewayText(source.coverEmail, 40000),
+    submissionChecklist: gatewayText(source.submissionChecklist, 40000),
+    responseTracker: gatewayText(source.responseTracker, 40000)
+  };
+}
+
+function gatewayFiles(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 50).map(file => ({
+    name: gatewayText(file && file.name, 180),
+    contentType: gatewayText(file && file.contentType, 100),
+    size: Math.max(0, gatewayNumber(file && file.size)),
+    storagePath: gatewayText(file && file.storagePath, 500)
+  })).filter(file => file.name && file.storagePath);
+}
+
+function gatewayDateValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : admin.firestore.Timestamp.fromDate(date);
+}
+
+exports.gatewaySubmitPreparedCase = onCall(async request => {
+  const data = request.data || {};
+  if (data.guidedSupportConsent !== true) {
+    throw new HttpsError("failed-precondition", "Explicit Guided Support consent is required.");
+  }
+
+  const builder = gatewayText(data.builder, 120);
+  const complaintPackReference = gatewayText(data.complaintPackReference, 160);
+  const customerName = gatewayText(data.customer && data.customer.name, 160);
+  const customerEmail = gatewayText(data.customer && data.customer.email, 254).toLowerCase();
+  if (!builder || !complaintPackReference || !customerName || !customerEmail.includes("@")) {
+    throw new HttpsError("invalid-argument", "A builder, Complaint Pack reference and customer contact details are required.");
+  }
+
+  const consentAt = gatewayDateValue(data.guidedSupportConsentAt);
+  if (!consentAt) {
+    throw new HttpsError("invalid-argument", "A valid Guided Support consent timestamp is required.");
+  }
+
+  const sourceKey = crypto.createHash("sha256")
+    .update(`${builder.toLowerCase()}|${complaintPackReference.toLowerCase()}`)
+    .digest("hex");
+  const caseRef = db.collection(GATEWAY_COLLECTION).doc(sourceKey.slice(0, 40));
+  const gatewayReference = `QIG-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${sourceKey.slice(0, 10).toUpperCase()}`;
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  const preparedCase = {
+    gatewayReference,
+    complaintPackReference,
+    framework: gatewayText(data.framework, 80) || "Framework A",
+    frameworkVersion: gatewayText(data.frameworkVersion, 40) || "1.0",
+    builder,
+    builderVersion: gatewayText(data.builderVersion, 40),
+    complaintCategory: gatewayText(data.complaintCategory, 160),
+    commercialModel: gatewayText(data.commercialModel, 80) || "DIY + Guided Support",
+    country: gatewayText(data.country, 100),
+    language: gatewayText(data.language, 80) || "English",
+    customer: {
+      name: customerName,
+      email: customerEmail,
+      phone: gatewayText(data.customer && data.customer.phone, 80)
+    },
+    complaintPackQuality: Math.max(0, Math.min(100, gatewayNumber(data.complaintPackQuality))),
+    evidenceReadiness: Math.max(0, Math.min(100, gatewayNumber(data.evidenceReadiness))),
+    estimatedFinancialExposure: Math.max(0, gatewayNumber(data.estimatedFinancialExposure)),
+    issueSummary: gatewayText(data.issueSummary, 5000),
+    priority: gatewayText(data.priority, 30) || "Normal",
+    status: "new",
+    assignmentStatus: "unassigned",
+    proposedDestination: "",
+    documents: gatewayDocuments(data.documents),
+    supportingDocuments: gatewayFiles(data.supportingDocuments),
+    guidedSupportConsent: true,
+    guidedSupportConsentAt: consentAt,
+    gatewayVersion: "1.0",
+    submissionDate: now,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const result = await db.runTransaction(async transaction => {
+    const existing = await transaction.get(caseRef);
+    if (existing.exists) {
+      return { duplicate: true, gatewayReference: existing.data().gatewayReference };
+    }
+    transaction.create(caseRef, preparedCase);
+    return { duplicate: false, gatewayReference };
+  });
+
+  return { accepted: true, ...result };
+});
+
+exports.gatewayAdminListPreparedCases = onCall(async request => {
+  requirePlatformAdmin(request);
+  const snapshot = await db.collection(GATEWAY_COLLECTION)
+    .orderBy("createdAt", "desc")
+    .limit(500)
+    .get();
+  return {
+    cases: snapshot.docs.map(document => ({ id: document.id, ...document.data() })),
+    gatewayVersion: "1.0"
+  };
+});
+
+exports.gatewayAdminUpdatePreparedCase = onCall(async request => {
+  requirePlatformAdmin(request);
+  const data = request.data || {};
+  const caseId = gatewayText(data.caseId, 80);
+  const action = gatewayText(data.action, 50).toLowerCase();
+  const note = gatewayText(data.note, 4000);
+  const destination = gatewayText(data.destination, 80);
+  if (!caseId || !GATEWAY_V1_ACTIONS.has(action)) {
+    throw new HttpsError("invalid-argument", "A valid Prepared Case and action are required.");
+  }
+  if (action === "add-note" && !note) {
+    throw new HttpsError("invalid-argument", "Enter an internal note.");
+  }
+  if (action === "ready-for-assignment" && !GATEWAY_V1_DESTINATIONS.has(destination)) {
+    throw new HttpsError("invalid-argument", "Select an approved Version 1 destination.");
+  }
+
+  const caseRef = db.collection(GATEWAY_COLLECTION).doc(caseId);
+  const auditRef = caseRef.collection("audit").doc();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const statusByAction = {
+    review: "reviewed",
+    approve: "qualified",
+    decline: "closed",
+    "request-more-information": "awaiting-qualification",
+    "assign-later": "awaiting-assignment",
+    "ready-for-assignment": "ready-for-assignment"
+  };
+
+  await db.runTransaction(async transaction => {
+    const snapshot = await transaction.get(caseRef);
+    if (!snapshot.exists) throw new HttpsError("not-found", "Prepared Case not found.");
+    const current = snapshot.data();
+    const update = {
+      updatedAt: now,
+      updatedBy: request.auth.uid
+    };
+    if (statusByAction[action]) update.status = statusByAction[action];
+    if (action === "decline") update.qualificationOutcome = "declined";
+    if (action === "approve") update.qualificationOutcome = "approved";
+    if (action === "ready-for-assignment") {
+      update.assignmentStatus = "ready-for-assignment";
+      update.proposedDestination = destination;
+      update.assignmentPreparedAt = now;
+      update.assignmentPreparedBy = request.auth.uid;
+    }
+    if (note) {
+      update.lastInternalNote = note;
+      update.lastInternalNoteAt = now;
+      update.lastInternalNoteBy = request.auth.uid;
+    }
+    transaction.update(caseRef, update);
+    transaction.create(auditRef, {
+      action,
+      fromStatus: current.status || "new",
+      toStatus: update.status || current.status || "new",
+      destination: action === "ready-for-assignment" ? destination : "",
+      note,
+      actorUid: request.auth.uid,
+      createdAt: now,
+      gatewayVersion: "1.0",
+      crmRecordCreated: false
+    });
+  });
+
+  return {
+    success: true,
+    status: statusByAction[action] || null,
+    assignmentStatus: action === "ready-for-assignment" ? "ready-for-assignment" : null,
+    crmRecordCreated: false
+  };
+});
 
 exports.crm2AdminCreateUser = onCall(async request => {
   if (!request.auth || request.auth.token.platformAdmin !== true) {
