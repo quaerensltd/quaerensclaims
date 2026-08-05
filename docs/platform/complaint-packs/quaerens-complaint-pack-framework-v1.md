@@ -565,9 +565,8 @@ Every new implementation must pass regression against every certified Framework 
 
 - Airbnb Complaint Pack Builder Version 4;
 - Free Section 75 Complaint Pack Builder;
-- Free Holiday Compensation Complaint Pack Builder.
-
-Free Flight Claim joins this certified set only after the complete Version 1.4 browser, document, accessibility, responsive and four-builder regression gates pass.
+- Free Holiday Compensation Complaint Pack Builder;
+- Free Flight Claim Complaint Pack Builder.
 
 All later certified builders join this regression set. A new builder is not complete if an existing implementation is damaged. Certification is never automatic: every configured builder must pass the acceptance rule independently.
 
