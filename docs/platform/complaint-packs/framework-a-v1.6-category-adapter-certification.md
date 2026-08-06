@@ -13,3 +13,7 @@ Legacy category source modules remain as regression and rollback/reference mater
 Local acceptance recorded: adapter allow-list tests, shared QCBF regression, both category suites, all seven Framework A routes with twelve pages, Applicant Details, metrics, no legacy mount and no horizontal overflow.
 
 Production deployment and live acceptance must be appended before this is treated as the final live production record.
+
+## Complex-category layout refinement
+
+Car Finance certifies the backward-compatible declarative `complex` presentation profile. The profile is selected in category configuration and consumed generically by the shared runtime. It provides a wider desktop form column, reusable field-span metadata and grouped question headings while retaining the single shared workflow, preview, twelve-page document model, output engines, accessibility behaviour and responsive shell. Every other certified category continues to default to the unchanged `standard` profile. No URL, builder-name or Car Finance presentation branch exists in the runtime.

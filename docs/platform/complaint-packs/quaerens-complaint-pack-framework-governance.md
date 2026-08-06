@@ -13,7 +13,7 @@ Applicant Details™ and the Unique Complaint Pack Reference™ are mandatory sh
 
 Anonymous Platform Metrics™ is a permanent shared Framework A capability. Categories must inherit the single allow-listed runtime and may not create separate counters or analytics systems. Aggregate metrics remain operationally and technically separate from Framework C, Framework D, applicant information and Complaint Pack content.
 
-The Version 1.6 declarative category and governed adapter contracts are mandatory. Specialist adapters are allow-listed, category-scoped and cannot replace shared UI, preview, output, metrics or Framework C behaviour. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category extensions may provide approved subject-specific questions, scoring, analysis, wording, guidance and document composition, but must not create a second builder, preview or document engine.
+The Version 1.6 declarative category and governed adapter contracts are mandatory. Specialist adapters are allow-listed, category-scoped and cannot replace shared UI, preview, output, metrics or Framework C behaviour. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category extensions may provide approved subject-specific questions, scoring, analysis, wording, guidance and document composition, but must not create a second builder, preview or document engine. A category may opt into an approved shared presentation-density profile through configuration; profiles may alter responsive field spans and column proportions only and must never branch by URL or builder name.
 
 Do not approach a category as another webpage, form or standalone Complaint Pack. Extend the existing framework.
 
@@ -140,7 +140,7 @@ Removing Airbnb-specific page styles must not break Airbnb, Section 75, Free Hol
 
 Every new Framework A implementation is visually and structurally compared against the current Airbnb reference implementation.
 
-Allowed differences are limited to product name, category questions, evidence catalogue, financial terminology, complaint logic, generated wording, official guidance and category-specific content. Workflow, navigation, shell proportions, preview layout, controls, spacing system, responsive behaviour, accessibility patterns, document structure and outputs must remain framework-identical.
+Allowed differences are limited to product name, category questions, evidence catalogue, financial terminology, complaint logic, generated wording, official guidance, category-specific content and an explicitly configured shared presentation-density profile. Workflow, navigation, shell implementation, preview implementation, controls, spacing system, responsive breakpoints, accessibility patterns, document structure and outputs must remain framework-identical.
 
 ### 5. Live visual acceptance
 

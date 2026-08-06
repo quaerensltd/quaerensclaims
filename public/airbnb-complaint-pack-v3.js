@@ -5,6 +5,9 @@
   const builderId = root.dataset.qcbBuilder;
   const category = window.QCBFrameworkACategories && window.QCBFrameworkACategories.get(builderId);
   if (!category) throw new Error(`Unsupported Framework A category: ${builderId}`);
+  const layoutProfile = category.layoutProfile || "standard";
+  if (!["standard", "complex"].includes(layoutProfile)) throw new Error(`Unsupported Framework A layout profile: ${layoutProfile}`);
+  root.dataset.qcbLayoutProfile = layoutProfile;
   const isSection75 = builderId === "section75";
   const isHoliday = builderId === "holiday";
   const isFlight = builderId === "flight";

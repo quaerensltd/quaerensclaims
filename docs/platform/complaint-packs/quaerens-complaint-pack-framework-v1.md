@@ -24,6 +24,8 @@ Lost Luggage retains its established URL, landing experience, educational author
 
 Every category is registered once in `public/complaint-builder/config/framework-a-categories-v1.4.js`. The configuration declares the builder identifier, local-storage key, anonymous-metrics identifier, financial field mapping, chronology categories and evidence catalogue. The shared runtime consumes that contract; category pages must not duplicate evidence, chronology, financial, preview or export engines.
 
+The same declarative contract may opt a genuinely dense category into the shared `complex` presentation profile. The default is `standard`. The profile changes only responsive field spans and form/preview proportions inside the one shared shell; it cannot replace workflow, components, state, preview, documents, outputs, accessibility or privacy behaviour. Builder-name and route-based presentation branches are prohibited. Car Finance is the certification implementation for this backward-compatible v1.6 capability.
+
 Airbnb, Section 75, Holiday Compensation, Flight, Lost Luggage, Car Finance and Cruise Compensation are the configured implementations through Version 1.6. Airbnb remains the visual and behavioural reference. Flight certified the declarative extension contract; Lost Luggage certifies that a previously specialist evidence and document workflow can move behind that contract without activating a second runtime.
 
 Flight-only external services are connected through thin shared adapters. The Flight lookup adapter delegates to the existing protected lookup module, and the compensation adapter delegates to the existing Flight analysis and compensation engine. Manual correction remains available. Adapters may map fields and present results, but must not reproduce protected calculations or create an alternative document runtime.
@@ -241,6 +243,10 @@ The common structure includes:
 A category may adapt a page title or page content only where the subject genuinely requires it. It must retain the same documentary hierarchy and output quality. Adding or removing pages requires a documented framework decision, not an undocumented category change.
 
 ## 6. Category configuration points
+
+### Presentation density profile
+
+`layoutProfile` is optional and defaults to `standard`. The only additionally approved value is `complex`, for categories whose dense financial and agreement fields require a wider form column and reusable full-, half-, third- and two-thirds-width spans. A profile is presentation metadata, not a separate template or runtime. All profiles must use the same DOM shell, controls, navigation, preview and output engines and must converge to the shared stacked layout at tablet and mobile widths.
 
 Category implementations may define only:
 

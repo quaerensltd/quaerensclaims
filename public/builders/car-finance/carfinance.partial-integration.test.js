@@ -16,6 +16,11 @@ const { SECTION_NAMES, toDocumentModel } = require("./carfinance.document-adapte
 const { SUPPORTED_EXPORTS, canExport, describeExportSupport, createExportManifest } = require("./carfinance.export-adapter");
 const { registry } = require("../../complaint-builder/registry");
 
+const categorySource = fs.readFileSync(path.join(__dirname, "../../complaint-builder/config/framework-a-categories-v1.4.js"), "utf8");
+const runtimeSource = fs.readFileSync(path.join(__dirname, "../../airbnb-complaint-pack-v3.js"), "utf8");
+const applicantSource = fs.readFileSync(path.join(__dirname, "../../complaint-builder/components/applicant-details.js"), "utf8");
+const frameworkCss = fs.readFileSync(path.join(__dirname, "../../complaint-builder/styles/framework-v1-builder.css"), "utf8");
+
 const pagePath = path.join(__dirname, "../../car-finance.html");
 const page = fs.readFileSync(pagePath, "utf8");
 
@@ -97,6 +102,16 @@ assert.strictEqual(createExportManifest(ref).packReference, ref, "export manifes
 
 assert.ok(page.includes('<meta charset="UTF-8"'), "page declares UTF-8");
 assert.ok(page.includes("complaintPackReference") || page.includes("applicant-details.js"), "page inherits QCP reference wiring");
+assert.ok(categorySource.includes('id: "car-finance", adapter: "car-finance", layoutProfile: "complex"'), "Car Finance opts into the declarative complex layout profile");
+assert.ok(runtimeSource.includes('category.layoutProfile || "standard"'), "shared runtime resolves the declared layout profile");
+assert.ok(runtimeSource.includes("root.dataset.qcbLayoutProfile = layoutProfile"), "shared runtime exposes the profile to the shared shell");
+assert.ok(!runtimeSource.includes('builderId === "car-finance"'), "shared runtime contains no Car Finance layout branch");
+assert.ok(!runtimeSource.includes("car-finance.html"), "shared runtime contains no Car Finance route branch");
+assert.ok(applicantSource.includes('data-qcb-span="two-thirds"'), "shared Applicant Details exposes reusable field-span metadata");
+assert.ok(frameworkCss.includes('[data-qcb-layout-profile="complex"].qcb-builder-wrap'), "shared stylesheet defines the opt-in complex profile");
+assert.ok(frameworkCss.includes('[data-qcb-layout-profile="complex"] .qcb-group-heading'), "complex profile includes reusable section-heading treatment");
+assert.ok(page.includes('class="qcb-group-heading"'), "Car Finance groups dense fields into readable sections");
+assert.ok(page.includes('data-qcb-span="full"'), "Car Finance declares full-width fields where the content requires it");
 
 const ids = [...page.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
