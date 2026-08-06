@@ -92,7 +92,6 @@ The production page is not a QCBF shell rendering a modular Car Finance builder.
 Current relevant files:
 
 - `public/car-finance.html` - live standalone Car Finance builder page
-- `public/car-finance2.html` - older/development copy, not the current production page
 - `public/car-finance-premium-pack.html` - related premium pack page
 - `public/builders/car-finance/config.json` - minimal QCBF registry config
 - `public/data/lenders.json` - lender directory used by the Car Finance page
