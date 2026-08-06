@@ -23,7 +23,8 @@ assert.strictEqual((page.match(/id="cruise-passenger-rights"/g) || []).length, 1
 assert.ok(page.includes('<a href="#cruise-builder" class="pill primary">Build My Cruise Pack</a>'), "header CTA targets the builder");
 assert.ok(page.includes('<a href="#cruise-builder" class="cruise-button cruise-button-primary">Go and Build My Free Pack</a>'), "primary landing CTA targets the builder");
 assert.ok(page.includes('<a href="#cruise-passenger-rights" class="cruise-button cruise-button-secondary">Learn More About Your Cruise Passenger Rights</a>'), "secondary landing CTA targets passenger rights");
-assert.ok(page.includes('id="cruise-rights-title"'), "rights anchor exposes a meaningful heading");
+assert.ok(page.includes('<div class="section" id="cruise-passenger-rights" aria-labelledby="cruise-rights-guide-title">'), "rights anchor targets the substantive guidance section");
+assert.ok(page.includes('<h2 id="cruise-rights-guide-title">What This Cruise Builder Covers</h2>'), "rights target exposes a meaningful guidance heading");
 assert.ok(page.includes('#cruise-builder,#cruise-passenger-rights { scroll-margin-top: 104px; }'), "sticky-header anchor offset is retained");
 assert.ok(page.includes('html { scroll-padding-top: 104px; }'), "page-level anchor offset protects targets from the sticky header");
 assert.ok(page.includes('id="cruise-builder-compat"'), "builder compatibility anchor is retained");
