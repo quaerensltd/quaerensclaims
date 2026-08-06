@@ -1,6 +1,6 @@
-# Quaerens Complaint Pack Framework™ v1.4
+# Quaerens Complaint Pack Framework™ v1.5
 
-Framework version: **1.4** — Declarative Category Extension Contract
+Framework version: **1.5** — Baggage Category Extension
 Status: Permanent product architecture standard  
 Reference implementation: Airbnb Complaint Pack Builder Version 4  
 Framework owner: The Quaerens Platform™  
@@ -8,13 +8,19 @@ Effective date: 5 August 2026
 
 ## 1. Purpose
 
-The Quaerens Complaint Pack Framework™ v1.4 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+The Quaerens Complaint Pack Framework™ v1.5 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+
+### Version 1.5 baggage extension
+
+Version 1.5 adds Lost Luggage as a first-class declarative category. It extends the existing contract with baggage-specific questions, evidence scoring, journey analysis, complaint wording, official guidance and 12-page output composition while retaining one shared shell, state model, chronology, evidence, financial, preview and export runtime. The former baggage page controller, tabbed preview and document runtime are not loaded by the public Lost Luggage route.
+
+Lost Luggage retains its established URL, landing experience, educational authority and anchors. Its operational builder inherits Applicant Details™, the Unique Complaint Pack Reference™, Evidence Readiness, Complaint Pack Quality, Help the Next Person™ and Anonymous Platform Metrics™ from the shared framework.
 
 ### Version 1.4 declarative category contract
 
 Every category is registered once in `public/complaint-builder/config/framework-a-categories-v1.4.js`. The configuration declares the builder identifier, local-storage key, anonymous-metrics identifier, financial field mapping, chronology categories and evidence catalogue. The shared runtime consumes that contract; category pages must not duplicate evidence, chronology, financial, preview or export engines.
 
-Airbnb, Section 75, Holiday Compensation and Flight are the Version 1.4 configured implementations. Airbnb remains the visual and behavioural reference. Flight is the certification implementation for the extension contract and preserves its established public route, FreeFlightClaim identity, authority content and SEO while using the same shared shell, case model and output runtime.
+Airbnb, Section 75, Holiday Compensation, Flight and Lost Luggage are the configured implementations through Version 1.5. Airbnb remains the visual and behavioural reference. Flight certified the declarative extension contract; Lost Luggage certifies that a previously specialist evidence and document workflow can move behind that contract without activating a second runtime.
 
 Flight-only external services are connected through thin shared adapters. The Flight lookup adapter delegates to the existing protected lookup module, and the compensation adapter delegates to the existing Flight analysis and compensation engine. Manual correction remains available. Adapters may map fields and present results, but must not reproduce protected calculations or create an alternative document runtime.
 
@@ -453,7 +459,7 @@ Before release:
 
 ## 16. Versioning rules
 
-This document establishes **Quaerens Complaint Pack Framework™ v1.4**.
+This document establishes **Quaerens Complaint Pack Framework™ v1.5**.
 
 Versioning rules:
 
@@ -567,6 +573,7 @@ Every new implementation must pass regression against every certified Framework 
 - Free Section 75 Complaint Pack Builder;
 - Free Holiday Compensation Complaint Pack Builder;
 - Free Flight Claim Complaint Pack Builder.
+- Free Lost Luggage Compensation Complaint Pack Builder.
 
 All later certified builders join this regression set. A new builder is not complete if an existing implementation is damaged. Certification is never automatic: every configured builder must pass the acceptance rule independently.
 
@@ -578,4 +585,4 @@ A Framework A builder is complete only when its shared CSS is self-contained, it
 
 Do not build another standalone Complaint Pack Builder.
 
-Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.4.
+Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.5.

@@ -11,8 +11,8 @@ const admin = read("public/admin-centre.html");
 const privacy = read("public/privacy.html");
 const forbidden = ["applicantFirstName", "applicantEmail", "applicantTelephone", "complaintPackReference", "bookingRef", "refundOutstanding", "issueDetails"];
 
-assert.match(config, /FRAMEWORK_A_VERSION = "1\.4"/);
-assert.match(config, /airbnb[\s\S]*section75[\s\S]*holiday-compensation[\s\S]*flight-claim/);
+assert.match(config, /FRAMEWORK_A_VERSION = "1\.5"/);
+assert.match(config, /airbnb[\s\S]*section75[\s\S]*holiday-compensation[\s\S]*flight-claim[\s\S]*lost-luggage/);
 for (const event of ["pack_started","pack_completed","pdf_downloaded","word_downloaded","txt_downloaded","print_selected","complaint_letter_copied","cover_email_copied","guided_support_clicked","honest_review_clicked","share_tool_clicked"]) assert.ok(config.includes(event), event);
 assert.match(runtime, /JSON\.stringify\(\{ data: \{ builder, event, frameworkVersion: FRAMEWORK_A_VERSION, deviceClass:/);
 for (const field of forbidden) assert.ok(!runtime.includes(field), `public metrics runtime excludes ${field}`);
@@ -25,4 +25,4 @@ assert.match(backend, /requirePlatformAdmin\(request\)/); assert.match(rules, /m
 assert.ok(!backend.match(/FRAMEWORK_A_METRICS_COLLECTION[\s\S]{0,600}(CRM2|intakeGatewayPreparedCases)/));
 assert.match(dashboard, /Today/); assert.match(dashboard, /Yesterday/); assert.match(dashboard, /Last 7 Days/); assert.match(dashboard, /Last 30 Days/); assert.match(dashboard, /Custom Date Range/);
 assert.match(dashboard, /platformAdmin/); assert.match(admin, /framework-a-metrics\.html/); assert.match(privacy, /Anonymous Complaint Pack usage totals/);
-console.log("Framework A Anonymous Platform Metrics v1.4 static privacy and architecture checks passed.");
+console.log("Framework A Anonymous Platform Metrics v1.5 static privacy and architecture checks passed.");

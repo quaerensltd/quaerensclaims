@@ -1,6 +1,6 @@
 # Quaerens Complaint Pack Framework™ — Master Governance Directive
 
-Current framework version: **1.4**
+Current framework version: **1.5**
 Status: Permanent platform standard  
 Authority: The Quaerens Platform™  
 Product specification: `docs/platform/complaint-packs/quaerens-complaint-pack-framework-v1.md`
@@ -13,7 +13,7 @@ Applicant Details™ and the Unique Complaint Pack Reference™ are mandatory sh
 
 Anonymous Platform Metrics™ is a permanent shared Framework A capability. Categories must inherit the single allow-listed runtime and may not create separate counters or analytics systems. Aggregate metrics remain operationally and technically separate from Framework C, Framework D, applicant information and Complaint Pack content.
 
-The Version 1.4 declarative category contract is mandatory. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category adapters may translate data into an approved existing specialist service, but must not duplicate the service calculation or create a second builder or document engine.
+The Version 1.5 declarative category contract is mandatory. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category extensions may provide approved subject-specific questions, scoring, analysis, wording, guidance and document composition, but must not create a second builder, preview or document engine.
 
 Do not approach a category as another webpage, form or standalone Complaint Pack. Extend the existing framework.
 
@@ -172,12 +172,14 @@ Framework A is currently validated across:
 - Airbnb Complaint Pack Builder Version 4;
 - Free Section 75 Complaint Pack Builder;
 - Free Holiday Compensation Complaint Pack Builder.
+- Free Flight Claim Complaint Pack Builder;
+- Free Lost Luggage Compensation Complaint Pack Builder.
 
 Certification is not inherited automatically. Every later configured builder must pass this acceptance rule independently before it may be described as certified, compliant or production-ready.
 
 ## Versioning
 
-Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.3.
+Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.5.
 
 Shared changes increment the framework version and require documentation, approval and regression. Category-only changes increment only the category version and must not silently alter the framework.
 

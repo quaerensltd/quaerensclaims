@@ -8,10 +8,10 @@ let passed=0;const check=(condition,label)=>{if(!condition)throw new Error(label
  [html.includes("qcb-framework-v1 qcb-airbnb-builder"),"shared Framework shell"],
  [html.includes("qcb-airbnb-shell")&&html.includes("qcb-airbnb-stage")&&html.includes("qcb-airbnb-preview"),"shared DOM contract"],
  [!html.includes('id="legacy-flight-builder"')&&!html.includes("application/x-obsolete")&&!html.includes('id="flight-tool-legacy"'),"legacy DOM and runtime removed"],
- [html.includes("framework-a-categories-v1.4.js")&&html.includes("airbnb-complaint-pack-v3.js?v=1.4.0"),"single v1.4 runtime path"],
+ [html.includes("framework-a-categories-v1.4.js?v=1.5.0")&&html.includes("airbnb-complaint-pack-v3.js?v=1.5.0"),"single current shared runtime path"],
  [html.includes("applicant-details.js"),"Applicant Details inherited"],
  [runtime.includes("complaintPackReference")&&html.includes("12-page pack"),"QCP identity and 12-page pack"],
- [runtime.includes("frameworkVersion: window.QCBFrameworkACategories.version"),"v1.4 metadata inherited"],
+ [runtime.includes("frameworkVersion: window.QCBFrameworkACategories.version"),"current framework metadata inherited"],
  [runtime.includes("help-the-next-person.js"),"Help the Next Person inherited"],
  [runtime.includes("framework-a-metrics.js")&&metrics.includes('"flight-claim"'),"anonymous metrics inherited"],
  [config.includes('flight: {')&&config.includes('metricsId: "flight-claim"'),"declarative Flight configuration"],
@@ -33,4 +33,4 @@ let passed=0;const check=(condition,label)=>{if(!condition)throw new Error(label
 ].forEach(([condition,label])=>check(condition,label));
 const titles=["Flight Claim Complaint File","Executive Summary","Flight and Journey Summary","Chronology","Supporting Evidence","Financial Impact","Formal Complaint Letter","Cover Email","Submission Checklist","Response Tracker","Official Guidance & Routes","Quaerens Notes"];
 titles.forEach(title=>check(runtime.includes(title),`document page: ${title}`));
-console.log(`Flight Framework A v1.4 static checks passed (${passed}/${passed}).`);
+console.log(`Flight Framework A shared-runtime static checks passed (${passed}/${passed}).`);

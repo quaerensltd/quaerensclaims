@@ -74,7 +74,7 @@ Every product below is a configured route through Framework A. It must reuse the
 | Free Flight Claim | High | High-volume, rules-led consumer support | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
 | Car Finance | High | Significant consumer and professional-support potential | Free DIY; commercial journey via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
 | Train Delay | Medium | Consumer utility and category expansion | Free DIY | Planned | Framework A; route configuration | TBD | TBD |
-| Lost Luggage | Medium | Travel-category extension and Guided Support potential | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; route configuration | TBD | TBD |
+| Lost Luggage | Medium | Travel-category extension and Guided Support potential | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.5 declarative baggage extension; full regression | Category v1 / Framework A v1.5 | Completed |
 | Cruise Compensation | Medium | Travel-category extension | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; route configuration | TBD | TBD |
 | Parking Appeal | Medium | High-frequency consumer self-help | Free DIY | Planned | Framework A; route configuration | TBD | TBD |
 | Energy Switch | Medium | Household-service consumer support | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; route configuration | TBD | TBD |
