@@ -1,7 +1,27 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const documents = require("./holiday.documents");
+
+const page = fs.readFileSync(path.join(__dirname, "../../freeholidaycompensation.html"), "utf8");
+const landingIndex = page.indexOf('class="holiday-landing"');
+const builderIndex = page.indexOf('id="holiday-tool"');
+const rightsIndex = page.indexOf('id="holiday-rights"');
+assert.ok(landingIndex >= 0 && builderIndex > landingIndex && rightsIndex > builderIndex, "landing, builder and educational content use the approved order");
+assert.strictEqual((page.match(/class="holiday-reassurance"/g) || []).length, 1, "one reassurance component is rendered");
+assert.strictEqual((page.match(/<article>/g) || []).length, 4, "landing renders exactly four reassurance cards");
+assert.ok(page.includes('/images/framework-a/upheroholidaycompensation.png'), "approved Holiday hero asset is used");
+assert.ok(page.includes('/images/framework-a/upheroholidaycompensationbooklet.png'), "approved Holiday booklet asset is used");
+assert.ok(page.includes('<img class="logo" src="/images/quaerens-logo.png" alt="Quaerens"'), "standard Quaerens logo is used");
+assert.ok(page.includes('href="#holiday-tool">Build My Holiday Pack</a>'), "header CTA targets the Holiday builder");
+assert.ok(page.includes('href="#holiday-tool" class="holiday-button holiday-button-primary">Go and Build My Free Pack</a>'), "primary landing CTA targets the Holiday builder");
+assert.ok(page.includes('href="#holiday-rights" class="holiday-button holiday-button-secondary">Learn More About Your Holiday Rights</a>'), "secondary CTA targets existing Holiday guidance");
+assert.ok(!page.includes('<section class="hero">'), "legacy photographic hero is no longer active");
+assert.ok(!page.includes("Upload"), "landing does not describe evidence upload");
+const pageIds = [...page.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+assert.deepStrictEqual(pageIds.filter((id, index) => pageIds.indexOf(id) !== index), [], "Holiday page contains no duplicate IDs");
 
 const scenario = {
   packReference: "QH-2026-ABC123",
