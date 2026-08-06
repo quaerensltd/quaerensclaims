@@ -11,6 +11,26 @@ const documents = require("./cruise.documents");
 
 const page = fs.readFileSync(path.join(__dirname, "../../cruise-compensation-recovery.html"), "utf8");
 
+const landingIndex = page.indexOf('class="cruise-landing"');
+const builderIndex = page.indexOf('id="cruise-builder"');
+const rightsIndex = page.indexOf('id="cruise-passenger-rights"');
+const generalInformationIndex = page.indexOf("What This Cruise Builder Covers");
+assert.ok(landingIndex >= 0 && builderIndex > landingIndex, "shared builder follows the approved landing experience");
+assert.ok(rightsIndex > builderIndex, "passenger-rights guide follows the shared builder");
+assert.ok(generalInformationIndex > rightsIndex, "general Cruise information remains after the rights heading");
+assert.strictEqual((page.match(/id="cruise-builder"/g) || []).length, 1, "builder anchor is unique");
+assert.strictEqual((page.match(/id="cruise-passenger-rights"/g) || []).length, 1, "passenger-rights anchor is unique");
+assert.ok(page.includes('<a href="#cruise-builder" class="pill primary">Build My Cruise Pack</a>'), "header CTA targets the builder");
+assert.ok(page.includes('<a href="#cruise-builder" class="cruise-button cruise-button-primary">Go and Build My Free Pack</a>'), "primary landing CTA targets the builder");
+assert.ok(page.includes('<a href="#cruise-passenger-rights" class="cruise-button cruise-button-secondary">Learn More About Your Cruise Passenger Rights</a>'), "secondary landing CTA targets passenger rights");
+assert.ok(page.includes('id="cruise-rights-title"'), "rights anchor exposes a meaningful heading");
+assert.ok(page.includes('#cruise-builder,#cruise-passenger-rights { scroll-margin-top: 104px; }'), "sticky-header anchor offset is retained");
+assert.ok(page.includes('html { scroll-padding-top: 104px; }'), "page-level anchor offset protects targets from the sticky header");
+assert.ok(page.includes('id="cruise-builder-compat"'), "builder compatibility anchor is retained");
+assert.ok(page.includes('id="evidence"'), "historical evidence anchor is retained");
+const pageIds = [...page.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+assert.deepStrictEqual(pageIds.filter((id, index) => pageIds.indexOf(id) !== index), [], "Cruise page contains no duplicate IDs");
+
 assert.strictEqual(config.migrationStatus, "Native QCBF builder - production");
 assert.strictEqual(config.builderVersion, "1.0");
 assert.ok(page.includes('<meta charset="UTF-8">'), "UTF-8 meta missing");
