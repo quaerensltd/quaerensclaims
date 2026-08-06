@@ -13,7 +13,7 @@ Applicant Details™ and the Unique Complaint Pack Reference™ are mandatory sh
 
 Anonymous Platform Metrics™ is a permanent shared Framework A capability. Categories must inherit the single allow-listed runtime and may not create separate counters or analytics systems. Aggregate metrics remain operationally and technically separate from Framework C, Framework D, applicant information and Complaint Pack content.
 
-The Version 1.5 declarative category contract is mandatory. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category extensions may provide approved subject-specific questions, scoring, analysis, wording, guidance and document composition, but must not create a second builder, preview or document engine.
+The Version 1.6 declarative category and governed adapter contracts are mandatory. Specialist adapters are allow-listed, category-scoped and cannot replace shared UI, preview, output, metrics or Framework C behaviour. Every category must register through the single frozen configuration source and consume the shared shell, state, chronology, evidence, financial, preview and export runtime. Category extensions may provide approved subject-specific questions, scoring, analysis, wording, guidance and document composition, but must not create a second builder, preview or document engine.
 
 Do not approach a category as another webpage, form or standalone Complaint Pack. Extend the existing framework.
 
@@ -179,7 +179,7 @@ Certification is not inherited automatically. Every later configured builder mus
 
 ## Versioning
 
-Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.5.
+Airbnb Complaint Pack Builder Version 4 is the Quaerens Complaint Pack Framework™ reference implementation. The current shared framework version is v1.6.
 
 Shared changes increment the framework version and require documentation, approval and regression. Category-only changes increment only the category version and must not silently alter the framework.
 

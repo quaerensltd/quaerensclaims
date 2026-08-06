@@ -24,6 +24,10 @@ If a framework change appears necessary, do not change it silently. Explain the 
 
 Every new builder or approved shared change must pass Airbnb regression and must not break Section 75, Holiday Park, Spray Foam, Solar or any other framework implementation.
 
+## Framework A v1.6 category adapters
+
+Specialist categories must use the governed allow-listed Category Adapter Contract. Adapters may supply only category-scoped calculations, quality/completion decisions, analysis, complaint and cover-email wording, guidance and twelve-page content. They must never mount or replace the shared shell, navigation, preview, output engines, metrics or Framework C boundary. Adding an adapter category or hook remains a shared-framework change requiring explicit approval.
+
 ## Framework A production acceptance
 
 A configured Complaint Pack Builder is not complete or production-ready until it passes the permanent Framework A Acceptance Rule in both authoritative Complaint Pack documents. In particular, it must use the self-contained shared Framework A stylesheet and approved DOM contract (`qcb-framework-v1`, `qcb-airbnb-shell`, `qcb-airbnb-stage`, `qcb-airbnb-preview`, `qcb-step-map` and `qcb-form-grid`, where applicable), without hidden category-specific layout dependencies.

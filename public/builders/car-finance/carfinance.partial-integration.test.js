@@ -75,18 +75,28 @@ assert.ok(describeExportSupport().formats.includes("pdf"), "export descriptor in
 assert.strictEqual(createExportManifest(ref).packReference, ref, "export manifest records pack reference");
 
 [
+  'data-qcb-builder="car-finance"',
+  'data-qcb-version="4"',
+  "framework-a-category-adapters-v1.6.js",
+  "framework-a-car-finance-adapter-v1.6.js",
+  "applicant-details.js",
+  "airbnb-complaint-pack-v3.js?v=1.6.0",
+  "data-qcb-preview",
+  "data-qcb-download-pdf",
+  "data-qcb-download-word",
+  "data-qcb-download-txt"
+].forEach((marker) => assert.ok(page.includes(marker), `Framework A v1.6 marker present: ${marker}`));
+
+[
   "function calcAgreement",
   "function redressMode",
-  "function pathwayAssessment",
-  "function buildLenderSubmissionDetails",
-  "CAR_FINANCE_STATUS_CONFIG"
-].forEach((marker) => assert.ok(page.includes(marker), `specialist marker retained: ${marker}`));
+  "CAR_FINANCE_STATUS_CONFIG",
+  "window.jspdf",
+  "quaerensCarFinanceToolDraftV1"
+].forEach((marker) => assert.ok(!page.includes(marker), `legacy live runtime retired: ${marker}`));
 
 assert.ok(page.includes('<meta charset="UTF-8"'), "page declares UTF-8");
-assert.ok(page.includes("CAR_FINANCE_QCBF_META"), "page includes partial QCBF metadata");
-assert.ok(page.includes("packReference"), "page includes pack reference wiring");
-assert.ok(page.includes("qcbf:car-finance:1:draft"), "page uses QCBF draft key");
-assert.ok(page.includes("quaerensCarFinanceToolDraftV1"), "page preserves legacy draft compatibility");
+assert.ok(page.includes("complaintPackReference") || page.includes("applicant-details.js"), "page inherits QCP reference wiring");
 
 const ids = [...page.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
@@ -104,4 +114,4 @@ scripts.forEach((script, index) => {
   assert.doesNotThrow(() => new Function(script), `inline script ${index + 1} parses`);
 });
 
-console.log("Car Finance QCBF partial integration tests passed");
+console.log("Car Finance Framework A v1.6 migration tests passed");

@@ -9,6 +9,9 @@
   const isHoliday = builderId === "holiday";
   const isFlight = builderId === "flight";
   const isBaggage = builderId === "baggage";
+  const adapterRegistry = window.QCBFrameworkACategoryAdapters;
+  const adapter = category.adapter ? adapterRegistry && adapterRegistry.get(category.id) : null;
+  if (category.adapter && !adapter) throw new Error(`Missing allow-listed Framework A adapter: ${category.id}`);
 
   const form = root.querySelector(".qcb-form");
   const $ = (selector) => root.querySelector(selector);
@@ -48,7 +51,7 @@
     const available = evidenceItems.filter(([key]) => evidence[key] === "available").length;
     const relevant = evidenceItems.filter(([key]) => evidence[key] !== "na").length;
     const score = relevant ? Math.round((available / relevant) * 100) : 0;
-    return {
+    const data = {
       f,
       issues: checked("issue"),
       routes: checked("route"),
@@ -57,9 +60,16 @@
       bookingPosition, extra, total: (statedOutstanding || bookingPosition) + extra,
       metadata: { frameworkVersion: window.QCBFrameworkACategories.version, complaintPackReference: f.complaintPackReference, applicantDetails: { title: f.applicantTitle, firstName: f.applicantFirstName, lastName: f.applicantLastName, addressLine1: f.applicantAddress1, addressLine2: f.applicantAddress2, city: f.applicantCity, county: f.applicantCounty, postcode: f.applicantPostcode, country: f.applicantCountry, email: f.applicantEmail, telephone: f.applicantTelephone, preferredContact: f.preferredContact, jointComplaint: f.jointComplaint === "yes", jointApplicant: f.jointComplaint === "yes" ? { title: f.jointTitle, firstName: f.jointFirstName, lastName: f.jointLastName, email: f.jointEmail, telephone: f.jointTelephone, address: f.jointAddressDifferent === "yes" ? f.jointAddress : "Same as primary applicant" } : null } }
     };
+    if (adapter && adapter.deriveFinancials) Object.assign(data, adapter.deriveFinancials(data, adapterContext()));
+    return data;
+  }
+
+  function adapterContext() {
+    return Object.freeze({ esc, text, money, date, rowTable, summaryGrid, applicantNames, applicantAddress, declaration, category });
   }
 
   function qualityScore(d) {
+    if (adapter && adapter.quality) return Math.max(0, Math.min(100, Number(adapter.quality(d, adapterContext())) || 0));
     const completedTimeline = d.timeline.filter((row) => row.date && row.description).length;
     const supportedLosses = d.losses.filter((row) => row.description && Number(row.amount) > 0 && row.evidence).length;
     const checks = isBaggage ? [
@@ -125,6 +135,7 @@
   }
 
   function executiveSummary(d) {
+    if (adapter && adapter.analysis) return adapter.analysis(d, adapterContext());
     if (isBaggage) {
       const issues = d.issues.length ? d.issues.join(", ").toLowerCase() : "the recorded baggage disruption";
       const evidenceAssessment = d.score >= 70 ? "The baggage records are well organised" : d.score >= 40 ? "The available records provide a useful foundation, with missing items identified in the evidence schedule" : "Further baggage tags, airport reports, tracing records, receipts or correspondence would materially improve the file";
@@ -156,6 +167,7 @@
   }
 
   function complaintLetterCore(d) {
+    if (adapter && adapter.complaintLetter) return adapter.complaintLetter(d, adapterContext());
     const f = d.f;
     if (isBaggage) {
       const events = d.timeline.length ? d.timeline.map((event) => `${date(event.date)} — ${text(event.category, "Event")}: ${text(event.description)}`).join("\n") : "A detailed chronology is enclosed in the Complaint Pack.";
@@ -184,6 +196,7 @@
   }
 
   function coverEmailCore(d) {
+    if (adapter && adapter.coverEmail) return adapter.coverEmail(d, adapterContext());
     if (isBaggage) return `Subject: Lost luggage complaint file — ${text(d.f.bookingReference)}\n\nDear Baggage Claims Team,\n\nPlease find attached my structured Lost Luggage Compensation Complaint Pack. It contains the journey and baggage facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and provide the expected response date.\n\nKind regards,\nPassenger`;
     if (isFlight) return `Subject: Flight complaint file — ${text(d.f.flightNumber)} on ${date(d.f.flightDate)}\n\nDear Complaints Team,\n\nPlease find attached my structured Flight Claim Complaint Pack. It contains the journey facts, chronology, supporting-evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and provide the expected response date.\n\nKind regards,\nPassenger`;
     if (isSection75) return `Subject: Section 75 complaint file — ${text(d.f.supplierName)}\n\nDear Complaints Team,\n\nPlease find attached my structured Section 75 Complaint Pack concerning a purchase from ${text(d.f.supplierName)}. It contains the transaction facts, chronology, evidence schedule, financial schedule and formal complaint letter.\n\nPlease acknowledge receipt, confirm the complaint reference and tell me the expected response date.\n\nKind regards,\nCardholder`;
@@ -211,6 +224,7 @@
     const f = d.f;
     const evidenceRows = evidenceItems.map(([key, label, recommendation]) => [label, evidence[key] === "available" ? "Available" : evidence[key] === "na" ? "Not applicable" : "Missing", recommendation]);
     const missing = evidenceRows.filter((row) => row[1] === "Missing").map((row) => row[0]);
+    if (adapter && adapter.pages) return adapter.pages(d, Object.freeze({ ...adapterContext(), evidenceRows, missing, qualityScore: qualityScore(d), qualityLabel: qualityLabel(qualityScore(d)), complaintLetter: complaintLetter(d), coverEmail: coverEmail(d) }));
     if (isBaggage) {
       const guidance = d.routes.length ? d.routes : ["Airline baggage complaint", "Airline ADR where applicable", "Travel insurer", "Civil Aviation Authority information"];
       const baggageSummary = summaryGrid([["Airline",text(f.airline)],["Flight number",text(f.flightNumber)],["Travel date",date(f.travelDate)],["Route",`${text(f.departureAirport)} to ${text(f.arrivalAirport)}`],["Booking reference",text(f.bookingReference)],["Baggage tag",text(f.baggageTag)],["PIR / tracing reference",text(f.pirReference || f.trackingReference)],["Bags affected",text(f.bagsAffected)],["Delayed days",text(f.delayedDays)],["Insurance payment",money(f.insurancePaid)],["Payments received",money(f.paymentsReceived)],["Estimated financial exposure",money(d.total)]]);
@@ -328,10 +342,11 @@
     $("[data-qcb-gauge]").style.width = `${d.score}%`;
     $("[data-qcb-readiness-title]").textContent = `Evidence Readiness: ${d.score}%`;
     $("[data-qcb-readiness-copy]").textContent = d.score >= 70 ? "Your evidence file is well prepared. Check every attachment before submission." : d.score >= 40 ? "A useful foundation is present. Add the missing items where available." : "More supporting records are recommended before submission.";
-    const complete = isBaggage ? Boolean(d.f.airline && d.f.flightNumber && d.f.travelDate && d.f.problemDetails && d.issues.length) : isFlight ? Boolean(d.f.airline && d.f.flightNumber && d.f.flightDate && d.f.actual && d.issues.length) : isSection75 ? Boolean(d.f.supplierName && d.f.cardProvider && d.f.promised && d.f.actual && d.issues.length) : isHoliday ? Boolean(d.f.holidayCompany && d.f.bookingRef && d.f.promised && d.f.actual && d.issues.length) : Boolean(d.f.bookingRef && d.f.issueDetails && d.issues.length);
+    const adapterCompletion = adapter && adapter.completion ? adapter.completion(d, adapterContext()) : null;
+    const complete = adapterCompletion ? Boolean(adapterCompletion.complete) : isBaggage ? Boolean(d.f.airline && d.f.flightNumber && d.f.travelDate && d.f.problemDetails && d.issues.length) : isFlight ? Boolean(d.f.airline && d.f.flightNumber && d.f.flightDate && d.f.actual && d.issues.length) : isSection75 ? Boolean(d.f.supplierName && d.f.cardProvider && d.f.promised && d.f.actual && d.issues.length) : isHoliday ? Boolean(d.f.holidayCompany && d.f.bookingRef && d.f.promised && d.f.actual && d.issues.length) : Boolean(d.f.bookingRef && d.f.issueDetails && d.issues.length);
     $("[data-qcb-status]").textContent = complete ? "Case file ready to review" : "Needs key information";
     $("[data-qcb-final-status]").textContent = complete ? "Your structured case file is ready for a final accuracy review" : "Complete the key facts to strengthen your pack";
-    $("[data-qcb-final-next]").textContent = isBaggage ? (!d.f.airline ? "Add the airline" : !d.f.flightNumber ? "Add the flight number" : !d.issues.length ? "Select the baggage problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the airline's official baggage route") : isFlight ? (!d.f.airline ? "Add the airline" : !d.f.flightNumber ? "Add the flight number" : !d.issues.length ? "Select the disruption" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the airline's official route") : isSection75 ? (!d.f.supplierName ? "Add the supplier" : !d.f.cardProvider ? "Add the card provider" : !d.issues.length ? "Select the main problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the card provider's official route") : isHoliday ? (!d.f.holidayCompany ? "Add the holiday company" : !d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the nature of complaint" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the recipient's official route") : (!d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the main issue" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the chosen route");
+    $("[data-qcb-final-next]").textContent = adapterCompletion && adapterCompletion.next ? adapterCompletion.next : isBaggage ? (!d.f.airline ? "Add the airline" : !d.f.flightNumber ? "Add the flight number" : !d.issues.length ? "Select the baggage problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the airline's official baggage route") : isFlight ? (!d.f.airline ? "Add the airline" : !d.f.flightNumber ? "Add the flight number" : !d.issues.length ? "Select the disruption" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the airline's official route") : isSection75 ? (!d.f.supplierName ? "Add the supplier" : !d.f.cardProvider ? "Add the card provider" : !d.issues.length ? "Select the main problem" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the card provider's official route") : isHoliday ? (!d.f.holidayCompany ? "Add the holiday company" : !d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the nature of complaint" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the recipient's official route") : (!d.f.bookingRef ? "Add the booking reference" : !d.issues.length ? "Select the main issue" : d.score < 70 ? "Strengthen missing evidence" : "Review and submit through the chosen route");
     const eligibilityNode = $("[data-qcb-eligibility]");
     if (eligibilityNode) eligibilityNode.textContent = eligibilityResult(d).label;
     persist();
@@ -426,11 +441,12 @@
     packPages.forEach((page, index) => {
       let commands = "";
       if (page.cover) {
-        const pdfTitle = isBaggage ? "FREE LOST LUGGAGE COMPLAINT PACK" : isFlight ? "FREE FLIGHT CLAIM COMPLAINT PACK" : isSection75 ? "FREE SECTION 75 COMPLAINT PACK" : isHoliday ? "FREE HOLIDAY COMPENSATION COMPLAINT PACK" : "AIRBNB COMPLAINT PACK";
-        const pdfAudience = isBaggage ? "PREPARED FOR THE PASSENGER" : isFlight ? "PREPARED FOR THE PASSENGER" : isSection75 ? "PREPARED FOR THE CARDHOLDER" : isHoliday ? "PREPARED FOR THE HOLIDAY CUSTOMER" : "PREPARED FOR AIRBNB GUEST";
+        const adapterCover = adapter && adapter.coverMetadata ? adapter.coverMetadata(d, adapterContext()) : null;
+        const pdfTitle = adapterCover ? adapterCover.title : isBaggage ? "FREE LOST LUGGAGE COMPLAINT PACK" : isFlight ? "FREE FLIGHT CLAIM COMPLAINT PACK" : isSection75 ? "FREE SECTION 75 COMPLAINT PACK" : isHoliday ? "FREE HOLIDAY COMPENSATION COMPLAINT PACK" : "AIRBNB COMPLAINT PACK";
+        const pdfAudience = adapterCover ? adapterCover.audience : isBaggage ? "PREPARED FOR THE PASSENGER" : isFlight ? "PREPARED FOR THE PASSENGER" : isSection75 ? "PREPARED FOR THE CARDHOLDER" : isHoliday ? "PREPARED FOR THE HOLIDAY CUSTOMER" : "PREPARED FOR AIRBNB GUEST";
         commands += `0.020 0.149 0.349 rg 0 0 595 842 re f\n0.065 0.365 0.690 rg 0 0 18 842 re f\n1 1 1 rg\nBT /F2 11 Tf 58 780 Td (QUAERENS) Tj ET\n0.48 0.71 0.94 RG 1 w 58 765 m 537 765 l S\nBT /F1 9 Tf 58 730 Td (CONFIDENTIAL) Tj ET\nBT /F2 29 Tf 58 635 Td (${pdfTitle}) Tj ET\nBT /F1 11 Tf 58 608 Td (${pdfAudience}) Tj ET\n`;
         const coverLines = isSection75 ? [`Supplier: ${text(d.f.supplierName)}`, `Card provider: ${text(d.f.cardProvider)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Estimated financial exposure: ${money(d.total)}`] : isHoliday ? [`Holiday company: ${text(d.f.holidayCompany)}`, `Booking reference: ${text(d.f.bookingRef)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Estimated financial exposure: ${money(d.total)}`] : [`Booking reference: ${text(d.f.bookingRef)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Property: ${text(d.f.propertyName)}`, `Estimated financial exposure: ${money(d.total)}`];
-        const selectedCoverLines = isBaggage ? [`Airline: ${text(d.f.airline)}`, `Flight: ${text(d.f.flightNumber)}`, `Baggage tag: ${text(d.f.baggageTag)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Estimated financial exposure: ${money(d.total)}`] : isFlight ? [`Flight: ${text(d.f.flightNumber)}`, `Airline: ${text(d.f.airline)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Combined guidance: ${money(d.total)}`] : coverLines;
+        const selectedCoverLines = adapterCover ? adapterCover.lines : isBaggage ? [`Airline: ${text(d.f.airline)}`, `Flight: ${text(d.f.flightNumber)}`, `Baggage tag: ${text(d.f.baggageTag)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Estimated financial exposure: ${money(d.total)}`] : isFlight ? [`Flight: ${text(d.f.flightNumber)}`, `Airline: ${text(d.f.airline)}`, `Prepared date: ${new Date().toLocaleDateString("en-GB")}`, `Evidence readiness: ${d.score}%`, `Complaint status: ${qualityScore(d) >= 85 ? "Ready for review" : "In preparation"}`, `Combined guidance: ${money(d.total)}`] : coverLines;
         commands += `0.10 0.31 0.58 rg 58 355 479 190 re f\n1 1 1 rg\nBT /F1 11 Tf 78 515 Td ${selectedCoverLines.map((line, i) => `${i ? "0 -27 Td " : ""}(${pdfSafe(line)}) Tj`).join(" ")} ET\nBT /F1 9 Tf 58 65 Td (Prepared with the Quaerens Complaint Pack Builder) Tj ET\n`;
       } else {
         const raw = page.body.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>|<\/li>|<\/tr>|<\/div>|<\/h\d>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&pound;/g, "GBP ").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").trim();
@@ -452,14 +468,14 @@
   }
 
   function downloadPdf() {
-    download(buildPdf(caseData()), `Quaerens-${isBaggage ? "Lost-Luggage" : isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.pdf`);
+    download(buildPdf(caseData()), `Quaerens-${adapter && adapter.fileLabel ? adapter.fileLabel(caseData(), adapterContext()) : isBaggage ? "Lost-Luggage" : isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.pdf`);
     status("Your 12-page PDF complaint pack has downloaded.");
   }
 
   function downloadWord() {
     const d = caseData(); const content = pages(d).map((page, index) => `<section class="page ${page.cover ? "cover" : ""}"><header>QUAERENS</header><h1>${page.title}</h1>${page.body}<footer>${esc(text(d.f.complaintPackReference))} • Page ${index + 1} of 12</footer></section>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#1e293b;line-height:1.55}.page{page-break-after:always;min-height:242mm}header{color:#0b3b86;font-size:9pt;font-weight:bold;letter-spacing:2.5px;border-bottom:2px solid #1d5fbf;padding-bottom:10px;margin-bottom:28px}h1{font-family:Georgia;color:#0b3b86;font-size:25px;margin:0 0 22px}p,li{font-size:10pt;line-height:1.65}table{border-collapse:collapse;width:100%;font-size:9pt;margin:14px 0}th{background:#0b3b86;color:white;text-transform:uppercase;font-size:8pt;letter-spacing:.4px}td,th{border:1px solid #ccd8e8;padding:9px;vertical-align:top}.qcb-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qcb-summary-card{border-left:3px solid #1d5fbf;background:#f4f8fc;padding:10px}.qcb-summary-card span{font-size:8pt;color:#64748b;display:block;text-transform:uppercase}.qcb-strength{background:#edf4fc;padding:14px;margin:12px 0 20px}.qcb-strength strong{color:#0b3b86;font-size:20pt}.cover{background:#052659;color:white;padding:24mm;box-sizing:border-box}.cover h1,.cover header,.cover strong{color:white}.cover .qcb-cover-title{font-family:Georgia;font-size:30pt;margin-top:45mm}.cover .qcb-cover-subtitle{letter-spacing:2px;text-transform:uppercase}.cover .qcb-cover-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25mm}.cover .qcb-cover-grid div{border-top:1px solid #7bb6f0;padding:10px 0}.cover .qcb-cover-grid span{display:block;color:#bfdbfe;text-transform:uppercase;font-size:7pt;letter-spacing:1px}.qcb-confidential{border:1px solid #fff;padding:5px 8px;font-size:7pt;letter-spacing:2px}.qcb-letter{white-space:pre-line;font-family:Georgia;line-height:1.65}footer{color:#64748b;border-top:1px solid #ccd8e8;margin-top:24px;padding-top:8px;font-size:8pt}</style></head><body>${content}</body></html>`;
-    download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-${isBaggage ? "Lost-Luggage" : isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
+    download(new Blob(["\ufeff", html], { type: "application/msword" }), `Quaerens-${adapter && adapter.fileLabel ? adapter.fileLabel(d, adapterContext()) : isBaggage ? "Lost-Luggage" : isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.doc`); status("Your editable Word complaint pack has downloaded.");
   }
 
   function status(message) { const node = $("[data-qcb-copy-status]"); node.textContent = message; node.setAttribute("role", "status"); }
@@ -505,7 +521,7 @@
   $("[data-qcb-clear]").addEventListener("click", () => { if (!window.confirm("Delete all locally saved Complaint Pack answers from this browser?")) return; localStorage.removeItem(STORAGE_KEY); form.reset(); window.QCBFrameworkAApplicant.regenerate(root); root.dispatchEvent(new CustomEvent("qcb:new-pack")); timeline = [{ date: "", category: category.timeline[0], description: "", evidence: "" }]; losses = [{ description: "", amount: "", evidence: "", status: "Evidence needed" }]; evidence = {}; renderTimeline(); renderLosses(); renderEvidence(); renderPreview(); showStep(1); status("Saved answers were deleted from this browser and a new pack reference was created."); });
   $("[data-qcb-download-pdf]").addEventListener("click", downloadPdf);
   $("[data-qcb-download-word]").addEventListener("click", downloadWord);
-  $("[data-qcb-download-txt]").addEventListener("click", () => { download(new Blob([plainText(caseData())], { type: "text/plain;charset=utf-8" }), `Quaerens-${isBaggage ? "Lost-Luggage" : isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
+  $("[data-qcb-download-txt]").addEventListener("click", () => { const d = caseData(); download(new Blob([plainText(d)], { type: "text/plain;charset=utf-8" }), `Quaerens-${adapter && adapter.fileLabel ? adapter.fileLabel(d, adapterContext()) : isBaggage ? "Lost-Luggage" : isFlight ? "Flight-Claim" : isSection75 ? "Section-75" : isHoliday ? "Holiday" : "Airbnb"}-Complaint-Pack-${slugDate()}.txt`); status("Your text complaint pack has downloaded."); });
   $("[data-qcb-copy-letter]").addEventListener("click", () => copy(complaintLetter(caseData()), "Complaint letter copied to your clipboard."));
   $("[data-qcb-copy-email]").addEventListener("click", () => copy(coverEmail(caseData()), "Cover email copied to your clipboard."));
   $("[data-qcb-print]").addEventListener("click", () => window.print());

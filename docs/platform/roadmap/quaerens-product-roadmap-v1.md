@@ -59,7 +59,7 @@ Where a value has not been approved, it must be recorded as **TBD**, not guessed
 
 - **Current status:** Reference Builder Complete
 - **Reference implementation:** Airbnb Complaint Pack Version 4
-- **Framework version:** Quaerens Complaint Pack Framework™ v1.3
+- **Framework version:** Quaerens Complaint Pack Framework™ v1.6
 - **Shared completion value:** Help the Next Person™ Version 1.0 is live and inherited by every configured builder
 
 Every product below is a configured route through Framework A. It must reuse the shared workflow, evidence, chronology, financial, preview, document and export architecture.
@@ -72,10 +72,10 @@ Every product below is a configured route through Framework A. It must reuse the
 | Section 75 | Critical (Highest) | High-volume consumer dispute support and Guided Support potential | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.1; category evidence and guidance; regression | Category v1 / Framework A v1.1 | Completed |
 | Free Holiday Compensation | Critical (Highest) | High public utility and travel-dispute demand | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.1; Airbnb and Section 75 regression | Category v1 / Framework A v1.1 | Completed |
 | Free Flight Claim | High | High-volume, rules-led consumer support | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
-| Car Finance | High | Significant consumer and professional-support potential | Free DIY; commercial journey via Gateway | Planned | Framework A; category evidence and guidance; regression | TBD | TBD |
+| Car Finance | High | Significant consumer and professional-support potential | Free DIY; commercial journey via Gateway | Live | Framework A v1.6 governed specialist adapter; full regression | Category v1 / Framework A v1.6 | Completed |
 | Train Delay | Medium | Consumer utility and category expansion | Free DIY | Planned | Framework A; route configuration | TBD | TBD |
 | Lost Luggage | Medium | Travel-category extension and Guided Support potential | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.5 declarative baggage extension; full regression | Category v1 / Framework A v1.5 | Completed |
-| Cruise Compensation | Medium | Travel-category extension | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; route configuration | TBD | TBD |
+| Cruise Compensation | Medium | Travel-category extension | Free DIY; Guided Support eligibility via Gateway | Live | Framework A v1.6 governed specialist adapter; full regression | Category v1 / Framework A v1.6 | Completed |
 | Parking Appeal | Medium | High-frequency consumer self-help | Free DIY | Planned | Framework A; route configuration | TBD | TBD |
 | Energy Switch | Medium | Household-service consumer support | Free DIY; Guided Support eligibility via Gateway | Planned | Framework A; route configuration | TBD | TBD |
 | Gym Cancellation | Medium | Consumer contract self-help | Free DIY | Planned | Framework A; route configuration | TBD | TBD |

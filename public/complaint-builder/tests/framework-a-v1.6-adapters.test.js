@@ -1,0 +1,26 @@
+"use strict";
+const assert=require("assert");
+const fs=require("fs");
+const path=require("path");
+const vm=require("vm");
+const base=path.join(__dirname,"..");
+const window={};
+const context=vm.createContext({window,console,Date,Object,Set,Array,Number,String,Boolean,Math});
+function run(file){vm.runInContext(fs.readFileSync(file,"utf8"),context,{filename:file});}
+run(path.join(base,"adapters/framework-a-category-adapters-v1.6.js"));
+assert.strictEqual(window.QCBFrameworkACategoryAdapters.version,"1.6");
+assert.deepStrictEqual(Array.from(window.QCBFrameworkACategoryAdapters.allowedCategories),["car-finance","cruise"]);
+assert.throws(()=>window.QCBFrameworkACategoryAdapters.register("airbnb",{pages(){},complaintLetter(){},coverEmail(){}}),/not allow-listed/);
+assert.throws(()=>window.QCBFrameworkACategoryAdapters.register("car-finance",{mount(){},pages(){},complaintLetter(){},coverEmail(){}}),/not permitted/);
+run(path.join(base,"adapters/framework-a-car-finance-adapter-v1.6.js"));
+run(path.join(base,"adapters/framework-a-cruise-adapter-v1.6.js"));
+const util={text:(v,f="Not provided")=>String(v||"").trim()||f,money:v=>`£${(Number(v)||0).toFixed(2)}`,date:v=>v||"Not provided",esc:v=>String(v),rowTable:(h,r)=>JSON.stringify({h,r}),summaryGrid:x=>JSON.stringify(x),qualityScore:80,qualityLabel:"Ready",complaintLetter:"Letter",coverEmail:"Email"};
+const car=window.QCBFrameworkACategoryAdapters.get("car-finance");
+let d={f:{lender:"Example Finance",dealer:"Example Dealer",agreementType:"PCP",vehicleMake:"Example",vehicleModel:"Car",saleNarrative:"Recorded sale",cashPrice:20000,totalPayable:25000,monthlyPayment:400,termMonths:48,officialRedressFigure:500},issues:["Commission"],routes:[],timeline:[],losses:[],score:50};Object.assign(d,car.deriveFinancials(d,util));
+assert.strictEqual(car.pages(d,{...util,evidenceRows:[],missing:[],complaintLetter:"Letter",coverEmail:"Email"}).length,12);
+assert.ok(car.complaintLetter(d,util).includes("motor finance"));
+const cruise=window.QCBFrameworkACategoryAdapters.get("cruise");
+d={f:{cruiseLine:"Example Cruises",shipName:"Example Ship",bookingReference:"ABC",departureDate:"2026-09-01",cruisePricePaid:2000,refundReceived:200,issueSummary:"Missed port"},issues:["Missed port"],routes:[],timeline:[],losses:[],score:60};Object.assign(d,cruise.deriveFinancials(d,util));
+assert.strictEqual(cruise.pages(d,{...util,evidenceRows:[],missing:[],complaintLetter:"Letter",coverEmail:"Email"}).length,12);
+assert.ok(cruise.complaintLetter(d,util).includes("cruise complaint"));
+console.log("Framework A v1.6 adapter contract tests passed");

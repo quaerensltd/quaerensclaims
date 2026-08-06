@@ -1,6 +1,6 @@
-# Quaerens Complaint Pack Framework™ v1.5
+# Quaerens Complaint Pack Framework™ v1.6
 
-Framework version: **1.5** — Baggage Category Extension
+Framework version: **1.6** — Governed Category Adapter Contract
 Status: Permanent product architecture standard  
 Reference implementation: Airbnb Complaint Pack Builder Version 4  
 Framework owner: The Quaerens Platform™  
@@ -8,7 +8,11 @@ Effective date: 5 August 2026
 
 ## 1. Purpose
 
-The Quaerens Complaint Pack Framework™ v1.5 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+The Quaerens Complaint Pack Framework™ v1.6 is the mandatory product architecture for every future Quaerens Complaint Pack Builder.
+
+### Version 1.6 governed Category Adapter Contract
+
+Version 1.6 introduces one allow-listed, category-scoped adapter contract for specialist behaviour. Approved adapters may provide derived calculations, quality/completion rules, analysis, complaint and email wording, guidance, cover metadata and twelve-page content composition. They cannot mount UI, navigate, render previews, export, send data, register metrics or replace Framework C. All shared engines remain single implementations. Car Finance and Cruise Compensation certify this contract.
 
 ### Version 1.5 baggage extension
 
@@ -20,7 +24,7 @@ Lost Luggage retains its established URL, landing experience, educational author
 
 Every category is registered once in `public/complaint-builder/config/framework-a-categories-v1.4.js`. The configuration declares the builder identifier, local-storage key, anonymous-metrics identifier, financial field mapping, chronology categories and evidence catalogue. The shared runtime consumes that contract; category pages must not duplicate evidence, chronology, financial, preview or export engines.
 
-Airbnb, Section 75, Holiday Compensation, Flight and Lost Luggage are the configured implementations through Version 1.5. Airbnb remains the visual and behavioural reference. Flight certified the declarative extension contract; Lost Luggage certifies that a previously specialist evidence and document workflow can move behind that contract without activating a second runtime.
+Airbnb, Section 75, Holiday Compensation, Flight, Lost Luggage, Car Finance and Cruise Compensation are the configured implementations through Version 1.6. Airbnb remains the visual and behavioural reference. Flight certified the declarative extension contract; Lost Luggage certifies that a previously specialist evidence and document workflow can move behind that contract without activating a second runtime.
 
 Flight-only external services are connected through thin shared adapters. The Flight lookup adapter delegates to the existing protected lookup module, and the compensation adapter delegates to the existing Flight analysis and compensation engine. Manual correction remains available. Adapters may map fields and present results, but must not reproduce protected calculations or create an alternative document runtime.
 
@@ -459,7 +463,7 @@ Before release:
 
 ## 16. Versioning rules
 
-This document establishes **Quaerens Complaint Pack Framework™ v1.5**.
+This document establishes **Quaerens Complaint Pack Framework™ v1.6**.
 
 Versioning rules:
 
@@ -585,4 +589,4 @@ A Framework A builder is complete only when its shared CSS is self-contained, it
 
 Do not build another standalone Complaint Pack Builder.
 
-Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.5.
+Build every future dispute category as a configured implementation of the Quaerens Complaint Pack Framework™ v1.6.
