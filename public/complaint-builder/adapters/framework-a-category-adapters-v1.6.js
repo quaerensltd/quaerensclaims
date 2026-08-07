@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const allowedCategories = new Set(["car-finance", "cruise", "train"]);
+  const allowedCategories = new Set(["car-finance", "cruise", "train", "travel-insurance"]);
   const allowedHooks = new Set([
     "deriveFinancials", "quality", "completion", "analysis",
     "complaintLetter", "coverEmail", "pages", "coverMetadata", "fileLabel"
