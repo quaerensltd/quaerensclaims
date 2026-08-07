@@ -44,7 +44,8 @@
 
   function browserInit() {
     if (typeof document === "undefined") return;
-    const QCBF = root.QCBF || {};
+    const runtimeRoot = typeof globalThis !== "undefined" ? globalThis : window;
+    const QCBF = runtimeRoot.QCBF || {};
     const packReference = createPackReference("RAIL01");
     let activePreview = "summary";
 
