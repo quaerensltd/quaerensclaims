@@ -9,7 +9,7 @@ const context=vm.createContext({window,console,Date,Object,Set,Array,Number,Stri
 function run(file){vm.runInContext(fs.readFileSync(file,"utf8"),context,{filename:file});}
 run(path.join(base,"adapters/framework-a-category-adapters-v1.6.js"));
 assert.strictEqual(window.QCBFrameworkACategoryAdapters.version,"1.6");
-assert.deepStrictEqual(Array.from(window.QCBFrameworkACategoryAdapters.allowedCategories),["car-finance","cruise"]);
+assert.deepStrictEqual(Array.from(window.QCBFrameworkACategoryAdapters.allowedCategories),["car-finance","cruise","train"]);
 assert.throws(()=>window.QCBFrameworkACategoryAdapters.register("airbnb",{pages(){},complaintLetter(){},coverEmail(){}}),/not allow-listed/);
 assert.throws(()=>window.QCBFrameworkACategoryAdapters.register("car-finance",{mount(){},pages(){},complaintLetter(){},coverEmail(){}}),/not permitted/);
 run(path.join(base,"adapters/framework-a-car-finance-adapter-v1.6.js"));
