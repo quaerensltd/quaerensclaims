@@ -19,7 +19,13 @@ assert.ok(page.includes('href="#train-rights"'));
 assert.ok(page.includes('id="train-rights"'));
 assert.ok(page.includes('src="builders/train/train.compensation.js"'));
 assert.ok(page.includes('src="builders/train/train.documents.js"'));
+assert.ok(page.includes('class="section qcb-builder-wrap train-modern-builder"'));
+assert.ok(page.includes('class="qcb-builder qcb-framework-v1 train-modern-shell"'));
+assert.ok(page.includes('class="card qcb-form qcb-airbnb-stage"'));
+assert.ok(page.includes('class="sticky qcb-airbnb-preview"'));
+assert.ok(page.includes('id="train-builder-modern-styles"'));
 assert.ok(runtime.includes('const runtimeRoot = typeof globalThis'));
+assert.ok(runtime.includes('tab.setAttribute("aria-selected", String(selected))'));
 assert.ok(vercel.redirects.some(item => item.source === "/freetraindelay.html" && item.destination === "/train-delay.html" && item.permanent === true));
 
 console.log("Train Framework A landing acceptance tests passed");

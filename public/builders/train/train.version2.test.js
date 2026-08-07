@@ -49,6 +49,23 @@ assert.strictEqual(estimate.grossDelayRepay, 86.5);
 assert.strictEqual(estimate.expenses, 24.5);
 assert.strictEqual(estimate.estimatedTotalRequested, 111);
 
+[
+  { minutes: 14, expected: 0 },
+  { minutes: 30, expected: 43.25 },
+  { minutes: 60, expected: 86.5 },
+  { minutes: 120, expected: 86.5 }
+].forEach(testCase => {
+  const result = compensation.estimateDelayRepay(Object.assign({}, sample, {
+    manualDelayMinutes: String(testCase.minutes),
+    scheduledArrival: "",
+    actualArrival: "",
+    travellerCount: "1",
+    additionalPassengers: "",
+    expenses: []
+  }));
+  assert.strictEqual(result.grossDelayRepay, testCase.expected, testCase.minutes + " minute Delay Repay band");
+});
+
 const cancelled = Object.assign({}, sample, {
   journeyIssues: ["cancelled", "abandoned"],
   actualArrival: "",

@@ -232,9 +232,19 @@
     document.querySelectorAll("[data-preview-tab]").forEach(button => {
       button.addEventListener("click", () => {
         activePreview = button.getAttribute("data-preview-tab");
+        document.querySelectorAll("[data-preview-tab]").forEach(tab => {
+          const selected = tab === button;
+          tab.classList.toggle("active", selected);
+          tab.setAttribute("aria-selected", String(selected));
+        });
         update();
       });
     });
+    const initialPreviewTab = document.querySelector('[data-preview-tab="summary"]');
+    if (initialPreviewTab) {
+      initialPreviewTab.classList.add("active");
+      initialPreviewTab.setAttribute("aria-selected", "true");
+    }
     document.querySelectorAll("[data-export]").forEach(button => {
       button.addEventListener("click", () => exportText(button.getAttribute("data-export")));
     });
