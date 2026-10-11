@@ -1,6 +1,56 @@
 # CRM4 implementation checkpoint
 
-Status: **LOCAL FRONTEND IMPLEMENTED — BACKEND NOT ACTIVATED — NOT DEPLOYABLE**.
+Status: **LOCAL FRONTEND CLONED; FIVE BACKEND SOURCE BUNDLES PRESERVED; TWO HANDLERS INTEGRATION-TESTED — NOT DEPLOYABLE**.
+
+## Backend continuation checkpoint
+
+Five callable-specific deployed source trees now live in `backend-sources/`:
+Assessment Assistant GenerateDraft, Manager linked-assessment read, Lister manual
+referral creation, Closer administration onboarding and Processing dashboard.
+Their 34 JavaScript files retain original source hashes and transformed hashes.
+Only CRM2/CRM4 boundary names and line endings change. Shared CRM business logic
+is reused, not independently reimplemented. Differing deployed package versions
+remain separate; no consolidation is implied.
+
+`tools/materialize-backend.cjs` follows literal JavaScript module dependencies
+from explicitly reviewed entry modules. It does not copy archives wholesale,
+environment files, secret bindings or credentials. Zero unresolved literal
+JavaScript imports is **not** complete runtime dependency closure: for example,
+the governed Information Brochure PDF is a runtime filesystem dependency and is
+not copied. Dynamic dependencies, package-version locks and provider routes still
+need reconciliation before these bundles can be deployed or broadly registered.
+
+`tools/local-handlers.cjs` exposes only Lister referral creation and Manager
+linked-assessment reading to local integration tests. It requires the exact demo
+project and loopback Firestore environment, uses a named Admin app and supplies
+throwing provider stubs. This is not a callable HTTP server, authentication-token
+verifier or production Firebase entrypoint. Test request authentication is
+synthetic; client-facing rules remain deny-all. Other factory exports are private.
+
+Current verification: **39/39 tests PASS** (36 source/mock/isolation tests and
+three real-emulator/guard tests). Actual copied Lister code creates one synthetic
+lead, handles idempotent replay and rejects duplicate creation in local Firestore.
+Actual Manager code reads an existing synthetic DRAFT without modifying it;
+CRM2/CRM3 membership is denied. Temporary test documents/accounts are removed.
+Browser login smoke rerun at 390/768/1440: no errors or horizontal overflow.
+These results do not certify other workflows, output rendering or live providers.
+
+Backend test command (with installed Firebase packages on NODE_PATH):
+
+```
+node --test crm4-staging/tests/backend-assessment.test.cjs crm4-staging/tests/backend-workflows.test.cjs crm4-staging/tests/clone.test.cjs crm4-staging/tests/isolation.test.mjs
+```
+
+With Auth/Firestore demo emulators running separately:
+
+```
+node --test crm4-staging/tests/backend-emulator.test.cjs crm4-staging/tests/emulator.test.cjs
+```
+
+No production application requests, records, emails, payments, deployments or
+infrastructure changes were made. Source retrieval was read-only. The unexecuted
+broad index-discovery copy is quarantined under ignored `.scratch/`; it is not
+part of this release or any runtime.
 
 ## Continuation result
 
@@ -51,9 +101,9 @@ AdminCreateUser packages: `index.js`, `frameworkB.js` and
 The shared workspace access module matches in these samples.
 
 Consequently a single historical `functions/` directory is not an exact current
-CRM2 backend. Before activating a backend, choose either per-callable source
-version preservation (recommended for exact behaviour) or separately authorise
-and review consolidation. No consolidation has been silently applied. No source
+CRM2 backend. This continuation uses per-callable source-version preservation;
+consolidation would require separate review. No consolidation has been silently
+applied. No source
 archive was downloaded wholesale: inspection used ZIP metadata and selected
 JavaScript byte ranges, excluding secret/configuration entries.
 
