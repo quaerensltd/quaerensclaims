@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Manager Weekly Attendance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .input {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+      background: white;
+    }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge-online,
+    .badge-offline,
+    .badge-missing,
+    .badge-ontime,
+    .badge-late,
+    .badge-absent,
+    .badge-future {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    .badge-online { background: #dcfce7; color: #166534; }
+    .badge-offline { background: #e2e8f0; color: #334155; }
+    .badge-missing { background: #fee2e2; color: #991b1b; }
+    .badge-ontime { background: #dcfce7; color: #166534; }
+    .badge-late { background: #fef3c7; color: #92400e; }
+    .badge-absent { background: #fee2e2; color: #991b1b; }
+    .badge-future { background: #e0e7ff; color: #4338ca; }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Weekly Attendance</h1>
+          <p class="text-sm text-slate-500">Weekly attendance overview for staff activity and login history</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
+          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Week</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-8 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Staff Count</div>
+          <div id="staffCountStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Records This Week</div>
+          <div id="recordsCountStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Present Days</div>
+          <div id="presentDaysStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Late Days</div>
+          <div id="lateDaysStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Absent / Missing</div>
+          <div id="absentDaysStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Online Right Now</div>
+          <div id="onlineNowStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">On Time Days</div>
+          <div id="onTimeDaysStat" class="text-3xl font-extrabold text-green-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Weekly Hours</div>
+          <div id="weeklyHoursStat" class="text-3xl font-extrabold text-violet-600 mt-1">0h</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Week Starting</label>
+            <input id="weekStartInput" type="date" class="input" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Staff Filter</label>
+            <select id="staffFilter" class="input">
+              <option value="all">All staff</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">View</label>
+            <select id="viewFilter" class="input">
+              <option value="summary">Weekly summary</option>
+              <option value="daily">Daily records</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Week</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Weekly Attendance Summary</h2>
+            <p id="summaryText" class="text-sm text-slate-500 mt-1">Loading weekly attendance...</p>
+            <p id="autoRefreshStatus" class="text-xs text-slate-400 mt-1">Auto-refresh every 2 minutes.</p>
+          </div>
+        </div>
+
+        <div id="summaryViewWrap" class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead id="weeklySummaryHead"></thead>
+            <tbody id="weeklySummaryBody"></tbody>
+          </table>
+        </div>
+
+        <div id="dailyViewWrap" class="overflow-x-auto hidden">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Date</th>
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">First Login</th>
+                <th class="text-left p-3">Last Login</th>
+                <th class="text-left p-3">Last Seen</th>
+                <th class="text-left p-3">Last Logout</th>
+                <th class="text-left p-3">Logged In</th>
+                <th class="text-left p-3">Day Status</th>
+                <th class="text-left p-3">Live Status</th>
+              </tr>
+            </thead>
+            <tbody id="dailyAttendanceBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { resolveCrmWorkspace, crmCollection, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
+    const weekStartInput = document.getElementById("weekStartInput");
+    const staffFilter = document.getElementById("staffFilter");
+    const viewFilter = document.getElementById("viewFilter");
+    const summaryText = document.getElementById("summaryText");
+    const autoRefreshStatus = document.getElementById("autoRefreshStatus");
+    const weeklySummaryHead = document.getElementById("weeklySummaryHead");
+    const weeklySummaryBody = document.getElementById("weeklySummaryBody");
+    const dailyAttendanceBody = document.getElementById("dailyAttendanceBody");
+    const summaryViewWrap = document.getElementById("summaryViewWrap");
+    const dailyViewWrap = document.getElementById("dailyViewWrap");
+
+    const LATE_CUTOFF_HOUR = 10;
+    const LATE_CUTOFF_MINUTE = 0;
+
+    let staffUsers = [];
+    let attendanceDocs = [];
+    let currentWeekDates = [];
+    let autoRefreshInterval = null;
+    let refreshInProgress = false;
+    let currentContext = null;
+
+    function hideLoader() {
+      if (authLoader) authLoader.style.display = "none";
+    }
+
+    function toIsoDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function formatDateFriendly(dateStr) {
+      try {
+        const d = new Date(`${dateStr}T00:00:00`);
+        return d.toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit"
+        });
+      } catch {
+        return dateStr;
+      }
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return "-";
+      try {
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return d.toLocaleString("en-GB");
+      } catch {
+        return "-";
+      }
+    }
+
+    function formatDuration(ms) {
+      const safeMs = Number(ms || 0);
+      const totalMinutes = Math.floor(safeMs / 60000);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours <= 0) return `${minutes}m`;
+      return `${hours}h ${minutes}m`;
+    }
+
+    function getMonday(date = new Date()) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function normalizeWeekStartInput() {
+      if (!weekStartInput.value) {
+        weekStartInput.value = toIsoDate(getMonday(new Date()));
+        return;
+      }
+      const chosen = new Date(`${weekStartInput.value}T00:00:00`);
+      weekStartInput.value = toIsoDate(getMonday(chosen));
+    }
+
+    function getWeekDates(startDateStr) {
+      const start = new Date(`${startDateStr}T00:00:00`);
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        dates.push(toIsoDate(d));
+      }
+      return dates;
+    }
+
+    function isFutureDate(dateStr) {
+      return dateStr > toIsoDate(new Date());
+    }
+
+    function isStaleOnline(docData) {
+      if (!docData?.isOnline || !docData.lastSeenAt?.toDate) return false;
+      const lastSeen = docData.lastSeenAt.toDate().getTime();
+      return Date.now() - lastSeen > 10 * 60 * 1000;
+    }
+
+    function liveStatusBadge(docData) {
+      if (!docData) return `<span class="badge-missing">No Record</span>`;
+      const online = docData.isOnline && !isStaleOnline(docData);
+      return online
+        ? `<span class="badge-online">Online</span>`
+        : `<span class="badge-offline">Offline</span>`;
+    }
+
+    function dayStatusBadge(status) {
+      if (status === "on_time") return `<span class="badge-ontime">On Time</span>`;
+      if (status === "late") return `<span class="badge-late">Late</span>`;
+      if (status === "future") return `<span class="badge-future">Future</span>`;
+      return `<span class="badge-absent">Absent</span>`;
+    }
+
+    function getWorkedMs(docData) {
+      if (!docData) return 0;
+      const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
+      if (
+        docData.isOnline &&
+        docData.currentSessionStartAt?.toDate &&
+        !isStaleOnline(docData)
+      ) {
+        const sessionStart = docData.currentSessionStartAt.toDate().getTime();
+        const liveExtra = Math.max(0, Date.now() - sessionStart);
+        return baseMs + liveExtra;
+      }
+      return baseMs;
+    }
+
+    function getDayStatus(rec, dateStr) {
+      if (isFutureDate(dateStr)) return "future";
+      if (!rec || !rec.firstLoginAt?.toDate) return "absent";
+      const firstLogin = rec.firstLoginAt.toDate();
+      const cutoff = new Date(`${dateStr}T00:00:00`);
+      cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
+      return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
+    }
+
+    async function checkAccess(user) {
+      currentContext=await resolveCrmWorkspace(db,user);
+      if (currentContext.role !== "manager" && currentContext.role !== "admin") {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      logoutBtn.classList.remove("hidden");
+      applyWorkspaceChrome(currentContext);
+      return true;
+    }
+
+    async function loadBaseData(showRefreshStamp = true) {
+      if (refreshInProgress) return;
+      refreshInProgress = true;
+
+      try {
+        const results = await Promise.allSettled([
+          getDocs(collection(db, isCrm2(currentContext)?"crm4Memberships":"users")),
+          getDocs(collection(db, crmCollection(currentContext,"staffAttendance")))
+        ]);
+        const usersSnap = results[0].status === "fulfilled" ? results[0].value : { docs: [] };
+        const attendanceSnap = results[1].status === "fulfilled" ? results[1].value : { docs: [] };
+        if (results.some(result => result.status === "rejected")) console.warn("Some workspace attendance information is not currently available.");
+
+        staffUsers = usersSnap.docs
+          .map(d => ({ id:d.id,...d.data(),role:isCrm2(currentContext)&&d.data().role==="lister"?"staff":d.data().role,name:d.data().name||d.data().displayName||"" }))
+          .filter(u => u.role === "staff");
+
+        attendanceDocs = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        populateStaffFilter();
+        renderAll();
+
+        if (showRefreshStamp) {
+          autoRefreshStatus.textContent = `Auto-refresh every 2 minutes. Last updated: ${new Date().toLocaleTimeString("en-GB")}`;
+        }
+      } finally {
+        refreshInProgress = false;
+      }
+    }
+
+    function populateStaffFilter() {
+      const currentValue = staffFilter.value || "all";
+      staffFilter.innerHTML = `<option value="all">All staff</option>`;
+
+      [...staffUsers]
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .forEach(user => {
+          const option = document.createElement("option");
+          option.value = user.id;
+          option.textContent = user.name || user.email || user.id;
+          staffFilter.appendChild(option);
+        });
+
+      const exists = [...staffFilter.options].some(opt => opt.value === currentValue);
+      staffFilter.value = exists ? currentValue : "all";
+    }
+
+    function getFilteredStaff() {
+      if (staffFilter.value === "all") return staffUsers;
+      return staffUsers.filter(u => u.id === staffFilter.value);
+    }
+
+    function getAttendanceFor(uid, dateStr) {
+      return attendanceDocs.find(item => item.uid === uid && item.date === dateStr) || null;
+    }
+
+    function renderAll() {
+      normalizeWeekStartInput();
+      currentWeekDates = getWeekDates(weekStartInput.value);
+      renderStats();
+      renderWeeklySummary();
+      renderDailyView();
+      toggleView();
+    }
+
+    function renderStats() {
+      const filteredStaff = getFilteredStaff();
+      let recordCount = 0;
+      let presentDays = 0;
+      let lateDays = 0;
+      let absentDays = 0;
+      let onlineNow = 0;
+      let onTimeDays = 0;
+      let weeklyMs = 0;
+
+      filteredStaff.forEach(user => {
+        currentWeekDates.forEach(dateStr => {
+          const rec = getAttendanceFor(user.id, dateStr);
+          const status = getDayStatus(rec, dateStr);
+
+          if (rec) {
+            recordCount += 1;
+            presentDays += 1;
+            weeklyMs += getWorkedMs(rec);
+            if (status === "late") lateDays += 1;
+            if (status === "on_time") onTimeDays += 1;
+          } else if (!isFutureDate(dateStr)) {
+            absentDays += 1;
+          }
+        });
+
+        const todayRecord = getAttendanceFor(user.id, toIsoDate(new Date()));
+        if (todayRecord && todayRecord.isOnline && !isStaleOnline(todayRecord)) {
+          onlineNow += 1;
+        }
+      });
+
+      document.getElementById("staffCountStat").textContent = String(filteredStaff.length);
+      document.getElementById("recordsCountStat").textContent = String(recordCount);
+      document.getElementById("presentDaysStat").textContent = String(presentDays);
+      document.getElementById("lateDaysStat").textContent = String(lateDays);
+      document.getElementById("absentDaysStat").textContent = String(absentDays);
+      document.getElementById("onlineNowStat").textContent = String(onlineNow);
+      document.getElementById("onTimeDaysStat").textContent = String(onTimeDays);
+      document.getElementById("weeklyHoursStat").textContent = formatDuration(weeklyMs);
+    }
+
+    function renderWeeklySummary() {
+      const filteredStaff = getFilteredStaff();
+      weeklySummaryHead.innerHTML = "";
+      weeklySummaryBody.innerHTML = "";
+
+      let headHtml = `<tr class="bg-blue-50 text-blue-900"><th class="text-left p-3">Staff</th>`;
+      currentWeekDates.forEach(dateStr => {
+        headHtml += `<th class="text-left p-3">${formatDateFriendly(dateStr)}</th>`;
+      });
+      headHtml += `<th class="text-left p-3">Weekly Total</th></tr>`;
+      weeklySummaryHead.innerHTML = headHtml;
+
+      if (!filteredStaff.length) {
+        weeklySummaryBody.innerHTML = `
+          <tr>
+            <td colspan="${currentWeekDates.length + 2}" class="p-6 text-center text-slate-500">No staff found.</td>
+          </tr>
+        `;
+        summaryText.textContent = "No staff found for this filter.";
+        return;
+      }
+
+      filteredStaff
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .forEach(user => {
+          let weeklyMs = 0;
+          let rowHtml = `
+            <tr class="border-t border-slate-200">
+              <td class="p-3 align-top">
+                <div class="font-semibold text-slate-800">${user.name || "-"}</div>
+                <div class="text-xs text-slate-500">${user.email || user.id}</div>
+              </td>
+          `;
+
+          currentWeekDates.forEach(dateStr => {
+            const rec = getAttendanceFor(user.id, dateStr);
+            const workedMs = getWorkedMs(rec);
+            const dayStatus = getDayStatus(rec, dateStr);
+            weeklyMs += workedMs;
+
+            if (rec) {
+              rowHtml += `
+                <td class="p-3 align-top">
+                  <div class="font-semibold text-slate-800">${formatDuration(workedMs)}</div>
+                  <div class="mt-2">${dayStatusBadge(dayStatus)}</div>
+                  <div class="mt-2">${liveStatusBadge(rec)}</div>
+                  <div class="text-xs text-slate-500 mt-2">First: ${formatTimestamp(rec.firstLoginAt)}</div>
+                  <div class="text-xs text-slate-500">Last: ${formatTimestamp(rec.lastLogoutAt || rec.lastSeenAt || rec.lastLoginAt)}</div>
+                </td>
+              `;
+            } else {
+              rowHtml += `
+                <td class="p-3 align-top">
+                  <div class="font-semibold text-slate-800">0m</div>
+                  <div class="mt-2">${dayStatusBadge(dayStatus)}</div>
+                  <div class="mt-2"><span class="badge-missing">No Record</span></div>
+                </td>
+              `;
+            }
+          });
+
+          rowHtml += `<td class="p-3 font-bold text-blue-900 align-top">${formatDuration(weeklyMs)}</td></tr>`;
+          weeklySummaryBody.insertAdjacentHTML("beforeend", rowHtml);
+        });
+
+      const weekEnd = currentWeekDates[currentWeekDates.length - 1];
+      summaryText.textContent =
+        `${filteredStaff.length} staff member(s) shown for week ${weekStartInput.value} to ${weekEnd}. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+    }
+
+    function renderDailyView() {
+      const filteredStaff = getFilteredStaff();
+      dailyAttendanceBody.innerHTML = "";
+      const rows = [];
+
+      filteredStaff.forEach(user => {
+        currentWeekDates.forEach(dateStr => {
+          const rec = getAttendanceFor(user.id, dateStr);
+          rows.push({
+            date: dateStr,
+            staffName: user.name || "-",
+            staffEmail: user.email || user.id,
+            rec
+          });
+        });
+      });
+
+      rows.sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.staffName.localeCompare(b.staffName);
+      });
+
+      if (!rows.length) {
+        dailyAttendanceBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="p-6 text-center text-slate-500">No attendance rows found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const rec = item.rec;
+        const workedMs = getWorkedMs(rec);
+        const dayStatus = getDayStatus(rec, item.date);
+
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${formatDateFriendly(item.date)}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${item.staffName}</div>
+            <div class="text-xs text-slate-500">${item.staffEmail}</div>
+          </td>
+          <td class="p-3">${rec ? formatTimestamp(rec.firstLoginAt) : "-"}</td>
+          <td class="p-3">${rec ? formatTimestamp(rec.lastLoginAt) : "-"}</td>
+          <td class="p-3">${rec ? formatTimestamp(rec.lastSeenAt) : "-"}</td>
+          <td class="p-3">${rec ? formatTimestamp(rec.lastLogoutAt) : "-"}</td>
+          <td class="p-3 font-semibold text-blue-900">${formatDuration(workedMs)}</td>
+          <td class="p-3">${dayStatusBadge(dayStatus)}</td>
+          <td class="p-3">${liveStatusBadge(rec)}</td>
+        `;
+        dailyAttendanceBody.appendChild(row);
+      });
+    }
+
+    function toggleView() {
+      const isSummary = viewFilter.value === "summary";
+      summaryViewWrap.classList.toggle("hidden", !isSummary);
+      dailyViewWrap.classList.toggle("hidden", isSummary);
+    }
+
+    function setDefaultWeekStart() {
+      weekStartInput.value = toIsoDate(getMonday(new Date()));
+    }
+
+    function startAutoRefresh() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(async () => {
+        try {
+          await loadBaseData(true);
+        } catch (error) {
+          console.error("Auto-refresh failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkAccess(user);
+        if (!allowed) return;
+        setDefaultWeekStart();
+        await loadBaseData(true);
+        startAutoRefresh();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        hideLoader();
+        alert(`Could not load staff weekly attendance: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    async function refreshWeek() {
+      try {
+        await loadBaseData(true);
+      } catch (error) {
+        console.error("Refresh failed:", error);
+        alert("Could not refresh weekly attendance.");
+      }
+    }
+
+    refreshBtn.addEventListener("click", refreshWeek);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshWeek);
+
+    weekStartInput.addEventListener("change", renderAll);
+    staffFilter.addEventListener("change", renderAll);
+    viewFilter.addEventListener("change", renderAll);
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

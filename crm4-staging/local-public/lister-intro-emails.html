@@ -1,0 +1,1061 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Intro Email Queue</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+    .queue-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .queue-table th,
+    .queue-table td {
+      vertical-align: top;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .cell-tight {
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .client-name {
+      font-weight: 700;
+      color: #1f2937;
+      line-height: 1.35;
+    }
+    .client-address {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.35;
+      margin-top: 0.25rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .email-preview-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 1rem;
+      min-height: 300px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Intro Email Queue</h1>
+          <p class="text-sm text-slate-500">Manage leads that need an intro email and follow-up</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
+          <a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a>
+          <a href="/lister-intro-emails.html" class="btn btn-secondary py-2 px-4">Intro Email Queue</a>
+          <a href="/lister-callbacks.html" class="btn btn-secondary py-2 px-4">Callback Agenda</a>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Needs Intro Email</div>
+          <div id="needsIntroStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Email Address</div>
+          <div id="withEmailStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Missing Email</div>
+          <div id="missingEmailStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Due Callback</div>
+          <div id="dueCallbackStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Email Status</label>
+            <select id="emailStatusFilter" class="input">
+              <option value="all">All</option>
+              <option value="has_email">Has email</option>
+              <option value="missing_email">Missing email</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" type="text" class="input" placeholder="Name, email, phone, postcode..." />
+          </div>
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Queue</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Intro Email Leads</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading queue...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="queue-table text-sm min-w-full">
+            <colgroup>
+              <col style="width: 20%">
+              <col style="width: 13%">
+              <col style="width: 13%">
+              <col style="width: 12%">
+              <col style="width: 10%">
+              <col style="width: 11%">
+              <col style="width: 10%">
+              <col style="width: 11%">
+            </colgroup>
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Email</th>
+                <th class="text-left p-3">Phone</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Campaign</th>
+                <th class="text-left p-3">Callback</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="queueBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="emailModal" class="fixed inset-0 bg-black/40 hidden z-50">
+    <div class="max-w-5xl mx-auto mt-8 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between gap-4">
+        <div>
+          <h3 id="modalTitle" class="text-2xl font-extrabold text-blue-900">Intro Email</h3>
+          <p id="modalSubtitle" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Lead Information</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-semibold text-blue-900">Name:</span> <span id="lead_name">-</span></div>
+            <div><span class="font-semibold text-blue-900">Email:</span> <span id="lead_email">-</span></div>
+            <div><span class="font-semibold text-blue-900">Telephone:</span> <span id="lead_phone">-</span></div>
+            <div><span class="font-semibold text-blue-900">Mobile:</span> <span id="lead_mobile">-</span></div>
+            <div><span class="font-semibold text-blue-900">Postcode:</span> <span id="lead_postcode">-</span></div>
+            <div><span class="font-semibold text-blue-900">Campaign:</span> <span id="lead_campaign">-</span></div>
+            <div><span class="font-semibold text-blue-900">Claim Type:</span> <span id="lead_claimType">-</span></div>
+            <div><span class="font-semibold text-blue-900">Callback:</span> <span id="lead_callback">-</span></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Email Setup</h4>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="claimTypeSelect">Claim Type</label>
+              <select id="claimTypeSelect" class="input">
+                <option value="">Select claim type</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackDate">Callback Date</label>
+              <input id="callbackDate" type="date" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="callbackTime">Callback Time</label>
+              <input id="callbackTime" type="time" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2" for="emailSubjectInput">Email Subject</label>
+              <input id="emailSubjectInput" type="text" class="input" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <h4 class="text-lg font-extrabold text-blue-900">Email Preview</h4>
+            <button id="generateEmailBtn" class="btn btn-secondary" type="button">Regenerate Email</button>
+          </div>
+          <div id="emailPreview" class="email-preview-box"></div>
+        </section>
+
+        <section class="card p-5">
+          <h4 class="text-lg font-extrabold text-blue-900 mb-4">Internal Notes</h4>
+          <textarea id="notesBox" class="input" rows="5" placeholder="Internal notes about this intro email or callback..."></textarea>
+        </section>
+
+        <section class="card p-5">
+          <div class="flex flex-wrap gap-3">
+            <button id="copyEmailBtn" class="btn btn-secondary" type="button">Copy Email</button>
+            <button id="markSentBtn" class="btn btn-primary" type="button">Mark Email Sent</button>
+            <button id="removeQueueBtn" class="btn btn-danger" type="button">Remove From Email Queue</button>
+          </div>
+          <p id="modalMessage" class="text-sm text-green-700 hidden mt-4"></p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      collection,
+      query,
+      where,
+      serverTimestamp,
+      arrayUnion,
+      setDoc
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const CLAIM_TYPES = [
+      { value: "airbnb_refunds", label: "Airbnb Refunds" },
+      { value: "car_finance", label: "Car Finance" },
+      { value: "caravan_holiday_park", label: "Caravan / Holiday Park" },
+      { value: "complaint_letters", label: "Complaint Letters" },
+      { value: "contact_me", label: "Contact Me" },
+      { value: "credit_card_fees", label: "Credit Card Fees" },
+      { value: "cruise_compensation", label: "Cruise Compensation" },
+      { value: "crypto_scam_recovery", label: "Crypto Scam Recovery" },
+      { value: "cyber_data_breach", label: "Cyber Data Breach" },
+      { value: "debt_recovery", label: "Debt Recovery" },
+      { value: "foam_insulation", label: "Foam Insulation" },
+      { value: "formal_escalation", label: "Formal Escalation" },
+      { value: "frozen_accounts", label: "Frozen Accounts" },
+      { value: "holiday_compensation", label: "Holiday Compensation" },
+      { value: "housing_disrepair", label: "Housing Disrepair" },
+      { value: "investment_platforms", label: "Investment Platforms" },
+      { value: "loans_and_mortgages", label: "Loans and Mortgages" },
+      { value: "medical_negligence", label: "Medical Negligence" },
+      { value: "mis_sold_bank_accounts", label: "Mis-sold Bank Accounts" },
+      { value: "mortgage_review", label: "Mortgage Review" },
+      { value: "new_build_issues", label: "New Build Issues" },
+      { value: "pension_administration", label: "Pension Administration" },
+      { value: "pension_issues", label: "Pension Issues" },
+      { value: "platform_failure", label: "Platform Failure" },
+      { value: "refund_issues", label: "Refund Issues" },
+      { value: "return_issues", label: "Return Issues" },
+      { value: "section_75_support", label: "Section 75 Support" },
+      { value: "solar_support", label: "Solar Support" },
+      { value: "spanish_mortgage", label: "Spanish Mortgage" },
+      { value: "survey_review", label: "Survey Review" },
+      { value: "timeshare", label: "Timeshare" },
+      { value: "train_delay", label: "Train Delay" }
+    ];
+
+    const CLAIM_TYPE_ALIASES = {
+      "airbnb refunds": "airbnb_refunds",
+      "car finance": "car_finance",
+      "caravan holiday park": "caravan_holiday_park",
+      "caravan/holiday park": "caravan_holiday_park",
+      "complaint letters": "complaint_letters",
+      "contact me": "contact_me",
+      "credit card fees": "credit_card_fees",
+      "cruise compensation": "cruise_compensation",
+      "crypto scam recovery": "crypto_scam_recovery",
+      "cyber data breach": "cyber_data_breach",
+      "debt recovery": "debt_recovery",
+      "foam insulation": "foam_insulation",
+      "formal escalation": "formal_escalation",
+      "frozen accounts": "frozen_accounts",
+      "holiday compensation": "holiday_compensation",
+      "housing disrepair": "housing_disrepair",
+      "investment platforms": "investment_platforms",
+      "loans and mortgages": "loans_and_mortgages",
+      "medical negligence": "medical_negligence",
+      "mis sold bank accounts": "mis_sold_bank_accounts",
+      "mis-sold bank accounts": "mis_sold_bank_accounts",
+      "mortgage review": "mortgage_review",
+      "new build issues": "new_build_issues",
+      "newbuild": "new_build_issues",
+      "pension administration": "pension_administration",
+      "pension issues": "pension_issues",
+      "platform failure": "platform_failure",
+      "refund issues": "refund_issues",
+      "return issues": "return_issues",
+      "section 75 support": "section_75_support",
+      "solar": "solar_support",
+      "solar support": "solar_support",
+      "spanish mortgage": "spanish_mortgage",
+      "survey": "survey_review",
+      "survey review": "survey_review",
+      "timeshare": "timeshare",
+      "train delay": "train_delay"
+    };
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
+    const emailStatusFilter = document.getElementById("emailStatusFilter");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const queueBody = document.getElementById("queueBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+    const needsIntroStat = document.getElementById("needsIntroStat");
+    const withEmailStat = document.getElementById("withEmailStat");
+    const missingEmailStat = document.getElementById("missingEmailStat");
+    const dueCallbackStat = document.getElementById("dueCallbackStat");
+
+    const emailModal = document.getElementById("emailModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalSubtitle = document.getElementById("modalSubtitle");
+    const leadNameEl = document.getElementById("lead_name");
+    const leadEmailEl = document.getElementById("lead_email");
+    const leadPhoneEl = document.getElementById("lead_phone");
+    const leadMobileEl = document.getElementById("lead_mobile");
+    const leadPostcodeEl = document.getElementById("lead_postcode");
+    const leadCampaignEl = document.getElementById("lead_campaign");
+    const leadClaimTypeEl = document.getElementById("lead_claimType");
+    const leadCallbackEl = document.getElementById("lead_callback");
+    const claimTypeSelect = document.getElementById("claimTypeSelect");
+    const callbackDate = document.getElementById("callbackDate");
+    const callbackTime = document.getElementById("callbackTime");
+    const emailSubjectInput = document.getElementById("emailSubjectInput");
+    const emailPreview = document.getElementById("emailPreview");
+    const notesBox = document.getElementById("notesBox");
+    const generateEmailBtn = document.getElementById("generateEmailBtn");
+    const copyEmailBtn = document.getElementById("copyEmailBtn");
+    const markSentBtn = document.getElementById("markSentBtn");
+    const removeQueueBtn = document.getElementById("removeQueueBtn");
+    const modalMessage = document.getElementById("modalMessage");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentContext = null;
+    let currentLeadCollection = "leadAssignments";
+    let introLeads = [];
+    let selectedLead = null;
+    let attendanceHeartbeatInterval = null;
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showModalMessage(text, isError = false) {
+      modalMessage.textContent = text;
+      modalMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      modalMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => modalMessage.classList.add("hidden"), 3000);
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getTodayAttendanceId(uid) {
+      return `${uid}_${todayIso()}`;
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeText(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function normalizeClaimType(value) {
+      const raw = normalizeText(value);
+      if (!raw) return "";
+      const underscored = raw.replace(/\s+/g, "_");
+      if (CLAIM_TYPES.some(item => item.value === underscored)) return underscored;
+      if (CLAIM_TYPE_ALIASES[raw]) return CLAIM_TYPE_ALIASES[raw];
+      return underscored;
+    }
+
+    function getClaimTypeLabel(value) {
+      const normalized = normalizeClaimType(value);
+      const found = CLAIM_TYPES.find(item => item.value === normalized);
+      return found ? found.label : cleanValue(value) || "-";
+    }
+
+    function getLeadTelephone(lead) {
+      return cleanValue(lead.telephone || lead.landline || lead.phone);
+    }
+
+    function getLeadMobile(lead) {
+      return cleanValue(lead.mobile || lead.mobileNumber || lead.cell);
+    }
+
+    function getLeadEmail(lead) {
+      return cleanValue(lead.email || lead.emailAddress);
+    }
+
+    function getLeadCampaign(lead) {
+      return cleanValue(lead.campaign || lead.campaignName);
+    }
+
+    function getLeadClaimType(lead) {
+      return cleanValue(lead.claimType || lead.type || lead.intakeClaimType);
+    }
+
+    function formatAddress(lead) {
+      return [
+        lead.address,
+        lead.address1,
+        lead.address2,
+        lead.address3,
+        lead.address4,
+        lead.address5
+      ].filter(Boolean).join(", ") || "-";
+    }
+
+    function formatLeadStatus(lead) {
+      if (lead.closed === true || lead.usable === false) return "Closed";
+      if (lead.leadStatus === "awaiting_manager") return "Awaiting Manager";
+      if (lead.leadStatus === "qualified") return "Qualified";
+      if (lead.leadStatus === "callback_required") return "Callback Booked";
+      if (lead.leadStatus === "intro_email_needed") return "Intro Email Needed";
+      if (lead.leadStatus === "intake_in_progress") return "Intake In Progress";
+      if (lead.leadStatus === "converted") return "Converted";
+      if (lead.leadStatus === "no_answer") return "No Answer";
+      return "New";
+    }
+
+    function leadStatusBadge(lead) {
+      const status = formatLeadStatus(lead);
+      if (status === "Qualified") return `<span class="badge badge-green">Qualified</span>`;
+      if (status === "Awaiting Manager") return `<span class="badge badge-blue">Awaiting Manager</span>`;
+      if (status === "Callback Booked") return `<span class="badge badge-amber">Callback Booked</span>`;
+      if (status === "Intro Email Needed") return `<span class="badge badge-indigo">Intro Email Needed</span>`;
+      if (status === "Intake In Progress") return `<span class="badge badge-purple">Intake In Progress</span>`;
+      if (status === "Closed") return `<span class="badge badge-red">Closed</span>`;
+      if (status === "Converted") return `<span class="badge badge-green">Converted</span>`;
+      if (status === "No Answer") return `<span class="badge badge-slate">No Answer</span>`;
+      return `<span class="badge badge-slate">${status}</span>`;
+    }
+
+    function formatCallback(lead) {
+      if (!lead.callbackDate) return "-";
+      return `${lead.callbackDate}${lead.callbackTime ? ` ${lead.callbackTime}` : ""}`;
+    }
+
+    function populateClaimTypeDropdowns() {
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+      claimTypeSelect.innerHTML = `<option value="">Select claim type</option>`;
+
+      CLAIM_TYPES.forEach(item => {
+        const option1 = document.createElement("option");
+        option1.value = item.value;
+        option1.textContent = item.label;
+        claimTypeFilter.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = item.value;
+        option2.textContent = item.label;
+        claimTypeSelect.appendChild(option2);
+      });
+    }
+
+    function populateCampaignFilter() {
+      const currentValue = campaignFilter.value || "all";
+
+      const campaigns = [...new Set(
+        introLeads
+          .map(lead => getLeadCampaign(lead))
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b))
+      )];
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+
+      if ([...campaignFilter.options].some(option => option.value === currentValue)) {
+        campaignFilter.value = currentValue;
+      }
+    }
+
+    async function recordStaffLoginFromPage() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const today = todayIso();
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          currentSessionStartAt: serverTimestamp(),
+          totalLoggedInMs: 0,
+          isOnline: true
+        });
+      } else {
+        const existingData = attendanceSnap.data() || {};
+        const updateData = {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        };
+
+        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
+          updateData.currentSessionStartAt = serverTimestamp();
+        }
+
+        if (typeof existingData.totalLoggedInMs !== "number") {
+          updateData.totalLoggedInMs = 0;
+        }
+
+        await setDoc(attendanceRef, {...updateData,workspaceId:currentContext.workspaceId}, { merge: true });
+      }
+    }
+
+    async function updateStaffHeartbeat() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
+
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
+        uid: currentUser.uid,
+        name: currentUserData.name || "",
+        email: currentUser.email || "",
+        role: currentUserData.role || "staff",
+        date: todayIso(),
+        lastSeenAt: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    }
+
+    function startAttendanceHeartbeat() {
+      if (attendanceHeartbeatInterval) clearInterval(attendanceHeartbeatInterval);
+
+      attendanceHeartbeatInterval = setInterval(async () => {
+        try {
+          await updateStaffHeartbeat();
+        } catch (error) {
+          console.error("Attendance heartbeat failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    async function recordStaffLogout() {
+      if (!currentUser) return;
+
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, crmCollection(currentContext,"staffAttendance"), attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
+          uid: currentUser.uid,
+          lastLogoutAt: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
+        return;
+      }
+
+      const data = attendanceSnap.data() || {};
+      const now = Date.now();
+      let extraMs = 0;
+
+      if (data.currentSessionStartAt?.toDate) {
+        const sessionStart = data.currentSessionStartAt.toDate().getTime();
+        extraMs = Math.max(0, now - sessionStart);
+      }
+
+      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
+      const newTotal = existingTotal + extraMs;
+
+      await setDoc(attendanceRef, {workspaceId:currentContext.workspaceId,
+        uid: currentUser.uid,
+        totalLoggedInMs: newTotal,
+        currentSessionStartAt: null,
+        lastLogoutAt: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
+    }
+
+    async function checkStaffAccess(user) {
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role};
+
+      if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      currentContext=context;
+      currentLeadCollection=crmCollection(context,"leadAssignments");
+      applyWorkspaceChrome(context);
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadIntroQueue() {
+      try {
+        const queueQuery = isCrm2(currentContext)?query(collection(db,currentLeadCollection),where("assignedToUid","==",currentUser.uid)):query(collection(db,currentLeadCollection),where("assignedToUid","==",currentUser.uid),where("introEmailNeeded","==",true));
+
+        const snapshot = await getDocs(queueQuery);
+        introLeads = snapshot.docs.map(docSnap => normalizeCrmRecord(currentContext,docSnap.id,docSnap.data())).filter(lead=>!isCrm2(currentContext)||lead.introEmailNeeded===true||lead.leadStatus==="intro_email_needed");
+
+        populateCampaignFilter();
+        renderStats();
+        renderQueue();
+      } catch (error) {
+        console.error("Failed to load intro queue:", error);
+        resultsSummary.textContent = `Could not load intro email queue: ${error.code || error.message || "Unknown error"}`;
+      }
+    }
+
+    function renderStats() {
+      needsIntroStat.textContent = String(introLeads.length);
+      withEmailStat.textContent = String(introLeads.filter(lead => !!getLeadEmail(lead)).length);
+      missingEmailStat.textContent = String(introLeads.filter(lead => !getLeadEmail(lead)).length);
+
+      const today = todayIso();
+      dueCallbackStat.textContent = String(
+        introLeads.filter(lead => lead.callbackDate && lead.callbackDate <= today).length
+      );
+    }
+
+    function getFilteredLeads() {
+      const claimType = claimTypeFilter.value;
+      const campaign = campaignFilter.value;
+      const emailStatus = emailStatusFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+
+      return introLeads.filter(lead => {
+        const normalizedLeadClaimType = normalizeClaimType(getLeadClaimType(lead));
+        const hasEmail = !!getLeadEmail(lead);
+
+        const matchesClaimType = claimType === "all" || normalizedLeadClaimType === normalizeClaimType(claimType);
+        const matchesCampaign = campaign === "all" || getLeadCampaign(lead) === campaign;
+        const matchesEmailStatus =
+          emailStatus === "all" ||
+          (emailStatus === "has_email" && hasEmail) ||
+          (emailStatus === "missing_email" && !hasEmail);
+
+        const haystack = `
+          ${lead.forename || ""}
+          ${lead.surname || ""}
+          ${getLeadEmail(lead)}
+          ${getLeadTelephone(lead)}
+          ${getLeadMobile(lead)}
+          ${lead.postcode || ""}
+          ${getLeadCampaign(lead)}
+          ${getLeadClaimType(lead)}
+          ${getClaimTypeLabel(getLeadClaimType(lead))}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesClaimType && matchesCampaign && matchesEmailStatus && matchesSearch;
+      });
+    }
+
+    function renderQueue() {
+      const filtered = getFilteredLeads();
+      queueBody.innerHTML = "";
+
+      if (!filtered.length) {
+        queueBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-slate-500">No intro email leads found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(lead => {
+          const tr = document.createElement("tr");
+          tr.className = "border-t border-slate-200";
+          tr.innerHTML = `
+            <td class="p-3 align-top">
+              <div class="client-name">${lead.forename || ""} ${lead.surname || ""}</div>
+              <div class="client-address">${formatAddress(lead)}</div>
+            </td>
+            <td class="p-3 align-top cell-tight">${getLeadEmail(lead) || '<span class="text-red-600 font-semibold">Missing email</span>'}</td>
+            <td class="p-3 align-top cell-wrap">
+              <div>${getLeadTelephone(lead) || "-"}</div>
+              <div class="text-slate-500 mt-1">${getLeadMobile(lead) || "-"}</div>
+            </td>
+            <td class="p-3 align-top cell-wrap">${getClaimTypeLabel(getLeadClaimType(lead))}</td>
+            <td class="p-3 align-top cell-wrap">${getLeadCampaign(lead) || "-"}</td>
+            <td class="p-3 align-top cell-wrap">${formatCallback(lead)}</td>
+            <td class="p-3 align-top cell-wrap">${leadStatusBadge(lead)}</td>
+            <td class="p-3 align-top">
+              <button class="text-blue-600 font-bold hover:underline" type="button" data-open-email="${lead.id}">
+                Open
+              </button>
+            </td>
+          `;
+          queueBody.appendChild(tr);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} intro email lead(s) shown`;
+
+      document.querySelectorAll("[data-open-email]").forEach(button => {
+        button.addEventListener("click", () => openLeadModal(button.getAttribute("data-open-email")));
+      });
+    }
+
+    function buildEmailSubject(lead, claimTypeValue) {
+      const claimLabel = getClaimTypeLabel(claimTypeValue || getLeadClaimType(lead));
+      return `Quaerens Claims - ${claimLabel} Information`;
+    }
+
+    function buildEmailBody(lead, claimTypeValue) {
+      const firstName = cleanValue(lead.forename) || "there";
+      const claimLabel = getClaimTypeLabel(claimTypeValue || getLeadClaimType(lead));
+      const callbackLine = callbackDate.value
+        ? `We have scheduled your follow-up for ${callbackDate.value}${callbackTime.value ? ` at ${callbackTime.value}` : ""}.`
+        : `We will be in touch shortly to discuss the next steps with you.`;
+
+      return `Dear ${firstName},
+
+Thank you for speaking with Quaerens Claims.
+
+Following our conversation, we are sending this introductory email regarding your ${claimLabel} enquiry.
+
+${callbackLine}
+
+If any documents are available, please keep them ready as they may help with the next stage of your claim review.
+
+If you need to reply before your callback, please respond directly to this email and our team will review your message.
+
+Kind regards,
+Quaerens Claims
+Client Support Team`;
+    }
+
+    function openLeadModal(leadId) {
+      selectedLead = introLeads.find(item => item.id === leadId);
+      if (!selectedLead) return;
+
+      const claimTypeValue = normalizeClaimType(getLeadClaimType(selectedLead));
+
+      modalTitle.textContent = "Intro Email";
+      modalSubtitle.textContent = `Lead ID: ${selectedLead.id}`;
+      leadNameEl.textContent = `${selectedLead.forename || ""} ${selectedLead.surname || ""}`.trim() || "-";
+      leadEmailEl.textContent = getLeadEmail(selectedLead) || "-";
+      leadPhoneEl.textContent = getLeadTelephone(selectedLead) || "-";
+      leadMobileEl.textContent = getLeadMobile(selectedLead) || "-";
+      leadPostcodeEl.textContent = selectedLead.postcode || "-";
+      leadCampaignEl.textContent = getLeadCampaign(selectedLead) || "-";
+      leadClaimTypeEl.textContent = getClaimTypeLabel(getLeadClaimType(selectedLead));
+      leadCallbackEl.textContent = formatCallback(selectedLead);
+
+      claimTypeSelect.value = claimTypeValue || "";
+      callbackDate.value = selectedLead.callbackDate || "";
+      callbackTime.value = selectedLead.callbackTime || "";
+      notesBox.value = selectedLead.notes || "";
+      emailSubjectInput.value = buildEmailSubject(selectedLead, claimTypeValue);
+      emailPreview.textContent = buildEmailBody(selectedLead, claimTypeValue);
+
+      emailModal.classList.remove("hidden");
+    }
+
+    async function refreshQueueAndSelected() {
+      const currentId = selectedLead?.id || null;
+      await loadIntroQueue();
+
+      if (currentId) {
+        const updated = introLeads.find(item => item.id === currentId);
+        if (updated) {
+          openLeadModal(updated.id);
+        } else {
+          emailModal.classList.add("hidden");
+          selectedLead = null;
+        }
+      }
+    }
+
+    async function updateLead(patch, historyAction, historyNotes = "") {
+      if (!selectedLead) return;
+
+      try {
+        const scopedPatch=isCrm2(currentContext)&&patch.leadStatus?{...patch,status:patch.leadStatus==="closed"?"rejected":selectedLead.status||"information-requested"}:patch;
+        await updateDoc(doc(db, currentLeadCollection, selectedLead.id), {
+          ...scopedPatch,
+          lastUpdatedAt: serverTimestamp(),
+          actionHistory: arrayUnion({
+            action: historyAction,
+            byUid: currentUser.uid,
+            byName: currentUserData.name || "",
+            at: new Date().toISOString(),
+            notes: historyNotes
+          })
+        });
+
+        await refreshQueueAndSelected();
+        showModalMessage("Lead updated successfully.");
+      } catch (error) {
+        console.error("Update failed:", error);
+        showModalMessage("Could not update lead.", true);
+      }
+    }
+
+    generateEmailBtn.addEventListener("click", () => {
+      if (!selectedLead) return;
+      const chosenClaimType = normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead));
+      emailSubjectInput.value = buildEmailSubject(selectedLead, chosenClaimType);
+      emailPreview.textContent = buildEmailBody(selectedLead, chosenClaimType);
+      showModalMessage("Email preview updated.");
+    });
+
+    copyEmailBtn.addEventListener("click", async () => {
+      try {
+        const textToCopy = `Subject: ${emailSubjectInput.value}\n\n${emailPreview.textContent}`;
+        await navigator.clipboard.writeText(textToCopy);
+        showModalMessage("Email copied to clipboard.");
+      } catch (error) {
+        console.error("Clipboard copy failed:", error);
+        showModalMessage("Could not copy email.", true);
+      }
+    });
+
+    markSentBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      if (!getLeadEmail(selectedLead)) {
+        showModalMessage("This lead has no email address saved.", true);
+        return;
+      }
+
+      const chosenClaimType = normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead));
+      const subject = cleanValue(emailSubjectInput.value) || buildEmailSubject(selectedLead, chosenClaimType);
+      const callbackText = callbackDate.value
+        ? `Callback set for ${callbackDate.value}${callbackTime.value ? ` ${callbackTime.value}` : ""}.`
+        : "No callback date set.";
+
+      await updateLead({
+        claimType: chosenClaimType || "",
+        intakeClaimType: chosenClaimType || "",
+        callbackDate: callbackDate.value || "",
+        callbackTime: callbackTime.value || "",
+        notes: notesBox.value || "",
+        introEmailSent: true,
+        introEmailSentAt: serverTimestamp(),
+        introEmailNeeded: false,
+        callbackRequired: !!callbackDate.value,
+        leadStatus: callbackDate.value ? "callback_required" : (selectedLead.leadStatus || "new"),
+        lastAction: "send_intro_email",
+        lastIntroEmailSubject: subject,
+        lastIntroEmailBody: emailPreview.textContent || ""
+      }, "send_intro_email", `${callbackText} Intro email marked as sent.`);
+    });
+
+    removeQueueBtn.addEventListener("click", async () => {
+      if (!selectedLead) return;
+
+      await updateLead({
+        claimType: normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead)) || "",
+        intakeClaimType: normalizeClaimType(claimTypeSelect.value || getLeadClaimType(selectedLead)) || "",
+        callbackDate: callbackDate.value || "",
+        callbackTime: callbackTime.value || "",
+        notes: notesBox.value || "",
+        introEmailNeeded: false
+      }, "notes_saved", "Lead removed from intro email queue.");
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+      emailModal.classList.add("hidden");
+    });
+
+    emailModal.addEventListener("click", (e) => {
+      if (e.target === emailModal) {
+        emailModal.classList.add("hidden");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        populateClaimTypeDropdowns();
+
+        const allowed = await checkStaffAccess(user);
+        if (!allowed) return;
+
+        try {
+          await recordStaffLoginFromPage();
+          startAttendanceHeartbeat();
+        } catch (attendanceError) {
+          console.error("Attendance login-from-page failed:", attendanceError);
+        }
+
+        await loadIntroQueue();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load intro email queue: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        try {
+          await recordStaffLogout();
+        } catch (attendanceError) {
+          console.error("Attendance logout failed:", attendanceError);
+        }
+
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", async () => {
+      try {
+        await recordStaffLogout();
+      } catch (error) {
+        console.error("Attendance beforeunload failed:", error);
+      }
+    });
+
+    claimTypeFilter.addEventListener("change", renderQueue);
+    campaignFilter.addEventListener("change", renderQueue);
+    emailStatusFilter.addEventListener("change", renderQueue);
+    searchInput.addEventListener("input", renderQueue);
+    refreshBtn.addEventListener("click", loadIntroQueue);
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add("active-nav");
+      }
+    });
+  </script>
+</body>
+</html>

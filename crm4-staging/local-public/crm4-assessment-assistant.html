@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Quaerens Assessment Assistant | CRM4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background: #f3f7fb;
+        color: #102a56;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #d6e2f0;
+        border-radius: 16px;
+        padding: 20px;
+      }
+      .input {
+        width: 100%;
+        border: 1px solid #b8c9df;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fff;
+      }
+      .btn {
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 700;
+      }
+      .primary {
+        background: #155eef;
+        color: #fff;
+      }
+      .secondary {
+        background: #e8f0ff;
+        color: #123b78;
+      }
+      .btn:disabled {
+        background: #d7dee9;
+        color: #66758c;
+        cursor: not-allowed;
+        opacity: 1;
+      }
+      .warn {
+        background: #fff8dc;
+        border: 1px solid #e7c85c;
+      }
+      .good {
+        background: #e8f7ed;
+        border: 1px solid #76bd8b;
+      }
+      .review-card {
+        border: 1px solid #d6e2f0;
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .review-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .review-item {
+        border-left: 4px solid #8ba9cf;
+        background: #f8fbff;
+        padding: 10px 12px;
+      }
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        background: #e8f0ff;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+      .money-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .money-table th,
+      .money-table td {
+        text-align: left;
+        border-bottom: 1px solid #d6e2f0;
+        padding: 8px;
+      }
+      .field-guidance {
+        display: block;
+        margin: 0.3rem 0 0.45rem;
+        color: #536987;
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.4;
+      }
+      .field-guidance strong {
+        color: #334e73;
+        font-weight: 700;
+      }
+      pre {
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-5">
+      <header>
+        <p class="text-sm font-bold text-blue-600">CRM4 · GOVERNED ASSESSMENT AUTHORING</p>
+        <h1 class="text-3xl font-extrabold">Quaerens Assessment Assistant</h1>
+        <p>AI extracts structured facts. You remain responsible for correcting and confirming them before Manager review.</p>
+      </header>
+      <div id="status" class="card">Checking authorised CRM4 access…</div>
+      <section id="editor" class="hidden space-y-5">
+        <div class="card">
+          <h2 class="font-bold text-xl">Authoritative client details</h2>
+          <p class="text-sm mb-3">Client correspondence details from the assigned CRM4 lead. Required fields are marked *.</p>
+          <div class="grid md:grid-cols-2 gap-3">
+            <label>
+              First name *
+              <input id="firstName" class="input" required />
+            </label>
+            <label>
+              Surname *
+              <input id="lastName" class="input" required />
+            </label>
+            <label>
+              Email *
+              <input id="email" class="input" type="email" required />
+            </label>
+            <label>
+              Mobile *
+              <input id="mobile" class="input" type="tel" required />
+            </label>
+            <label>
+              Fixed-line telephone (optional)
+              <input id="telephone" class="input" type="tel" />
+            </label>
+            <label>
+              Secondary email (optional)
+              <input id="secondaryEmail" class="input" type="email" />
+            </label>
+            <label>
+              Address Line 1 *
+              <input id="addressLine1" class="input" required />
+            </label>
+            <label>
+              Address Line 2 (optional)
+              <input id="addressLine2" class="input" />
+            </label>
+            <label>
+              Town / City *
+              <input id="town" class="input" required />
+            </label>
+            <label>
+              County / Region (optional)
+              <input id="county" class="input" />
+            </label>
+            <label>
+              Postcode *
+              <input id="postcode" class="input" required />
+            </label>
+            <label>
+              Country *
+              <input id="country" class="input" required />
+            </label>
+          </div>
+          <div id="legacyAddressNotice" class="warn rounded-xl p-3 mt-3 hidden"></div>
+          <button id="saveClient" class="btn secondary mt-3">Save Client Details</button>
+        </div>
+        <div class="card">
+          <label>
+            Assessment route
+            <select id="category" class="input">
+              <option value="spray-foam">Spray Foam Insulation</option>
+              <option value="solar">Solar / Solar Finance</option>
+              <option value="holiday-park-static-caravan">Caravan / Holiday Park</option>
+              <option value="general-consumer">General Consumer Dispute</option>
+            </select>
+          </label>
+          <div class="mt-4">
+            <h3 id="caseAddressHeading" class="font-bold">Affected property address</h3>
+            <label class="flex gap-2 items-center mt-2">
+              <input id="sameAddress" type="checkbox" />
+              Case / property address is the same as client address
+            </label>
+            <div id="caseAddressFields" class="grid md:grid-cols-2 gap-3 mt-3">
+              <label>
+                Address Line 1
+                <input id="caseAddressLine1" class="input" />
+              </label>
+              <label>
+                Address Line 2
+                <input id="caseAddressLine2" class="input" />
+              </label>
+              <label>
+                Town / City
+                <input id="caseTown" class="input" />
+              </label>
+              <label>
+                County / Region
+                <input id="caseCounty" class="input" />
+              </label>
+              <label>
+                Postcode
+                <input id="casePostcode" class="input" />
+              </label>
+              <label>
+                Country
+                <input id="caseCountry" class="input" />
+              </label>
+            </div>
+            <div id="addressConfirmation" class="warn rounded-xl p-3 mt-3 hidden">
+              <p>The affected property address matches the client's correspondence address. Is this the same address?</p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <button id="confirmSameAddress" class="btn primary" type="button">Yes — use client address</button>
+                <button id="confirmSeparateAddress" class="btn secondary" type="button">No — keep as separate case address</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <label class="font-bold text-xl">
+            Assessment Notes / Client Narrative
+            <textarea id="narrative" class="input mt-3 min-h-64" placeholder="Paste unrestricted case notes or shorthand here"></textarea>
+          </label>
+          <div class="grid md:grid-cols-2 gap-3 mt-4" id="sections"></div>
+          <button id="analyse" class="btn primary mt-4">Analyse Case Information</button>
+        </div>
+        <div id="review" class="hidden card space-y-4">
+          <h2 class="font-bold text-xl">Lister Review</h2>
+          <div class="warn rounded-xl p-3">Review every extracted fact. Reported or estimated information must not be promoted to confirmed without evidence or direct confirmation.</div>
+          <p id="reviewGuidance">Review the extracted information above. Confirm it if correct, or edit and save corrections if changes are required.</p>
+          <div id="reviewConfirmed" class="good rounded-xl p-3 hidden">Review confirmed.</div>
+          <div id="summary" class="grid md:grid-cols-2 gap-3"></div>
+          <details class="review-card">
+            <summary class="font-bold cursor-pointer">Advanced / Audit View — Structured Assessment JSON</summary>
+            <p class="text-sm mt-2">Authorised structured correction view. Changes remain subject to the governed save and Manager review workflow.</p>
+            <textarea id="json" class="input mt-2 min-h-96 font-mono text-xs"></textarea>
+          </details>
+          <div class="flex flex-wrap gap-2">
+            <button id="confirmReview" class="btn primary">Confirm Review &amp; Continue</button>
+            <button id="save" class="btn secondary">Edit / Save Corrections</button>
+            <button id="reanalyze" class="btn secondary">Reanalyse</button>
+          </div>
+          <div id="reviewActionStatus" class="hidden rounded-xl p-3" role="status" aria-live="polite"></div>
+          <div>
+            <p id="draftPrerequisite" class="text-sm font-semibold">Confirm your review or save actual corrections before generating the assessment draft.</p>
+            <button id="draft" class="btn primary mt-2" disabled aria-describedby="draftPrerequisite">Generate Draft Assessment</button>
+          </div>
+        </div>
+        <div id="draftPanel" class="hidden card">
+          <h2 class="font-bold text-xl">Draft Assessment</h2>
+          <div class="warn rounded-xl p-3 my-3">DRAFT — NOT APPROVED / NOT FOR CLIENT DELIVERY. Review the professional preview before explicitly finalising and sending it.</div>
+          <div id="draftSummary" class="grid md:grid-cols-2 gap-3"></div>
+          <button id="previewDraft" class="btn secondary mt-4">Preview Draft Report (PDF)</button>
+          <section id="reprojectPanel" class="hidden review-card mt-4" aria-label="Existing draft reprojection">
+            <button id="reprojectOpen" class="btn secondary" type="button">Reproject Existing Draft</button>
+            <div id="reprojectConfirmation" class="hidden mt-3">
+              <p id="reprojectIdentity" class="font-bold"></p>
+              <p>Reproject this existing draft using the latest confirmed assessment information and current report-generation rules. This preserves the existing assessment/QAR and creates a new draft revision. It does not approve, finalise or send the assessment.</p>
+              <button id="reprojectConfirm" class="btn primary mt-3" type="button">Confirm Reproject Existing Draft</button>
+              <button id="reprojectCancel" class="btn secondary mt-3" type="button">Cancel</button>
+            </div>
+          </section>
+          <p id="reprojectStatus" role="status" aria-live="polite"></p>
+          <details class="review-card mt-4">
+            <summary class="font-bold cursor-pointer">Advanced / Audit View — Draft JSON</summary>
+            <pre id="draftPreview" class="text-sm mt-2"></pre>
+          </details>
+          <div id="finaliseDetails" class="review-card mt-4"></div>
+          <button id="finalise" class="btn primary mt-4">Finalise Assessment &amp; Send to Client</button>
+          <button id="downloadFinal" class="btn secondary mt-4 hidden">Download Final PDF</button>
+          <div id="finaliseStatus" class="hidden rounded-xl p-3 mt-3" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+    <script src="/crm4-assessment-reproject.js"></script>
+    <script type="module">
+      import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+      import { getAuth, onAuthStateChanged } from "/__crm4/sdk/10.8.0/auth.js";
+      import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+      import { getFirestore, doc, getDocFromServer } from "/__crm4/sdk/10.8.0/firestore.js";
+      const app = initializeApp({
+          apiKey: "crm4-local-only",
+          authDomain: "crm4-local-only",
+          projectId: "demo-quaerens-crm4",
+        }),
+        auth = getAuth(app),
+        fx = getFunctions(app),
+        call = (n) => httpsCallable(fx, n),
+        getState = call("crm4AssessmentAssistantGetState"),
+        reprojectDraft = call("crm4AssessmentAssistantReprojectDraft"),
+        updateClient = call("crm4AssessmentAssistantUpdateClientIdentity"),
+        analyse = call("crm4AssessmentAssistantAnalyse"),
+        confirmReview = call("crm4AssessmentAssistantConfirmReview"),
+        save = call("crm4AssessmentAssistantSaveCorrections"),
+        draft = call("crm4AssessmentAssistantGenerateDraft"),
+        previewDraft = call("crm4AssessmentAssistantPreviewDraftPdf"),
+        finalise = call("crm4AssessmentAssistantFinalise"),
+        downloadFinal = call("crm4AssessmentAssistantDownloadFinalPdf"),
+        leadId = new URLSearchParams(location.search).get("leadId") || "";
+      let artifactId = "",
+        assessmentId = "",
+        currentClient = {},
+        currentQar = "",
+        busy = false;
+      const $ = (id) => document.getElementById(id),
+        status = (m, bad = false) => {
+          $("status").textContent = m;
+          $("status").className = `card ${bad ? "warn" : "good"}`;
+        },
+        identityFields = ["firstName", "lastName", "email", "mobile", "telephone", "secondaryEmail"],
+        addressFields = ["addressLine1", "addressLine2", "town", "county", "postcode", "country"],
+        fillClient = (c) => {
+          identityFields.forEach((k) => ($(k).value = c?.[k] || ""));
+          addressFields.forEach((k) => ($(k).value = c?.address?.[k] || ""));
+          $("legacyAddressNotice").classList.toggle("hidden", c?.addressSource !== "LEGACY_FULL_ADDRESS");
+          $("legacyAddressNotice").textContent = c?.addressSource === "LEGACY_FULL_ADDRESS" ? `Legacy full address preserved: ${c.legacyPostalAddress}. Enter and save structured correspondence fields when verified; nothing has been guessed.` : "";
+        },
+        fields = ["Supplier / installer", "Product / system", "Purchase / contract details", "Finance", "Additional costs", "Refunds / compensation", "What the client says they were told", "Consequences", "Previous complaint / solicitor / refund history", "Documents/evidence available", "Lister observations"];
+      function error(e) {
+        return e?.message?.replace(/^Firebase:\s*/, "") || "The governed operation could not be completed.";
+      }
+      const esc = (v) =>
+          String(v ?? "").replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          ),
+        categoryGuidance = {
+          solar: {
+            "Supplier / installer": ["Ask the client:", "Who sold and/or installed the solar system?"],
+            "Product / system": ["Ask the client:", "What system was installed? Do you know the capacity, panels, inverter or expected output?"],
+            "Purchase / contract details": ["Ask the client:", "When was it installed, what did it cost and how was the purchase arranged?"],
+            Finance: ["Ask the client:", "Was finance or credit used? Who was the lender and what do you know about the agreement?"],
+            "Additional costs": ["Ask the client:", "Have you paid or been quoted additional costs because of the system?"],
+            "Refunds / compensation": ["Ask the client:", "What refund/redress or compensation are you seeking?"],
+            "What the client says they were told": ["Ask the client:", "What did the salesperson tell you before you agreed to buy and finance the system?"],
+            Consequences: ["Ask the client:", "What problems occurred and what financial or practical effect did they have?"],
+            "Previous complaint / solicitor / refund history": ["Ask the client:", "Who have you complained to, when, and what happened?"],
+            "Documents/evidence available": ["Ask the client:", "What documents/evidence do you have?"],
+            "Lister observations": ["Lister guidance:", "Record useful factual observations only — not legal conclusions."],
+          },
+        },
+        renderStructuredFields = () => {
+          const existingValues = [...document.querySelectorAll(".structured")].map((input) => input.value),
+            guidance = categoryGuidance[$("category").value] || {};
+          $("sections").innerHTML = fields
+            .map((field, i) => {
+              const helper = guidance[field];
+              return `<label>${esc(field)}${helper ? `<span class="field-guidance"><strong>${esc(helper[0])}</strong> ${esc(helper[1])}</span>` : ""}<textarea class="input mt-1 structured" data-key="${i}" rows="3"></textarea></label>`;
+            })
+            .join("");
+          [...document.querySelectorAll(".structured")].forEach((input, i) => (input.value = existingValues[i] || ""));
+        },
+        friendlyCategory = (v) =>
+          ({
+            "spray-foam": "Spray Foam Insulation",
+            solar: "Solar / Solar Finance",
+            "holiday-park-static-caravan": "Caravan / Holiday Park",
+            "general-consumer": "General Consumer",
+          })[v] ||
+          v ||
+          "—",
+        statusLabel = (v) =>
+          ({
+            CONFIRMED_FROM_INPUT: "Confirmed",
+            CLIENT_REPORTED: "Client reported",
+            ESTIMATE: "Estimate",
+            CALCULATED: "Calculated",
+            TBC: "To be confirmed",
+            NOT_SUPPLIED: "Not supplied",
+            REQUIRES_CLARIFICATION: "Requires clarification",
+            ANALYTICAL_INFERENCE: "Analytical inference",
+          })[v] ||
+          v ||
+          "—",
+        money = (v) =>
+          new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            maximumFractionDigits: 2,
+          }).format(v),
+        rangeKey = (label) =>
+          String(label || "")
+            .toLowerCase()
+            .replace(/\b(minimum|maximum|lower|upper)\b/g, "")
+            .replace(/\s+/g, " ")
+            .trim(),
+        financialRows = (items) => {
+          const remaining = [...(items || [])],
+            rows = [];
+          for (let i = 0; i < remaining.length; i++) {
+            const lower = remaining[i];
+            if (!lower || lower.status !== "ESTIMATE" || typeof lower.amount !== "number" || !/\b(minimum|lower)\b/i.test(lower.label || "")) {
+              if (lower) rows.push(lower);
+              continue;
+            }
+            const j = remaining.findIndex((upper, index) => index > i && upper?.status === "ESTIMATE" && typeof upper.amount === "number" && upper.amount >= lower.amount && /\b(maximum|upper)\b/i.test(upper.label || "") && rangeKey(upper.label) === rangeKey(lower.label));
+            if (j < 0) {
+              rows.push(lower);
+              continue;
+            }
+            const upper = remaining[j];
+            remaining[j] = null;
+            rows.push({
+              label: rangeKey(lower.label).replace(/^estimated\b/i, "Estimated"),
+              displayAmount: `${money(lower.amount)}–${money(upper.amount)}`,
+              status: "ESTIMATE",
+              basis: lower.basis === upper.basis ? lower.basis : lower.basis || upper.basis || "Client-supplied estimated range; not confirmed as expenditure incurred.",
+            });
+          }
+          return rows;
+        },
+        list = (values, mode = "fact") => `<div class="review-list">${(values || []).length ? (values || []).map((v) => (typeof v === "string" ? `<div class="review-item">${esc(v)}</div>` : `<div class="review-item"><b>${esc(v.label)}</b><div>${esc(v.value ?? (v.amount == null ? "—" : money(v.amount)))}</div><span class="pill">${esc(statusLabel(v.status))}</span>${v.source ? ` <small>${esc(v.source)}</small>` : ""}${v.basis ? ` <small>${esc(v.basis)}</small>` : ""}</div>`)).join("") : `<div class="review-item">None recorded</div>`}</div>`,
+        card = (h, body) => `<section class="review-card"><h3 class="font-bold">${esc(h)}</h3>${body}</section>`;
+      const reviewArrays = ["supplier", "product", "property", "finance", "transactions", "refunds", "clientStatements", "confirmedFacts", "reportedFacts", "estimates", "financialItems", "calculatedValues", "ambiguities", "conflicts", "missingInformation", "evidenceReadiness", "evidenceRequired", "preliminaryMerits", "risks", "recommendations", "reportModules"];
+      function normaliseReviewOutput(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("The saved assessment analysis could not be displayed. Please refresh or reanalyse.");
+        const o = { ...value };
+        for (const key of reviewArrays) o[key] = Array.isArray(value[key]) ? value[key] : [];
+        return o;
+      }
+      function render(value) {
+        const o = normaliseReviewOutput(value);
+        $("json").value = JSON.stringify(o, null, 2);
+        const conflicts = [...(o.conflicts || []), ...(o.ambiguities || [])],
+          financial = card(
+            "Financial Figures",
+            `<div class="overflow-x-auto"><table class="money-table"><thead><tr><th>Item</th><th>Amount</th><th>Status / Basis</th></tr></thead><tbody>${
+              financialRows(o.financialItems)
+                .map((v) => `<tr><td>${esc(v.label)}</td><td>${esc(v.displayAmount || (v.amount == null ? "—" : money(v.amount)))}</td><td>${esc(statusLabel(v.status))}${v.basis ? ` — ${esc(v.basis)}` : ""}</td></tr>`)
+                .join("") || '<tr><td colspan="3">No financial figures recorded</td></tr>'
+            }</tbody></table></div>`,
+          );
+        const cards = [
+          card(
+            "Confirmed / Authoritative Facts",
+            list([
+              {
+                label: "Client",
+                value: `${o.client?.firstName || ""} ${o.client?.lastName || ""}`.trim(),
+                status: "CONFIRMED_FROM_INPUT",
+                source: "Authoritative CRM4 record",
+              },
+              {
+                label: "Email",
+                value: o.contact?.email,
+                status: "CONFIRMED_FROM_INPUT",
+                source: "Authoritative CRM4 record",
+              },
+              {
+                label: "Mobile",
+                value: o.contact?.mobile,
+                status: "CONFIRMED_FROM_INPUT",
+                source: "Authoritative CRM4 record",
+              },
+              ...(o.confirmedFacts || []),
+            ]),
+          ),
+          card("Client-Reported Facts", list(o.reportedFacts)),
+          card("Estimates", list(o.estimates)),
+          financial,
+          card("Calculated Figures", list(o.calculatedValues)),
+          card("Conflicts / Ambiguities", list(conflicts, "text")),
+          card("Missing Important Information", list(o.missingInformation, "text")),
+          card("Evidence Available", list(o.evidenceReadiness)),
+          card("Evidence Required", list(o.evidenceRequired, "text")),
+          card("Preliminary Assessment", list(o.preliminaryMerits)),
+          card("Risks / Limitations", list(o.risks, "text")),
+          card("Recommendations / Next Steps", list(o.recommendations, "text")),
+          card("Proposed Case Category", `<p class="mt-2">${esc(friendlyCategory(o.category))}</p>`),
+          card("Proposed Report Modules", list(o.reportModules, "text")),
+          card("Proposed Case / Financial Direction", `<p class="mt-2">${esc(o.caseDirection || "—")}</p>`),
+        ];
+        $("summary").innerHTML = cards.join("");
+        $("review").classList.remove("hidden");
+        return o;
+      }
+      async function run(b, fn) {
+        if (busy) return;
+        busy = true;
+        b.disabled = true;
+        const old = b.textContent;
+        b.textContent = "Working…";
+        try {
+          return await fn();
+        } finally {
+          busy = false;
+          if (b.dataset.confirmed !== "true") {
+            b.disabled = false;
+            b.textContent = old;
+          }
+        }
+      }
+      const clientPayload = () => ({
+          firstName: $("firstName").value,
+          lastName: $("lastName").value,
+          email: $("email").value,
+          mobile: $("mobile").value,
+          telephone: $("telephone").value,
+          secondaryEmail: $("secondaryEmail").value,
+          address: Object.fromEntries(addressFields.map((k) => [k, $(k).value])),
+        }),
+        caseAddress = () => ({
+          addressLine1: $("caseAddressLine1").value,
+          addressLine2: $("caseAddressLine2").value,
+          town: $("caseTown").value,
+          county: $("caseCounty").value,
+          postcode: $("casePostcode").value,
+          country: $("caseCountry").value,
+        }),
+        casePayload = () => ({
+          sameAsClientAddress: $("sameAddress").checked,
+          explicitSeparateAddressConfirmed: explicitSeparate,
+          address: caseAddress(),
+        }),
+        routeAddressLabel = () =>
+          ({
+            "spray-foam": "Affected property address",
+            solar: "Installation / property address",
+            "holiday-park-static-caravan": "Park / site / pitch location",
+            "general-consumer": "Case address / location (optional)",
+          })[$("category").value],
+        normalAddress = (a) =>
+          Object.values(a || {})
+            .join(" ")
+            .toLowerCase()
+            .replace(/[\r\n,.;:]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+      let explicitSeparate = false;
+      function downloadBytes(result) {
+        const bytes = Uint8Array.from(atob(result.content), (c) => c.charCodeAt(0)),
+          url = URL.createObjectURL(new Blob([bytes], { type: result.contentType || "application/pdf" })),
+          anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = result.filename;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      }
+      function renderDraft(projection, qar) {
+        currentQar = qar || projection?.qar_reference || "";
+        $("draftPreview").textContent = JSON.stringify(projection || {}, null, 2);
+        const summary = [
+          ["QAR", currentQar || "—"],
+          ["Assessment route", projection?.matter_type || projection?.category || "—"],
+          ["Current position", projection?.preliminary_position || projection?.recommended_case_direction || "Requires review"],
+          ["Evidence items", String(projection?.evidence_readiness?.items?.length || 0)],
+        ];
+        $("draftSummary").innerHTML = summary.map(([label, value]) => `<div class="review-card"><strong>${esc(label)}</strong><p>${esc(value)}</p></div>`).join("");
+        const name = `${currentClient.firstName || ""} ${currentClient.lastName || ""}`.trim() || "—",
+          email = currentClient.email || "—";
+        $("finaliseDetails").innerHTML = `<h3 class="font-bold">Final delivery confirmation</h3><p><strong>Client:</strong> ${esc(name)}</p><p><strong>Authoritative email:</strong> ${esc(email)}</p><p><strong>QAR:</strong> ${esc(currentQar || "—")}</p><p><strong>Report status:</strong> Draft — awaiting explicit Lister finalisation</p><p>The final PDF will be sent to the authoritative client email with the verified Quaerens information brochure. The same PDF will be sent independently to the governed assessment archive.</p>`;
+        $("draftPanel").classList.remove("hidden");
+      }
+      function finaliseMessage(message, bad = false) {
+        const area = $("finaliseStatus");
+        area.textContent = message;
+        area.className = `${bad ? "warn" : "good"} rounded-xl p-3 mt-3`;
+      }
+      function copyClientAddress() {
+        addressFields.forEach((k) => ($("case" + (k === "addressLine1" ? "AddressLine1" : k === "addressLine2" ? "AddressLine2" : k[0].toUpperCase() + k.slice(1))).value = $(k).value));
+      }
+      function syncCaseAddressUi() {
+        $("caseAddressHeading").textContent = routeAddressLabel();
+        const same = $("sameAddress").checked;
+        if (same) {
+          copyClientAddress();
+          explicitSeparate = false;
+        }
+        for (const input of $("caseAddressFields").querySelectorAll("input")) input.disabled = same;
+        $("addressConfirmation").classList.add("hidden");
+      }
+      $("category").onchange = () => {
+        syncCaseAddressUi();
+        renderStructuredFields();
+      };
+      $("sameAddress").onchange = syncCaseAddressUi;
+      function restoreState(r) {
+        reprojectControl.update(r);
+        currentClient = r?.client || {};
+        const restored = r?.restoration || {},
+          artifact = restored.artifact,
+          assessment = restored.assessment;
+        if (artifact?.output) {
+          artifactId = artifact.id;
+          render(artifact.output);
+          if (artifact.status === "STAFF_CONFIRMED" && ["CONFIRMED_UNCHANGED", "CORRECTED"].includes(artifact.confirmationOutcome)) finishReviewConfirmation(artifact.confirmationOutcome === "CORRECTED" ? "Corrected Lister review restored. Generate Draft Assessment is available." : "Confirmed Lister review restored. Generate Draft Assessment is available.");
+          else resetReviewConfirmation();
+        }
+        if (assessment) {
+          assessmentId = assessment.id;
+          renderDraft(assessment.projection || {}, assessment.qarReference);
+          if (assessment.status === "GENERATED") {
+            $("finalise").disabled = true;
+            $("finalise").textContent = "Assessment finalised";
+            $("downloadFinal").classList.remove("hidden");
+          }
+          return `Existing draft ${assessment.qarReference || assessment.id} restored.`;
+        }
+        if (artifact) return artifact.status === "STAFF_CONFIRMED" ? "Confirmed Lister review restored." : "Existing analysis restored. Review before confirming.";
+        return "Authorised CRM4 assessment workspace ready.";
+      }
+      async function loadReprojectState() {
+        const user = auth.currentUser;
+        if (!user) throw new Error("Sign in to CRM4.");
+        const member = await getDocFromServer(doc(getFirestore(app), "crm4Memberships", user.uid));
+        const m = member.exists() ? member.data() : null;
+        const r = (await getState({ leadId })).data;
+        r.reprojectAuthority = window.AssessmentReproject.authority(m);
+        return r;
+      }
+      const reprojectControl = window.AssessmentReproject.create({
+        load: loadReprojectState,
+        invoke: async () => (await reprojectDraft({ leadId })).data,
+        refresh: (r) => status(restoreState(r)),
+        render: (view) => {
+          $("reprojectPanel").classList.toggle("hidden", !view.eligible && !view.pending);
+          $("reprojectConfirmation").classList.toggle("hidden", !view.confirming);
+          for (const id of ["reprojectOpen", "reprojectConfirm", "reprojectCancel"]) $(id).disabled = !!view.pending;
+          const a = view.state?.restoration?.assessment, c = view.state?.client;
+          $("reprojectIdentity").textContent = a ? `Client: ${c?.firstName || ""} ${c?.lastName || ""} · QAR: ${a.qarReference} · Revision: ${a.revision} · Status: ${a.status}` : "";
+          $("reprojectStatus").textContent = view.error || view.message || "";
+          $("reprojectStatus").className = view.error ? "warn rounded-xl p-3" : "";
+        },
+      });
+      $("reprojectOpen").onclick = () => run($("reprojectOpen"), () => reprojectControl.open());
+      $("reprojectConfirm").onclick = () => run($("reprojectConfirm"), () => reprojectControl.confirm());
+      $("reprojectCancel").onclick = () => reprojectControl.cancel();
+      onAuthStateChanged(auth, async (user) => {
+        reprojectControl.update(null);
+        if (!user || !leadId) {
+          status("An authenticated CRM4 session and lead reference are required.", true);
+          return;
+        }
+        try {
+          const r = await loadReprojectState();
+          currentClient = r.client || {};
+          fillClient(r.client);
+          $("category").value = r.category;
+          syncCaseAddressUi();
+          renderStructuredFields();
+          $("editor").classList.remove("hidden");
+          status(restoreState(r));
+        } catch (e) {
+          status(error(e), true);
+        }
+      });
+      $("saveClient").onclick = () =>
+        run($("saveClient"), async () => {
+          fillClient((await updateClient({ leadId, client: clientPayload() })).data.client);
+          syncCaseAddressUi();
+          status("Authoritative CRM4 client details saved.");
+        }).catch((e) => status(error(e), true));
+      function resetReviewConfirmation() {
+        const confirmButton = $("confirmReview");
+        delete confirmButton.dataset.confirmed;
+        confirmButton.disabled = false;
+        confirmButton.textContent = "Confirm Review & Continue";
+        $("draft").disabled = true;
+        $("draftPrerequisite").classList.remove("hidden");
+        $("reviewConfirmed").classList.add("hidden");
+        $("reviewActionStatus").classList.add("hidden");
+        $("reviewActionStatus").textContent = "";
+      }
+      function reviewActionStatus(message, bad = false) {
+        const area = $("reviewActionStatus");
+        area.textContent = message;
+        area.className = `${bad ? "warn" : "good"} rounded-xl p-3`;
+      }
+      function finishReviewConfirmation(message) {
+        const confirmButton = $("confirmReview");
+        confirmButton.dataset.confirmed = "true";
+        confirmButton.disabled = true;
+        confirmButton.textContent = "✓ Review confirmed";
+        $("draft").disabled = false;
+        $("draftPrerequisite").classList.add("hidden");
+        $("reviewConfirmed").classList.remove("hidden");
+        reviewActionStatus(message);
+        status(message);
+      }
+      function reviewedJson() {
+        try {
+          return JSON.parse($("json").value);
+        } catch {
+          throw new Error("Correct the JSON syntax before continuing.");
+        }
+      }
+      async function performAnalysis() {
+        return run($("analyse"), async () => {
+          const saved = (await updateClient({ leadId, client: clientPayload() })).data.client;
+          fillClient(saved);
+          if ($("sameAddress").checked) copyClientAddress();
+          const payload = casePayload(),
+            clientAddress = Object.fromEntries(addressFields.map((k) => [k, $(k).value]));
+          if (!payload.sameAsClientAddress && normalAddress(payload.address) && normalAddress(payload.address) === normalAddress(clientAddress) && !explicitSeparate) {
+            $("addressConfirmation").classList.remove("hidden");
+            status("Confirm whether the matching case and correspondence addresses are logically the same.", true);
+            return;
+          }
+          const sections = Object.fromEntries([...document.querySelectorAll(".structured")].map((x) => [fields[Number(x.dataset.key)], x.value]));
+          const r = (
+            await analyse({
+              leadId,
+              category: $("category").value,
+              narrative: $("narrative").value,
+              sections,
+              caseContext: payload,
+            })
+          ).data;
+          artifactId = r.id;
+          resetReviewConfirmation();
+          render(r.output);
+          status(r.cacheHit ? "Existing identical analysis loaded. Review before confirming." : "Structured extraction created. Review before confirming.");
+        }).catch((e) => status(error(e), true));
+      }
+      $("analyse").onclick = performAnalysis;
+      $("confirmSameAddress").onclick = () => {
+        $("sameAddress").checked = true;
+        syncCaseAddressUi();
+        performAnalysis();
+      };
+      $("confirmSeparateAddress").onclick = () => {
+        explicitSeparate = true;
+        $("addressConfirmation").classList.add("hidden");
+        performAnalysis();
+      };
+      $("reanalyze").onclick = () => $("analyse").click();
+      $("confirmReview").onclick = () =>
+        run($("confirmReview"), async () => {
+          const r = (
+            await confirmReview({
+              leadId,
+              artifactId,
+              reviewedExtraction: reviewedJson(),
+            })
+          ).data;
+          artifactId = r.id;
+          render(r.output);
+          finishReviewConfirmation("Review confirmed. Generate Draft Assessment is now available.");
+        }).catch((e) => {
+          const message = error(e);
+          reviewActionStatus(message, true);
+          status(message, true);
+        });
+      $("save").onclick = () =>
+        run($("save"), async () => {
+          const r = (
+            await save({
+              leadId,
+              artifactId,
+              correctedExtraction: reviewedJson(),
+            })
+          ).data;
+          artifactId = r.id;
+          render(r.output);
+          finishReviewConfirmation("Lister corrections saved and review confirmed.");
+        }).catch((e) => {
+          const message = error(e);
+          reviewActionStatus(message, true);
+          status(message, true);
+        });
+      $("draft").onclick = () =>
+        run($("draft"), async () => {
+          const r = (await draft({ leadId, artifactId })).data;
+          assessmentId = r.assessmentId;
+          renderDraft(r.projection, r.qarReference);
+          status(`Draft ${r.qarReference} generated.`);
+        }).catch((e) => status(error(e), true));
+      $("previewDraft").onclick = () =>
+        run($("previewDraft"), async () => {
+          const result = (await previewDraft({ leadId })).data;
+          downloadBytes(result);
+          finaliseMessage("Draft preview created transiently. No assessment state or delivery was changed.");
+        }).catch((e) => finaliseMessage(error(e), true));
+      $("finalise").onclick = () => {
+        if (!confirm(`Finalise ${currentQar} and send the PDF to ${currentClient.email || "the authoritative client email"}, with an independent governed archive copy?`)) return;
+        run($("finalise"), async () => {
+          const result = (await finalise({ leadId })).data;
+          finaliseMessage(result.clientDeliveryStatus === "SENT" ? "Assessment finalised. Client delivery was accepted and the governed archive delivery was processed independently." : "Assessment finalised, but client delivery requires governed retry.", result.clientDeliveryStatus !== "SENT");
+          $("finalise").disabled = true;
+          $("finalise").textContent = "Assessment finalised";
+          $("downloadFinal").classList.remove("hidden");
+        }).catch((e) => finaliseMessage(error(e), true));
+      };
+      $("downloadFinal").onclick = () =>
+        run($("downloadFinal"), async () => downloadBytes((await downloadFinal({ leadId })).data)).catch((e) => finaliseMessage(error(e), true));
+    </script>
+  </body>
+</html>

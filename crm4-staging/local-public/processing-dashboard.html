@@ -1,0 +1,1025 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Processing Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-indigo { background: #e0e7ff; color: #3730a3; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
+
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+  </style>
+
+  <style>
+    main .grid > .card { min-width: 0; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div id="toast"></div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Dashboard</h1>
+          <p class="text-sm text-slate-500">Processing workload, case ownership, payment tracking, report pack visibility, and next actions</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
+          <a href="/case-action-engine.html" class="btn btn-secondary py-2 px-4">Case Action Engine&trade;</a>
+          <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <a href="/agenda.html" class="btn btn-secondary py-2 px-4">Agenda</a>
+          <a href="/paid-client-workspace.html" class="btn btn-secondary py-2 px-4">Processing Work Inbox / Paid Clients</a>
+          <a href="/agenda.html#administrationOnboardingAvailability" class="btn btn-secondary py-2 px-4">Administration Onboarding Availability</a>
+          <a href="/client-search.html" class="btn btn-secondary py-2 px-4">Client Search</a>
+          <a href="/processing-daily-attendance.html" class="btn btn-secondary py-2 px-4">Daily Attendance</a>
+          <a href="/processing-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <a href="/processing-monthly-attendance.html" class="btn btn-secondary py-2 px-4">Monthly Attendance</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-9 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Cases</div>
+          <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">My Cases</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Payment (legacy)</div>
+          <div id="awaitingPaymentStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Part Paid (legacy)</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Fully Paid (legacy)</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Urgent</div>
+          <div id="followUpStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Payment Link (legacy)</div>
+          <div id="paymentLinkStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Legacy Report-Pack Marker</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="processing-table-grid grid lg:grid-cols-2 gap-6 min-w-0">
+        <section class="card p-6 min-w-0">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <a href="/processing-panel.html" class="btn btn-primary text-center">Open Processing Panel</a>
+            <a href="/case-action-engine.html" class="btn btn-primary text-center">Open Case Action Engine&trade;</a>
+            <a href="/processing-payments.html" class="btn btn-primary text-center">Open Payments</a>
+            <a href="/processing-cases-dashboard.html" class="btn btn-primary text-center">Open Case Management</a>
+            <a href="/agenda.html" class="btn btn-primary text-center">Open Agenda</a>
+            <a href="/agenda.html#administrationOnboardingAvailability" class="btn btn-primary text-center">Manage Administration Onboarding Availability</a>
+            <a href="/client-search.html" class="btn btn-primary text-center">Open Client Search</a>
+            <a href="/processing-daily-attendance.html" class="btn btn-secondary text-center">Daily Staff Attendance</a>
+            <a href="/processing-weekly-attendance.html" class="btn btn-secondary text-center">Weekly Staff Attendance</a>
+            <a href="/processing-monthly-attendance.html" class="btn btn-secondary text-center">Monthly Staff Attendance</a>
+          </div>
+        </section>
+
+        <section class="card p-6 min-w-0">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Money Snapshot</h2>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <div class="text-sm text-slate-500">Due Now</div>
+              <div id="dueNowTotal" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Paid Now</div>
+              <div id="paidNowTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Follow-Up Due</div>
+              <div id="followUpTotal" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4"><div><h2 class="text-xl font-extrabold text-blue-900">CRM4 Awaiting Signed Agreement</h2><p class="text-sm text-slate-500 mt-1">Processing confirms the exact sent Agreement has been signed before any payment request is available.</p></div></div>
+        <div class="overflow-x-auto"><table class="w-full text-sm border-collapse"><thead><tr class="bg-blue-50 text-blue-900"><th class="text-left p-3">Client / CRM4 reference</th><th class="text-left p-3">Route</th><th class="text-left p-3">Closer</th><th class="text-left p-3">Agreement</th><th class="text-left p-3">Action</th></tr></thead><tbody id="crm4AgreementQueueBody"></tbody></table></div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4"><div><h2 class="text-xl font-extrabold text-blue-900">Stripe Refund / Dispute Review</h2><p class="text-sm text-slate-500 mt-1">Signed Stripe events requiring Processing/Admin review. Historical payment and case records remain preserved.</p></div></div>
+        <div class="overflow-x-auto"><table class="w-full text-sm border-collapse"><thead><tr class="bg-amber-50 text-blue-900"><th class="text-left p-3">Client / CRM4 reference</th><th class="text-left p-3">Original paid</th><th class="text-left p-3">Refunded</th><th class="text-left p-3">Remaining</th><th class="text-left p-3">Status</th><th class="text-left p-3">Action</th></tr></thead><tbody id="crm4StripeRefundBody"></tbody></table></div>
+        <h3 class="font-extrabold text-blue-900 mt-6">Refund / dispute events requiring review</h3>
+        <div class="overflow-x-auto mt-2"><table class="w-full text-sm border-collapse"><thead><tr class="bg-slate-50 text-blue-900"><th class="text-left p-3">Client / CRM4 reference</th><th class="text-left p-3">Agreed fee</th><th class="text-left p-3">Payment</th><th class="text-left p-3">Refund</th><th class="text-left p-3">Dispute / risk</th></tr></thead><tbody id="crm4PaymentRiskBody"></tbody></table></div>
+      </section>
+
+      <dialog id="stripeRefundDialog" class="card p-0 w-full max-w-xl backdrop:bg-slate-900/60">
+        <form id="stripeRefundForm" method="dialog" class="p-6 space-y-4">
+          <div><p class="text-xs font-extrabold tracking-wide text-red-700 uppercase">Live financial action</p><h2 class="text-xl font-extrabold text-blue-900">Issue full Stripe refund</h2></div>
+          <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm space-y-2">
+            <p><strong>Client / case:</strong> <span id="stripeRefundCase"></span></p>
+            <p><strong>Payment request:</strong> <span id="stripeRefundRequest"></span></p>
+            <p><strong>Full remaining refund:</strong> <span id="stripeRefundAmount"></span></p>
+          </div>
+          <label class="block"><span class="block text-sm font-semibold mb-1">Refund reason</span><textarea id="stripeRefundReason" class="input" rows="4" maxlength="500" required placeholder="Record the operational reason for this full refund."></textarea></label>
+          <label class="flex gap-2 items-start text-sm"><input id="stripeRefundAcknowledge" type="checkbox" required class="mt-1"><span>I understand that confirming this action creates a real full refund through Stripe.</span></label>
+          <p id="stripeRefundMessage" class="text-sm font-semibold" role="status" aria-live="polite"></p>
+          <div class="flex justify-end gap-3"><button id="stripeRefundCancel" class="btn btn-secondary" type="button">Cancel</button><button id="stripeRefundConfirm" class="btn bg-red-700 text-white hover:bg-red-800" type="submit">Confirm full refund</button></div>
+        </form>
+      </dialog>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4"><div><h2 class="text-xl font-extrabold text-blue-900">CRM4 Awaiting Intake Payment</h2><p class="text-sm text-slate-500 mt-1">Processing &amp; Admin / Payments confirms the intake assessment fee received. This moves the matter to Ready for Administration Onboarding; it does not start Active Processing.</p></div></div>
+        <div class="overflow-x-auto"><table class="w-full text-sm border-collapse"><thead><tr class="bg-blue-50 text-blue-900"><th class="text-left p-3">Client / CRM4 reference</th><th class="text-left p-3">Fee</th><th class="text-left p-3">Payment requested</th><th class="text-left p-3">Closer</th><th class="text-left p-3">Agreement</th><th class="text-left p-3">Action</th></tr></thead><tbody id="crm4PaymentQueueBody"></tbody></table></div>
+      </section>
+
+      <section class="card p-5 md:p-6 mb-6" id="administrationOnboarding">
+        <h2 class="text-xl font-extrabold text-blue-900">Administration Onboarding Availability</h2>
+        <p class="text-sm text-slate-500 mt-1">Processing publishes governed slots. Closers can book only currently available slots.</p>
+        <div class="grid md:grid-cols-5 gap-3 mt-4">
+          <div><label class="block text-sm font-semibold mb-1" for="adminSlotStartDate">Start date</label><input class="input" id="adminSlotStartDate" type="date"></div>
+          <div><label class="block text-sm font-semibold mb-1" for="adminSlotEndDate">End date</label><input class="input" id="adminSlotEndDate" type="date"></div>
+          <div><label class="block text-sm font-semibold mb-1" for="adminSlotTime">Start time</label><input class="input" id="adminSlotTime" type="time"></div>
+          <div><label class="block text-sm font-semibold mb-1" for="adminSlotDuration">Duration</label><select class="input" id="adminSlotDuration"><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60" selected>60 minutes</option><option value="90">90 minutes</option></select></div>
+          <div class="flex items-end"><button class="btn btn-primary w-full" id="publishAdminSlots" type="button">Publish Availability</button></div>
+        </div>
+        <fieldset class="mt-3"><legend class="text-sm font-semibold">Recurring weekdays (optional)</legend><div class="flex flex-wrap gap-3 mt-2 text-sm"><label><input type="checkbox" name="adminWeekday" value="1"> Mon</label><label><input type="checkbox" name="adminWeekday" value="2"> Tue</label><label><input type="checkbox" name="adminWeekday" value="3"> Wed</label><label><input type="checkbox" name="adminWeekday" value="4"> Thu</label><label><input type="checkbox" name="adminWeekday" value="5"> Fri</label></div></fieldset>
+        <h3 class="font-extrabold text-blue-900 mt-6">Published slots</h3><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr><th class="text-left p-2">Date</th><th class="text-left p-2">Time</th><th class="text-left p-2">Duration</th><th class="text-left p-2">State</th><th class="text-left p-2">Action</th></tr></thead><tbody id="adminSlotsBody"></tbody></table></div>
+        <h3 class="font-extrabold text-blue-900 mt-6">Booked Administration Onboarding Calls</h3><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr><th class="text-left p-2">Client</th><th class="text-left p-2">Date/time</th><th class="text-left p-2">Closer</th><th class="text-left p-2">State</th><th class="text-left p-2">Action</th></tr></thead><tbody id="adminAppointmentsBody"></tbody></table></div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">My Cases</h2>
+              <p class="text-sm text-slate-500 mt-1">Cases currently assigned to you</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3"><button type="button" class="font-bold" data-queue-date-sort="my" aria-label="Sort My Cases by date">Date <span id="myDateSortIndicator">▼</span></button></th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="myFilesBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Unassigned Queue</h2>
+              <p class="text-sm text-slate-500 mt-1">Available cases that can be claimed</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3"><button type="button" class="font-bold" data-queue-date-sort="unassigned" aria-label="Sort Unassigned Queue by date">Date <span id="unassignedDateSortIndicator">▼</span></button></th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="unassignedFilesBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Recent Cases</h2>
+              <p class="text-sm text-slate-500 mt-1">Latest created or updated processing cases</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3"><button type="button" class="font-bold" data-queue-date-sort="recent" aria-label="Sort Recent Cases by date">Date <span id="recentDateSortIndicator">▼</span></button></th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Owner</th>
+                  <th class="text-left p-3">Report Pack</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="recentFilesBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Payment Priority</h2>
+              <p class="text-sm text-slate-500 mt-1">Cases needing payment attention</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3"><button type="button" class="font-bold" data-queue-date-sort="priority" aria-label="Sort Payment Priority by date">Date <span id="priorityDateSortIndicator">▼</span></button></th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Owner</th>
+                  <th class="text-left p-3">Due Now</th>
+                  <th class="text-left p-3">Paid</th>
+                  <th class="text-left p-3">Follow-Up</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="priorityPaymentsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      collection,
+      serverTimestamp
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+    import { getIdTokenResult } from "/__crm4/sdk/10.8.0/auth.js";
+    import { resolveCrmWorkspace } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const functions = getFunctions(app, "us-central1");
+    const loadOperationalDashboard = httpsCallable(functions, "processingListOperationalDashboard");
+    const refundStripePayment = httpsCallable(functions, "crm4RefundStripePayment");
+    const markAgreementSigned = httpsCallable(functions, "processingMarkAgreementSigned");
+    const confirmCrm2Payment = httpsCallable(functions, "processingConfirmCrm2Payment");
+    const listAdministrationOnboarding = httpsCallable(functions, "processingListAdministrationOnboarding");
+    const publishAdministrationSlots = httpsCallable(functions, "processingPublishAdministrationOnboardingSlots");
+    const blockAdministrationSlot = httpsCallable(functions, "processingBlockAdministrationOnboardingSlot");
+    const completeAdministrationOnboarding = httpsCallable(functions, "processingCompleteAdministrationOnboarding");
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allCases = [];
+    let operationalMoneySnapshot = null;
+    let crm4AgreementQueue = [];
+    let crm4PaymentQueue = [];
+    let crm4PaymentRiskQueue = [];
+    let crm4StripeRefundQueue = [];
+    let stripeRefundAuthority = false;
+    let selectedStripeRefund = null;
+    let administrationOnboarding = { slots: [], appointments: [], queues: {} };
+
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      })}`;
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeClaimType(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function formatClaimType(type) {
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(item) {
+      return cleanValue(
+        item?.campaign ||
+        item?.campaignName ||
+        item?.campaignLabel ||
+        item?.sourceCampaign ||
+        item?.leadCampaign
+      ) || "-";
+    }
+
+    function clientName(item) {
+      if (item?.client?.name) return item.client.name;
+      const first = item?.client?.firstName || item?.forename || "";
+      const second = item?.client?.secondName || item?.surname || "";
+      return `${first} ${second}`.trim() || item.caseReference || "-";
+    }
+
+    function clientEmail(item) {
+      return item?.client?.email || item?.email || "-";
+    }
+
+    function ownerName(item) {
+      return item.assignedToName || item.assignedToEmail || "-";
+    }
+
+    function ownerBadge(item) {
+      if (!item.assignedToUid) {
+        return `<span class="badge badge-amber">Unassigned</span>`;
+      }
+      if (item.assignedToUid === currentUser.uid) {
+        return `<span class="badge badge-green">Mine</span>`;
+      }
+      return `<span class="badge badge-slate">${ownerName(item)}</span>`;
+    }
+
+    function getEffectivePaymentStatus(item) {
+      if (item.paymentStatus) return item.paymentStatus;
+
+      const dueNow = Number(item.amountDueNow || 0);
+      const paidNow = Number(item.amountPaidNow || 0);
+      const followUpDue = Number(item.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+
+      if (
+        (dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) ||
+        (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)
+      ) {
+        return "fully_paid";
+      }
+
+      return "awaiting_payment";
+    }
+
+    function hasAssessmentReport(item) {
+      return !!String(
+        item.assessmentReportText ||
+        item.generatedAssessmentText ||
+        item.assessmentSummary ||
+        ""
+      ).trim();
+    }
+
+    function hasStrategyPack(item) {
+      return !!String(
+        item.processingPackText ||
+        item.strategicAnalysisText ||
+        item.recommendedNextStepsText ||
+        item.strategySummary ||
+        ""
+      ).trim();
+    }
+
+    function hasComplaintDocs(item) {
+      return !!String(
+        item.complaintLetterText ||
+        item.statementOfTruthText ||
+        item.lossSummaryText ||
+        item.evidenceChecklistText ||
+        item.escalationLetterText ||
+        item.internalFileNoteText ||
+        ""
+      ).trim();
+    }
+
+    function hasRichAssessmentPack(item) {
+      return hasAssessmentReport(item) || hasStrategyPack(item) || hasComplaintDocs(item);
+    }
+
+    function reportPackLabel(item) {
+      const parts = [];
+      if (hasAssessmentReport(item)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(item)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(item)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
+      return parts.join(" ");
+    }
+
+    function getOpenLink(item) {
+      if (item.dataAuthority === "PAID_CLIENT_WORKSPACE" && item.crm4LeadId) {
+        return `/paid-client-workspace.html?lead=${encodeURIComponent(item.crm4LeadId)}`;
+      }
+      return `/processing-case-detail.html?id=${item.id}`;
+    }
+
+    function getTimestampTime(value) {
+      if (!value) return 0;
+      try {
+        if (typeof value?.toDate === "function") return value.toDate().getTime();
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      } catch {
+        return 0;
+      }
+    }
+
+    async function checkProcessingAccess(user) {
+      const [workspace, token] = await Promise.all([resolveCrmWorkspace(db, user), getIdTokenResult(user)]);
+      if (!workspace.processing && token.claims.platformAdmin !== true) {
+        alert("You do not have permission to access this page.");
+        window.location.replace("/login.html?next=/processing-dashboard.html");
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = { name: workspace.displayName || "Processing staff" };
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadCases() {
+      const [result, onboardingResult] = await Promise.all([loadOperationalDashboard(), listAdministrationOnboarding()]);
+      allCases = result.data.cases || [];
+      operationalMoneySnapshot = result.data.moneySnapshot || null;
+      crm4AgreementQueue = result.data.agreementQueue || [];
+      crm4PaymentQueue = result.data.paymentQueue || [];
+      crm4PaymentRiskQueue = result.data.paymentRiskQueue || [];
+      crm4StripeRefundQueue = result.data.stripeRefundQueue || [];
+      stripeRefundAuthority = result.data.stripeRefundAuthority === true;
+      administrationOnboarding = onboardingResult.data || { slots: [], appointments: [], queues: {} };
+      window.processingAuthority = result.data.authority;
+      let note = document.getElementById("processingAuthorityNote");
+      if (!note) {
+        note = document.createElement("p");
+        note.id = "processingAuthorityNote";
+        note.className = "card p-4 text-sm text-slate-600";
+        document.querySelector("main")?.prepend(note);
+      }
+      note.textContent = "Authority: CRM4 remains the CRM master. The dashboard combines governed Paid Client Workspaces with any active legacy Processing records, without duplicating client identities. Legacy payment/report markers remain explicitly unverified and are not Commerce authority.";
+
+      renderStats();
+      renderMyFiles();
+      renderUnassignedFiles();
+      renderRecentFiles();
+      renderPriorityPayments();
+      renderCrm2AgreementQueue();
+      renderCrm2PaymentQueue();
+      renderCrm2PaymentRiskQueue();
+      renderCrm2StripeRefundQueue();
+      renderAdministrationOnboarding();
+    }
+
+    function escapeHtml(value) { return String(value || "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]); }
+    function renderCrm2AgreementQueue() {
+      const body = document.getElementById("crm4AgreementQueueBody");
+      if (!crm4AgreementQueue.length) { body.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-500">No sent Agreements are awaiting signature confirmation.</td></tr>'; return; }
+      body.innerHTML = crm4AgreementQueue.map(row => `<tr class="border-t border-slate-200"><td class="p-3"><strong>${escapeHtml(row.clientName)}</strong><br><span class="text-xs text-slate-500">${escapeHtml(row.clientReference)}</span></td><td class="p-3">${escapeHtml(row.claimType || "-")}</td><td class="p-3">${escapeHtml(row.assignedCloserName || "-")}</td><td class="p-3">${escapeHtml(row.agreementDocumentId)}<br><span class="text-xs text-slate-500">Version ${Number(row.agreementVersion || 0)}</span></td><td class="p-3"><button class="btn btn-primary crm4-mark-agreement-signed" data-lead-id="${escapeHtml(row.id)}" data-document-id="${escapeHtml(row.agreementDocumentId)}" data-version="${Number(row.agreementVersion || 0)}">Mark Agreement Signed</button></td></tr>`).join("");
+    }
+    function renderCrm2PaymentQueue() {
+      const body = document.getElementById("crm4PaymentQueueBody");
+      if (!crm4PaymentQueue.length) { body.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">No CRM4 payments are awaiting verification.</td></tr>'; return; }
+      body.innerHTML = crm4PaymentQueue.map(row => `<tr class="border-t border-slate-200"><td class="p-3"><strong>${escapeHtml(row.clientName)}</strong><br><span class="text-xs text-slate-500">${escapeHtml(row.clientReference)}</span></td><td class="p-3">${escapeHtml(row.agreedFeeCurrency)} ${Number(row.agreedFeeAmount || 0).toFixed(2)}<br><span class="text-xs text-slate-500">${escapeHtml(row.paymentOptionId || "legacy_manual")}</span></td><td class="p-3">${escapeHtml(row.paymentStatus)}</td><td class="p-3">${escapeHtml(row.assignedCloserName)}</td><td class="p-3">${escapeHtml(row.agreementStatus)}</td><td class="p-3"><button class="btn btn-primary crm4-confirm-payment" data-lead-id="${escapeHtml(row.id)}" data-amount="${Number(row.agreedFeeAmount || 0)}" ${row.agreementStatus !== "signed" ? "disabled title=\"Agreement must be confirmed signed first\"" : ""}>Mark Intake Assessment Fee Paid</button></td></tr>`).join("");
+    }
+
+    const queueDateDirection = { my: "desc", unassigned: "desc", recent: "desc", priority: "desc" };
+    function authoritativeDateValue(value) {
+      if (!value) return null;
+      const seconds = typeof value === "object" ? Number(value.seconds ?? value._seconds) : NaN;
+      const date = Number.isFinite(seconds) ? new Date(seconds * 1000) : new Date(value);
+      return Number.isNaN(date.getTime()) || date.getTime() <= 0 ? null : date;
+    }
+    function formatOperationalDate(value) {
+      const date = authoritativeDateValue(value);
+      return date ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(date) : "—";
+    }
+    function sortByOperationalDate(rows, queue, field = "operationalDate") {
+      const direction = queueDateDirection[queue] === "asc" ? 1 : -1;
+      return rows.sort((a, b) => {
+        const aTime = authoritativeDateValue(a[field])?.getTime() || 0;
+        const bTime = authoritativeDateValue(b[field])?.getTime() || 0;
+        return (aTime - bTime) * direction;
+      });
+    }
+    function renderCrm2PaymentRiskQueue() {
+      const body = document.getElementById("crm4PaymentRiskBody");
+      if (!crm4PaymentRiskQueue.length) { body.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-500">No Stripe refund or dispute review is outstanding.</td></tr>'; return; }
+      body.innerHTML = crm4PaymentRiskQueue.map(row => `<tr class="border-t border-slate-200"><td class="p-3"><strong>${escapeHtml(row.clientName)}</strong><br><span class="text-xs text-slate-500">${escapeHtml(row.clientReference)}</span></td><td class="p-3">${escapeHtml(row.agreedFeeCurrency)} ${Number(row.agreedFeeAmount || 0).toFixed(2)}</td><td class="p-3">${escapeHtml(row.paymentStatus || "—")}</td><td class="p-3">${escapeHtml(row.refundStatus || "—")}</td><td class="p-3 font-semibold text-amber-700">${escapeHtml(row.disputeStatus || row.riskStatus || "Review required")}</td></tr>`).join("");
+    }
+    function formatStripeMoney(pence, currency) {
+      return new Intl.NumberFormat("en-GB", { style:"currency", currency:currency || "GBP" }).format(Number(pence || 0) / 100);
+    }
+    function renderCrm2StripeRefundQueue() {
+      const body = document.getElementById("crm4StripeRefundBody");
+      if (!crm4StripeRefundQueue.length) { body.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">No paid Stripe requests are available for refund review.</td></tr>'; return; }
+      body.innerHTML = crm4StripeRefundQueue.map(row => {
+        const blocked = ["refund_pending", "refund_initiating", "refunded"].includes(row.refundStatus);
+        const canRefund = stripeRefundAuthority && row.paymentStatus === "paid" && Number(row.remainingRefundableAmount) > 0 && !blocked;
+        const status = row.refundStatus || row.paymentStatus || "—";
+        return `<tr class="border-t border-slate-200"><td class="p-3"><strong>${escapeHtml(row.clientName || "—")}</strong><br><span class="text-xs text-slate-500">${escapeHtml(row.clientReference || row.caseId)}</span></td><td class="p-3">${formatStripeMoney(row.originalAmount,row.currency)}</td><td class="p-3">${formatStripeMoney(row.refundedAmount,row.currency)}</td><td class="p-3 font-semibold">${formatStripeMoney(row.remainingRefundableAmount,row.currency)}</td><td class="p-3">${escapeHtml(status)}${row.lastRefundId ? `<br><span class="text-xs text-slate-500">${escapeHtml(row.lastRefundId)}</span>` : ""}</td><td class="p-3"><a class="btn btn-secondary inline-block mr-2" href="/paid-client-workspace.html?lead=${encodeURIComponent(row.caseId)}">Case / history</a>${canRefund ? `<button class="btn bg-red-700 text-white hover:bg-red-800 crm4-stripe-refund" data-payment-request-id="${escapeHtml(row.paymentRequestId)}">Issue full refund</button>` : ""}</td></tr>`;
+      }).join("");
+    }
+
+    document.getElementById("crm4StripeRefundBody").addEventListener("click", event => {
+      const button = event.target.closest(".crm4-stripe-refund"); if (!button || button.disabled) return;
+      selectedStripeRefund = crm4StripeRefundQueue.find(row => row.paymentRequestId === button.dataset.paymentRequestId) || null;
+      if (!selectedStripeRefund) return;
+      document.getElementById("stripeRefundCase").textContent = `${selectedStripeRefund.clientName || "—"} · ${selectedStripeRefund.clientReference || selectedStripeRefund.caseId}`;
+      document.getElementById("stripeRefundRequest").textContent = selectedStripeRefund.paymentRequestId;
+      document.getElementById("stripeRefundAmount").textContent = formatStripeMoney(selectedStripeRefund.remainingRefundableAmount, selectedStripeRefund.currency);
+      document.getElementById("stripeRefundReason").value = "";
+      document.getElementById("stripeRefundAcknowledge").checked = false;
+      document.getElementById("stripeRefundMessage").textContent = "";
+      document.getElementById("stripeRefundDialog").showModal();
+    });
+    document.getElementById("stripeRefundCancel").addEventListener("click", () => document.getElementById("stripeRefundDialog").close());
+    document.getElementById("stripeRefundForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const reason = document.getElementById("stripeRefundReason").value.trim();
+      const acknowledge = document.getElementById("stripeRefundAcknowledge").checked;
+      if (!selectedStripeRefund || !reason || !acknowledge) { document.getElementById("stripeRefundMessage").textContent = "A refund reason and explicit confirmation are required."; return; }
+      const button = document.getElementById("stripeRefundConfirm");
+      button.disabled = true; button.textContent = "Refunding…";
+      try {
+        await refundStripePayment({ paymentRequestId:selectedStripeRefund.paymentRequestId, reason });
+        document.getElementById("stripeRefundMessage").textContent = "Refund requested — awaiting Stripe confirmation";
+        await loadCases();
+        setTimeout(() => document.getElementById("stripeRefundDialog").close(), 1200);
+      } catch (error) {
+        console.error(error); document.getElementById("stripeRefundMessage").textContent = error.message || "The refund request was denied.";
+      } finally { button.disabled = false; button.textContent = "Confirm full refund"; }
+    });
+
+    document.getElementById("crm4AgreementQueueBody").addEventListener("click", async event => {
+      const button = event.target.closest(".crm4-mark-agreement-signed"); if (!button) return;
+      if (!window.confirm("Confirm that this exact governed Agreement has been signed?")) return;
+      button.disabled = true;
+      try { await markAgreementSigned({ leadId: button.dataset.leadId, agreementVersion: Number(button.dataset.version), agreementDocumentId: button.dataset.documentId }); showToast("Agreement marked signed. The Closer may now prepare the payment request."); await loadCases(); }
+      catch (error) { console.error(error); showToast(error.message || "Agreement signature confirmation was denied."); button.disabled = false; }
+    });
+
+    document.getElementById("crm4PaymentQueueBody").addEventListener("click", async event => {
+      const button = event.target.closest(".crm4-confirm-payment"); if (!button) return;
+      const reference = window.prompt("Optional payment/provider reference", "") || "";
+      if (!window.confirm("Confirm the exact received amount and move this matter to Ready for Administration Onboarding? Active Processing will not start yet.")) return;
+      button.disabled = true;
+      try { await confirmCrm2Payment({ leadId: button.dataset.leadId, confirmedAmount: Number(button.dataset.amount), paymentReference: reference }); showToast("Payment confirmed — ready for Administration Onboarding. Active Processing has not started."); await loadCases(); }
+      catch (error) { console.error(error); showToast(error.message || "Payment confirmation was denied."); button.disabled = false; }
+    });
+
+    function renderAdministrationOnboarding() {
+      const slotsBody = document.getElementById("adminSlotsBody"), appointmentsBody = document.getElementById("adminAppointmentsBody");
+      slotsBody.innerHTML = (administrationOnboarding.slots || []).map(row => `<tr class="border-t"><td class="p-2">${escapeHtml(row.date)}</td><td class="p-2">${escapeHtml(row.startTime)}</td><td class="p-2">${Number(row.durationMinutes)} minutes</td><td class="p-2">${escapeHtml(row.status)}</td><td class="p-2">${row.status === "available" ? `<button class="btn btn-secondary admin-slot-action" data-slot-id="${escapeHtml(row.id)}" data-action="block">Block</button>` : (["blocked","cancelled"].includes(row.status) ? `<button class="btn btn-secondary admin-slot-action" data-slot-id="${escapeHtml(row.id)}" data-action="release">Release</button>` : "—")}</td></tr>`).join("") || '<tr><td colspan="5" class="p-5 text-center text-slate-500">No Administration Onboarding availability has been published.</td></tr>';
+      appointmentsBody.innerHTML = (administrationOnboarding.appointments || []).map(row => `<tr class="border-t"><td class="p-2"><strong>${escapeHtml(row.clientName)}</strong><br><span class="text-xs">${escapeHtml(row.leadId)} · ${escapeHtml(row.route || "—")}</span></td><td class="p-2">${escapeHtml(row.date)} ${escapeHtml(row.startTime)}<br><span class="text-xs">${Number(row.durationMinutes || 60)} minutes</span></td><td class="p-2">${escapeHtml(row.assignedCloserName || "—")}</td><td class="p-2">${escapeHtml(row.status)}<br><span class="text-xs">Agreement: ${escapeHtml(row.agreementStatus || "—")} · Payment: ${escapeHtml(row.paymentStatus || "—")}</span></td><td class="p-2">${["booked","confirmation_sent","rescheduled"].includes(row.status) ? `<button class="btn btn-primary complete-admin-onboarding" data-lead-id="${escapeHtml(row.leadId)}">Complete Onboarding</button>` : "—"}</td></tr>`).join("") || '<tr><td colspan="5" class="p-5 text-center text-slate-500">No Administration Onboarding calls are booked.</td></tr>';
+    }
+    document.getElementById("publishAdminSlots")?.addEventListener("click", async () => {
+      const button = document.getElementById("publishAdminSlots"), startDate = document.getElementById("adminSlotStartDate").value, endDate = document.getElementById("adminSlotEndDate").value || startDate, startTime = document.getElementById("adminSlotTime").value, durationMinutes = Number(document.getElementById("adminSlotDuration").value), repeatWeekdays = [...document.querySelectorAll('[name="adminWeekday"]:checked')].map(input => Number(input.value));
+      if (!startDate || !startTime) { showToast("Choose a start date and time."); return; }
+      try { button.disabled = true; const result = (await publishAdministrationSlots({ startDate, endDate, startTime, durationMinutes, repeatWeekdays })).data; showToast(result.idempotent ? "Availability was already published." : `${result.count} slot(s) published.`); await loadCases(); } catch (error) { showToast(error.message || "Availability could not be published."); } finally { button.disabled = false; }
+    });
+    document.getElementById("adminSlotsBody")?.addEventListener("click", async event => { const button = event.target.closest(".admin-slot-action"); if (!button) return; try { button.disabled = true; await blockAdministrationSlot({ slotId: button.dataset.slotId, action: button.dataset.action, reason: button.dataset.action === "block" ? "Blocked by Processing" : "" }); await loadCases(); } catch (error) { showToast(error.message || "The slot could not be updated."); button.disabled = false; } });
+    document.getElementById("adminAppointmentsBody")?.addEventListener("click", async event => { const button = event.target.closest(".complete-admin-onboarding"); if (!button) return; if (!window.confirm("Confirm that the Administration Onboarding Call is complete and activate exactly one Processing case?")) return; const notes = window.prompt("Completion notes (internal)", "") || ""; try { button.disabled = true; await completeAdministrationOnboarding({ leadId: button.dataset.leadId, notes }); showToast("Administration Onboarding completed — Active Processing started."); await loadCases(); } catch (error) { showToast(error.message || "Onboarding completion was denied."); button.disabled = false; } });
+
+    async function claimCase(caseId) {
+      try {
+        await updateDoc(doc(db, "processingCases", caseId), {
+          assignedToUid: currentUser.uid,
+          assignedToName: currentUserData.name || "",
+          assignedToEmail: currentUser.email || "",
+          lastActivityAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        showToast("Case claimed.");
+        await loadCases();
+      } catch (error) {
+        console.error("Claim failed:", error);
+        showToast("Could not claim case.");
+      }
+    }
+
+    function renderStats() {
+      const awaiting = allCases.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length;
+      const partPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "part_paid").length;
+      const fullyPaid = allCases.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length;
+      const urgentCases = allCases.filter(f => String(f.priority || "").toLowerCase() === "urgent").length;
+      const withLinks = allCases.filter(f => String(f.paymentLink || "").trim()).length;
+      const withReportPack = allCases.filter(f => hasRichAssessmentPack(f)).length;
+      const dueNow = Number(operationalMoneySnapshot?.dueNow ?? allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0));
+      const paidNow = Number(operationalMoneySnapshot?.paidNow ?? allCases.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0));
+      const followUp = Number(operationalMoneySnapshot?.followUpDue ?? allCases.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0));
+      const myFiles = allCases.filter(f => f.assignedToUid === currentUser.uid).length;
+      const unassigned = allCases.filter(f => !f.assignedToUid).length;
+
+      document.getElementById("totalFilesStat").textContent = String(allCases.length);
+      document.getElementById("myFilesStat").textContent = String(myFiles);
+      document.getElementById("unassignedStat").textContent = String(unassigned);
+      document.getElementById("awaitingPaymentStat").textContent = String(awaiting);
+      document.getElementById("partPaidStat").textContent = String(partPaid);
+      document.getElementById("fullyPaidStat").textContent = String(fullyPaid);
+      document.getElementById("followUpStat").textContent = String(urgentCases);
+      document.getElementById("paymentLinkStat").textContent = String(withLinks);
+      document.getElementById("reportPackStat").textContent = String(withReportPack);
+      document.getElementById("dueNowTotal").textContent = money(dueNow);
+      document.getElementById("paidNowTotal").textContent = money(paidNow);
+      document.getElementById("followUpTotal").textContent = money(followUp);
+    }
+
+    function renderMyFiles() {
+      const body = document.getElementById("myFilesBody");
+      body.innerHTML = "";
+
+      const mine = sortByOperationalDate([...allCases]
+        .filter(f => f.assignedToUid === currentUser.uid), "my").slice(0, 8);
+
+      if (!mine.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-slate-500">No cases assigned to you.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      mine.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${formatOperationalDate(file.operationalDate)}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderUnassignedFiles() {
+      const body = document.getElementById("unassignedFilesBody");
+      body.innerHTML = "";
+
+      const unassigned = sortByOperationalDate([...allCases]
+        .filter(f => !f.assignedToUid), "unassigned").slice(0, 8);
+
+      if (!unassigned.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-slate-500">No unassigned cases.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      unassigned.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${formatOperationalDate(file.operationalDate)}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">
+            ${file.dataAuthority === "PAID_CLIENT_WORKSPACE"
+              ? `<a class="btn-small btn-blue" href="${getOpenLink(file)}">Open</a>`
+              : `<button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>`}
+          </td>
+        `;
+        body.appendChild(row);
+      });
+
+      document.querySelectorAll("[data-claim-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await claimCase(btn.getAttribute("data-claim-id"));
+        });
+      });
+    }
+
+    document.querySelectorAll("[data-queue-date-sort]").forEach(button => {
+      button.addEventListener("click", () => {
+        const queue = button.dataset.queueDateSort;
+        queueDateDirection[queue] = queueDateDirection[queue] === "desc" ? "asc" : "desc";
+        const indicators = { my:"myDateSortIndicator", unassigned:"unassignedDateSortIndicator", recent:"recentDateSortIndicator", priority:"priorityDateSortIndicator" };
+        document.getElementById(indicators[queue]).textContent = queueDateDirection[queue] === "desc" ? "▼" : "▲";
+        ({ my:renderMyFiles, unassigned:renderUnassignedFiles, recent:renderRecentFiles, priority:renderPriorityPayments })[queue]();
+      });
+    });
+
+    function renderRecentFiles() {
+      const body = document.getElementById("recentFilesBody");
+      body.innerHTML = "";
+
+      const recent = sortByOperationalDate([...allCases], "recent", "recentDate")
+        .slice(0, 8);
+
+      if (!recent.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-slate-500">No processing cases found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      recent.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${formatOperationalDate(file.recentDate)}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+          <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
+          <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+          <td class="p-3">
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderPriorityPayments() {
+      const body = document.getElementById("priorityPaymentsBody");
+      body.innerHTML = "";
+
+      const priority = sortByOperationalDate([...allCases]
+        .filter(f => getEffectivePaymentStatus(f) !== "fully_paid" || Number(f.followUpDue || 0) > 0)
+        , "priority")
+        .slice(0, 8);
+
+      if (!priority.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-slate-500">No payment priority cases found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      priority.forEach(file => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${formatOperationalDate(file.operationalDate)}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(file)}</div>
+            <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+          <td class="p-3 cell-wrap">${ownerBadge(file)}</td>
+          <td class="p-3 cell-wrap">${money(file.amountDueNow)}</td>
+          <td class="p-3 cell-wrap">${money(file.amountPaidNow)}</td>
+          <td class="p-3 cell-wrap">${money(file.followUpDue)}</td>
+          <td class="p-3">
+            <a href="${getOpenLink(file)}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.replace("/login.html?next=/processing-dashboard.html");
+        return;
+      }
+
+      try {
+        const allowed = await checkProcessingAccess(user);
+        if (!allowed) return;
+        await loadCases();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load processing dashboard: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    refreshBtn.addEventListener("click", async () => {
+      try {
+        await loadCases();
+        showToast("Dashboard refreshed.");
+      } catch (error) {
+        console.error(error);
+        showToast("Could not refresh dashboard.");
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        sessionStorage.removeItem("quaerensProcessingSession");
+        await signOut(auth);
+        window.location.replace("/login.html?next=/processing-dashboard.html");
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

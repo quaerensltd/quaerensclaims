@@ -1,0 +1,800 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Processing Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-small {
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .btn-blue { background: #dbeafe; color: #1d4ed8; }
+    .btn-blue:hover { background: #bfdbfe; }
+    .btn-red { background: #fee2e2; color: #991b1b; }
+    .btn-red:hover { background: #fecaca; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div id="toast"></div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Panel</h1>
+          <p class="text-sm text-slate-500">Shared processing queue with ownership, payment tracking, and report-pack visibility</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
+          <a href="/case-action-engine.html" class="btn btn-secondary py-2 px-4">Case Action Engine&trade;</a>
+          <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Cases</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-7 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Cases</div>
+          <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">My Cases</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Payment</div>
+          <div id="awaitingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Part Paid</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Fully Paid</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Report Pack</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="grid md:grid-cols-7 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership View</label>
+            <select id="ownershipFilter" class="input">
+              <option value="all">All cases</option>
+              <option value="mine">My cases</option>
+              <option value="unassigned">Unassigned only</option>
+              <option value="others">Assigned to others</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
+            <select id="paymentStatusFilter" class="input">
+              <option value="all">All payment statuses</option>
+              <option value="awaiting_payment">Awaiting Payment</option>
+              <option value="part_paid">Part Paid</option>
+              <option value="fully_paid">Fully Paid</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Campaign</label>
+            <select id="campaignFilter" class="input">
+              <option value="all">All campaigns</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Claim Type</label>
+            <select id="claimTypeFilter" class="input">
+              <option value="all">All claim types</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Report Pack</label>
+            <select id="reportPackFilter" class="input">
+              <option value="all">All cases</option>
+              <option value="basic">Basic only</option>
+              <option value="rich">Any report pack</option>
+              <option value="assessment">Assessment only</option>
+              <option value="strategy">Strategy only</option>
+              <option value="docs">Docs only</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+            <input id="searchInput" type="text" class="input" placeholder="Client, email, owner, campaign..." />
+          </div>
+
+          <div class="flex items-end">
+            <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Cases</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Processing Cases</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading processing cases...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Start date</th><th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Campaign</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Report Pack</th>
+                <th class="text-left p-3">Owner</th>
+                <th class="text-left p-3">Due Now</th>
+                <th class="text-left p-3">Paid</th>
+                <th class="text-left p-3">Follow-Up</th>
+                <th class="text-left p-3">Payment Status</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="filesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      collection,
+      serverTimestamp
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+    import { getIdTokenResult } from "/__crm4/sdk/10.8.0/auth.js";
+    import { resolveCrmWorkspace } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const functions = getFunctions(app, "us-central1");
+    const loadOperationalDashboard = httpsCallable(functions, "processingListOperationalDashboard");
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const ownershipFilter = document.getElementById("ownershipFilter");
+    const paymentStatusFilter = document.getElementById("paymentStatusFilter");
+    const campaignFilter = document.getElementById("campaignFilter");
+    const claimTypeFilter = document.getElementById("claimTypeFilter");
+    const reportPackFilter = document.getElementById("reportPackFilter");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
+    const filesBody = document.getElementById("filesBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allFiles = [];
+
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+    function formatDate(value) { try { const d = value?.seconds ? new Date(value.seconds * 1000) : new Date(value); return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("en-GB"); } catch { return "-"; } }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeClaimType(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function formatClaimType(type) {
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getCampaignName(file) {
+      return cleanValue(
+        file?.campaign ||
+        file?.campaignName ||
+        file?.campaignLabel ||
+        file?.sourceCampaign ||
+        file?.leadCampaign
+      ) || "-";
+    }
+
+    function clientName(file) {
+      const first = file?.client?.firstName || file?.forename || "";
+      const second = file?.client?.secondName || file?.surname || "";
+      return `${first} ${second}`.trim() || file.caseReference || "-";
+    }
+
+    function clientEmail(file) {
+      return file?.client?.email || file?.email || "-";
+    }
+
+    function ownerName(file) {
+      return file.assignedToName || file.assignedToEmail || "-";
+    }
+
+    function getEffectivePaymentStatus(file) {
+      if (file.paymentStatus) return file.paymentStatus;
+
+      const dueNow = Number(file.amountDueNow || 0);
+      const paidNow = Number(file.amountPaidNow || 0);
+      const followUpDue = Number(file.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
+      }
+
+      return "awaiting_payment";
+    }
+
+    function paymentStatusLabel(status) {
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
+    }
+
+    function ownerBadge(file) {
+      if (!file.assignedToUid) {
+        return `<span class="badge badge-amber">Unassigned</span>`;
+      }
+      if (file.assignedToUid === currentUser.uid) {
+        return `<span class="badge badge-green">Mine</span>`;
+      }
+      return `<span class="badge badge-slate">${ownerName(file)}</span>`;
+    }
+
+    function hasAssessmentReport(file) {
+      return !!String(
+        file.assessmentReportText ||
+        file.generatedAssessmentText ||
+        file.assessmentSummary ||
+        ""
+      ).trim();
+    }
+
+    function hasStrategyPack(file) {
+      return !!String(
+        file.processingPackText ||
+        file.strategicAnalysisText ||
+        file.recommendedNextStepsText ||
+        file.strategySummary ||
+        ""
+      ).trim();
+    }
+
+    function hasComplaintDocs(file) {
+      return !!String(
+        file.complaintLetterText ||
+        file.statementOfTruthText ||
+        file.lossSummaryText ||
+        file.evidenceChecklistText ||
+        file.escalationLetterText ||
+        file.internalFileNoteText ||
+        ""
+      ).trim();
+    }
+
+    function hasRichAssessmentPack(file) {
+      return hasAssessmentReport(file) || hasStrategyPack(file) || hasComplaintDocs(file);
+    }
+
+    function reportPackLabel(file) {
+      const parts = [];
+      if (hasAssessmentReport(file)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(file)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(file)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
+      return parts.join(" ");
+    }
+
+    function matchesReportPackFilter(file) {
+      const filter = reportPackFilter.value;
+      if (filter === "all") return true;
+      if (filter === "basic") return !hasRichAssessmentPack(file);
+      if (filter === "rich") return hasRichAssessmentPack(file);
+      if (filter === "assessment") return hasAssessmentReport(file);
+      if (filter === "strategy") return hasStrategyPack(file);
+      if (filter === "docs") return hasComplaintDocs(file);
+      return true;
+    }
+
+    function populateCampaignFilterOptions() {
+      const currentValue = campaignFilter.value || "all";
+      const campaigns = [...new Set(
+        allFiles
+          .map(file => getCampaignName(file))
+          .filter(value => value && value !== "-")
+      )].sort((a, b) => a.localeCompare(b));
+
+      campaignFilter.innerHTML = `<option value="all">All campaigns</option>`;
+      campaigns.forEach(campaign => {
+        const option = document.createElement("option");
+        option.value = campaign;
+        option.textContent = campaign;
+        campaignFilter.appendChild(option);
+      });
+
+      campaignFilter.value = campaigns.includes(currentValue) ? currentValue : "all";
+    }
+
+    function populateClaimTypeFilterOptions() {
+      const currentValue = claimTypeFilter.value || "all";
+      const claimTypes = [...new Set(
+        allFiles
+          .map(file => normalizeClaimType(file.claimType))
+          .filter(Boolean)
+      )].sort((a, b) => formatClaimType(a).localeCompare(formatClaimType(b)));
+
+      claimTypeFilter.innerHTML = `<option value="all">All claim types</option>`;
+      claimTypes.forEach(typeValue => {
+        const option = document.createElement("option");
+        option.value = typeValue;
+        option.textContent = formatClaimType(typeValue);
+        claimTypeFilter.appendChild(option);
+      });
+
+      claimTypeFilter.value = claimTypes.includes(currentValue) ? currentValue : "all";
+    }
+
+    async function checkProcessingAccess(user) {
+      const [workspace, token] = await Promise.all([resolveCrmWorkspace(db, user), getIdTokenResult(user)]);
+      if (!workspace.processing && token.claims.platformAdmin !== true) {
+        alert("You do not have permission to access this page.");
+        window.location.replace("/login.html?next=/processing-panel.html");
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = { name: workspace.displayName || "Processing staff" };
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadFiles() {
+      try {
+        const result = await loadOperationalDashboard();
+        allFiles = (result.data.cases || []).filter(row => row.dataAuthority !== "PAID_CLIENT_WORKSPACE");
+        populateCampaignFilterOptions();
+        populateClaimTypeFilterOptions();
+        renderStats();
+        renderFiles();
+      } catch (error) {
+        console.error("Failed to load processing cases:", error);
+        resultsSummary.textContent = `Could not load processing cases: ${error.code || error.message || "Unknown error"}`;
+      }
+    }
+
+    function renderStats() {
+      document.getElementById("totalFilesStat").textContent = String(allFiles.length);
+      document.getElementById("myFilesStat").textContent = String(
+        allFiles.filter(f => f.assignedToUid === currentUser.uid).length
+      );
+      document.getElementById("unassignedStat").textContent = String(
+        allFiles.filter(f => !f.assignedToUid).length
+      );
+      document.getElementById("awaitingStat").textContent = String(
+        allFiles.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
+      );
+      document.getElementById("partPaidStat").textContent = String(
+        allFiles.filter(f => getEffectivePaymentStatus(f) === "part_paid").length
+      );
+      document.getElementById("fullyPaidStat").textContent = String(
+        allFiles.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length
+      );
+      document.getElementById("reportPackStat").textContent = String(
+        allFiles.filter(f => hasRichAssessmentPack(f)).length
+      );
+    }
+
+    function getFilteredFiles() {
+      const ownership = ownershipFilter.value;
+      const paymentFilter = paymentStatusFilter.value;
+      const campaignValue = campaignFilter.value;
+      const claimFilter = claimTypeFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+
+      return allFiles.filter(file => {
+        const effectiveStatus = getEffectivePaymentStatus(file);
+        const normalizedClaim = normalizeClaimType(file.claimType);
+        const campaignName = getCampaignName(file);
+
+        const matchesOwnership =
+          ownership === "all" ||
+          (ownership === "mine" && file.assignedToUid === currentUser.uid) ||
+          (ownership === "unassigned" && !file.assignedToUid) ||
+          (ownership === "others" && file.assignedToUid && file.assignedToUid !== currentUser.uid);
+
+        const matchesPayment =
+          paymentFilter === "all" || effectiveStatus === paymentFilter;
+
+        const matchesCampaign =
+          campaignValue === "all" || campaignName === campaignValue;
+
+        const matchesClaim =
+          claimFilter === "all" || normalizedClaim === claimFilter;
+
+        const matchesPack = matchesReportPackFilter(file);
+
+        const haystack = `
+          ${clientName(file)}
+          ${clientEmail(file)}
+          ${ownerName(file)}
+          ${file.claimType || ""}
+          ${campaignName}
+          ${file.processingNotes || ""}
+          ${file.caseReference || ""}
+          ${file.assessmentReportText || ""}
+          ${file.generatedAssessmentText || ""}
+          ${file.assessmentSummary || ""}
+          ${file.processingPackText || ""}
+          ${file.strategicAnalysisText || ""}
+          ${file.recommendedNextStepsText || ""}
+          ${file.strategySummary || ""}
+          ${file.complaintLetterText || ""}
+          ${file.statementOfTruthText || ""}
+          ${file.lossSummaryText || ""}
+          ${file.evidenceChecklistText || ""}
+          ${file.escalationLetterText || ""}
+          ${file.internalFileNoteText || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesOwnership && matchesPayment && matchesCampaign && matchesClaim && matchesPack && matchesSearch;
+      }).sort((a, b) => {
+        const aMine = a.assignedToUid === currentUser.uid ? 0 : 1;
+        const bMine = b.assignedToUid === currentUser.uid ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+
+        const aUnassigned = a.assignedToUid ? 1 : 0;
+        const bUnassigned = b.assignedToUid ? 1 : 0;
+        if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
+
+        const aPack = hasRichAssessmentPack(a) ? 0 : 1;
+        const bPack = hasRichAssessmentPack(b) ? 0 : 1;
+        if (aPack !== bPack) return aPack - bPack;
+
+        const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
+        const bPriority = Number(b.followUpDue || 0) + Number(b.amountDueNow || 0);
+        return bPriority - aPriority;
+      });
+    }
+
+    async function claimFile(fileId) {
+      try {
+        await updateDoc(doc(db, "processingCases", fileId), {
+          assignedToUid: currentUser.uid,
+          assignedToName: currentUserData.name || "",
+          assignedToEmail: currentUser.email || "",
+          lastActivityAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        showToast("Case claimed.");
+        await loadFiles();
+      } catch (error) {
+        console.error("Claim failed:", error);
+        showToast("Could not claim case.");
+      }
+    }
+
+    async function releaseFile(fileId) {
+      try {
+        await updateDoc(doc(db, "processingCases", fileId), {
+          assignedToUid: "",
+          assignedToName: "",
+          assignedToEmail: "",
+          lastActivityAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: {
+            uid: currentUser.uid,
+            name: currentUserData.name || "",
+            email: currentUser.email || ""
+          }
+        });
+
+        showToast("Case released.");
+        await loadFiles();
+      } catch (error) {
+        console.error("Release failed:", error);
+        showToast("Could not release case.");
+      }
+    }
+
+    function renderFiles() {
+      const filtered = getFilteredFiles();
+      filesBody.innerHTML = "";
+
+      if (!filtered.length) {
+        filesBody.innerHTML = `
+          <tr>
+            <td colspan="11" class="p-6 text-center text-slate-500">No processing cases found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(file => {
+          const row = document.createElement("tr");
+          row.className = "border-t border-slate-200";
+
+          const isMine = file.assignedToUid === currentUser.uid;
+          const isUnassigned = !file.assignedToUid;
+
+          let actionButtons = `
+            <a href="/processing-case-detail.html?id=${file.id}" class="text-blue-600 font-semibold hover:underline mr-3">Open Case</a>
+          `;
+
+          if (isUnassigned) {
+            actionButtons += `<button class="btn-small btn-blue" data-claim-id="${file.id}">Claim</button>`;
+          } else if (isMine) {
+            actionButtons += `<button class="btn-small btn-red" data-release-id="${file.id}">Release</button>`;
+          }
+
+          const effectiveStatus = getEffectivePaymentStatus(file);
+
+          row.innerHTML = `
+            <td class="p-3">${formatDate(file.operationalDate || file.createdAt)}</td><td class="p-3 cell-wrap">
+              <div class="font-semibold text-slate-800">${clientName(file)}</div>
+              <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+            </td>
+            <td class="p-3 cell-wrap">${getCampaignName(file)}</td>
+            <td class="p-3 cell-wrap">${formatClaimType(file.claimType)}</td>
+            <td class="p-3"><div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div></td>
+            <td class="p-3"><div>${ownerBadge(file)}</div></td>
+            <td class="p-3">${money(file.amountDueNow)}</td>
+            <td class="p-3">${money(file.amountPaidNow)}</td>
+            <td class="p-3">${money(file.followUpDue)}</td>
+            <td class="p-3">${paymentStatusLabel(effectiveStatus)}</td>
+            <td class="p-3">${actionButtons}</td>
+          `;
+          filesBody.appendChild(row);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} processing case(s) shown`;
+
+      document.querySelectorAll("[data-claim-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await claimFile(btn.getAttribute("data-claim-id"));
+        });
+      });
+
+      document.querySelectorAll("[data-release-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await releaseFile(btn.getAttribute("data-release-id"));
+        });
+      });
+    }
+
+    async function refreshCases() {
+      await loadFiles();
+      showToast("Cases refreshed.");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.replace("/login.html?next=/processing-panel.html");
+        return;
+      }
+
+      try {
+        const allowed = await checkProcessingAccess(user);
+        if (!allowed) return;
+        await loadFiles();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load processing panel: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        sessionStorage.removeItem("quaerensProcessingSession");
+        await signOut(auth);
+        window.location.replace("/login.html?next=/processing-panel.html");
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    ownershipFilter.addEventListener("change", renderFiles);
+    paymentStatusFilter.addEventListener("change", renderFiles);
+    campaignFilter.addEventListener("change", renderFiles);
+    claimTypeFilter.addEventListener("change", renderFiles);
+    reportPackFilter.addEventListener("change", renderFiles);
+    searchInput.addEventListener("input", renderFiles);
+    refreshBtn.addEventListener("click", refreshCases);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshCases);
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

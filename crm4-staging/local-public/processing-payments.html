@@ -1,0 +1,696 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Processing Payments</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div id="toast"></div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Processing Payments</h1>
+          <p class="text-sm text-slate-500">Track amounts due, paid, follow-up balances, ownership, payment links, and report pack readiness</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/processing-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/processing-panel.html" class="btn btn-secondary py-2 px-4">Processing Panel</a>
+          <a href="/processing-payments.html" class="btn btn-secondary py-2 px-4">Payments</a>
+          <a href="/case-action-engine.html" class="btn btn-secondary py-2 px-4">Case Action Engine&trade;</a>
+          <a href="/processing-cases-dashboard.html" class="btn btn-secondary py-2 px-4">Case Management</a>
+          <button id="refreshTopBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Payments</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-9 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Payment Cases</div>
+          <div id="totalFilesStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">My Payment Cases</div>
+          <div id="myFilesStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Unassigned</div>
+          <div id="unassignedStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Payment</div>
+          <div id="awaitingStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Part Paid</div>
+          <div id="partPaidStat" class="text-3xl font-extrabold text-cyan-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Fully Paid</div>
+          <div id="fullyPaidStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Follow-Up Due</div>
+          <div id="followUpCountStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Payment Link</div>
+          <div id="paymentLinkStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">With Report Pack</div>
+          <div id="reportPackStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-3 gap-6">
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Totals</h2>
+          <div class="space-y-4">
+            <div>
+              <div class="text-sm text-slate-500">Amount Due Now</div>
+              <div id="dueNowTotal" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Amount Paid Now</div>
+              <div id="paidNowTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Follow-Up Due</div>
+              <div id="followUpTotal" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-6 lg:col-span-2">
+          <div class="grid md:grid-cols-6 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Ownership</label>
+              <select id="ownershipFilter" class="input">
+                <option value="all">All cases</option>
+                <option value="mine">My cases</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="others">Assigned to others</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Status</label>
+              <select id="paymentStatusFilter" class="input">
+                <option value="all">All payment statuses</option>
+                <option value="awaiting_payment">Awaiting Payment</option>
+                <option value="part_paid">Part Paid</option>
+                <option value="fully_paid">Fully Paid</option>
+                <option value="partially_refunded">Partially Refunded</option>
+                <option value="refunded">Refunded</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Payment Link</label>
+              <select id="linkFilter" class="input">
+                <option value="all">All</option>
+                <option value="with_link">With Link</option>
+                <option value="without_link">Without Link</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Follow-Up</label>
+              <select id="followUpFilter" class="input">
+                <option value="all">All</option>
+                <option value="with_followup">With Follow-Up Due</option>
+                <option value="without_followup">Without Follow-Up Due</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-blue-900 mb-2">Search</label>
+              <input id="searchInput" type="text" class="input" placeholder="Client, email, owner, claim type..." />
+            </div>
+            <div class="flex items-end">
+              <button id="refreshBtn" class="btn btn-secondary w-full" type="button">Refresh Payments</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Payment Tracking</h2>
+            <p id="resultsSummary" class="text-sm text-slate-500 mt-1">Loading payment cases...</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Paid date</th><th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Owner</th>
+                <th class="text-left p-3">Report Pack</th>
+                <th class="text-left p-3">Due Now</th>
+                <th class="text-left p-3">Original Paid</th>
+                <th class="text-left p-3">Refunded</th>
+                <th class="text-left p-3">Net Paid</th>
+                <th class="text-left p-3">Follow-Up Due</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Payment Link</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+    import { getIdTokenResult } from "/__crm4/sdk/10.8.0/auth.js";
+    import { resolveCrmWorkspace } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const functions = getFunctions(app, "us-central1");
+    const loadOperationalDashboard = httpsCallable(functions, "processingListOperationalDashboard");
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const ownershipFilter = document.getElementById("ownershipFilter");
+    const paymentStatusFilter = document.getElementById("paymentStatusFilter");
+    const linkFilter = document.getElementById("linkFilter");
+    const followUpFilter = document.getElementById("followUpFilter");
+    const searchInput = document.getElementById("searchInput");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const refreshTopBtn = document.getElementById("refreshTopBtn");
+    const paymentsBody = document.getElementById("paymentsBody");
+    const resultsSummary = document.getElementById("resultsSummary");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let allCases = [];
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function safeString(value) {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    }
+
+    function firstNonEmpty(...values) {
+      for (const value of values) {
+        const s = safeString(value);
+        if (s) return s;
+      }
+      return "";
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+    function formatDate(value) { if (!value) return "—"; try { const seconds=value?.seconds??value?._seconds; const d=seconds!==undefined?new Date(Number(seconds)*1000):new Date(value); return Number.isNaN(d.getTime())||d.getTime()<=0?"—":d.toLocaleDateString("en-GB"); } catch { return "—"; } }
+
+    function normalizeClaimType(value) {
+      const raw = safeString(value).toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("solar")) return "solar";
+      if (raw.includes("mortgage")) return "mortgage";
+      if (raw.includes("survey")) return "survey";
+      if (raw.includes("newbuild") || raw.includes("new build")) return "newbuild";
+      return raw;
+    }
+
+    function formatClaimType(type) {
+      const normalized = normalizeClaimType(type);
+      switch (normalized) {
+        case "solar": return "Solar Panel Claims";
+        case "mortgage": return "Mortgage Review";
+        case "survey": return "Survey Review";
+        case "newbuild": return "New Build Issues";
+        default: return safeString(type) || "-";
+      }
+    }
+
+    function clientName(file) {
+      const first = firstNonEmpty(file.client?.firstName, file.client?.forename, file.firstName, file.clientFirstName);
+      const second = firstNonEmpty(file.client?.secondName, file.client?.surname, file.secondName, file.clientSecondName);
+      return `${first} ${second}`.trim() || firstNonEmpty(file.client?.name, file.clientName, file.caseReference, "-");
+    }
+
+    function clientEmail(file) {
+      return firstNonEmpty(file.client?.email, file.email, file.clientEmail, "-");
+    }
+
+    function ownerName(file) {
+      return firstNonEmpty(file.assignedToName, file.assignedToEmail, file.processingAssignedToName, file.processingAssignedToEmail, "-");
+    }
+
+    function ownerBadge(file) {
+      const assignedUid = firstNonEmpty(file.assignedToUid, file.processingAssignedToUid, "");
+      if (!assignedUid) {
+        return `<span class="badge badge-amber">Unassigned</span>`;
+      }
+      if (assignedUid === currentUser.uid) {
+        return `<span class="badge badge-green">Mine</span>`;
+      }
+      return `<span class="badge badge-slate">${ownerName(file)}</span>`;
+    }
+
+    function paymentStatusLabel(status) {
+      if (status === "paid") return `<span class="badge badge-green">Paid</span>`;
+      if (status === "refunded") return `<span class="badge badge-slate">Refunded</span>`;
+      if (status === "partially_refunded") return `<span class="badge badge-blue">Partially Refunded</span>`;
+      if (status === "part_paid") return `<span class="badge badge-blue">Part Paid</span>`;
+      if (status === "fully_paid") return `<span class="badge badge-green">Fully Paid</span>`;
+      return `<span class="badge badge-amber">Awaiting Payment</span>`;
+    }
+
+    function hasPaymentLink(file) {
+      return !!safeString(file.paymentLink);
+    }
+
+    function hasFollowUpDue(file) {
+      return Number(file.followUpDue || 0) > 0;
+    }
+
+    function getEffectivePaymentStatus(file) {
+      if (safeString(file.paymentStatus)) return file.paymentStatus;
+
+      const dueNow = Number(file.amountDueNow || 0);
+      const paidNow = Number(file.amountPaidNow || 0);
+      const followUpDue = Number(file.followUpDue || 0);
+
+      if (paidNow > 0 && (followUpDue > 0 || (dueNow > 0 && paidNow < dueNow))) {
+        return "part_paid";
+      }
+
+      if ((dueNow > 0 && paidNow >= dueNow && followUpDue <= 0) || (dueNow <= 0 && followUpDue <= 0 && paidNow > 0)) {
+        return "fully_paid";
+      }
+
+      return "awaiting_payment";
+    }
+
+    function hasAssessmentReport(file) {
+      return !!firstNonEmpty(
+        file.assessmentReportText,
+        file.generatedAssessmentText,
+        file.fullAssessmentReportText,
+        file.assessmentSummary,
+        file.summaryText
+      );
+    }
+
+    function hasStrategyPack(file) {
+      return !!firstNonEmpty(
+        file.processingPackText,
+        file.strategicAnalysisText,
+        file.recommendedNextStepsText,
+        file.strategySummary,
+        file.processingSummaryText,
+        file.nextStepsText
+      );
+    }
+
+    function hasComplaintDocs(file) {
+      return !!firstNonEmpty(
+        file.complaintLetterText,
+        file.statementOfTruthText,
+        file.lossSummaryText,
+        file.evidenceChecklistText,
+        file.escalationLetterText,
+        file.internalFileNoteText,
+        file.complaintDraftText
+      );
+    }
+
+    function hasRichAssessmentPack(file) {
+      return hasAssessmentReport(file) || hasStrategyPack(file) || hasComplaintDocs(file);
+    }
+
+    function reportPackLabel(file) {
+      const parts = [];
+      if (hasAssessmentReport(file)) parts.push(`<span class="badge badge-blue">Assessment</span>`);
+      if (hasStrategyPack(file)) parts.push(`<span class="badge badge-violet">Strategy</span>`);
+      if (hasComplaintDocs(file)) parts.push(`<span class="badge badge-green">Docs</span>`);
+      if (!parts.length) return `<span class="badge badge-slate">Basic</span>`;
+      return parts.join(" ");
+    }
+
+    async function checkProcessingAccess(user) {
+      const [workspace, token] = await Promise.all([resolveCrmWorkspace(db, user), getIdTokenResult(user)]);
+      if (!workspace.processing && token.claims.platformAdmin !== true) {
+        alert("You do not have permission to access this page.");
+        window.location.replace("/login.html?next=/processing-payments.html");
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = { name: workspace.displayName || "Processing staff" };
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadFiles() {
+      try {
+        const result = await loadOperationalDashboard();
+        allCases = result.data.payments || [];
+        renderStats();
+        renderPayments();
+      } catch (error) {
+        console.error("Failed to load payments:", error);
+        resultsSummary.textContent = `Could not load payment cases: ${error.code || error.message || "Unknown error"}`;
+        paymentsBody.innerHTML = `
+          <tr>
+            <td colspan="10" class="p-6 text-center text-red-600">Error loading payment cases.</td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderStats() {
+      document.getElementById("totalFilesStat").textContent = String(allCases.length);
+      document.getElementById("myFilesStat").textContent = String(
+        allCases.filter(f => firstNonEmpty(f.assignedToUid, f.processingAssignedToUid, "") === currentUser.uid).length
+      );
+      document.getElementById("unassignedStat").textContent = String(
+        allCases.filter(f => !firstNonEmpty(f.assignedToUid, f.processingAssignedToUid, "")).length
+      );
+      document.getElementById("awaitingStat").textContent = String(
+        allCases.filter(f => getEffectivePaymentStatus(f) === "awaiting_payment").length
+      );
+      document.getElementById("partPaidStat").textContent = String(
+        allCases.filter(f => getEffectivePaymentStatus(f) === "part_paid").length
+      );
+      document.getElementById("fullyPaidStat").textContent = String(
+        allCases.filter(f => getEffectivePaymentStatus(f) === "fully_paid").length
+      );
+      document.getElementById("followUpCountStat").textContent = String(
+        allCases.filter(f => hasFollowUpDue(f)).length
+      );
+      document.getElementById("paymentLinkStat").textContent = String(
+        allCases.filter(f => hasPaymentLink(f)).length
+      );
+      document.getElementById("reportPackStat").textContent = String(
+        allCases.filter(f => hasRichAssessmentPack(f)).length
+      );
+
+      document.getElementById("dueNowTotal").textContent = money(
+        allCases.reduce((sum, f) => sum + Number(f.amountDueNow || 0), 0)
+      );
+      document.getElementById("paidNowTotal").textContent = money(
+        allCases.reduce((sum, f) => sum + Number(f.amountPaidNow || 0), 0)
+      );
+      document.getElementById("followUpTotal").textContent = money(
+        allCases.reduce((sum, f) => sum + Number(f.followUpDue || 0), 0)
+      );
+    }
+
+    function getFilteredFiles() {
+      const ownership = ownershipFilter.value;
+      const paymentFilter = paymentStatusFilter.value;
+      const currentLinkFilter = linkFilter.value;
+      const currentFollowUpFilter = followUpFilter.value;
+      const term = searchInput.value.trim().toLowerCase();
+
+      return allCases.filter(file => {
+        const assignedUid = firstNonEmpty(file.assignedToUid, file.processingAssignedToUid, "");
+        const effectiveStatus = getEffectivePaymentStatus(file);
+
+        const matchesOwnership =
+          ownership === "all" ||
+          (ownership === "mine" && assignedUid === currentUser.uid) ||
+          (ownership === "unassigned" && !assignedUid) ||
+          (ownership === "others" && assignedUid && assignedUid !== currentUser.uid);
+
+        const matchesPayment =
+          paymentFilter === "all" || effectiveStatus === paymentFilter;
+
+        const matchesLink =
+          currentLinkFilter === "all" ||
+          (currentLinkFilter === "with_link" && hasPaymentLink(file)) ||
+          (currentLinkFilter === "without_link" && !hasPaymentLink(file));
+
+        const matchesFollowUp =
+          currentFollowUpFilter === "all" ||
+          (currentFollowUpFilter === "with_followup" && hasFollowUpDue(file)) ||
+          (currentFollowUpFilter === "without_followup" && !hasFollowUpDue(file));
+
+        const haystack = `
+          ${clientName(file)}
+          ${clientEmail(file)}
+          ${ownerName(file)}
+          ${file.paymentLink || ""}
+          ${file.processingNotes || ""}
+          ${file.claimType || ""}
+          ${normalizeClaimType(file.claimType)}
+          ${file.caseReference || ""}
+          ${file.assessmentSummary || ""}
+          ${file.summaryText || ""}
+          ${file.generatedAssessmentText || ""}
+          ${file.assessmentReportText || ""}
+          ${file.fullAssessmentReportText || ""}
+          ${file.processingPackText || ""}
+          ${file.processingSummaryText || ""}
+          ${file.strategicAnalysisText || ""}
+          ${file.recommendedNextStepsText || ""}
+          ${file.strategySummary || ""}
+          ${file.nextStepsText || ""}
+          ${file.complaintLetterText || ""}
+          ${file.statementOfTruthText || ""}
+          ${file.lossSummaryText || ""}
+          ${file.evidenceChecklistText || ""}
+          ${file.escalationLetterText || ""}
+          ${file.internalFileNoteText || ""}
+          ${file.complaintDraftText || ""}
+        `.toLowerCase();
+
+        const matchesSearch = !term || haystack.includes(term);
+
+        return matchesOwnership && matchesPayment && matchesLink && matchesFollowUp && matchesSearch;
+      }).sort((a, b) => {
+        const aMine = firstNonEmpty(a.assignedToUid, a.processingAssignedToUid, "") === currentUser.uid ? 0 : 1;
+        const bMine = firstNonEmpty(b.assignedToUid, b.processingAssignedToUid, "") === currentUser.uid ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+
+        const aUnassigned = firstNonEmpty(a.assignedToUid, a.processingAssignedToUid, "") ? 1 : 0;
+        const bUnassigned = firstNonEmpty(b.assignedToUid, b.processingAssignedToUid, "") ? 1 : 0;
+        if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned;
+
+        const aPack = hasRichAssessmentPack(a) ? 0 : 1;
+        const bPack = hasRichAssessmentPack(b) ? 0 : 1;
+        if (aPack !== bPack) return aPack - bPack;
+
+        const aPriority = Number(a.followUpDue || 0) + Number(a.amountDueNow || 0);
+        const bPriority = Number(b.followUpDue || 0) + Number(b.amountDueNow || 0);
+        return bPriority - aPriority;
+      });
+    }
+
+    function renderPayments() {
+      const filtered = getFilteredFiles();
+      paymentsBody.innerHTML = "";
+
+      if (!filtered.length) {
+        paymentsBody.innerHTML = `
+          <tr>
+            <td colspan="13" class="p-6 text-center text-slate-500">No payment cases found.</td>
+          </tr>
+        `;
+      } else {
+        filtered.forEach(file => {
+          const linkText = hasPaymentLink(file)
+            ? `<a href="${file.paymentLink}" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline">Open Link</a>`
+            : "-";
+
+          const effectiveStatus = getEffectivePaymentStatus(file);
+
+          const row = document.createElement("tr");
+          row.className = "border-t border-slate-200";
+          row.innerHTML = `
+            <td class="p-3">${formatDate(file.paidAt)}</td><td class="p-3">
+              <div class="font-semibold text-slate-800">${clientName(file)}</div>
+              <div class="text-xs text-slate-500">${clientEmail(file)}</div>
+            </td>
+            <td class="p-3">${formatClaimType(file.claimType)}</td>
+            <td class="p-3">${ownerBadge(file)}</td>
+            <td class="p-3">
+              <div class="flex flex-wrap gap-1">${reportPackLabel(file)}</div>
+            </td>
+            <td class="p-3">${money(file.amountDueNow)}</td>
+            <td class="p-3">${money(file.originalPaidAmount ?? file.amountPaidNow)}</td>
+            <td class="p-3">${money(file.refundedAmount)}</td>
+            <td class="p-3">${money(file.netPaidAmount ?? file.amountPaidNow)}</td>
+            <td class="p-3">${money(file.followUpDue)}</td>
+            <td class="p-3">${paymentStatusLabel(effectiveStatus)}</td>
+            <td class="p-3">${linkText}</td>
+            <td class="p-3">
+              <a href="${file.openUrl}" class="text-blue-600 font-semibold hover:underline">Open Record</a>
+            </td>
+          `;
+          paymentsBody.appendChild(row);
+        });
+      }
+
+      resultsSummary.textContent = `${filtered.length} payment case(s) shown`;
+    }
+
+    async function refreshPayments() {
+      await loadFiles();
+      showToast("Payments refreshed.");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.replace("/login.html?next=/processing-payments.html");
+        return;
+      }
+
+      try {
+        const allowed = await checkProcessingAccess(user);
+        if (!allowed) return;
+        await loadFiles();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not load processing payments: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        sessionStorage.removeItem("quaerensProcessingSession");
+        await signOut(auth);
+        window.location.replace("/login.html?next=/processing-payments.html");
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    ownershipFilter.addEventListener("change", renderPayments);
+    paymentStatusFilter.addEventListener("change", renderPayments);
+    linkFilter.addEventListener("change", renderPayments);
+    followUpFilter.addEventListener("change", renderPayments);
+    searchInput.addEventListener("input", renderPayments);
+    refreshBtn.addEventListener("click", refreshPayments);
+    if (refreshTopBtn) refreshTopBtn.addEventListener("click", refreshPayments);
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

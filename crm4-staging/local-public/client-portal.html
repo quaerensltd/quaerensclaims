@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>Secure Client Portal | Quaerens</title>
+    <link rel="icon" href="/images/favicon.png" type="image/png" />
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script><script src="/__crm4/compat.js"></script>
+    <style>
+      :root {
+        font-family: Inter, Arial, sans-serif;
+        color: #10213d;
+        background: #f4f7fb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      header {
+        background: #fff;
+        border-bottom: 1px solid #dce6f3;
+        padding: 18px 5vw;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+      header img {
+        width: 190px;
+        max-width: 52vw;
+        height: auto;
+      }
+      .shell {
+        width: min(1120px, 92vw);
+        margin: 34px auto 60px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #dce6f3;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 14px 35px rgba(8, 35, 77, 0.08);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+      .wide {
+        grid-column: 1/-1;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #08285f;
+        margin-top: 0;
+      }
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.3rem);
+        line-height: 1.05;
+      }
+      .muted {
+        color: #5b6c84;
+        line-height: 1.6;
+      }
+      .notice {
+        padding: 14px 16px;
+        background: #edf4ff;
+        border: 1px solid #bdd4ff;
+        border-radius: 12px;
+        margin: 14px 0;
+      }
+      label {
+        display: block;
+        font-weight: 750;
+        margin: 13px 0 6px;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #bdcbe0;
+        border-radius: 10px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+      button,
+      .button {
+        display: inline-block;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        background: #155eef;
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        margin-top: 12px;
+      }
+      button.secondary {
+        background: #eaf1ff;
+        color: #0b3981;
+      }
+      button.danger {
+        background: #8a1c1c;
+      }
+      .hide {
+        display: none !important;
+      }
+      .status {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 7px 11px;
+        background: #eaf1ff;
+        color: #0b3981;
+        font-weight: 800;
+      }
+      .list {
+        display: grid;
+        gap: 10px;
+      }
+      .item {
+        border: 1px solid #dce6f3;
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .msg {
+        min-height: 1.3em;
+        margin-top: 10px;
+        font-weight: 700;
+      }
+      .bad {
+        color: #9d1c1c;
+      }
+      .good {
+        color: #087a3d;
+      }
+      @media (max-width: 700px) {
+        header {
+          padding: 14px 20px;
+        }
+        .shell {
+          width: min(94vw, 640px);
+          margin-top: 22px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .card {
+          padding: 19px;
+        }
+        .wide {
+          grid-column: auto;
+        }
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/" aria-label="Back to the Quaerens website"
+        ><img src="/images/quaerens-logo.png" alt="Quaerens"
+      /></a>
+      <div>
+        <a class="button secondary" href="/">Main website</a>
+        <button id="logoutBtn" class="secondary hide" type="button">
+          Secure logout
+        </button>
+      </div>
+    </header>
+    <main class="shell">
+      <section id="authView" class="grid">
+        <div class="card">
+          <h1>Your case, securely shared.</h1>
+          <p class="muted">
+            The recovered portal uses a verified Quaerens invitation, Firebase
+            Authentication and server-enforced case ownership. Old case access
+            codes no longer work.
+          </p>
+          <div class="notice">
+            Never share your password or invitation link. Quaerens will not ask
+            you to send a portal password by email.
+          </div>
+        </div>
+        <div class="card">
+          <h2>Client Login</h2>
+          <form id="loginForm">
+            <label>Email / Username</label
+            ><input
+              id="loginEmail"
+              type="email"
+              autocomplete="username"
+              required
+            /><label>Password</label
+            ><input
+              id="loginPassword"
+              type="password"
+              autocomplete="current-password"
+              minlength="8"
+              required
+            /><button type="submit">Login securely</button>
+          </form>
+          <button id="forgotPassword" class="secondary" type="button">
+            Forgot Password</button
+          ><button id="showRegister" class="secondary" type="button">
+            Create invited account
+          </button>
+          <p class="muted small">
+            For your security, Quaerens does not confirm whether a particular
+            address has a portal account. Portal content remains protected until
+            authentication succeeds.
+          </p>
+          <p id="authMsg" class="msg" aria-live="polite"></p>
+        </div>
+        <div id="registerCard" class="card wide hide">
+          <h2>Create your invited account</h2>
+          <p class="muted">
+            Use the email address named in your invitation. You must verify that
+            email before claiming the case.
+          </p>
+          <form id="registerForm" class="grid">
+            <div>
+              <label>Email</label
+              ><input
+                id="registerEmail"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div>
+              <label>Password</label
+              ><input
+                id="registerPassword"
+                type="password"
+                autocomplete="new-password"
+                minlength="10"
+                required
+              />
+            </div>
+            <div class="wide">
+              <button type="submit">
+                Create account and send verification
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+      <section id="claimView" class="card hide">
+        <h1>Claim your invited case</h1>
+        <p class="muted">
+          Enter the single-purpose invitation token supplied by Quaerens. It is
+          validated by the protected portal service and cannot reveal a case
+          anonymously.
+        </p>
+        <form id="claimForm">
+          <label>Invitation token</label
+          ><input
+            id="claimToken"
+            autocomplete="one-time-code"
+            required
+          /><button type="submit">Claim case securely</button>
+        </form>
+        <p id="claimMsg" class="msg"></p>
+      </section>
+      <section id="dashboard" class="hide">
+        <div class="card">
+          <div class="row">
+            <div>
+              <h1 id="caseTitle">Your case</h1>
+              <p id="caseCategory" class="muted"></p>
+            </div>
+            <span id="caseStatus" class="status"></span>
+          </div>
+          <p id="caseSummary" class="muted"></p>
+          <div class="notice">
+            <strong>Next step:</strong> <span id="nextStep"></span>
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 18px">
+          <section class="card">
+            <h2>Your details</h2>
+            <div id="personalDetails" class="list"></div>
+            <div id="administrationOnboarding" class="item hide" style="margin-top: 14px"></div>
+            <p class="muted">
+              Contact Quaerens through secure messages if any personal detail
+              needs correction.
+            </p>
+          </section>
+          <section class="card">
+            <h2>Messages <span id="messageUnread" class="status"></span></h2>
+            <div id="messages" class="list"></div>
+            <form id="messageForm">
+              <label>Message Quaerens</label
+              ><textarea id="messageBody" maxlength="8000" required></textarea
+              ><button type="submit">Send securely</button>
+            </form>
+            <p id="messageMsg" class="msg"></p>
+          </section>
+          <section class="card">
+            <h2>Evidence Library</h2>
+            <p class="muted">
+              Your case evidence is securely organised against Quaerens
+              requirements.
+            </p>
+            <div id="requirements" class="list"></div>
+            <div id="documents" class="list"></div>
+            <form id="uploadForm">
+              <label>Evidence requirement</label
+              ><select id="uploadRequirement" required>
+                <option value="">Choose a requested item</option></select
+              ><label>Upload evidence or take a photo</label
+              ><input
+                id="uploadFile"
+                type="file"
+                accept=".pdf,.doc,.docx,.txt,image/jpeg,image/png,image/webp"
+                capture="environment"
+                required
+              /><button type="submit">Upload securely</button>
+            </form>
+            <p id="uploadMsg" class="msg"></p>
+          </section>
+          <section class="card">
+            <h2>Case Activity</h2>
+            <div id="timeline" class="list"></div>
+          </section>
+          <section class="card">
+            <h2>Actions</h2>
+            <div id="tasks" class="list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script>
+      const config = {
+        apiKey: "crm4-local-only",
+        authDomain: "crm4-local-only",
+        projectId: "demo-quaerens-crm4",
+        storageBucket: "crm4-local-only",
+      };
+      let auth = null,
+        fn = null,
+        storage = null,
+        authBootError = null,
+        persistenceReady = Promise.resolve();
+      try {
+        if (!window.firebase) throw new Error("Firebase authentication runtime unavailable.");
+        if (!firebase.apps.length) firebase.initializeApp(config);
+        auth = firebase.auth();
+        persistenceReady = auth.setPersistence(
+          firebase.auth.Auth.Persistence.SESSION,
+        );
+      } catch (error) {
+        authBootError = error;
+      }
+      try {
+        if (window.firebase && firebase.apps.length) {
+          fn = firebase.app().functions("us-central1");
+          storage = firebase.storage();
+        }
+      } catch (error) {
+        console.error("Protected portal services could not initialise.", error);
+      }
+      let activeCaseId = "";
+      const $ = (id) => document.getElementById(id),
+        call = (name) => {
+          if (!fn) throw new Error("The secure portal service is temporarily unavailable.");
+          return fn.httpsCallable(name);
+        },
+        safe = (v) =>
+          String(v ?? "").replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+      const show = (id, on) => $(id).classList.toggle("hide", !on),
+        message = (id, value, bad = false) => {
+          $(id).textContent = value || "";
+          $(id).className = "msg " + (bad ? "bad" : "good");
+        };
+      function stamp(v) {
+        try {
+          const d = v && v.seconds ? new Date(v.seconds * 1000) : new Date(v);
+          return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("en-GB");
+        } catch {
+          return "";
+        }
+      }
+      async function loadCases() {
+        const result = (await call("portalClientListCases")()).data,
+          cases = result.cases || [];
+        if (!cases.length) {
+          show("authView", false);
+          show("claimView", true);
+          const q = new URLSearchParams(location.search).get("claim");
+          if (q) $("claimToken").value = q;
+          return;
+        }
+        activeCaseId = cases[0].id;
+        await loadDashboard();
+      }
+      async function loadDashboard() {
+        const data = (
+            await call("portalClientGetDashboard")({ caseId: activeCaseId })
+          ).data,
+          c = data.case,
+          requirements = data.requirements || [],
+          p = data.clientIdentity || {};
+        $("messageUnread").textContent =
+          `${(data.messages || []).filter((item) => item.senderType !== "client" && !item.clientFirstSeenAt).length} unread`;
+        show("authView", false);
+        show("claimView", false);
+        show("dashboard", true);
+        show("logoutBtn", true);
+        $("caseTitle").textContent = c.caseReference || "Your case";
+        $("caseCategory").textContent = c.category;
+        $("caseStatus").textContent = c.status || "Active";
+        $("caseSummary").textContent = c.summary;
+        $("nextStep").textContent =
+          c.nextStep || "Quaerens will update this securely.";
+        $("personalDetails").innerHTML = [
+          ["Full name", p.fullName],
+          ["Email", p.email],
+          ["Telephone", p.telephone],
+          ["Mobile", p.mobile],
+          [
+            "Address",
+            [p.addressLine1, p.addressLine2, p.town, p.county, p.postcode]
+              .filter(Boolean)
+              .join(", "),
+          ],
+        ]
+          .map(
+            ([k, v]) =>
+              `<div class="item"><strong>${safe(k)}</strong><p>${safe(v || "Missing")}</p></div>`,
+          )
+          .join("");
+        const onboarding = data.administrationOnboarding;
+        if (onboarding && onboarding.date && onboarding.startTime) {
+          const parts = onboarding.date.split("-");
+          const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : onboarding.date;
+          $("administrationOnboarding").innerHTML = `<strong>Administration Onboarding</strong><p>${safe(displayDate)} at ${safe(onboarding.startTime)}</p><small>${safe(onboarding.status)}${onboarding.durationMinutes ? ` · ${safe(onboarding.durationMinutes)} minutes` : ""}${onboarding.appointmentWith ? ` · ${safe(onboarding.appointmentWith)}` : ""}</small>`;
+          show("administrationOnboarding", true);
+        } else {
+          $("administrationOnboarding").innerHTML = "";
+          show("administrationOnboarding", false);
+        }
+        $("timeline").innerHTML =
+          (data.activity || c.timeline || [])
+            .map(
+              (x) =>
+                `<div class="item"><strong>${safe(x.title)}</strong><p>${safe(x.detail)}</p><small>${safe(stamp(x.occurredAt) || x.date)}</small></div>`,
+            )
+            .join("") || '<p class="muted">No shared updates yet.</p>';
+        $("tasks").innerHTML =
+          (c.tasks || [])
+            .map(
+              (x) =>
+                `<div class="item"><strong>${safe(x.title)}</strong><span class="status">${safe(x.status)}</span><p>${safe(x.note)}</p></div>`,
+            )
+            .join("") || '<p class="muted">No actions currently requested.</p>';
+        $("messages").innerHTML =
+          (data.messages || [])
+            .map((x) => {
+              const seen =
+                x.senderType === "client"
+                  ? x.staffFirstSeenAt
+                  : x.clientFirstSeenAt;
+              return `<div class="item"><strong>${safe(x.senderName || x.senderType)}</strong><p>${safe(x.body)}</p><small>${safe(stamp(x.createdAt))} · ${seen ? `Seen by ${x.senderType === "client" ? "Processing" : "client"} on ${safe(stamp(seen))}` : "Not yet viewed"}</small></div>`;
+            })
+            .join("") || '<p class="muted">No messages yet.</p>';
+        $("requirements").innerHTML =
+          requirements
+            .map(
+              (x) =>
+                `<div class="item"><strong>${x.status === "uploaded" ? "✓ PRESENT" : "□ OUTSTANDING"} · ${safe(x.title)}${x.required ? " · Required" : " · Optional"}</strong><p>${safe(x.description)}</p><span class="status">${safe(x.priority || "STANDARD")}</span></div>`,
+            )
+            .join("") || '<p class="muted">No evidence requests yet.</p>';
+        $("uploadRequirement").innerHTML =
+          '<option value="">Choose a requested item</option>' +
+          requirements
+            .map(
+              (x) => `<option value="${safe(x.id)}">${safe(x.title)}</option>`,
+            )
+            .join("");
+        $("documents").innerHTML =
+          (data.documents || [])
+            .map(
+              (x) =>
+                `<div class="item"><strong>${safe(x.title)}</strong><p>${safe(x.category)} · ${safe(x.status)} · Version ${safe(x.version || 1)}</p><button class="secondary" type="button" data-doc="${safe(x.id)}">Open securely</button></div>`,
+            )
+            .join("") || '<p class="muted">No shared evidence yet.</p>';
+        await Promise.all(
+          (data.messages || [])
+            .filter((x) => x.senderType !== "client" && !x.clientFirstSeenAt)
+            .map((x) =>
+              call("paidClientMarkMessageRead")({
+                caseId: activeCaseId,
+                messageId: x.id,
+              }).catch(() => {}),
+            ),
+        );
+      }
+      $("showRegister").onclick = () => show("registerCard", true);
+      $("forgotPassword").addEventListener("click", async (event) => {
+        event.preventDefault();
+        const button = event.currentTarget,
+          email = $("loginEmail").value.trim().toLowerCase(),
+          neutral =
+            "If an account exists for this email address, password-reset instructions have been sent.";
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        message("authMsg", "Requesting password-reset instructions...");
+        try {
+          if (!auth) throw authBootError || new Error("Authentication unavailable.");
+          if (email)
+            await auth.sendPasswordResetEmail(email, {
+              url: "https://www.quaerens.co.uk/client-portal.html",
+              handleCodeInApp: false,
+            });
+        } catch (error) {
+          const technical = !String(error?.code || "").startsWith("auth/") || ["auth/network-request-failed", "auth/internal-error", "auth/too-many-requests"].includes(error?.code);
+          message(
+            "authMsg",
+            technical
+              ? "Password reset is temporarily unavailable. Please try again shortly or contact Quaerens support."
+              : neutral,
+            technical,
+          );
+          return;
+        } finally {
+          button.disabled = false;
+          button.removeAttribute("aria-busy");
+        }
+        message("authMsg", neutral);
+      });
+      $("registerForm").onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          await persistenceReady;
+          const cred = await auth.createUserWithEmailAndPassword(
+            $("registerEmail").value.trim(),
+            $("registerPassword").value,
+          );
+          await cred.user.sendEmailVerification();
+          message(
+            "authMsg",
+            "Account created. Verify the email, then sign in to claim your case.",
+          );
+          await auth.signOut();
+        } catch (err) {
+          message("authMsg", err.message, true);
+        }
+      };
+      $("loginForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const button = e.currentTarget.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        message("authMsg", "Signing in securely...");
+        try {
+          if (!auth) throw authBootError || new Error("Authentication unavailable.");
+          await persistenceReady;
+          const cred = await auth.signInWithEmailAndPassword(
+            $("loginEmail").value.trim(),
+            $("loginPassword").value,
+          );
+          await cred.user.reload();
+          if (!cred.user.emailVerified) throw new Error();
+          await cred.user.getIdToken(true);
+          await loadCases();
+        } catch {
+          message(
+            "authMsg",
+            "Login was not successful. Check your details or use Forgot Password. For security, account availability is not disclosed.",
+            true,
+          );
+        } finally {
+          button.disabled = false;
+          button.removeAttribute("aria-busy");
+        }
+      };
+      $("claimForm").onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          const result = (
+            await call("portalClientClaimInvitation")({
+              token: $("claimToken").value.trim(),
+            })
+          ).data;
+          activeCaseId = result.caseId;
+          message("claimMsg", "Case claimed securely.");
+          await loadDashboard();
+        } catch (err) {
+          message("claimMsg", err.message, true);
+        }
+      };
+      $("messageForm").onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          await call("paidClientCreateMessage")({
+            caseId: activeCaseId,
+            body: $("messageBody").value.trim(),
+            requestId: crypto.randomUUID(),
+          });
+          $("messageBody").value = "";
+          message("messageMsg", "Message sent securely.");
+          await loadDashboard();
+        } catch (err) {
+          message("messageMsg", err.message, true);
+        }
+      };
+      $("documents").onclick = async (e) => {
+        const id = e.target.dataset.doc;
+        if (!id) return;
+        try {
+          const result = (
+            await call("portalClientGetDocumentUrl")({
+              caseId: activeCaseId,
+              documentId: id,
+            })
+          ).data;
+          window.open(result.url, "_blank", "noopener");
+        } catch (err) {
+          message("uploadMsg", err.message, true);
+        }
+      };
+      $("uploadForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const file = $("uploadFile").files[0],
+          requirementId = $("uploadRequirement").value;
+        if (!file || !requirementId) return;
+        try {
+          if (file.size > 15 * 1024 * 1024)
+            throw new Error("Files must be smaller than 15 MB.");
+          const id = crypto.randomUUID(),
+            name = file.name.replace(/[^\w. -]/g, "_");
+          const path = `clientPortal/${activeCaseId}/client-uploads/${auth.currentUser.uid}/${id}_${name}`,
+            ref = storage.ref(path);
+          await ref.put(file, {
+            contentType: file.type,
+            customMetadata: {
+              caseId: activeCaseId,
+              uploadedByUid: auth.currentUser.uid,
+            },
+          });
+          await call("paidClientRegisterUpload")({
+            caseId: activeCaseId,
+            documentId: id,
+            requirementId,
+            storagePath: path,
+            title: file.name,
+            contentType: file.type,
+            size: file.size,
+          });
+          $("uploadFile").value = "";
+          message("uploadMsg", "Document uploaded securely.");
+          await loadDashboard();
+        } catch (err) {
+          message("uploadMsg", err.message, true);
+        }
+      };
+      $("logoutBtn").onclick = async () => {
+        activeCaseId = "";
+        await auth.signOut();
+        location.replace("/client-portal.html");
+      };
+      if (auth) auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          show("authView", true);
+          show("claimView", false);
+          show("dashboard", false);
+          show("logoutBtn", false);
+          return;
+        }
+        if (user.emailVerified)
+          try {
+            await loadCases();
+          } catch (err) {
+            message("authMsg", err.message, true);
+          }
+      });
+      else message(
+        "authMsg",
+        "Secure login is temporarily unavailable. Please refresh the page or contact Quaerens support.",
+        true,
+      );
+    </script>
+  </body>
+</html>

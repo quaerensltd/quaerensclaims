@@ -1,6 +1,66 @@
 # CRM4 implementation checkpoint
 
-Status: **INCOMPLETE — NOT SERVABLE, NOT DEPLOYABLE**.
+Status: **LOCAL FRONTEND IMPLEMENTED — BACKEND NOT ACTIVATED — NOT DEPLOYABLE**.
+
+## Continuation result
+
+`local-public/` now contains 67 fingerprint-derived CRM source/assets, including
+52 HTML routes. These cover login, Admin, Manager, Lister, Closer, assessments,
+onboarding interfaces, processing, Case Action Engine and Client Portal screens.
+Nine generated modular Firebase SDK adapters and one compatibility adapter route
+Auth/Firestore/Functions/Storage to the demo project's loopback emulators.
+Original production client configuration is replaced; CRM2 workspace/route names
+become CRM4. Only blank-line whitespace/EOF is normalised beyond these boundary
+transformations. No business logic, report engine or CSS redesign was performed.
+
+Serve **only through the guarded local server**, not arbitrary static hosting:
+
+```
+node crm4-staging/tools/serve-local.cjs
+```
+
+Open `http://127.0.0.1:4404/crm4-login.html`. Do not enter production credentials.
+The server is loopback-only, read-only, no-store/noindex and manifest-allowlisted.
+Its CSP denies production API connections. The historical `public/` staging
+snapshot remains unserved. CRM3 route access is rejected.
+
+Local emulator configuration: `firebase.local.json`, project
+`demo-quaerens-crm4`. Firestore and Storage are deliberately deny-all until the
+backend/rule contract is reconciled. This is **not functional workflow parity**.
+
+### Verified
+
+- 13 local source/isolation tests pass, plus one real emulator integration test
+  (14 total). Existing `crm2-functions-security.test.js` also passes against the
+  unchanged branch source; this is not certification of the mixed live backend.
+- Real Auth/Firestore emulator test passes using a temporary synthetic account;
+  CRM2, CRM3 and CRM4 collection reads are denied, with no production requests.
+- Browser login smoke passes at 390/768/1440: inputs visible, no horizontal
+  overflow, no JavaScript errors, no external production connection attempts.
+- All three login screenshots visually inspected; authenticated workspace
+  screens/workflows are **NOT VERIFIED**.
+- 125 literal callable dependencies matched to current deployed metadata.
+  Dynamic dependency discovery remains a limitation, not a certified closure.
+
+### Backend baseline decision
+
+`backend-baseline-comparison.json` proves differing non-secret JavaScript hashes
+across the currently deployed GenerateDraft, ManagerGetLinkedAssessment and
+AdminCreateUser packages: `index.js`, `frameworkB.js` and
+`crm2OperationalFlow.js` each have three versions; Assessment Assistant has two.
+The shared workspace access module matches in these samples.
+
+Consequently a single historical `functions/` directory is not an exact current
+CRM2 backend. Before activating a backend, choose either per-callable source
+version preservation (recommended for exact behaviour) or separately authorise
+and review consolidation. No consolidation has been silently applied. No source
+archive was downloaded wholesale: inspection used ZIP metadata and selected
+JavaScript byte ranges, excluding secret/configuration entries.
+
+Remaining: complete per-callable source/dependency pinning, isolated server
+entrypoints, current role/rule contract, provider test adapters, functional role
+fixtures, full workflow regressions and authenticated visual parity. Production
+Firebase/domain/provider provisioning and deployment remain unauthorised.
 
 ## Preserved source and current authority
 
@@ -32,7 +92,8 @@ Those must not be blindly copied into an executable CRM4 environment.
 - Unit tests for origin rejection, emulator wiring, app reuse rejection,
   credential/traversal exclusions, callable extraction and failure propagation.
 
-The service factory is **not yet integrated into the application**. It is not
+The original service factory is retained as a tested reference. Generated SDK
+adapters now enforce the same demo/loopback boundary in `local-public/`. It is not
 evidence that the original staging pages are isolated: they still contain their
 original CRM2 connections and must remain unserved.
 
@@ -51,7 +112,7 @@ configuration is included in this checkpoint.
 
 ## Remaining implementation and acceptance
 
-1. Complete current frontend dependency closure, including role-specific shared
+1. Complete dynamic frontend dependency closure, including role-specific shared
    routes, Case Action Engine, processing, reporting and portal modules.
 2. Resolve current deployed backend source per required callable; a historical
    monolithic repository `functions/index.js` is not sufficient authority.

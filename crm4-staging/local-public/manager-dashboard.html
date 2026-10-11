@@ -1,0 +1,1449 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Manager Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .hidden { display: none; }
+
+    .badge-online,
+    .badge-offline,
+    .badge-ontime,
+    .badge-late,
+    .badge-absent,
+    .badge-awaiting,
+    .badge-booked,
+    .badge-overdue,
+    .badge-indigo,
+    .badge-green,
+    .badge-slate {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    .badge-online { background: #dcfce7; color: #166534; }
+    .badge-offline { background: #e2e8f0; color: #334155; }
+    .badge-ontime { background: #dcfce7; color: #166534; }
+    .badge-late { background: #fef3c7; color: #92400e; }
+    .badge-absent { background: #fee2e2; color: #991b1b; }
+    .badge-awaiting { background: #dbeafe; color: #1d4ed8; }
+    .badge-booked { background: #dcfce7; color: #166534; }
+    .badge-overdue { background: #fee2e2; color: #991b1b; }
+    .badge-indigo { background: #e0e7ff; color: #4338ca; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #111827;
+      color: white;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div id="toast"></div>
+
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Manager Dashboard</h1>
+          <p class="text-sm text-slate-500">Manager review queue, closer appointments, staff attendance, and live work overview</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/manager-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <a href="/manager-leads-overview.html" class="btn btn-secondary py-2 px-4">Leads Overview</a>
+          <a href="/manager-risk-dashboard.html" class="btn btn-secondary py-2 px-4">Risk Dashboard</a>
+          <a href="/case-action-engine.html" class="btn btn-secondary py-2 px-4">Processing</a>
+          <a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a>
+          <a href="/agenda.html" class="btn btn-secondary py-2 px-4">Agenda</a>
+          <a href="/client-search.html" class="btn btn-secondary py-2 px-4">Client Search</a>
+          <a href="/manager-lead-upload.html" class="btn btn-secondary py-2 px-4">Lead Upload</a>
+          <a href="/manager-intro-emails-overview.html" class="btn btn-secondary py-2 px-4">Intro Emails</a>
+          <a href="/manager-weekly-attendance.html" class="btn btn-secondary py-2 px-4">Weekly Attendance</a>
+          <a id="crm4AdminNav" href="#crm4UserAdministration" class="btn btn-secondary py-2 px-4 hidden">CRM4 User Administration</a>
+          <a id="guidedSupportNav" href="#guidedSupportQueue" class="btn btn-secondary py-2 px-4 hidden">Guided Support</a>
+          <button id="refreshDashboardBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh Dashboard</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-10 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Staff</div>
+          <div id="totalStaffStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Online Now</div>
+          <div id="onlineStaffStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Logged In Today</div>
+          <div id="loggedInTodayStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">On Time</div>
+          <div id="onTimeStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Late</div>
+          <div id="lateStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Absent</div>
+          <div id="absentStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Awaiting Manager</div>
+          <div id="awaitingManagerStat" class="text-3xl font-extrabold text-blue-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Closer Bookings</div>
+          <div id="closerBookingsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Today Appointments</div>
+          <div id="todayAppointmentsStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue Reviews</div>
+          <div id="overdueManagerStat" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <a href="/manager-panel.html" class="btn btn-primary text-center">Open Manager Panel</a>
+            <a href="/manager-leads-overview.html" class="btn btn-primary text-center">Open Leads Overview</a>
+            <a href="/manager-risk-dashboard.html" class="btn btn-primary text-center">Open Risk Dashboard</a>
+            <a href="/dialer.html" class="btn btn-primary text-center">Open Power Dialer</a>
+            <a href="/agenda.html" class="btn btn-primary text-center">Open Agenda</a>
+            <a href="/client-search.html" class="btn btn-primary text-center">Open Client Search</a>
+            <a href="/manager-lead-upload.html" class="btn btn-primary text-center">Open Lead Upload</a>
+            <a href="/manager-intro-emails-overview.html" class="btn btn-primary text-center">Open Intro Emails</a>
+            <a href="/manager-weekly-attendance.html" class="btn btn-primary text-center md:col-span-2">Open Weekly Attendance</a>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Today Snapshot</h2>
+          <div class="space-y-4 text-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Staff online now</span>
+              <span id="snapshotOnline" class="font-extrabold text-emerald-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Staff with attendance record today</span>
+              <span id="snapshotAttendance" class="font-extrabold text-indigo-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Awaiting manager review</span>
+              <span id="snapshotAwaitingManager" class="font-extrabold text-blue-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Closer appointments today</span>
+              <span id="snapshotAppointments" class="font-extrabold text-violet-600">0</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span class="text-slate-600">Callbacks pending</span>
+              <span id="snapshotCallbacks" class="font-extrabold text-amber-600">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-600">Intro emails pending</span>
+              <span id="snapshotIntro" class="font-extrabold text-violet-600">0</span>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Awaiting Manager Review</h2>
+              <p class="text-sm text-slate-500 mt-1">Leads and submissions waiting for manager review</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Phone</th>
+                  <th class="text-left p-3">Owner</th>
+                  <th class="text-left p-3">Status</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="awaitingManagerBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Closer Appointments</h2>
+              <p class="text-sm text-slate-500 mt-1">Upcoming booked appointments and closer handoffs</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Date</th>
+                  <th class="text-left p-3">Time</th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Closer</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="closerAppointmentsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Staff Attendance Today</h2>
+            <p id="attendanceSummary" class="text-sm text-slate-500 mt-1">Loading today's attendance...</p>
+            <p id="autoRefreshStatus" class="text-xs text-slate-400 mt-1">Auto-refresh every 2 minutes.</p>
+          </div>
+          <button id="refreshAttendanceBtn" class="btn btn-secondary" type="button">Refresh Attendance</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">First Login</th>
+                <th class="text-left p-3">Last Login</th>
+                <th class="text-left p-3">Last Seen</th>
+                <th class="text-left p-3">Last Logout</th>
+                <th class="text-left p-3">Logged In Today</th>
+                <th class="text-left p-3">Today Status</th>
+                <th class="text-left p-3">Live Status</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Lead Work Summary</h2>
+            <p class="text-sm text-slate-500 mt-1">Current workload from assigned staff leads</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Staff</th>
+                <th class="text-left p-3">Assigned Leads</th>
+                <th class="text-left p-3">Callbacks</th>
+                <th class="text-left p-3">Intro Emails</th>
+                <th class="text-left p-3">Awaiting Manager</th>
+                <th class="text-left p-3">Qualified</th>
+                <th class="text-left p-3">Sent to Closer</th>
+                <th class="text-left p-3">Converted</th>
+              </tr>
+            </thead>
+            <tbody id="leadSummaryBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="crm4UserAdministration" class="card p-6 hidden" aria-labelledby="crm4AdminHeading">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-6">
+          <div>
+            <p class="text-sm font-bold uppercase tracking-wide text-blue-600">Administrator only</p>
+            <h2 id="crm4AdminHeading" class="text-xl font-extrabold text-blue-900 mt-1">CRM4 User Administration</h2>
+            <p class="text-sm text-slate-500 mt-1">Create secure CRM4 access and manage protected workspace memberships.</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button id="provisionProcessingBtn" class="btn btn-primary" type="button">Provision Existing Processing Team</button>
+            <button id="refreshMembershipsBtn" class="btn btn-secondary" type="button">Refresh Memberships</button>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+          <form id="crm4CreateUserForm" class="lg:col-span-1 rounded-2xl border border-blue-100 bg-blue-50 p-5 space-y-4">
+            <h3 class="text-lg font-extrabold text-blue-900">Create CRM4 User</h3>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="crm4AdminDisplayName">Name</label><input id="crm4AdminDisplayName" name="displayName" class="w-full rounded-xl border border-blue-200 bg-white px-4 py-3" required /></div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="crm4AdminEmail">Email</label><input id="crm4AdminEmail" name="email" type="email" class="w-full rounded-xl border border-blue-200 bg-white px-4 py-3" autocomplete="off" required /></div>
+            <div><label class="block text-sm font-bold text-blue-900 mb-2" for="crm4AdminRole">Role</label><select id="crm4AdminRole" name="role" class="w-full rounded-xl border border-blue-200 bg-white px-4 py-3"><option value="administrator">Administrator</option><option value="manager">Manager</option><option value="processing">Processing</option><option value="lister">Lister</option><option value="closer">Closer</option></select></div>
+            <label class="flex items-center gap-3 text-sm font-bold text-blue-900"><input id="crm4AdminActive" name="active" type="checkbox" class="h-5 w-5" checked /> Active access (untick to create as Blocked / Inactive)</label>
+            <button id="crm4CreateUserBtn" class="btn btn-primary w-full" type="submit">Create CRM4 User</button>
+            <p class="text-xs text-slate-500">Authentication accounts are created only by the protected Cloud Function. No passwords are collected here.</p>
+          </form>
+
+          <div class="lg:col-span-2">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead><tr class="bg-blue-50 text-blue-900"><th class="text-left p-3">User</th><th class="text-left p-3">Role</th><th class="text-left p-3">Access</th><th class="text-left p-3">Action</th></tr></thead>
+                <tbody id="crm4MembershipsBody"><tr><td class="p-3 text-slate-500" colspan="4">Loading CRM4 memberships...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <p id="crm4AdminMessage" class="text-sm font-semibold text-slate-600 mt-5" role="status"></p>
+        <div class="mt-8 border-t border-blue-100 pt-6" aria-labelledby="paymentConfirmationHeading"><h3 id="paymentConfirmationHeading" class="text-lg font-extrabold text-blue-900">CRM4 Payment Verification</h3><p class="text-sm text-slate-600 mt-1">Routine payment verification and the atomic Processing activation now belong to Processing &amp; Admin / Payments.</p><a class="btn btn-primary mt-4" href="/processing-dashboard.html">Open Processing &amp; Payments</a></div>
+      </section>
+      <section id="guidedSupportQueue" class="card p-6 hidden" aria-labelledby="guidedSupportHeading">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-6"><div><p class="text-sm font-bold uppercase tracking-wide text-blue-600">Administrator only</p><h2 id="guidedSupportHeading" class="text-xl font-extrabold text-blue-900 mt-1">Quaerens Guided Support Work Queue</h2><p class="text-sm text-slate-500 mt-1">Verified payments, permitted start dates, review assignment and service status.</p></div><div class="flex gap-2 flex-wrap items-center"><label class="sr-only" for="guidedSupportTestProduct">Stripe test product</label><select id="guidedSupportTestProduct" class="rounded-xl border border-blue-200 bg-white px-3 py-2"><option value="parking">Parking £49</option><option value="flight">Flight £59</option><option value="holiday">Holiday £99</option><option value="car-finance">Car Finance £149</option></select><button id="openGuidedSupportTestBtn" class="btn btn-secondary" type="button">Open Test Flow</button><button id="provisionGuidedSupportTestBtn" class="btn btn-secondary" type="button">Verify Stripe Test Catalog</button><button id="refreshGuidedSupportBtn" class="btn btn-secondary" type="button">Refresh Queue</button></div></div>
+        <div class="flex gap-3 flex-wrap mb-4"><label class="text-sm font-bold text-blue-900">Status <select id="guidedSupportStatusFilter" class="rounded-xl border border-blue-200 bg-white px-3 py-2"><option value="">All statuses</option><option value="paid-waiting-for-start-date">Waiting for Start Date</option><option value="paid-awaiting-review">Awaiting Review</option><option value="information-required">Information Required</option><option value="review-in-progress">Review In Progress</option><option value="review-ready">Review Ready</option><option value="completed">Completed</option></select></label></div>
+        <div class="overflow-x-auto"><table class="w-full text-sm border-collapse"><thead><tr class="bg-blue-50 text-blue-900"><th class="text-left p-3">Reference</th><th class="text-left p-3">Customer</th><th class="text-left p-3">Product</th><th class="text-left p-3">Paid</th><th class="text-left p-3">Start</th><th class="text-left p-3">Status</th><th class="text-left p-3">Reviewer</th><th class="text-left p-3">Actions</th></tr></thead><tbody id="guidedSupportBody"><tr><td colspan="8" class="p-3 text-slate-500">No Guided Support cases loaded.</td></tr></tbody></table></div><p id="guidedSupportMessage" class="text-sm font-semibold text-slate-600 mt-5" role="status"></p>
+        <dialog id="guidedSupportRefundDialog" class="rounded-2xl border border-blue-200 p-0 shadow-2xl backdrop:bg-slate-950/40"><form id="guidedSupportRefundForm" class="w-[min(92vw,32rem)] p-6"><h3 class="text-xl font-extrabold text-blue-900">Authorise Stripe refund</h3><p id="guidedSupportRefundReference" class="text-sm text-slate-600 mt-2"></p><label class="block mt-5 text-sm font-bold text-blue-900">Refund amount (£)<input id="guidedSupportRefundAmount" class="mt-2 w-full rounded-xl border border-blue-200 px-3 py-2" type="number" min="0.01" step="0.01" required></label><label class="block mt-4 text-sm font-bold text-blue-900">Operational reason<textarea id="guidedSupportRefundReason" class="mt-2 w-full rounded-xl border border-blue-200 px-3 py-2" rows="3" maxlength="1000" required></textarea></label><p class="mt-3 text-sm text-slate-600">The protected backend validates the amount and records the Stripe refund, authorising administrator, transaction state and audit entry.</p><div class="mt-5 flex gap-3 justify-end"><button id="guidedSupportRefundCancel" class="btn btn-secondary" type="button">Cancel</button><button id="guidedSupportRefundSubmit" class="btn btn-primary" type="submit">Authorise refund</button></div></form></dialog>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { userAdministration } from "/shared-crm-manager-components.js";
+    import { crm4UserAdministrationConfig } from "/shared-crm-user-administration-config.js";
+    document.getElementById("crm4UserAdministration").outerHTML = userAdministration(crm4UserAdministrationConfig);
+  </script>
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut,
+      getIdTokenResult
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+    import { installGuidedOperations } from "/guided-support-operations.js?v=2.0.0";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const functions = getFunctions(app);
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshAttendanceBtn = document.getElementById("refreshAttendanceBtn");
+    const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
+    const attendanceBody = document.getElementById("attendanceBody");
+    const attendanceSummary = document.getElementById("attendanceSummary");
+    const leadSummaryBody = document.getElementById("leadSummaryBody");
+    const autoRefreshStatus = document.getElementById("autoRefreshStatus");
+    const crm4AdminNav = document.getElementById("crm4AdminNav");
+    const crm4UserAdministration = document.getElementById("crm4UserAdministration");
+    const crm4CreateUserForm = document.getElementById("crm4CreateUserForm");
+    const crm4CreateUserBtn = document.getElementById("crm4CreateUserBtn");
+    const crm4MembershipsBody = document.getElementById("crm4MembershipsBody");
+    const refreshMembershipsBtn = document.getElementById("refreshMembershipsBtn");
+    const provisionProcessingBtn = document.getElementById("provisionProcessingBtn");
+    const crm4AdminMessage = document.getElementById("crm4AdminMessage");
+    const guidedSupportNav = document.getElementById("guidedSupportNav"), guidedSupportQueue = document.getElementById("guidedSupportQueue"), guidedSupportBody = document.getElementById("guidedSupportBody"), guidedSupportMessage = document.getElementById("guidedSupportMessage"), guidedSupportStatusFilter = document.getElementById("guidedSupportStatusFilter"), refreshGuidedSupportBtn = document.getElementById("refreshGuidedSupportBtn"), provisionGuidedSupportTestBtn = document.getElementById("provisionGuidedSupportTestBtn"), guidedSupportTestProduct = document.getElementById("guidedSupportTestProduct"), openGuidedSupportTestBtn = document.getElementById("openGuidedSupportTestBtn"), guidedSupportRefundDialog = document.getElementById("guidedSupportRefundDialog"), guidedSupportRefundForm = document.getElementById("guidedSupportRefundForm"), guidedSupportRefundReference = document.getElementById("guidedSupportRefundReference"), guidedSupportRefundAmount = document.getElementById("guidedSupportRefundAmount"), guidedSupportRefundReason = document.getElementById("guidedSupportRefundReason"), guidedSupportRefundCancel = document.getElementById("guidedSupportRefundCancel"), guidedSupportRefundSubmit = document.getElementById("guidedSupportRefundSubmit");
+
+    const LATE_CUTOFF_HOUR = 10;
+    const LATE_CUTOFF_MINUTE = 0;
+
+    let attendanceDocs = [];
+    let leadAssignments = [];
+    let userDocs = [];
+    let closerAssignments = [];
+    let claimSubmissions = [];
+    let autoRefreshInterval = null;
+    let refreshInProgress = false;
+    let currentContext = null;
+    let platformAdminEnabled = false;
+    let guidedSupportCases = [];
+    let governedGuidedOperations = null;
+    let guidedSupportRefundCase = null;
+    const escapeTableHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
+    const CRM4_ADMIN_ROLES = ["administrator", "manager", "processing", "lister", "closer"];
+
+    function hideLoader() {
+      if (authLoader) authLoader.style.display = "none";
+    }
+
+    async function safeGetCollection(collectionName) {
+      try {
+        const scopedName=crmCollection(currentContext,collectionName);
+        if(!scopedName)return {docs:[]};
+        return await getDocs(collection(db,scopedName));
+      } catch (error) {
+        console.warn(`Workspace collection unavailable: ${collectionName}`);
+        showToast(isCrm2(currentContext) ? "Some CRM4 dashboard information is not currently available." : "Some dashboard information is not currently available.");
+        return { docs: [] };
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return "-";
+      try {
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        if (Number.isNaN(d.getTime())) return "-";
+        return d.toLocaleString("en-GB");
+      } catch {
+        return "-";
+      }
+    }
+
+    function formatDuration(ms) {
+      const safeMs = Number(ms || 0);
+      const totalMinutes = Math.floor(safeMs / 60000);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours <= 0) return `${minutes}m`;
+      return `${hours}h ${minutes}m`;
+    }
+
+    function getLiveWorkedMs(docData) {
+      const baseMs = typeof docData.totalLoggedInMs === "number" ? docData.totalLoggedInMs : 0;
+      if (
+        docData.isOnline &&
+        docData.currentSessionStartAt?.toDate &&
+        !isStaleOnline(docData)
+      ) {
+        const sessionStart = docData.currentSessionStartAt.toDate().getTime();
+        const liveExtra = Math.max(0, Date.now() - sessionStart);
+        return baseMs + liveExtra;
+      }
+      return baseMs;
+    }
+
+    function isStaleOnline(docData) {
+      if (!docData?.isOnline || !docData.lastSeenAt?.toDate) return false;
+      const lastSeen = docData.lastSeenAt.toDate().getTime();
+      return Date.now() - lastSeen > 10 * 60 * 1000;
+    }
+
+    function liveStatusBadge(isOnline) {
+      return isOnline
+        ? `<span class="badge-online">Online</span>`
+        : `<span class="badge-offline">Offline</span>`;
+    }
+
+    function awaitingManagerBadge() {
+      return `<span class="badge-awaiting">Awaiting</span>`;
+    }
+
+    function overdueBadge() {
+      return `<span class="badge-overdue">Overdue</span>`;
+    }
+
+    function todayAttendanceMap() {
+      const map = {};
+      attendanceDocs.forEach(item => {
+        if (item.uid) map[item.uid] = item;
+      });
+      return map;
+    }
+
+    function getLateCutoffForToday() {
+      const cutoff = new Date();
+      cutoff.setHours(LATE_CUTOFF_HOUR, LATE_CUTOFF_MINUTE, 0, 0);
+      return cutoff;
+    }
+
+    function getTodayStatusForUser(userId) {
+      const attendanceMap = todayAttendanceMap();
+      const rec = attendanceMap[userId];
+      if (!rec || !rec.firstLoginAt?.toDate) return "absent";
+      const firstLogin = rec.firstLoginAt.toDate();
+      const cutoff = getLateCutoffForToday();
+      return firstLogin.getTime() > cutoff.getTime() ? "late" : "on_time";
+    }
+
+    function todayStatusBadge(status) {
+      if (status === "on_time") return `<span class="badge-ontime">On Time</span>`;
+      if (status === "late") return `<span class="badge-late">Late</span>`;
+      return `<span class="badge-absent">Absent</span>`;
+    }
+
+    function getLeadTelephone(lead) {
+      return String(
+        lead.telephone ||
+        lead.landline ||
+        lead.phone ||
+        ""
+      ).trim();
+    }
+
+    function getLeadMobile(lead) {
+      return String(
+        lead.mobile ||
+        lead.mobileNumber ||
+        lead.cell ||
+        ""
+      ).trim();
+    }
+
+    function clientName(lead) {
+      return `${lead.forename || ""} ${lead.surname || ""}`.trim() || "-";
+    }
+
+    function submissionClientName(submission) {
+      return `${submission.client?.firstName || ""} ${submission.client?.secondName || ""}`.trim() || "-";
+    }
+
+    function submissionPhone(submission) {
+      return String(
+        submission.client?.landline ||
+        submission.client?.mobile ||
+        ""
+      ).trim();
+    }
+
+    function findUserById(uid) {
+      return userDocs.find(u => u.id === uid) || null;
+    }
+
+    function findUserName(uid) {
+      if (!uid) return "-";
+      const user = findUserById(uid);
+      return user?.name || user?.email || (isCrm2(currentContext) ? "CRM4 team member" : uid);
+    }
+
+    function setAdminMessage(message, isError = false) {
+      crm4AdminMessage.textContent = message || "";
+      crm4AdminMessage.className = `text-sm font-semibold mt-5 ${isError ? "text-red-700" : "text-slate-600"}`;
+    }
+
+    function membershipRoleSelect(member) {
+      const select = document.createElement("select");
+      select.className = "rounded-xl border border-blue-200 bg-white px-3 py-2";
+      select.setAttribute("aria-label", `Role for ${member.email || member.uid}`);
+      for (const role of CRM4_ADMIN_ROLES) {
+        const option = document.createElement("option");
+        option.value = role;
+        option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        option.selected = member.role === role;
+        select.appendChild(option);
+      }
+      return select;
+    }
+
+    function membershipActiveSelect(member) {
+      const select = document.createElement("select");
+      select.className = "rounded-xl border border-blue-200 bg-white px-3 py-2";
+      select.setAttribute("aria-label", `Access for ${member.email || member.uid}`);
+      for (const [value, label] of [["true", "Active"], ["false", "Blocked / Inactive"]]) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        option.selected = Boolean(member.active) === (value === "true");
+        select.appendChild(option);
+      }
+      return select;
+    }
+
+    async function updateCrm2Membership(member, roleSelect, activeSelect, button) {
+      if (!platformAdminEnabled) return;
+      button.disabled = true;
+      setAdminMessage("Updating protected CRM4 membership...");
+      try {
+        const updateMembership = httpsCallable(functions, "crm4AdminUpdateMembership");
+        await updateMembership({ uid:member.uid, role:roleSelect.value, active:activeSelect.value === "true", workspaceId:"CRM4" });
+        setAdminMessage(`CRM4 membership updated for ${member.email || "the selected user"}.`);
+        await loadCrm2Memberships();
+      } catch (error) {
+        console.warn("CRM4 membership update was rejected.");
+        setAdminMessage("The CRM4 membership could not be updated. Confirm platform administrator access and try again.", true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function sendCrm2PasswordSetupEmail(member, button) {
+      if (!platformAdminEnabled) return;
+      button.disabled = true;
+      setAdminMessage("Sending a new secure password setup link...");
+      try {
+        await httpsCallable(functions, "crm4AdminSendPasswordSetupEmail")({ uid:member.uid });
+        setAdminMessage(`A new secure password setup link has been emailed to ${member.email || "the selected user"}.`);
+      } catch (error) {
+        console.warn("CRM4 password setup email was rejected.");
+        setAdminMessage("The password setup email could not be sent. Confirm platform administrator access and try again.", true);
+      } finally { button.disabled = false; }
+    }
+
+    function renderCrm2Memberships(members) {
+      crm4MembershipsBody.replaceChildren();
+      if (!members.length) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 4;
+        cell.className = "p-3 text-slate-500";
+        cell.textContent = "No CRM4 memberships found.";
+        row.appendChild(cell);
+        crm4MembershipsBody.appendChild(row);
+        return;
+      }
+      for (const member of members) {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        const userCell = document.createElement("td");
+        userCell.className = "p-3";
+        const userName = document.createElement("strong");
+        userName.className = "text-blue-900";
+        userName.textContent = member.displayName || member.name || "CRM4 user";
+        const userEmail = document.createElement("div");
+        userEmail.className = "text-xs text-slate-500 mt-1";
+        userEmail.textContent = member.email || "Email unavailable";
+        userCell.append(userName, userEmail);
+        const roleCell = document.createElement("td");
+        roleCell.className = "p-3";
+        const roleSelect = membershipRoleSelect(member);
+        roleCell.appendChild(roleSelect);
+        const activeCell = document.createElement("td");
+        activeCell.className = "p-3";
+        const activeSelect = membershipActiveSelect(member);
+        activeCell.appendChild(activeSelect);
+        const actionCell = document.createElement("td");
+        actionCell.className = "p-3";
+        const saveButton = document.createElement("button");
+        saveButton.type = "button";
+        saveButton.className = "btn btn-secondary py-2 px-3";
+        saveButton.textContent = "Save";
+        saveButton.addEventListener("click", () => updateCrm2Membership(member, roleSelect, activeSelect, saveButton));
+        const resetButton = document.createElement("button");
+        resetButton.type = "button";
+        resetButton.className = "btn btn-secondary py-2 px-3 ml-2";
+        resetButton.textContent = "Send new password setup link";
+        resetButton.addEventListener("click", () => sendCrm2PasswordSetupEmail(member, resetButton));
+        actionCell.append(saveButton, resetButton);
+        row.append(userCell, roleCell, activeCell, actionCell);
+        crm4MembershipsBody.appendChild(row);
+      }
+    }
+
+    async function loadCrm2Memberships() {
+      if (!platformAdminEnabled) return;
+      refreshMembershipsBtn.disabled = true;
+      try {
+        const snapshot = await getDocs(collection(db, "crm4Memberships"));
+        const members = snapshot.docs.map(item => ({ uid:item.id, ...item.data() })).sort((a,b) => String(a.email || "").localeCompare(String(b.email || "")));
+        renderCrm2Memberships(members);
+        setAdminMessage(`${members.length} CRM4 membership${members.length === 1 ? "" : "s"} loaded.`);
+      } catch (error) {
+        console.warn("CRM4 memberships are not currently available.");
+        renderCrm2Memberships([]);
+        setAdminMessage("CRM4 memberships could not be loaded. Confirm platform administrator access and try again.", true);
+      } finally {
+        refreshMembershipsBtn.disabled = false;
+      }
+    }
+
+    async function provisionExistingProcessingTeam() {
+      if (!platformAdminEnabled) return;
+      provisionProcessingBtn.disabled = true;
+      setAdminMessage("Provisioning existing authorised Processing staff...");
+      try {
+        const provision = httpsCallable(functions, "crm4AdminProvisionExistingProcessing");
+        const result = (await provision()).data;
+        setAdminMessage(`${result.provisioned} Processing membership${result.provisioned === 1 ? "" : "s"} provisioned; ${result.alreadyProvisioned} already active; ${result.skipped} skipped.`);
+        await loadCrm2Memberships();
+      } catch (error) {
+        console.warn("Processing membership provisioning was rejected.");
+        setAdminMessage("Processing memberships could not be provisioned. No access was changed.", true);
+      } finally {
+        provisionProcessingBtn.disabled = false;
+      }
+    }
+
+    async function enablePlatformAdminTools(user) {
+      platformAdminEnabled = false;
+      crm4AdminNav.classList.add("hidden");
+      crm4UserAdministration.classList.add("hidden");
+      guidedSupportNav.classList.add("hidden");
+      guidedSupportQueue.classList.add("hidden");
+      if (!isCrm2(currentContext) || currentContext.membershipRole !== "administrator") return;
+      const token = await getIdTokenResult(user);
+      if (token.claims.platformAdmin !== true) return;
+      platformAdminEnabled = true;
+      crm4AdminNav.classList.remove("hidden");
+      crm4UserAdministration.classList.remove("hidden");
+      guidedSupportNav.classList.remove("hidden");
+      guidedSupportQueue.classList.remove("hidden");
+      await loadCrm2Memberships();
+      await loadGuidedSupportCases();
+    }
+
+    function renderGuidedSupportCases() {
+      const filter = guidedSupportStatusFilter.value;
+      const rows = guidedSupportCases.filter(item => !filter || item.reviewStatus === filter);
+      guidedSupportBody.replaceChildren();
+      if (!rows.length) { guidedSupportBody.innerHTML = '<tr><td colspan="8" class="p-3 text-slate-500">No Guided Support cases match this view.</td></tr>'; return; }
+      rows.forEach(item => {
+        const row = document.createElement("tr"); row.className = "border-t border-slate-200";
+        const rawStart = item.serviceStartEligibilityDate;
+        const seconds = rawStart?.seconds ?? rawStart?._seconds;
+        const startDate = rawStart?.toDate ? rawStart.toDate() : Number.isFinite(Number(seconds)) ? new Date(Number(seconds) * 1000) : null;
+        const start = item.serviceStartMode === "immediate_requested" ? "Immediate" : startDate && !Number.isNaN(startDate.valueOf()) ? startDate.toLocaleDateString("en-GB") : "Recorded start date";
+        const currency = value => new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(value||0)/100);
+        const refundSummary = Number(item.refundedAmount||0) > 0 ? `<br><small>${escapeTableHtml(`Refunded ${currency(item.refundedAmount)} · Net ${currency(item.netAmount)}`)}</small>` : "";
+        row.innerHTML = `<td class="p-3"><strong>${escapeTableHtml(item.complaintPackReference || item.id)}</strong></td><td class="p-3">${escapeTableHtml(item.customer?.firstName || "")} ${escapeTableHtml(item.customer?.lastName || "")}<br><small>${escapeTableHtml(item.customer?.email || "")}</small></td><td class="p-3">${escapeTableHtml(item.productName || item.category)}</td><td class="p-3">${currency(item.amountPaid)}${refundSummary}</td><td class="p-3">${escapeTableHtml(start)}</td><td class="p-3">${escapeTableHtml(String(item.reviewStatus||"").replaceAll("-"," "))}</td><td class="p-3">${escapeTableHtml(item.assignedReviewer || "Unassigned")}</td>`;
+        const actions = document.createElement("td"); actions.className = "p-3 flex gap-2 flex-wrap";
+        [["start-review","Start"],["information-required","Information Required"],["review-ready","Ready"],["complete","Complete"]].forEach(([action,label]) => { const button=document.createElement("button");button.type="button";button.className="btn btn-secondary py-2 px-3";button.textContent=label;button.addEventListener("click",()=>updateGuidedSupportCase(item.id,action));actions.appendChild(button); });
+        const cancelButton=document.createElement("button");cancelButton.type="button";cancelButton.className="btn btn-secondary py-2 px-3";cancelButton.textContent="Record Cancellation";cancelButton.addEventListener("click",()=>updateGuidedSupportCase(item.id,"record-cancellation-request"));actions.appendChild(cancelButton);
+        if (["paid", "partially_refunded"].includes(item.paymentStatus)) { const refundButton=document.createElement("button");refundButton.type="button";refundButton.className="btn btn-secondary py-2 px-3";refundButton.textContent="Refund";refundButton.addEventListener("click",()=>openGuidedSupportRefund(item));actions.appendChild(refundButton); }
+        const inspectButton=document.createElement("button");inspectButton.type="button";inspectButton.className="btn btn-secondary py-2 px-3";inspectButton.textContent="Inspect Acceptance";inspectButton.addEventListener("click",()=>inspectGuidedSupportAcceptance(item));actions.appendChild(inspectButton);
+        const replayButton=document.createElement("button");replayButton.type="button";replayButton.className="btn btn-secondary py-2 px-3";replayButton.textContent="Replay Test Webhook";replayButton.addEventListener("click",()=>replayGuidedSupportWebhook(item));actions.appendChild(replayButton);
+        row.appendChild(actions); guidedSupportBody.appendChild(row);
+      });
+      guidedSupportMessage.textContent = `${rows.length} Guided Support case${rows.length===1?"":"s"} shown.`;
+    }
+
+    async function loadGuidedSupportCases() {
+      if (!platformAdminEnabled) return;
+      if (!governedGuidedOperations) governedGuidedOperations = installGuidedOperations({container:guidedSupportQueue,body:guidedSupportBody,message:guidedSupportMessage,onLegacy:loadGuidedSupportCases,call:async(name,data)=>(await httpsCallable(functions,name)(data)).data});
+      if (governedGuidedOperations.mode() !== "LEGACY") { try { await governedGuidedOperations.load(); } catch (e) { guidedSupportMessage.textContent=e.message; } return; }
+      refreshGuidedSupportBtn.disabled = true;
+      try { const response = await httpsCallable(functions,"guidedSupportAdminListCases")(); guidedSupportCases = response.data.cases || []; renderGuidedSupportCases(); }
+      catch { guidedSupportMessage.textContent = "The protected Guided Support queue could not be loaded."; }
+      finally { refreshGuidedSupportBtn.disabled = false; }
+    }
+
+    function openGuidedSupportRefund(item) {
+      guidedSupportRefundCase = item;
+      const remaining = Math.max(0, Number(item.amountPaid || 0) - Number(item.refundedAmount || 0));
+      guidedSupportRefundReference.textContent = `${item.complaintPackReference || item.id} · Maximum available ${new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(remaining/100)}`;
+      guidedSupportRefundAmount.value = (remaining / 100).toFixed(2);
+      guidedSupportRefundAmount.max = (remaining / 100).toFixed(2);
+      guidedSupportRefundReason.value = "";
+      guidedSupportRefundDialog.showModal();
+    }
+
+    async function submitGuidedSupportRefund(event) {
+      event.preventDefault();
+      if (!platformAdminEnabled || !guidedSupportRefundCase) return;
+      const amount = Math.round(Number(guidedSupportRefundAmount.value) * 100), reason = guidedSupportRefundReason.value.trim();
+      if (!Number.isInteger(amount) || amount <= 0 || !reason) { guidedSupportMessage.textContent = "Enter a valid refund amount and operational reason."; return; }
+      guidedSupportRefundSubmit.disabled = true;
+      try {
+        await httpsCallable(functions,"guidedSupportAdminRefund")({transactionId:guidedSupportRefundCase.transactionId,amount,reason});
+        guidedSupportRefundDialog.close(); guidedSupportMessage.textContent = "Stripe refund recorded successfully with an administrator audit entry."; await loadGuidedSupportCases();
+      } catch (error) { guidedSupportMessage.textContent = error.code === "functions/permission-denied" ? "Platform administrator access is required." : "The refund could not be completed. No local refund state was recorded."; }
+      finally { guidedSupportRefundSubmit.disabled = false; }
+    }
+
+    async function replayGuidedSupportWebhook(item) {
+      if (!platformAdminEnabled) return;
+      guidedSupportMessage.textContent = "Replaying the original signed Stripe test webhook...";
+      try { const result=(await httpsCallable(functions,"guidedSupportAdminReplayTestWebhook")({transactionId:item.transactionId})).data; guidedSupportMessage.textContent=`Signed Stripe test webhook replay accepted (${result.status}). Inspect acceptance to confirm idempotency.`; }
+      catch { guidedSupportMessage.textContent="The signed Stripe test webhook replay could not be completed."; }
+    }
+
+    async function inspectGuidedSupportAcceptance(item) {
+      if (!platformAdminEnabled) return;
+      guidedSupportMessage.textContent = "Inspecting protected Stripe, email and audit acceptance state...";
+      try { const result=(await httpsCallable(functions,"guidedSupportAdminInspectAcceptance")({transactionId:item.transactionId})).data, contentOk=Object.values(result.emailChecks||{}).every(Boolean); guidedSupportMessage.textContent=`Acceptance: events ${result.webhookEventCount}; cases ${result.caseCount}; snapshots ${result.snapshotCount}; email ${result.confirmationEmailStatus}/${result.emailProvider?.deliveryState||"not inspected"}, provider ${result.confirmationEmailProviderIdPresent?"one reference":"none"}, sender ${result.emailProvider?.from||"unavailable"}, subject ${result.emailProvider?.subjectMatches?"verified":"not verified"}, content ${contentOk?"verified":"not verified"}; refunds ${result.refundCount}; audit ${result.auditActions.join(", ")||"none"}.`; }
+      catch { guidedSupportMessage.textContent="Protected acceptance state could not be inspected."; }
+    }
+
+    async function provisionGuidedSupportTestCatalog() {
+      if (!platformAdminEnabled) return;
+      provisionGuidedSupportTestBtn.disabled = true;
+      guidedSupportMessage.textContent = "Verifying the protected Stripe test catalog...";
+      try {
+        const response = await httpsCallable(functions, "guidedSupportAdminProvisionTestCatalog")();
+        guidedSupportMessage.textContent = `${response.data.count || 0} Stripe test prices verified. Live commerce remains disabled.`;
+      } catch (error) {
+        guidedSupportMessage.textContent = "Stripe test catalog verification failed. No live commerce was enabled.";
+      } finally {
+        provisionGuidedSupportTestBtn.disabled = false;
+      }
+    }
+
+    function openGuidedSupportTestFlow() {
+      if (!platformAdminEnabled || !auth.currentUser) return;
+      const products = {
+        parking:{id:"parking_guided_support",category:"parking",displayName:"Parking Appeal Guided Support",amount:4900,currency:"GBP",sourcePath:"/parking-appeal.html"},
+        flight:{id:"flight_guided_support",category:"flight",displayName:"Flight Compensation Guided Support",amount:5900,currency:"GBP",sourcePath:"/freeflightclaim.html"},
+        holiday:{id:"holiday_guided_support",category:"holiday",displayName:"Holiday Complaint Guided Support",amount:9900,currency:"GBP",sourcePath:"/freeholidaycompensation.html"},
+        "car-finance":{id:"car_finance_guided_support",category:"car-finance",displayName:"Car Finance Guided Support",amount:14900,currency:"GBP",sourcePath:"/car-finance.html"}
+      };
+      const product = products[guidedSupportTestProduct.value];
+      if (!product) return;
+      const reference = `QCP-TEST-${Date.now()}`;
+      const snapshot = { complaintPackReference:reference, frameworkVersion:"1.7", builderVersion:"test-acceptance", applicantDetails:{firstName:"Stripe",lastName:"Test",email:auth.currentUser.email,preferredContact:"email"}, complaintPackQuality:100, evidenceReadiness:100, issueSummary:"Controlled Stripe test-mode acceptance record. No real consumer complaint data.", issues:["Controlled test"], routes:["Guided Support test"], timeline:[], losses:[], evidence:{}, documents:{executiveSummary:"Controlled test summary",complaintLetter:"Controlled test complaint letter",coverEmail:"Controlled test cover email"} };
+      sessionStorage.setItem("quaerensGuidedSupportHandoffV1", JSON.stringify({category:product.category,product,snapshot,sourcePath:product.sourcePath,createdAt:new Date().toISOString(),testMode:true}));
+      location.assign("/guided-support-commerce.html");
+    }
+
+    async function updateGuidedSupportCase(caseId, action) {
+      try { await httpsCallable(functions,"guidedSupportAdminUpdateCase")({caseId,action}); guidedSupportMessage.textContent="Guided Support case updated."; await loadGuidedSupportCases(); }
+      catch (error) { guidedSupportMessage.textContent = error.code === "functions/failed-precondition" ? "Review cannot begin before the recorded service start date." : "The Guided Support case could not be updated."; }
+    }
+
+    function isLocked(lead) {
+      return lead.closed === true || lead.usable === false || lead.leadStatus === "closed";
+    }
+
+    function getEffectiveLeadStatus(lead) {
+      if (isLocked(lead)) return "closed";
+      if (lead.leadStatus === "converted" || lead.convertedToSubmissionId) return "converted";
+      return lead.leadStatus || "new";
+    }
+
+    function isAwaitingManagerLead(lead) {
+      return getEffectiveLeadStatus(lead) === "awaiting_manager";
+    }
+
+    function isQualifiedLead(lead) {
+      return getEffectiveLeadStatus(lead) === "qualified" || getEffectiveLeadStatus(lead) === "assessment_complete";
+    }
+
+    function isSentToCloserLead(lead) {
+      return getEffectiveLeadStatus(lead) === "sent_to_closer" || !!lead.sentToCloserAt || !!lead.closerUid || !!lead.closerAppointmentDate;
+    }
+
+    function getCloserDisplayFromLead(lead) {
+      return findUserName(lead.closerUid);
+    }
+
+    function getLeadAppointmentDate(lead) {
+      return lead.closerAppointmentDate || "";
+    }
+
+    function getLeadAppointmentTime(lead) {
+      return lead.closerAppointmentTime || "";
+    }
+
+    function hasPendingCallback(lead) {
+      return !!lead.callbackRequired && !isLocked(lead);
+    }
+
+    function hasPendingIntroEmail(lead) {
+      return !!lead.introEmailNeeded && !lead.introEmailSent && !isLocked(lead);
+    }
+
+    function isOverdueManagerLead(lead) {
+      if (!isAwaitingManagerLead(lead)) return false;
+      const sentAt = lead.sentToManagerAt?.toDate ? lead.sentToManagerAt.toDate().getTime() : 0;
+      if (!sentAt) return false;
+      return Date.now() - sentAt > 24 * 60 * 60 * 1000;
+    }
+
+    function isSubmissionAwaitingManager(submission) {
+      return ["submitted", "in_review"].includes(String(submission.status || "").trim());
+    }
+
+    function isSubmissionOverdue(submission) {
+      if (!isSubmissionAwaitingManager(submission)) return false;
+      const baseTs =
+        submission.reviewedAt?.toDate
+          ? submission.reviewedAt.toDate().getTime()
+          : (submission.createdAt?.toDate ? submission.createdAt.toDate().getTime() : 0);
+      if (!baseTs) return false;
+      return Date.now() - baseTs > 24 * 60 * 60 * 1000;
+    }
+
+    function getSubmissionUpdatedTime(submission) {
+      return submission.reviewedAt?.toDate
+        ? submission.reviewedAt.toDate().getTime()
+        : (submission.createdAt?.toDate ? submission.createdAt.toDate().getTime() : 0);
+    }
+
+    function findLinkedLeadForSubmission(submissionId) {
+      return leadAssignments.find(lead =>
+        lead.convertedToSubmissionId === submissionId ||
+        lead.submissionId === submissionId ||
+        lead.claimSubmissionId === submissionId ||
+        lead.intakeSubmissionId === submissionId
+      ) || null;
+    }
+
+    async function checkAccess(user) {
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
+      if (userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentContext=context;
+      applyWorkspaceChrome(context);
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadDashboardData(showRefreshStamp = true) {
+      if (refreshInProgress) return;
+      refreshInProgress = true;
+
+      try {
+        const [
+          attendanceSnap,
+          leadSnap,
+          usersSnap,
+          closerAssignmentsSnap,
+          claimSubmissionsSnap
+        ] = await Promise.all([
+          safeGetCollection("staffAttendance"),
+          safeGetCollection("leadAssignments"),
+          safeGetCollection("users"),
+          safeGetCollection("closerAssignments"),
+          safeGetCollection("claimSubmissions")
+        ]);
+
+        const today = todayIso();
+
+        attendanceDocs = attendanceSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(d => d.date === today);
+
+        leadAssignments = leadSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
+        userDocs = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        closerAssignments = closerAssignmentsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data())).filter(item=>!isCrm2(currentContext)||["approved","closer-assigned","appointment-booked","onboarded"].includes(item.status));
+        claimSubmissions = claimSubmissionsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
+
+        renderStats();
+        renderAwaitingManager();
+        renderCloserAppointments();
+        renderAttendance();
+        renderLeadSummary();
+
+        if (showRefreshStamp) {
+          autoRefreshStatus.textContent = `Auto-refresh every 2 minutes. Last updated: ${new Date().toLocaleTimeString("en-GB")}`;
+        }
+      } finally {
+        refreshInProgress = false;
+      }
+    }
+
+    function renderStats() {
+      const staffUsers = userDocs.filter(u => u.role === "staff");
+      const onlineNow = attendanceDocs.filter(a => a.isOnline && !isStaleOnline(a)).length;
+      const callbacksPending = leadAssignments.filter(hasPendingCallback).length;
+      const introPending = leadAssignments.filter(hasPendingIntroEmail).length;
+
+      const awaitingManagerLeads = leadAssignments.filter(lead => !isLocked(lead) && isAwaitingManagerLead(lead)).length;
+      const orphanAwaitingSubmissions = claimSubmissions.filter(submission => {
+        if (!isSubmissionAwaitingManager(submission)) return false;
+        return !findLinkedLeadForSubmission(submission.id);
+      }).length;
+      const awaitingManager = awaitingManagerLeads + orphanAwaitingSubmissions;
+
+      const mergedAppointments = getMergedCloserAppointments();
+      const closerBookings = mergedAppointments.length;
+      const todayAppointments = mergedAppointments.filter(item => item.date === todayIso()).length;
+
+      const overdueManagerLeadCount = leadAssignments.filter(lead => !isLocked(lead) && isOverdueManagerLead(lead)).length;
+      const overdueSubmissionCount = claimSubmissions.filter(submission => {
+        if (!isSubmissionOverdue(submission)) return false;
+        return !findLinkedLeadForSubmission(submission.id);
+      }).length;
+      const overdueManager = overdueManagerLeadCount + overdueSubmissionCount;
+
+      let onTimeCount = 0;
+      let lateCount = 0;
+      let absentCount = 0;
+
+      staffUsers.forEach(user => {
+        const status = getTodayStatusForUser(user.id);
+        if (status === "on_time") onTimeCount += 1;
+        else if (status === "late") lateCount += 1;
+        else absentCount += 1;
+      });
+
+      document.getElementById("totalStaffStat").textContent = String(staffUsers.length);
+      document.getElementById("onlineStaffStat").textContent = String(onlineNow);
+      document.getElementById("loggedInTodayStat").textContent = String(attendanceDocs.length);
+      document.getElementById("onTimeStat").textContent = String(onTimeCount);
+      document.getElementById("lateStat").textContent = String(lateCount);
+      document.getElementById("absentStat").textContent = String(absentCount);
+      document.getElementById("awaitingManagerStat").textContent = String(awaitingManager);
+      document.getElementById("closerBookingsStat").textContent = String(closerBookings);
+      document.getElementById("todayAppointmentsStat").textContent = String(todayAppointments);
+      document.getElementById("overdueManagerStat").textContent = String(overdueManager);
+
+      document.getElementById("snapshotOnline").textContent = String(onlineNow);
+      document.getElementById("snapshotAttendance").textContent = String(attendanceDocs.length);
+      document.getElementById("snapshotAwaitingManager").textContent = String(awaitingManager);
+      document.getElementById("snapshotAppointments").textContent = String(todayAppointments);
+      document.getElementById("snapshotCallbacks").textContent = String(callbacksPending);
+      document.getElementById("snapshotIntro").textContent = String(introPending);
+    }
+
+    function getAwaitingManagerItems() {
+      const items = [];
+
+      leadAssignments.forEach(lead => {
+        if (!isLocked(lead) && isAwaitingManagerLead(lead)) {
+          items.push({
+            sourceType: "lead",
+            sortTime: lead.sentToManagerAt?.toDate ? lead.sentToManagerAt.toDate().getTime() : 0,
+            clientName: clientName(lead),
+            phone: getLeadTelephone(lead) || getLeadMobile(lead) || "-",
+            owner: findUserName(lead.assignedToUid),
+            overdue: isOverdueManagerLead(lead),
+            actionHref: "/manager-panel.html",
+            actionLabel: "Open Panel",
+            claimType: lead.claimType || lead.type || "-"
+          });
+        }
+      });
+
+      claimSubmissions.forEach(submission => {
+        if (!isSubmissionAwaitingManager(submission)) return;
+        const linkedLead = findLinkedLeadForSubmission(submission.id);
+        if (linkedLead) return;
+
+        items.push({
+          sourceType: "submission",
+          sortTime: getSubmissionUpdatedTime(submission),
+          clientName: submissionClientName(submission),
+          phone: submissionPhone(submission) || "-",
+          owner: findUserName(submission.submittedBy?.uid),
+          overdue: isSubmissionOverdue(submission),
+          actionHref: `/intake-detail.html?id=${submission.id}`,
+          actionLabel: "Open Intake",
+          claimType: submission.claimType || "-"
+        });
+      });
+
+      return items.sort((a, b) => b.sortTime - a.sortTime);
+    }
+
+    function renderAwaitingManager() {
+      const body = document.getElementById("awaitingManagerBody");
+      body.innerHTML = "";
+      const rows = getAwaitingManagerItems().slice(0, 8);
+
+      if (!rows.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No leads awaiting manager review.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${item.clientName}</div>
+            <div class="text-xs text-slate-500">${item.claimType}</div>
+          </td>
+          <td class="p-3">${item.phone}</td>
+          <td class="p-3">${item.owner}</td>
+          <td class="p-3">${item.overdue ? overdueBadge() : awaitingManagerBadge()}</td>
+          <td class="p-3">
+            <a href="${item.actionHref}" class="text-blue-600 font-semibold hover:underline">${item.actionLabel}</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function getMergedCloserAppointments() {
+      const merged = [];
+      const coveredLeadIds = new Set();
+
+      closerAssignments.forEach(item => {
+        const leadId = item.sourceLeadId || item.leadAssignmentId || "";
+        if (leadId) coveredLeadIds.add(leadId);
+
+        const closerName =
+          item.closer?.name ||
+          item.closer?.email ||
+          findUserName(item.closer?.uid);
+
+        const clientNameText =
+          `${item.client?.firstName || ""} ${item.client?.secondName || ""}`.trim() || "-";
+
+        merged.push({
+          sourceType: "closer_assignment",
+          sourceId: item.id,
+          leadId,
+          date: item.appointment?.date || "",
+          time: item.appointment?.time || "",
+          clientName: clientNameText,
+          closerName: closerName || "-",
+          actionHref: "/manager-panel.html"
+        });
+      });
+
+      leadAssignments.forEach(lead => {
+        if (isLocked(lead)) return;
+        if (!isSentToCloserLead(lead)) return;
+        if (!lead.id || coveredLeadIds.has(lead.id)) return;
+
+        merged.push({
+          sourceType: "lead_fallback",
+          sourceId: lead.id,
+          leadId: lead.id,
+          date: getLeadAppointmentDate(lead),
+          time: getLeadAppointmentTime(lead),
+          clientName: clientName(lead),
+          closerName: getCloserDisplayFromLead(lead),
+          actionHref: "/manager-panel.html"
+        });
+      });
+
+      return merged
+        .filter(item => item.date || item.time || item.closerName !== "-")
+        .sort((a, b) => {
+          const aKey = `${a.date || "9999-12-31"} ${a.time || "23:59"}`;
+          const bKey = `${b.date || "9999-12-31"} ${b.time || "23:59"}`;
+          return aKey.localeCompare(bKey);
+        });
+    }
+
+    function renderCloserAppointments() {
+      const body = document.getElementById("closerAppointmentsBody");
+      body.innerHTML = "";
+      const rows = getMergedCloserAppointments().slice(0, 8);
+
+      if (!rows.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No closer appointments booked yet.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${item.date || "-"}</td>
+          <td class="p-3">${item.time || "-"}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${item.clientName}</div>
+          </td>
+          <td class="p-3">${item.closerName || "-"}</td>
+          <td class="p-3">
+            <a href="${item.actionHref}" class="text-blue-600 font-semibold hover:underline">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderAttendance() {
+      attendanceBody.innerHTML = "";
+      const staffUsers = userDocs
+        .filter(u => u.role === "staff")
+        .sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()));
+
+      const attendanceMap = todayAttendanceMap();
+
+      if (!staffUsers.length) {
+        attendanceBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-slate-500">No staff users found.</td>
+          </tr>
+        `;
+        attendanceSummary.textContent = "No staff users found.";
+        return;
+      }
+
+      staffUsers.forEach(user => {
+        const item = attendanceMap[user.id] || null;
+        const todayStatus = getTodayStatusForUser(user.id);
+        const trulyOnline = item ? item.isOnline && !isStaleOnline(item) : false;
+        const workedMs = item ? getLiveWorkedMs(item) : 0;
+
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${user.name || "-"}</div>
+            <div class="text-xs text-slate-500">${user.email || "-"}</div>
+          </td>
+          <td class="p-3">${item ? formatTimestamp(item.firstLoginAt) : "-"}</td>
+          <td class="p-3">${item ? formatTimestamp(item.lastLoginAt) : "-"}</td>
+          <td class="p-3">${item ? formatTimestamp(item.lastSeenAt) : "-"}</td>
+          <td class="p-3">${item ? formatTimestamp(item.lastLogoutAt) : "-"}</td>
+          <td class="p-3 font-semibold text-blue-900">${formatDuration(workedMs)}</td>
+          <td class="p-3">${todayStatusBadge(todayStatus)}</td>
+          <td class="p-3">${liveStatusBadge(trulyOnline)}</td>
+        `;
+        attendanceBody.appendChild(row);
+      });
+
+      attendanceSummary.textContent = `${staffUsers.length} staff member(s) shown for today. Start time cutoff: ${String(LATE_CUTOFF_HOUR).padStart(2, "0")}:${String(LATE_CUTOFF_MINUTE).padStart(2, "0")} Madrid time.`;
+    }
+
+    function renderLeadSummary() {
+      leadSummaryBody.innerHTML = "";
+      const grouped = {};
+
+      leadAssignments.forEach(lead => {
+        const uid = lead.assignedToUid || "unassigned";
+
+        if (!grouped[uid]) {
+          grouped[uid] = {
+            uid,
+            assigned: 0,
+            callbacks: 0,
+            intro: 0,
+            awaitingManager: 0,
+            qualified: 0,
+            sentToCloser: 0,
+            converted: 0
+          };
+        }
+
+        grouped[uid].assigned += 1;
+        if (hasPendingCallback(lead)) grouped[uid].callbacks += 1;
+        if (hasPendingIntroEmail(lead)) grouped[uid].intro += 1;
+        if (!isLocked(lead) && isAwaitingManagerLead(lead)) grouped[uid].awaitingManager += 1;
+        if (!isLocked(lead) && isQualifiedLead(lead)) grouped[uid].qualified += 1;
+        if (!isLocked(lead) && isSentToCloserLead(lead)) grouped[uid].sentToCloser += 1;
+        if (getEffectiveLeadStatus(lead) === "converted") grouped[uid].converted += 1;
+      });
+
+      const rows = Object.values(grouped).sort((a, b) => {
+        const aName = findUserName(a.uid).toLowerCase();
+        const bName = findUserName(b.uid).toLowerCase();
+        return aName.localeCompare(bName);
+      });
+
+      if (!rows.length) {
+        leadSummaryBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-6 text-center text-slate-500">No lead data found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3">${findUserName(item.uid)}</td>
+          <td class="p-3">${item.assigned}</td>
+          <td class="p-3">${item.callbacks}</td>
+          <td class="p-3">${item.intro}</td>
+          <td class="p-3">${item.awaitingManager}</td>
+          <td class="p-3">${item.qualified}</td>
+          <td class="p-3">${item.sentToCloser}</td>
+          <td class="p-3">${item.converted}</td>
+        `;
+        leadSummaryBody.appendChild(row);
+      });
+    }
+
+    function startAutoRefresh() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(async () => {
+        try {
+          await loadDashboardData(true);
+        } catch (error) {
+          console.error("Auto-refresh failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    async function refreshDashboard(showToastMessage = true) {
+      try {
+        await loadDashboardData(true);
+        if (showToastMessage) showToast("Manager dashboard refreshed.");
+      } catch (error) {
+        console.error("Could not refresh dashboard:", error);
+        alert(`Could not refresh dashboard: ${error.code || error.message || "Unknown error"}`);
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkAccess(user);
+        if (!allowed) return;
+
+        await enablePlatformAdminTools(user);
+
+        await loadDashboardData(true);
+        startAutoRefresh();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        hideLoader();
+        showToast(isCrm2(currentContext) ? "The CRM4 Manager dashboard is temporarily unavailable. Please refresh and try again." : "The Manager dashboard is temporarily unavailable. Please refresh and try again.");
+      }
+    });
+
+    refreshAttendanceBtn.addEventListener("click", async () => {
+      try {
+        await loadDashboardData(true);
+        showToast("Attendance refreshed.");
+      } catch (error) {
+        console.error("Could not refresh attendance:", error);
+        alert("Could not refresh attendance.");
+      }
+    });
+
+    refreshDashboardBtn.addEventListener("click", async () => {
+      await refreshDashboard(true);
+    });
+
+    refreshMembershipsBtn.addEventListener("click", loadCrm2Memberships);
+    refreshGuidedSupportBtn.addEventListener("click", loadGuidedSupportCases);
+    provisionProcessingBtn.addEventListener("click", provisionExistingProcessingTeam);
+    provisionGuidedSupportTestBtn.addEventListener("click", provisionGuidedSupportTestCatalog);
+    openGuidedSupportTestBtn.addEventListener("click", openGuidedSupportTestFlow);
+    guidedSupportStatusFilter.addEventListener("change", renderGuidedSupportCases);
+    guidedSupportRefundForm.addEventListener("submit", submitGuidedSupportRefund);
+    guidedSupportRefundCancel.addEventListener("click", () => guidedSupportRefundDialog.close());
+
+    crm4CreateUserForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!platformAdminEnabled) return;
+      crm4CreateUserBtn.disabled = true;
+      setAdminMessage("Creating secure CRM4 access...");
+      try {
+        const values = Object.fromEntries(new FormData(crm4CreateUserForm).entries());
+        const createUser = httpsCallable(functions, "crm4AdminCreateUser");
+        const response = await createUser({
+          displayName:String(values.displayName || "").trim(),
+          email:String(values.email || "").trim().toLowerCase(),
+          role:String(values.role || ""),
+          active:document.getElementById("crm4AdminActive").checked,
+          workspaceId:"CRM4"
+        });
+        crm4CreateUserForm.reset();
+        document.getElementById("crm4AdminActive").checked = true;
+        setAdminMessage(`Secure CRM4 access created for ${response.data.email}. The password setup link was emailed directly to the employee.`);
+        await loadCrm2Memberships();
+      } catch (error) {
+        console.warn("CRM4 user creation was rejected.");
+        setAdminMessage("CRM4 access could not be created. Check the user details and platform administrator permission, then try again.", true);
+      } finally {
+        crm4CreateUserBtn.disabled = false;
+      }
+    });
+
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+
+<!-- Client portal quick links -->
+<script id="client-portal-admin-links">
+  (function () {
+    if (document.getElementById("clientPortalQuickLinks")) return;
+    var box = document.createElement("div");
+    box.id = "clientPortalQuickLinks";
+    box.style.cssText = "position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end";
+    box.innerHTML = '<a href="client-portal-admin.html" style="border-radius:999px;background:#155eef;color:#fff;padding:10px 14px;text-decoration:none;font-weight:800;box-shadow:0 12px 24px rgba(21,94,239,.22)">Client Portal Admin</a><a href="client-portal.html" style="border-radius:999px;background:#edf4ff;color:#0b2f6b;padding:10px 14px;text-decoration:none;font-weight:800">Client Login</a>';
+    document.body.appendChild(box);
+  })();
+</script>
+</body>
+</html>

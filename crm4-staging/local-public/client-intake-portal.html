@@ -1,0 +1,1596 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Client Intake Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .label { display: block; font-size: 0.95rem; font-weight: 600; color: #1e3a8a; margin-bottom: 0.45rem; }
+    .section-title { font-size: 1.1rem; font-weight: 800; color: #1e3a8a; }
+    .btn { border-radius: 12px; padding: 0.8rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .mini-note {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+      line-height: 1.45;
+    }
+    .claim-chip {
+      display: inline-block;
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Client Intake Portal</h1>
+          <p class="text-sm text-slate-500">Universal claim intake for all active claim types</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Staff Dashboard</a>
+          <a href="/lister-leads.html" class="btn btn-secondary py-2 px-4">My Leads</a>
+          <a href="/lister-callbacks.html" class="btn btn-secondary py-2 px-4">Callback Agenda</a>
+          <a href="/manager-panel.html" class="btn btn-secondary py-2 px-4">Manager Panel</a>
+          <div class="text-sm text-slate-500 text-right">
+            <div id="staffStatus">Checking access...</div>
+            <div id="staffEmail" class="text-xs text-slate-400"></div>
+          </div>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 grid lg:grid-cols-[320px_1fr] gap-6">
+      <aside class="card p-5 h-fit">
+        <h2 class="section-title mb-4">Portal Flow</h2>
+        <ol class="space-y-3 text-sm text-slate-700 list-decimal pl-4">
+          <li>Staff logs in and opens claim intake</li>
+          <li>Selects the correct claim type</li>
+          <li>Completes personal + claim-specific details</li>
+          <li>Saves draft or submits to manager review</li>
+          <li>Manager reviews and decides next step</li>
+        </ol>
+
+        <div id="leadNotice" class="mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 hidden">
+          <h3 class="font-bold text-emerald-900 mb-2">Lead linked</h3>
+          <p class="text-sm text-slate-700" id="leadNoticeText">This intake is linked to a lister lead and some fields were prefilled automatically.</p>
+        </div>
+
+        <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
+          <h3 class="font-bold text-blue-900 mb-2">Universal intake</h3>
+          <p class="text-sm text-slate-700">
+            Every claim type now has its own dedicated intake section. Select a claim type to show the matching form.
+          </p>
+        </div>
+
+        <div class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <h3 class="font-bold text-slate-800 mb-2">Current submission</h3>
+          <div id="submissionInfoBox" class="text-sm text-slate-600">No submission created yet.</div>
+        </div>
+
+        <div class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <h3 class="font-bold text-slate-800 mb-2">Linked lead</h3>
+          <div id="linkedLeadBox" class="text-sm text-slate-600">No lead linked.</div>
+        </div>
+      </aside>
+
+      <section class="space-y-6">
+        <div class="card p-6">
+          <div class="flex flex-col md:flex-row md:items-end gap-4 justify-between">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">New Intake</h2>
+              <p class="text-slate-600 mt-1">One intake page for all claims</p>
+            </div>
+            <div class="w-full md:w-80">
+              <label class="label" for="claimType">Claim type</label>
+              <select id="claimType" class="input"></select>
+            </div>
+          </div>
+        </div>
+
+        <form class="card p-6 space-y-8" id="intakeForm">
+          <div>
+            <h3 class="section-title mb-4">Personal Details</h3>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="label">First Name</label>
+                <input class="input" name="firstName" required />
+              </div>
+              <div>
+                <label class="label">Second Name</label>
+                <input class="input" name="secondName" required />
+              </div>
+              <div>
+                <label class="label">First Name 2</label>
+                <input class="input" name="firstName2" />
+              </div>
+              <div>
+                <label class="label">Second Name 2</label>
+                <input class="input" name="secondName2" />
+              </div>
+              <div>
+                <label class="label">Landline</label>
+                <input class="input" name="landline" />
+              </div>
+              <div>
+                <label class="label">Mobile</label>
+                <input class="input" name="mobile" />
+              </div>
+              <div>
+                <label class="label">Email Address</label>
+                <input class="input" name="email" type="email" />
+              </div>
+              <div>
+                <label class="label">Postcode</label>
+                <input class="input" name="postcode" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="label">Address</label>
+                <textarea class="input" name="address" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- AIRBNB REFUNDS -->
+          <div id="wrap_airbnb_refunds" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Airbnb Refunds</h3>
+              <span class="claim-chip">Airbnb refunds</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Booking Platform</label><input class="input" name="airbnb_platform" /></div>
+              <div><label class="label">Booking Reference</label><input class="input" name="airbnb_bookingReference" /></div>
+              <div><label class="label">Travel Date</label><input class="input" type="date" name="airbnb_travelDate" /></div>
+              <div><label class="label">Booking Value</label><input class="input" name="airbnb_bookingValue" /></div>
+              <div><label class="label">Reason for Refund</label><input class="input" name="airbnb_refundReason" /></div>
+              <div><label class="label">Refund Refused?</label><select class="input" name="airbnb_refundRefused"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Chargeback attempted?</label><select class="input" name="airbnb_chargebackAttempted"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents available?</label><select class="input" name="airbnb_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="airbnb_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CAR FINANCE -->
+          <div id="wrap_car_finance" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Car Finance</h3>
+              <span class="claim-chip">Car finance</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Dealer Name</label><input class="input" name="carfinance_dealerName" /></div>
+              <div><label class="label">Lender Name</label><input class="input" name="carfinance_lenderName" /></div>
+              <div><label class="label">Vehicle</label><input class="input" name="carfinance_vehicle" /></div>
+              <div><label class="label">Agreement Date</label><input class="input" type="date" name="carfinance_agreementDate" /></div>
+              <div><label class="label">Agreement Type</label><input class="input" name="carfinance_agreementType" placeholder="HP, PCP, lease..." /></div>
+              <div><label class="label">Commission disclosed?</label><select class="input" name="carfinance_commissionDisclosed"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Deposit Paid</label><input class="input" name="carfinance_deposit" /></div>
+              <div><label class="label">Monthly Payment</label><input class="input" name="carfinance_monthlyPayment" /></div>
+              <div><label class="label">Still Active?</label><select class="input" name="carfinance_active"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Have agreement docs?</label><select class="input" name="carfinance_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">What went wrong?</label><textarea class="input" name="carfinance_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CARAVAN HOLIDAY PARK -->
+          <div id="wrap_caravan_holiday_park" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Caravan / Holiday Park</h3>
+              <span class="claim-chip">Caravan / holiday park</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Site / Park Name</label><input class="input" name="caravan_parkName" /></div>
+              <div><label class="label">Sales Company</label><input class="input" name="caravan_salesCompany" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="caravan_purchaseDate" /></div>
+              <div><label class="label">Purchase Price</label><input class="input" name="caravan_purchasePrice" /></div>
+              <div><label class="label">Finance Used?</label><select class="input" name="caravan_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Annual Fees Explained Clearly?</label><select class="input" name="caravan_feesExplained"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Misleading Sales Promises?</label><select class="input" name="caravan_salesPromises"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents available?</label><select class="input" name="caravan_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="caravan_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- COMPLAINT LETTERS -->
+          <div id="wrap_complaint_letters" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Complaint Letters</h3>
+              <span class="claim-chip">Complaint letters</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Company Complained About</label><input class="input" name="complaint_companyName" /></div>
+              <div><label class="label">Complaint Date</label><input class="input" type="date" name="complaint_date" /></div>
+              <div><label class="label">Issue Category</label><input class="input" name="complaint_category" /></div>
+              <div><label class="label">Response Received?</label><select class="input" name="complaint_responseReceived"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Desired Outcome</label><input class="input" name="complaint_desiredOutcome" /></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="complaint_evidence"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Complaint Summary</label><textarea class="input" name="complaint_summary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CONTACT ME -->
+          <div id="wrap_contact_me" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Contact Me</h3>
+              <span class="claim-chip">General enquiry</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Reason For Contact</label><input class="input" name="contactme_reason" /></div>
+              <div><label class="label">Best Time To Call</label><input class="input" name="contactme_bestTime" /></div>
+              <div><label class="label">Preferred Contact Method</label><input class="input" name="contactme_contactMethod" /></div>
+              <div><label class="label">Urgent?</label><select class="input" name="contactme_urgent"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Enquiry Notes</label><textarea class="input" name="contactme_notes" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CREDIT CARD FEES -->
+          <div id="wrap_credit_card_fees" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Credit Card Fees</h3>
+              <span class="claim-chip">Credit card fees</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Card Provider</label><input class="input" name="ccfees_provider" /></div>
+              <div><label class="label">Card Type</label><input class="input" name="ccfees_cardType" /></div>
+              <div><label class="label">Fee Type</label><input class="input" name="ccfees_feeType" /></div>
+              <div><label class="label">Fee Amount</label><input class="input" name="ccfees_feeAmount" /></div>
+              <div><label class="label">Date Fees Applied</label><input class="input" type="date" name="ccfees_feeDate" /></div>
+              <div><label class="label">Complaint Raised?</label><select class="input" name="ccfees_complaintRaised"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Statements Available?</label><select class="input" name="ccfees_statements"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="ccfees_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CRUISE COMPENSATION -->
+          <div id="wrap_cruise_compensation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Cruise Compensation</h3>
+              <span class="claim-chip">Cruise compensation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Cruise Operator</label><input class="input" name="cruise_operator" /></div>
+              <div><label class="label">Booking Reference</label><input class="input" name="cruise_bookingReference" /></div>
+              <div><label class="label">Cruise Date</label><input class="input" type="date" name="cruise_date" /></div>
+              <div><label class="label">Issue Type</label><input class="input" name="cruise_issueType" /></div>
+              <div><label class="label">Holiday Value</label><input class="input" name="cruise_value" /></div>
+              <div><label class="label">Compensation Offered?</label><select class="input" name="cruise_compensationOffered"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="cruise_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="cruise_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CRYPTO SCAM RECOVERY -->
+          <div id="wrap_crypto_scam_recovery" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Crypto Scam Recovery</h3>
+              <span class="claim-chip">Crypto scam recovery</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Platform / Website</label><input class="input" name="crypto_platform" /></div>
+              <div><label class="label">Approx Loss</label><input class="input" name="crypto_lossAmount" /></div>
+              <div><label class="label">Date of First Payment</label><input class="input" type="date" name="crypto_firstPaymentDate" /></div>
+              <div><label class="label">Payment Method</label><input class="input" name="crypto_paymentMethod" /></div>
+              <div><label class="label">Police / Action Fraud Reported?</label><select class="input" name="crypto_reported"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Wallet / Transaction Info Available?</label><select class="input" name="crypto_transactionInfo"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Bank Involved?</label><input class="input" name="crypto_bankName" /></div>
+              <div><label class="label">Still Contacted By Scammers?</label><select class="input" name="crypto_stillContacted"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Fraud Summary</label><textarea class="input" name="crypto_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- CYBER DATA BREACH -->
+          <div id="wrap_cyber_data_breach" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Cyber Data Breach</h3>
+              <span class="claim-chip">Cyber data breach</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Company / Organisation</label><input class="input" name="databreach_company" /></div>
+              <div><label class="label">Date Notified</label><input class="input" type="date" name="databreach_notifiedDate" /></div>
+              <div><label class="label">Type of Data Exposed</label><input class="input" name="databreach_dataType" /></div>
+              <div><label class="label">Financial Loss?</label><select class="input" name="databreach_financialLoss"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Emotional Distress?</label><select class="input" name="databreach_distress"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">ICO Complaint Made?</label><select class="input" name="databreach_icoComplaint"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Notification Email / Letter Available?</label><select class="input" name="databreach_notificationDocs"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Impact Summary</label><textarea class="input" name="databreach_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- DEBT RECOVERY -->
+          <div id="wrap_debt_recovery" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Debt Recovery</h3>
+              <span class="claim-chip">Debt recovery</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Debtor Name</label><input class="input" name="debt_debtorName" /></div>
+              <div><label class="label">Debt Amount</label><input class="input" name="debt_amount" /></div>
+              <div><label class="label">Debt Date</label><input class="input" type="date" name="debt_date" /></div>
+              <div><label class="label">Written Agreement?</label><select class="input" name="debt_agreement"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Invoices / Evidence Available?</label><select class="input" name="debt_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Debtor Contactable?</label><select class="input" name="debt_contactable"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div class="md:col-span-2"><label class="label">Recovery Background</label><textarea class="input" name="debt_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- FOAM INSULATION -->
+          <div id="wrap_foam_insulation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Foam Insulation</h3>
+              <span class="claim-chip">Foam insulation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Installer / Company</label><input class="input" name="foam_company" /></div>
+              <div><label class="label">Installation Date</label><input class="input" type="date" name="foam_installDate" /></div>
+              <div><label class="label">Property Type</label><input class="input" name="foam_propertyType" /></div>
+              <div><label class="label">Mortgage Affected?</label><select class="input" name="foam_mortgageAffected"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Survey / Valuation Problem?</label><select class="input" name="foam_surveyProblem"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="foam_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="foam_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- FORMAL ESCALATION -->
+          <div id="wrap_formal_escalation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Formal Escalation</h3>
+              <span class="claim-chip">Formal escalation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Organisation</label><input class="input" name="escalation_company" /></div>
+              <div><label class="label">Complaint Stage</label><input class="input" name="escalation_stage" /></div>
+              <div><label class="label">Reference Number</label><input class="input" name="escalation_reference" /></div>
+              <div><label class="label">Deadline / Time Limit</label><input class="input" name="escalation_deadline" /></div>
+              <div><label class="label">Desired Resolution</label><input class="input" name="escalation_resolution" /></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="escalation_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Escalation Notes</label><textarea class="input" name="escalation_notes" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- FROZEN ACCOUNTS -->
+          <div id="wrap_frozen_accounts" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Frozen Accounts</h3>
+              <span class="claim-chip">Frozen accounts</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Bank / Provider</label><input class="input" name="frozen_bank" /></div>
+              <div><label class="label">Account Type</label><input class="input" name="frozen_accountType" /></div>
+              <div><label class="label">Date Frozen</label><input class="input" type="date" name="frozen_date" /></div>
+              <div><label class="label">Balance Affected</label><input class="input" name="frozen_balance" /></div>
+              <div><label class="label">Reason Given?</label><select class="input" name="frozen_reasonGiven"><option value=""></option><option>Yes</option><option>No</option><option>Unclear</option></select></div>
+              <div><label class="label">Access Restored?</label><select class="input" name="frozen_restored"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Complaint Made?</label><select class="input" name="frozen_complaintMade"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Account Freeze Summary</label><textarea class="input" name="frozen_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- HOLIDAY COMPENSATION -->
+          <div id="wrap_holiday_compensation" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Holiday Compensation</h3>
+              <span class="claim-chip">Holiday compensation</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Travel Company</label><input class="input" name="holiday_company" /></div>
+              <div><label class="label">Booking Reference</label><input class="input" name="holiday_bookingReference" /></div>
+              <div><label class="label">Travel Date</label><input class="input" type="date" name="holiday_travelDate" /></div>
+              <div><label class="label">Holiday Value</label><input class="input" name="holiday_value" /></div>
+              <div><label class="label">Issue Type</label><input class="input" name="holiday_issueType" /></div>
+              <div><label class="label">Compensation Offered?</label><select class="input" name="holiday_compOffered"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="holiday_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="holiday_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- HOUSING DISREPAIR -->
+          <div id="wrap_housing_disrepair" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Housing Disrepair</h3>
+              <span class="claim-chip">Housing disrepair</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Landlord / Housing Association</label><input class="input" name="disrepair_landlord" /></div>
+              <div><label class="label">Tenancy Start Date</label><input class="input" type="date" name="disrepair_tenancyStart" /></div>
+              <div><label class="label">Main Issue</label><input class="input" name="disrepair_mainIssue" /></div>
+              <div><label class="label">Issue Ongoing?</label><select class="input" name="disrepair_ongoing"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Reported To Landlord?</label><select class="input" name="disrepair_reported"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Photos / Evidence?</label><select class="input" name="disrepair_evidence"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Health Impact?</label><select class="input" name="disrepair_healthImpact"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Rent Arrears?</label><select class="input" name="disrepair_rentArrears"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Disrepair Summary</label><textarea class="input" name="disrepair_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- INVESTMENT PLATFORMS -->
+          <div id="wrap_investment_platforms" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Investment Platforms</h3>
+              <span class="claim-chip">Investment platforms</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Platform Name</label><input class="input" name="investment_platform" /></div>
+              <div><label class="label">Approx Loss</label><input class="input" name="investment_lossAmount" /></div>
+              <div><label class="label">Date Opened / Invested</label><input class="input" type="date" name="investment_startDate" /></div>
+              <div><label class="label">Advisor / Broker</label><input class="input" name="investment_advisor" /></div>
+              <div><label class="label">Access Restricted?</label><select class="input" name="investment_accessRestricted"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Withdrawals Blocked?</label><select class="input" name="investment_withdrawalsBlocked"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Complaint Made?</label><select class="input" name="investment_complaintMade"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Statements / Emails Available?</label><select class="input" name="investment_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Investment Issue Summary</label><textarea class="input" name="investment_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- LOANS AND MORTGAGES -->
+          <div id="wrap_loans_and_mortgages" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Loans and Mortgages</h3>
+              <span class="claim-chip">Loans and mortgages</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Lender Name</label><input class="input" name="loanmortgage_lenderName" /></div>
+              <div><label class="label">Agreement Type</label><input class="input" name="loanmortgage_agreementType" /></div>
+              <div><label class="label">Start Date</label><input class="input" type="date" name="loanmortgage_startDate" /></div>
+              <div><label class="label">Amount Borrowed</label><input class="input" name="loanmortgage_amount" /></div>
+              <div><label class="label">Affordability Checks Questionable?</label><select class="input" name="loanmortgage_affordability"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Pressure / Mis-sale?</label><select class="input" name="loanmortgage_pressure"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="loanmortgage_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Issue Summary</label><textarea class="input" name="loanmortgage_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- MEDICAL NEGLIGENCE -->
+          <div id="wrap_medical_negligence" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Medical Negligence</h3>
+              <span class="claim-chip">Medical negligence</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Hospital / Clinic / GP</label><input class="input" name="medical_provider" /></div>
+              <div><label class="label">Treatment Date</label><input class="input" type="date" name="medical_treatmentDate" /></div>
+              <div><label class="label">Type of Treatment</label><input class="input" name="medical_treatmentType" /></div>
+              <div><label class="label">Injury / Harm Suffered</label><input class="input" name="medical_harm" /></div>
+              <div><label class="label">Complaint Made?</label><select class="input" name="medical_complaintMade"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Medical Records Available?</label><select class="input" name="medical_records"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Financial Loss?</label><select class="input" name="medical_financialLoss"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Still Receiving Treatment?</label><select class="input" name="medical_ongoingTreatment"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Negligence Summary</label><textarea class="input" name="medical_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- MIS SOLD BANK ACCOUNTS -->
+          <div id="wrap_mis_sold_bank_accounts" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Mis-sold Bank Accounts</h3>
+              <span class="claim-chip">Mis-sold bank accounts</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Bank Name</label><input class="input" name="bankaccount_bankName" /></div>
+              <div><label class="label">Account Type</label><input class="input" name="bankaccount_accountType" /></div>
+              <div><label class="label">When Opened</label><input class="input" type="date" name="bankaccount_openedDate" /></div>
+              <div><label class="label">Monthly Fee</label><input class="input" name="bankaccount_monthlyFee" /></div>
+              <div><label class="label">Benefits Used?</label><select class="input" name="bankaccount_benefitsUsed"><option value=""></option><option>Yes</option><option>No</option><option>Not Sure</option></select></div>
+              <div><label class="label">Eligibility Checked?</label><select class="input" name="bankaccount_eligibilityChecked"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Statements Available?</label><select class="input" name="bankaccount_statements"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Mis-sale Summary</label><textarea class="input" name="bankaccount_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- MORTGAGE REVIEW -->
+          <div id="wrap_mortgage_review" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Mortgage Review</h3>
+              <span class="claim-chip">Mortgage review</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Lender Name</label><input class="input" name="mortgage_lenderName" /></div>
+              <div><label class="label">Broker Name</label><input class="input" name="mortgage_brokerName" /></div>
+              <div><label class="label">Mortgage Start Date</label><input class="input" type="date" name="mortgage_startDate" /></div>
+              <div><label class="label">Mortgage End Date / Current</label><input class="input" name="mortgage_endDate" /></div>
+              <div><label class="label">Mortgage Amount</label><input class="input" name="mortgage_amount" /></div>
+              <div><label class="label">Monthly Payment</label><input class="input" name="mortgage_monthlyPayment" /></div>
+              <div><label class="label">Fixed / Variable / Tracker</label><input class="input" name="mortgage_type" /></div>
+              <div><label class="label">Interest Rate</label><input class="input" name="mortgage_interestRate" /></div>
+              <div><label class="label">Was advice given?</label><select class="input" name="mortgage_adviceGiven"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Any fees charged?</label><select class="input" name="mortgage_feesCharged"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Fee details</label><input class="input" name="mortgage_feeDetails" /></div>
+              <div><label class="label">Were risks explained clearly?</label><select class="input" name="mortgage_risksExplained"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Affordability concerns?</label><select class="input" name="mortgage_affordability"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Pressure to proceed?</label><select class="input" name="mortgage_pressure"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Arrears or defaults?</label><select class="input" name="mortgage_arrears"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Have documents?</label><select class="input" name="mortgage_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">What went wrong?</label><textarea class="input" name="mortgage_issueSummary" rows="3"></textarea></div>
+              <div class="md:col-span-2"><label class="label">Additional comments</label><textarea class="input" name="mortgage_comments" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- NEW BUILD ISSUES -->
+          <div id="wrap_new_build_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">New Build Issues</h3>
+              <span class="claim-chip">New build issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Developer Name</label><input class="input" name="newbuild_developerName" /></div>
+              <div><label class="label">Builder / Site Name</label><input class="input" name="newbuild_builderName" /></div>
+              <div><label class="label">Completion Date</label><input class="input" type="date" name="newbuild_completionDate" /></div>
+              <div><label class="label">Reservation / Purchase Date</label><input class="input" type="date" name="newbuild_purchaseDate" /></div>
+              <div><label class="label">Purchase Price</label><input class="input" name="newbuild_purchasePrice" /></div>
+              <div><label class="label">Warranty Provider</label><input class="input" name="newbuild_warrantyProvider" /></div>
+              <div><label class="label">Snagging issues identified?</label><select class="input" name="newbuild_snaggingIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Structural issues?</label><select class="input" name="newbuild_structuralIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Leaks / damp / mould?</label><select class="input" name="newbuild_dampIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Heating / plumbing / electrics issues?</label><select class="input" name="newbuild_servicesIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Issues reported to developer?</label><select class="input" name="newbuild_reportedToDeveloper"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Developer responded?</label><select class="input" name="newbuild_developerResponded"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Have photos / evidence?</label><select class="input" name="newbuild_evidenceAvailable"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Estimated financial loss / repair cost</label><input class="input" name="newbuild_lossEstimate" /></div>
+              <div class="md:col-span-2"><label class="label">Main defects / issues</label><textarea class="input" name="newbuild_issueSummary" rows="3"></textarea></div>
+              <div class="md:col-span-2"><label class="label">Additional comments</label><textarea class="input" name="newbuild_comments" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- PENSION ADMINISTRATION -->
+          <div id="wrap_pension_administration" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Pension Administration</h3>
+              <span class="claim-chip">Pension administration</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Provider / Scheme</label><input class="input" name="pensionadmin_provider" /></div>
+              <div><label class="label">Policy / Reference Number</label><input class="input" name="pensionadmin_reference" /></div>
+              <div><label class="label">Administration Error Type</label><input class="input" name="pensionadmin_errorType" /></div>
+              <div><label class="label">When Did Issue Start?</label><input class="input" type="date" name="pensionadmin_issueStart" /></div>
+              <div><label class="label">Financial Loss?</label><select class="input" name="pensionadmin_financialLoss"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Complaint Raised?</label><select class="input" name="pensionadmin_complaintRaised"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="pensionadmin_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Administration Issue Summary</label><textarea class="input" name="pensionadmin_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- PENSION ISSUES -->
+          <div id="wrap_pension_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Pension Issues</h3>
+              <span class="claim-chip">Pension issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Provider / Scheme</label><input class="input" name="pension_provider" /></div>
+              <div><label class="label">Policy Number</label><input class="input" name="pension_policyNumber" /></div>
+              <div><label class="label">Issue Type</label><input class="input" name="pension_issueType" /></div>
+              <div><label class="label">Approx Value Affected</label><input class="input" name="pension_valueAffected" /></div>
+              <div><label class="label">Transfer involved?</label><select class="input" name="pension_transfer"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Advice received?</label><select class="input" name="pension_advice"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Documents available?</label><select class="input" name="pension_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Pension Issue Summary</label><textarea class="input" name="pension_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- PLATFORM FAILURE -->
+          <div id="wrap_platform_failure" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Platform Failure</h3>
+              <span class="claim-chip">Platform failure</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Platform Name</label><input class="input" name="platformfailure_platform" /></div>
+              <div><label class="label">Service Type</label><input class="input" name="platformfailure_serviceType" /></div>
+              <div><label class="label">Failure Date</label><input class="input" type="date" name="platformfailure_date" /></div>
+              <div><label class="label">Financial Loss</label><input class="input" name="platformfailure_loss" /></div>
+              <div><label class="label">Access Restored?</label><select class="input" name="platformfailure_restored"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Complaint Raised?</label><select class="input" name="platformfailure_complaint"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Screenshots / Evidence?</label><select class="input" name="platformfailure_evidence"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Failure Summary</label><textarea class="input" name="platformfailure_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- REFUND ISSUES -->
+          <div id="wrap_refund_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Refund Issues</h3>
+              <span class="claim-chip">Refund issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Merchant / Company</label><input class="input" name="refund_company" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="refund_purchaseDate" /></div>
+              <div><label class="label">Purchase Amount</label><input class="input" name="refund_amount" /></div>
+              <div><label class="label">Refund Requested Date</label><input class="input" type="date" name="refund_requestedDate" /></div>
+              <div><label class="label">Refund Refused?</label><select class="input" name="refund_refused"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Chargeback Attempted?</label><select class="input" name="refund_chargeback"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="refund_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Refund Issue Summary</label><textarea class="input" name="refund_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- RETURN ISSUES -->
+          <div id="wrap_return_issues" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Return Issues</h3>
+              <span class="claim-chip">Return issues</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Retailer</label><input class="input" name="return_retailer" /></div>
+              <div><label class="label">Item</label><input class="input" name="return_item" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="return_purchaseDate" /></div>
+              <div><label class="label">Return Date</label><input class="input" type="date" name="return_returnDate" /></div>
+              <div><label class="label">Return Refused?</label><select class="input" name="return_refused"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div><label class="label">Value</label><input class="input" name="return_value" /></div>
+              <div><label class="label">Proof of Return?</label><select class="input" name="return_proof"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Return Issue Summary</label><textarea class="input" name="return_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- SECTION 75 SUPPORT -->
+          <div id="wrap_section_75_support" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Section 75 Support</h3>
+              <span class="claim-chip">Section 75 support</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Credit Card Provider</label><input class="input" name="s75_provider" /></div>
+              <div><label class="label">Merchant</label><input class="input" name="s75_merchant" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="s75_purchaseDate" /></div>
+              <div><label class="label">Purchase Amount</label><input class="input" name="s75_amount" /></div>
+              <div><label class="label">Goods / Service Problem</label><input class="input" name="s75_problemType" /></div>
+              <div><label class="label">Card Used Directly?</label><select class="input" name="s75_directCardUse"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Claim Already Raised?</label><select class="input" name="s75_claimRaised"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Evidence Available?</label><select class="input" name="s75_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Section 75 Summary</label><textarea class="input" name="s75_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- SOLAR SUPPORT -->
+          <div id="wrap_solar_support" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Solar Support</h3>
+              <span class="claim-chip">Solar support</span>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-blue-900 mb-3">Product One</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="label">Product</label><input class="input" name="product1_product" /></div>
+                <div><label class="label">Vendor (Companies House reg.)</label><input class="input" name="product1_vendor" /></div>
+                <div><label class="label">Vendor still trading?</label><select class="input" name="product1_vendorTrading"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Got Docs?</label><select class="input" name="product1_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Purchase Price</label><input class="input" name="product1_purchasePrice" /></div>
+                <div><label class="label">Payment Method</label><input class="input" name="product1_paymentMethod" /></div>
+                <div><label class="label">Finance?</label><select class="input" name="product1_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">If finance, who with?</label><input class="input" name="product1_financeWho" /></div>
+                <div><label class="label">Purchase Date</label><input class="input" name="product1_purchaseDate" type="date" /></div>
+                <div><label class="label">Sold as Investment?</label><select class="input" name="product1_investment"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Have you been receiving returns?</label><select class="input" name="product1_returns"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Feed-in tariff would change with inflation?</label><select class="input" name="product1_fitInflation"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Provided an MCS certificate?</label><select class="input" name="product1_mcs"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Any additional costs incurred?</label><select class="input" name="product1_extraCosts"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Info about extra costs</label><input class="input" name="product1_extraCostsInfo" /></div>
+                <div><label class="label">Sold as way to decrease energy bills and consumption?</label><select class="input" name="product1_energySavings"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Told that 30% went toward insurance backed warranty?</label><select class="input" name="product1_warranty30"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Attempted to address issues directly with vendor?</label><select class="input" name="product1_contactVendor"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Attempted a 3rd-party claim against vendor, bank or lender?</label><select class="input" name="product1_thirdPartyClaim"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Rushed into a decision?</label><select class="input" name="product1_rushed"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Contact from 3rd parties?</label><select class="input" name="product1_thirdPartyContact"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Damage to property?</label><select class="input" name="product1_damage"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div class="md:col-span-2"><label class="label">Additional comments product one</label><textarea class="input" name="product1_comments" rows="3"></textarea></div>
+              </div>
+            </div>
+
+            <div class="mt-8">
+              <h4 class="font-bold text-blue-900 mb-3">Product Two</h4>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="label">Product</label><input class="input" name="product2_product" /></div>
+                <div><label class="label">Vendor (Companies House reg.)</label><input class="input" name="product2_vendor" /></div>
+                <div><label class="label">Vendor still trading?</label><select class="input" name="product2_vendorTrading"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Got Docs?</label><select class="input" name="product2_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Purchase Price</label><input class="input" name="product2_purchasePrice" /></div>
+                <div><label class="label">Payment Method</label><input class="input" name="product2_paymentMethod" /></div>
+                <div><label class="label">Finance?</label><select class="input" name="product2_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">If finance, who with?</label><input class="input" name="product2_financeWho" /></div>
+                <div><label class="label">Purchase Date</label><input class="input" name="product2_purchaseDate" type="date" /></div>
+                <div><label class="label">Sold as Investment?</label><select class="input" name="product2_investment"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Have you been receiving returns?</label><select class="input" name="product2_returns"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+                <div><label class="label">Feed-in tariff would change with inflation?</label><select class="input" name="product2_fitInflation"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Provided an MCS certificate?</label><select class="input" name="product2_mcs"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Any additional costs incurred?</label><select class="input" name="product2_extraCosts"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Info about extra costs</label><input class="input" name="product2_extraCostsInfo" /></div>
+                <div><label class="label">Sold as way to decrease energy bills and consumption?</label><select class="input" name="product2_energySavings"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Told that 30% went toward insurance backed warranty?</label><select class="input" name="product2_warranty30"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+                <div><label class="label">Attempted to address issues directly with vendor?</label><select class="input" name="product2_contactVendor"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Attempted a 3rd-party claim against vendor, bank or lender?</label><select class="input" name="product2_thirdPartyClaim"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Rushed into a decision?</label><select class="input" name="product2_rushed"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Contact from 3rd parties?</label><select class="input" name="product2_thirdPartyContact"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div><label class="label">Damage to property?</label><select class="input" name="product2_damage"><option value=""></option><option>Yes</option><option>No</option></select></div>
+                <div class="md:col-span-2"><label class="label">Additional comments product two</label><textarea class="input" name="product2_comments" rows="3"></textarea></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SPANISH MORTGAGE -->
+          <div id="wrap_spanish_mortgage" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Spanish Mortgage</h3>
+              <span class="claim-chip">Spanish mortgage</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Bank / Lender</label><input class="input" name="spanishmortgage_lender" /></div>
+              <div><label class="label">Property Location</label><input class="input" name="spanishmortgage_propertyLocation" /></div>
+              <div><label class="label">Mortgage Start Date</label><input class="input" type="date" name="spanishmortgage_startDate" /></div>
+              <div><label class="label">Mortgage Amount</label><input class="input" name="spanishmortgage_amount" /></div>
+              <div><label class="label">Clause / Product Issue</label><input class="input" name="spanishmortgage_issueType" /></div>
+              <div><label class="label">Broker Used?</label><select class="input" name="spanishmortgage_broker"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Documents Available?</label><select class="input" name="spanishmortgage_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Spanish Mortgage Summary</label><textarea class="input" name="spanishmortgage_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- SURVEY REVIEW -->
+          <div id="wrap_survey_review" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Survey Review</h3>
+              <span class="claim-chip">Survey review</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Surveyor / Company Name</label><input class="input" name="survey_surveyorName" /></div>
+              <div><label class="label">Survey Date</label><input class="input" type="date" name="survey_date" /></div>
+              <div><label class="label">Property Purchase Date</label><input class="input" type="date" name="survey_purchaseDate" /></div>
+              <div><label class="label">Property Price</label><input class="input" name="survey_propertyPrice" /></div>
+              <div><label class="label">Survey Type</label><input class="input" name="survey_type" placeholder="Homebuyer, building survey, valuation..." /></div>
+              <div><label class="label">Survey Fee</label><input class="input" name="survey_fee" /></div>
+              <div><label class="label">Were major defects later found?</label><select class="input" name="survey_majorDefects"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Structural issues found later?</label><select class="input" name="survey_structuralIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Damp / leaks / water ingress?</label><select class="input" name="survey_dampIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Roof / foundation issues?</label><select class="input" name="survey_roofFoundationIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Electrical / plumbing issues?</label><select class="input" name="survey_servicesIssues"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Estimated repair costs</label><input class="input" name="survey_repairCosts" /></div>
+              <div><label class="label">Have repair quotes?</label><select class="input" name="survey_quotesAvailable"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Have survey documents?</label><select class="input" name="survey_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">What was missed in the survey?</label><textarea class="input" name="survey_missedIssues" rows="3"></textarea></div>
+              <div class="md:col-span-2"><label class="label">Additional comments</label><textarea class="input" name="survey_comments" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- TIMESHARE -->
+          <div id="wrap_timeshare" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Timeshare</h3>
+              <span class="claim-chip">Timeshare</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Resort / Company</label><input class="input" name="timeshare_company" /></div>
+              <div><label class="label">Purchase Date</label><input class="input" type="date" name="timeshare_purchaseDate" /></div>
+              <div><label class="label">Purchase Price</label><input class="input" name="timeshare_purchasePrice" /></div>
+              <div><label class="label">Finance Used?</label><select class="input" name="timeshare_finance"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Cooling Off Explained?</label><select class="input" name="timeshare_coolingOff"><option value=""></option><option>Yes</option><option>No</option><option>Unknown</option></select></div>
+              <div><label class="label">Pressure Selling?</label><select class="input" name="timeshare_pressure"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Contracts Available?</label><select class="input" name="timeshare_docs"><option value=""></option><option>Yes</option><option>No</option><option>Partly</option></select></div>
+              <div class="md:col-span-2"><label class="label">Timeshare Summary</label><textarea class="input" name="timeshare_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <!-- TRAIN DELAY -->
+          <div id="wrap_train_delay" class="claim-form-wrap hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="section-title">Train Delay</h3>
+              <span class="claim-chip">Train delay</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="label">Train Operator</label><input class="input" name="train_operator" /></div>
+              <div><label class="label">Journey Date</label><input class="input" type="date" name="train_date" /></div>
+              <div><label class="label">Departure Station</label><input class="input" name="train_departure" /></div>
+              <div><label class="label">Arrival Station</label><input class="input" name="train_arrival" /></div>
+              <div><label class="label">Delay Length</label><input class="input" name="train_delayLength" /></div>
+              <div><label class="label">Ticket Value</label><input class="input" name="train_ticketValue" /></div>
+              <div><label class="label">Delay Repay Claimed?</label><select class="input" name="train_claimed"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div><label class="label">Ticket / Evidence Available?</label><select class="input" name="train_docs"><option value=""></option><option>Yes</option><option>No</option></select></div>
+              <div class="md:col-span-2"><label class="label">Journey Issue Summary</label><textarea class="input" name="train_issueSummary" rows="3"></textarea></div>
+            </div>
+          </div>
+
+          <div class="flex flex-col md:flex-row gap-3 justify-end border-t border-slate-200 pt-6">
+            <button type="button" id="saveDraftBtn" class="btn btn-secondary">Save Draft</button>
+            <button type="submit" id="submitIntakeBtn" class="btn btn-primary">Submit Intake</button>
+          </div>
+
+          <p id="formMessage" class="text-sm text-green-700 hidden"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      addDoc,
+      collection,
+      serverTimestamp,
+      updateDoc,
+      setDoc,
+      arrayUnion,
+      query,
+      where,
+      getDocs
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const CLAIM_TYPES = [
+      { value: "airbnb_refunds", label: "Airbnb Refunds" },
+      { value: "car_finance", label: "Car Finance" },
+      { value: "caravan_holiday_park", label: "Caravan / Holiday Park" },
+      { value: "complaint_letters", label: "Complaint Letters" },
+      { value: "contact_me", label: "Contact Me" },
+      { value: "credit_card_fees", label: "Credit Card Fees" },
+      { value: "cruise_compensation", label: "Cruise Compensation" },
+      { value: "crypto_scam_recovery", label: "Crypto Scam Recovery" },
+      { value: "cyber_data_breach", label: "Cyber Data Breach" },
+      { value: "debt_recovery", label: "Debt Recovery" },
+      { value: "foam_insulation", label: "Foam Insulation" },
+      { value: "formal_escalation", label: "Formal Escalation" },
+      { value: "frozen_accounts", label: "Frozen Accounts" },
+      { value: "holiday_compensation", label: "Holiday Compensation" },
+      { value: "housing_disrepair", label: "Housing Disrepair" },
+      { value: "investment_platforms", label: "Investment Platforms" },
+      { value: "loans_and_mortgages", label: "Loans and Mortgages" },
+      { value: "medical_negligence", label: "Medical Negligence" },
+      { value: "mis_sold_bank_accounts", label: "Mis-sold Bank Accounts" },
+      { value: "mortgage_review", label: "Mortgage Review" },
+      { value: "new_build_issues", label: "New Build Issues" },
+      { value: "pension_administration", label: "Pension Administration" },
+      { value: "pension_issues", label: "Pension Issues" },
+      { value: "platform_failure", label: "Platform Failure" },
+      { value: "refund_issues", label: "Refund Issues" },
+      { value: "return_issues", label: "Return Issues" },
+      { value: "section_75_support", label: "Section 75 Support" },
+      { value: "solar_support", label: "Solar Support" },
+      { value: "spanish_mortgage", label: "Spanish Mortgage" },
+      { value: "survey_review", label: "Survey Review" },
+      { value: "timeshare", label: "Timeshare" },
+      { value: "train_delay", label: "Train Delay" }
+    ];
+
+    const CLAIM_TYPE_ALIASES = {
+      "airbnb refunds": "airbnb_refunds",
+      "car finance": "car_finance",
+      "caravan holiday park": "caravan_holiday_park",
+      "caravan/holiday park": "caravan_holiday_park",
+      "complaint letters": "complaint_letters",
+      "contact me": "contact_me",
+      "credit card fees": "credit_card_fees",
+      "cruise compensation": "cruise_compensation",
+      "crypto scam recovery": "crypto_scam_recovery",
+      "cyber data breach": "cyber_data_breach",
+      "debt recovery": "debt_recovery",
+      "foam insulation": "foam_insulation",
+      "formal escalation": "formal_escalation",
+      "frozen accounts": "frozen_accounts",
+      "holiday compensation": "holiday_compensation",
+      "housing disrepair": "housing_disrepair",
+      "investment platforms": "investment_platforms",
+      "loans and mortgages": "loans_and_mortgages",
+      "medical negligence": "medical_negligence",
+      "mis sold bank accounts": "mis_sold_bank_accounts",
+      "mis-sold bank accounts": "mis_sold_bank_accounts",
+      "mortgage review": "mortgage_review",
+      "new build issues": "new_build_issues",
+      "newbuild": "new_build_issues",
+      "pension administration": "pension_administration",
+      "pension issues": "pension_issues",
+      "platform failure": "platform_failure",
+      "refund issues": "refund_issues",
+      "return issues": "return_issues",
+      "section 75 support": "section_75_support",
+      "solar": "solar_support",
+      "solar support": "solar_support",
+      "spanish mortgage": "spanish_mortgage",
+      "survey": "survey_review",
+      "survey review": "survey_review",
+      "timeshare": "timeshare",
+      "train delay": "train_delay",
+      "mortgage": "mortgage_review"
+    };
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const staffStatus = document.getElementById("staffStatus");
+    const staffEmail = document.getElementById("staffEmail");
+    const claimType = document.getElementById("claimType");
+    const intakeForm = document.getElementById("intakeForm");
+    const saveDraftBtn = document.getElementById("saveDraftBtn");
+    const submitIntakeBtn = document.getElementById("submitIntakeBtn");
+    const formMessage = document.getElementById("formMessage");
+    const leadNotice = document.getElementById("leadNotice");
+    const leadNoticeText = document.getElementById("leadNoticeText");
+    const submissionInfoBox = document.getElementById("submissionInfoBox");
+    const linkedLeadBox = document.getElementById("linkedLeadBox");
+
+    const params = new URLSearchParams(window.location.search);
+    const leadId = params.get("leadId");
+    const submissionIdParam = params.get("submissionId");
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentLeadData = null;
+    let existingSubmissionId = null;
+    let existingSubmissionData = null;
+    let attendanceHeartbeatInterval = null;
+
+    function hideLoader() {
+      authLoader.style.display = "none";
+    }
+
+    function showMessage(text, isError = false) {
+      formMessage.textContent = text;
+      formMessage.classList.remove("hidden", "text-green-700", "text-red-600");
+      formMessage.classList.add(isError ? "text-red-600" : "text-green-700");
+      setTimeout(() => formMessage.classList.add("hidden"), 5000);
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getTodayAttendanceId(uid) {
+      return `${uid}_${todayIso()}`;
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeClaimType(value) {
+      const raw = cleanValue(value).toLowerCase();
+      if (!raw) return "solar_support";
+      if (CLAIM_TYPE_ALIASES[raw]) return CLAIM_TYPE_ALIASES[raw];
+      const underscored = raw.replace(/\s+/g, "_");
+      return CLAIM_TYPES.some(item => item.value === underscored) ? underscored : "solar_support";
+    }
+
+    function getClaimTypeLabel(value) {
+      const normalized = normalizeClaimType(value);
+      const found = CLAIM_TYPES.find(item => item.value === normalized);
+      return found ? found.label : value;
+    }
+
+    function populateClaimTypes() {
+      claimType.innerHTML = "";
+      CLAIM_TYPES.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.value;
+        option.textContent = item.label;
+        claimType.appendChild(option);
+      });
+    }
+
+    async function recordStaffLoginFromPage() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+
+      const today = todayIso();
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          currentSessionStartAt: serverTimestamp(),
+          totalLoggedInMs: 0,
+          isOnline: true
+        });
+      } else {
+        const existingData = attendanceSnap.data() || {};
+        const updateData = {
+          uid: currentUser.uid,
+          name: currentUserData.name || "",
+          email: currentUser.email || "",
+          role: currentUserData.role || "staff",
+          date: today,
+          firstLoginAt: existingData.firstLoginAt || serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+          isOnline: true
+        };
+
+        if (!existingData.isOnline || !existingData.currentSessionStartAt) {
+          updateData.currentSessionStartAt = serverTimestamp();
+        }
+
+        if (typeof existingData.totalLoggedInMs !== "number") {
+          updateData.totalLoggedInMs = 0;
+        }
+
+        await setDoc(attendanceRef, updateData, { merge: true });
+      }
+    }
+
+    async function updateStaffHeartbeat() {
+      if (!currentUser || !currentUserData || currentUserData.role !== "staff") return;
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        name: currentUserData.name || "",
+        email: currentUser.email || "",
+        role: currentUserData.role || "staff",
+        date: todayIso(),
+        lastSeenAt: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    }
+
+    function startAttendanceHeartbeat() {
+      if (attendanceHeartbeatInterval) {
+        clearInterval(attendanceHeartbeatInterval);
+      }
+
+      attendanceHeartbeatInterval = setInterval(async () => {
+        try {
+          await updateStaffHeartbeat();
+        } catch (error) {
+          console.error("Attendance heartbeat failed:", error);
+        }
+      }, 2 * 60 * 1000);
+    }
+
+    async function recordStaffLogout() {
+      if (!currentUser || currentUserData?.role !== "staff") return;
+      const attendanceId = getTodayAttendanceId(currentUser.uid);
+      const attendanceRef = doc(db, "staffAttendance", attendanceId);
+      const attendanceSnap = await getDoc(attendanceRef);
+
+      if (!attendanceSnap.exists()) {
+        await setDoc(attendanceRef, {
+          uid: currentUser.uid,
+          lastLogoutAt: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
+        return;
+      }
+
+      const data = attendanceSnap.data() || {};
+      const now = Date.now();
+      let extraMs = 0;
+
+      if (data.currentSessionStartAt?.toDate) {
+        const sessionStart = data.currentSessionStartAt.toDate().getTime();
+        extraMs = Math.max(0, now - sessionStart);
+      }
+
+      const existingTotal = typeof data.totalLoggedInMs === "number" ? data.totalLoggedInMs : 0;
+      const newTotal = existingTotal + extraMs;
+
+      await setDoc(attendanceRef, {
+        uid: currentUser.uid,
+        totalLoggedInMs: newTotal,
+        currentSessionStartAt: null,
+        lastLogoutAt: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
+    }
+
+    function buildAddressFromLead(lead) {
+      const parts = [
+        lead.address || "",
+        lead.address1 || "",
+        lead.address2 || "",
+        lead.address3 || "",
+        lead.address4 || "",
+        lead.address5 || "",
+        lead.postcode || ""
+      ].filter(Boolean);
+      return [...new Set(parts)].join(", ");
+    }
+
+    function setInputValue(name, value) {
+      const el = intakeForm.querySelector(`[name="${name}"]`);
+      if (el) el.value = value || "";
+    }
+
+    function getInputValue(name) {
+      const el = intakeForm.querySelector(`[name="${name}"]`);
+      return el ? el.value || "" : "";
+    }
+
+    function collectFields(fieldNames) {
+      const obj = {};
+      fieldNames.forEach(name => {
+        obj[name] = getInputValue(name);
+      });
+      return obj;
+    }
+
+    function setSubmissionInfo() {
+      if (existingSubmissionId) {
+        submissionInfoBox.innerHTML = `
+          <div><span class="font-semibold text-slate-800">Submission ID:</span> ${existingSubmissionId}</div>
+          <div><span class="font-semibold text-slate-800">Status:</span> ${existingSubmissionData?.status || "-"}</div>
+          <div><span class="font-semibold text-slate-800">Claim Type:</span> ${getClaimTypeLabel(existingSubmissionData?.claimType || "-")}</div>
+        `;
+      } else {
+        submissionInfoBox.textContent = "No submission created yet.";
+      }
+    }
+
+    function setLinkedLeadInfo() {
+      if (!currentLeadData) {
+        linkedLeadBox.textContent = "No lead linked.";
+        return;
+      }
+
+      linkedLeadBox.innerHTML = `
+        <div><span class="font-semibold text-slate-800">Lead ID:</span> ${currentLeadData.id}</div>
+        <div><span class="font-semibold text-slate-800">Client:</span> ${(currentLeadData.forename || "")} ${(currentLeadData.surname || "")}</div>
+        <div><span class="font-semibold text-slate-800">Phone:</span> ${currentLeadData.mobile || currentLeadData.telephone || "-"}</div>
+        <div><span class="font-semibold text-slate-800">Status:</span> ${currentLeadData.leadStatus || "-"}</div>
+      `;
+    }
+
+    function getClientData() {
+      return {
+        firstName: getInputValue("firstName"),
+        secondName: getInputValue("secondName"),
+        firstName2: getInputValue("firstName2"),
+        secondName2: getInputValue("secondName2"),
+        landline: getInputValue("landline"),
+        mobile: getInputValue("mobile"),
+        email: getInputValue("email"),
+        postcode: getInputValue("postcode"),
+        address: getInputValue("address")
+      };
+    }
+
+    function getFormData() {
+      const selectedClaimType = normalizeClaimType(claimType.value);
+
+      const payload = {
+        claimType: selectedClaimType,
+        client: getClientData(),
+        claimDetails: {}
+      };
+
+      const currentWrap = document.getElementById(`wrap_${selectedClaimType}`);
+      if (currentWrap) {
+        const namedInputs = currentWrap.querySelectorAll("[name]");
+        namedInputs.forEach(el => {
+          payload.claimDetails[el.name] = el.value || "";
+        });
+      }
+
+      if (selectedClaimType === "solar_support") {
+        payload.product1 = collectFields([
+          "product1_product","product1_vendor","product1_vendorTrading","product1_docs","product1_purchasePrice",
+          "product1_paymentMethod","product1_finance","product1_financeWho","product1_purchaseDate","product1_investment",
+          "product1_returns","product1_fitInflation","product1_mcs","product1_extraCosts","product1_extraCostsInfo",
+          "product1_energySavings","product1_warranty30","product1_contactVendor","product1_thirdPartyClaim",
+          "product1_rushed","product1_thirdPartyContact","product1_damage","product1_comments"
+        ]);
+
+        payload.product2 = collectFields([
+          "product2_product","product2_vendor","product2_vendorTrading","product2_docs","product2_purchasePrice",
+          "product2_paymentMethod","product2_finance","product2_financeWho","product2_purchaseDate","product2_investment",
+          "product2_returns","product2_fitInflation","product2_mcs","product2_extraCosts","product2_extraCostsInfo",
+          "product2_energySavings","product2_warranty30","product2_contactVendor","product2_thirdPartyClaim",
+          "product2_rushed","product2_thirdPartyContact","product2_damage","product2_comments"
+        ]);
+      }
+
+      if (selectedClaimType === "mortgage_review") {
+        payload.mortgageDetails = collectFields([
+          "mortgage_lenderName","mortgage_brokerName","mortgage_startDate","mortgage_endDate","mortgage_amount",
+          "mortgage_monthlyPayment","mortgage_type","mortgage_interestRate","mortgage_adviceGiven",
+          "mortgage_feesCharged","mortgage_feeDetails","mortgage_risksExplained","mortgage_affordability",
+          "mortgage_pressure","mortgage_arrears","mortgage_docs","mortgage_issueSummary","mortgage_comments"
+        ]);
+      }
+
+      if (selectedClaimType === "survey_review") {
+        payload.surveyDetails = collectFields([
+          "survey_surveyorName","survey_date","survey_purchaseDate","survey_propertyPrice","survey_type","survey_fee",
+          "survey_majorDefects","survey_structuralIssues","survey_dampIssues","survey_roofFoundationIssues",
+          "survey_servicesIssues","survey_repairCosts","survey_quotesAvailable","survey_docs",
+          "survey_missedIssues","survey_comments"
+        ]);
+      }
+
+      if (selectedClaimType === "new_build_issues") {
+        payload.newbuildDetails = collectFields([
+          "newbuild_developerName","newbuild_builderName","newbuild_completionDate","newbuild_purchaseDate",
+          "newbuild_purchasePrice","newbuild_warrantyProvider","newbuild_snaggingIssues","newbuild_structuralIssues",
+          "newbuild_dampIssues","newbuild_servicesIssues","newbuild_reportedToDeveloper","newbuild_developerResponded",
+          "newbuild_evidenceAvailable","newbuild_lossEstimate","newbuild_issueSummary","newbuild_comments"
+        ]);
+      }
+
+      return payload;
+    }
+
+    function fillFormFromSubmission(submission) {
+      const client = submission.client || {};
+      claimType.value = normalizeClaimType(submission.claimType || "solar_support");
+
+      setInputValue("firstName", client.firstName);
+      setInputValue("secondName", client.secondName);
+      setInputValue("firstName2", client.firstName2);
+      setInputValue("secondName2", client.secondName2);
+      setInputValue("landline", client.landline);
+      setInputValue("mobile", client.mobile);
+      setInputValue("email", client.email);
+      setInputValue("postcode", client.postcode);
+      setInputValue("address", client.address);
+
+      const claimDetails = submission.claimDetails || {};
+      Object.entries(claimDetails).forEach(([key, value]) => setInputValue(key, value));
+
+      Object.entries(submission.product1 || {}).forEach(([key, value]) => setInputValue(`product1_${key.replace(/^product1_/, "")}`, value));
+      Object.entries(submission.product2 || {}).forEach(([key, value]) => setInputValue(`product2_${key.replace(/^product2_/, "")}`, value));
+
+      Object.entries(submission.mortgageDetails || {}).forEach(([key, value]) => setInputValue(`mortgage_${key}`, value));
+      Object.entries(submission.surveyDetails || {}).forEach(([key, value]) => setInputValue(`survey_${key}`, value));
+      Object.entries(submission.newbuildDetails || {}).forEach(([key, value]) => setInputValue(`newbuild_${key}`, value));
+
+      updateClaimTypeView();
+    }
+
+    async function checkStaffAccess(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert("Could not verify access. No Firestore user profile found.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      const userData = userSnap.data();
+
+      if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+        alert("Could not verify access. Role found: " + (userData.role || "none"));
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentUserData = userData;
+      staffStatus.textContent = `Logged in as ${userData.role}`;
+      staffEmail.textContent = user.email || "";
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadExistingSubmissionForLead() {
+      if (!leadId) return;
+      const q = query(collection(db, "claimSubmissions"), where("sourceLeadId", "==", leadId));
+      const snap = await getDocs(q);
+      if (snap.empty) return;
+
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      docs.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0);
+        const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0);
+        return bTime - aTime;
+      });
+
+      existingSubmissionData = docs[0];
+      existingSubmissionId = docs[0].id;
+      fillFormFromSubmission(existingSubmissionData);
+      setSubmissionInfo();
+    }
+
+    async function loadExistingSubmissionById() {
+      if (!submissionIdParam) return;
+      const snap = await getDoc(doc(db, "claimSubmissions", submissionIdParam));
+      if (!snap.exists()) return;
+
+      existingSubmissionData = { id: snap.id, ...snap.data() };
+      existingSubmissionId = snap.id;
+      fillFormFromSubmission(existingSubmissionData);
+      setSubmissionInfo();
+    }
+
+    async function loadLeadForPrefill() {
+      if (!leadId) {
+        setSubmissionInfo();
+        setLinkedLeadInfo();
+        return;
+      }
+
+      const leadRef = doc(db, "leadAssignments", leadId);
+      const leadSnap = await getDoc(leadRef);
+
+      if (!leadSnap.exists()) {
+        alert("Linked lead not found.");
+        setSubmissionInfo();
+        setLinkedLeadInfo();
+        return;
+      }
+
+      currentLeadData = { id: leadSnap.id, ...leadSnap.data() };
+
+      if (!existingSubmissionId) {
+        await loadExistingSubmissionForLead();
+      }
+
+      if (!existingSubmissionId) {
+        setInputValue("firstName", currentLeadData.forename || "");
+        setInputValue("secondName", currentLeadData.surname || "");
+        setInputValue("landline", currentLeadData.telephone || "");
+        setInputValue("mobile", currentLeadData.mobile || currentLeadData.telephone || "");
+        setInputValue("email", currentLeadData.email || "");
+        setInputValue("postcode", currentLeadData.postcode || "");
+        setInputValue("address", buildAddressFromLead(currentLeadData));
+
+        if ((currentLeadData.hasSolar === "Y" || currentLeadData.hasSolar === "Yes") && !getInputValue("product1_product")) {
+          setInputValue("product1_product", "Solar Panel System");
+        }
+      }
+
+      claimType.value = normalizeClaimType(currentLeadData.claimType || currentLeadData.campaign || "solar_support");
+      updateClaimTypeView();
+
+      leadNotice.classList.remove("hidden");
+      leadNoticeText.textContent = `Lead ${leadId} loaded and prefilled for ${currentLeadData.forename || ""} ${currentLeadData.surname || ""}.`;
+
+      const startPatch = {
+        claimType: normalizeClaimType(claimType.value),
+        leadStatus: currentLeadData.leadStatus === "awaiting_manager" ? "awaiting_manager" : "intake_in_progress",
+        lastAction: currentLeadData.leadStatus === "awaiting_manager" ? (currentLeadData.lastAction || "awaiting_manager") : "interested_intake_started",
+        lastUpdatedAt: serverTimestamp(),
+        actionHistory: arrayUnion({
+          action: "interested_intake_started",
+          byUid: currentUser.uid,
+          byName: currentUserData.name || "",
+          at: new Date().toISOString()
+        })
+      };
+
+      await updateDoc(leadRef, startPatch);
+      setSubmissionInfo();
+      setLinkedLeadInfo();
+    }
+
+    function updateClaimTypeView() {
+      document.querySelectorAll(".claim-form-wrap").forEach(wrap => wrap.classList.add("hidden"));
+      const selected = normalizeClaimType(claimType.value);
+      const currentWrap = document.getElementById(`wrap_${selected}`);
+      if (currentWrap) currentWrap.classList.remove("hidden");
+    }
+
+    async function saveIntake(status = "draft") {
+      const formData = getFormData();
+
+      if (!formData.client.firstName || !formData.client.secondName) {
+        showMessage("Please complete at least first name and second name.", true);
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+
+      const payload = {
+        claimType: formData.claimType,
+        client: formData.client,
+        claimDetails: formData.claimDetails || {},
+        status,
+        submittedBy: {
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: currentUserData.name || "",
+          role: currentUserData.role || ""
+        },
+        sourceLeadId: leadId || "",
+        sourceCampaign: currentLeadData?.campaign || currentLeadData?.claimType || "",
+        updatedAt: serverTimestamp()
+      };
+
+      if (formData.product1) payload.product1 = formData.product1;
+      if (formData.product2) payload.product2 = formData.product2;
+      if (formData.mortgageDetails) payload.mortgageDetails = formData.mortgageDetails;
+      if (formData.surveyDetails) payload.surveyDetails = formData.surveyDetails;
+      if (formData.newbuildDetails) payload.newbuildDetails = formData.newbuildDetails;
+
+      try {
+        if (existingSubmissionId) {
+          await updateDoc(doc(db, "claimSubmissions", existingSubmissionId), payload);
+        } else {
+          const ref = await addDoc(collection(db, "claimSubmissions"), {
+            ...payload,
+            createdAt: serverTimestamp()
+          });
+          existingSubmissionId = ref.id;
+        }
+
+        existingSubmissionData = { ...(existingSubmissionData || {}), ...payload, id: existingSubmissionId };
+        setSubmissionInfo();
+
+        if (leadId) {
+          const leadPatch = {
+            convertedToSubmissionId: existingSubmissionId,
+            submissionId: existingSubmissionId,
+            claimSubmissionId: existingSubmissionId,
+            intakeSubmissionId: existingSubmissionId,
+            convertedToIntake: true,
+            claimType: formData.claimType,
+            leadStatus: status === "submitted" ? "awaiting_manager" : "intake_in_progress",
+            callbackRequired: status === "submitted" ? false : (currentLeadData?.callbackRequired || false),
+            introEmailNeeded: status === "submitted" ? false : (currentLeadData?.introEmailNeeded || false),
+            lastAction: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
+            lastUpdatedAt: serverTimestamp(),
+            actionHistory: arrayUnion({
+              action: status === "submitted" ? "intake_submitted" : "intake_draft_saved",
+              byUid: currentUser.uid,
+              byName: currentUserData.name || "",
+              at: nowIso,
+              submissionId: existingSubmissionId
+            })
+          };
+
+          if (status === "submitted") {
+            leadPatch.sentToManagerAt = serverTimestamp();
+          }
+
+          await updateDoc(doc(db, "leadAssignments", leadId), leadPatch);
+        }
+
+        showMessage(status === "draft" ? "Draft saved successfully." : "Intake submitted successfully.");
+
+        if (status === "submitted") {
+          existingSubmissionData.status = "submitted";
+          setSubmissionInfo();
+        }
+      } catch (error) {
+        console.error("Submit failed:", error);
+        alert("Submit failed: " + error.message);
+        showMessage("Could not submit intake.", true);
+      }
+    }
+
+    saveDraftBtn.addEventListener("click", async () => {
+      saveDraftBtn.disabled = true;
+      try {
+        await saveIntake("draft");
+      } finally {
+        saveDraftBtn.disabled = false;
+      }
+    });
+
+    intakeForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      submitIntakeBtn.disabled = true;
+      submitIntakeBtn.textContent = "Submitting...";
+      try {
+        await saveIntake("submitted");
+      } finally {
+        submitIntakeBtn.disabled = false;
+        submitIntakeBtn.textContent = "Submit Intake";
+      }
+    });
+
+    claimType.addEventListener("change", updateClaimTypeView);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        populateClaimTypes();
+
+        const allowed = await checkStaffAccess(user);
+        if (!allowed) return;
+
+        if (currentUserData?.role === "staff") {
+          try {
+            await recordStaffLoginFromPage();
+            startAttendanceHeartbeat();
+          } catch (attendanceError) {
+            console.error("Attendance login-from-page failed:", attendanceError);
+          }
+        }
+
+        await loadExistingSubmissionById();
+        await loadLeadForPrefill();
+        updateClaimTypeView();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        if (typeof hideLoader === "function") hideLoader();
+        alert(`Could not verify access: ${error.code || error.message || "Unknown error"}`);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        try {
+          await recordStaffLogout();
+        } catch (attendanceError) {
+          console.error("Attendance logout failed:", attendanceError);
+        }
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Could not log out.");
+      }
+    });
+
+    window.addEventListener("beforeunload", async () => {
+      try {
+        await recordStaffLogout();
+      } catch (error) {
+        console.error("Attendance beforeunload failed:", error);
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

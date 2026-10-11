@@ -1,0 +1,701 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Closer Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #dbeafe; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .btn { border-radius: 12px; padding: 0.85rem 1rem; font-weight: 700; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #eff6ff; color: #1d4ed8; }
+    .btn-secondary:hover { background: #dbeafe; }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-slate { background: #e2e8f0; color: #334155; }
+    .badge-violet { background: #ede9fe; color: #6d28d9; }
+    .badge-sky { background: #e0f2fe; color: #0369a1; }
+    .hidden { display: none; }
+    .active-nav {
+      background: #2563eb;
+      color: white;
+    }
+    .active-nav:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+    .table-link {
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .table-link:hover {
+      text-decoration: underline;
+    }
+    .cell-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+  </style>
+
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Closer Dashboard</h1>
+          <p class="text-sm text-slate-500">Appointments, callbacks, closed deals, and processing handoff overview</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <a href="/closer-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+          <a href="/closer-panel.html" class="btn btn-secondary py-2 px-4">Closer Panel</a>
+          <a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a>
+          <a href="/agenda.html" class="btn btn-secondary py-2 px-4">Agenda</a>
+          <a href="/client-search.html" class="btn btn-secondary py-2 px-4">Client Search</a>
+          <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+          <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <section class="grid lg:grid-cols-8 gap-4">
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Total Assignments</div>
+          <div id="totalAssignmentsStat" class="text-3xl font-extrabold text-blue-900 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Today’s Appointments</div>
+          <div id="todayAppointmentsStat" class="text-3xl font-extrabold text-sky-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Upcoming</div>
+          <div id="upcomingAppointmentsStat" class="text-3xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Overdue</div>
+          <div id="overdueAppointmentsStat" class="text-3xl font-extrabold text-red-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Call Backs</div>
+          <div id="callbacksStat" class="text-3xl font-extrabold text-amber-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Closed Deals</div>
+          <div id="closedDealsStat" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">Sent to Processing</div>
+          <div id="sentToProcessingStat" class="text-3xl font-extrabold text-violet-600 mt-1">0</div>
+        </div>
+        <div class="card p-5">
+          <div class="text-sm text-slate-500">No Answer / Not Interested</div>
+          <div id="inactiveOutcomesStat" class="text-3xl font-extrabold text-slate-700 mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Actions</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <a href="/closer-panel.html" class="btn btn-primary text-center">Open Closer Panel</a>
+            <a href="/dialer.html" class="btn btn-primary text-center">Open Power Dialer</a>
+            <a href="/agenda.html" class="btn btn-primary text-center">Open Agenda</a>
+            <a href="/client-search.html" class="btn btn-primary text-center">Open Client Search</a>
+            <a href="/closer-panel.html?view=today" class="btn btn-primary text-center">Today’s Files</a>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <h2 class="text-xl font-extrabold text-blue-900 mb-4">Deal Snapshot</h2>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <div class="text-sm text-slate-500">Due Now</div>
+              <div id="dueNowTotal" class="text-2xl font-extrabold text-amber-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Paid Now</div>
+              <div id="paidNowTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">£0</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500">Follow-Up Due</div>
+              <div id="followUpTotal" class="text-2xl font-extrabold text-indigo-600 mt-1">£0</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Today & Upcoming Appointments</h2>
+              <p class="text-sm text-slate-500 mt-1">Next assignments in date order</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Appointment</th>
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Status</th>
+                  <th class="text-left p-3">Outcome</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-blue-900">Recent Closed Deals</h2>
+              <p class="text-sm text-slate-500 mt-1">Latest successful outcomes</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-blue-50 text-blue-900">
+                  <th class="text-left p-3">Client</th>
+                  <th class="text-left p-3">Campaign</th>
+                  <th class="text-left p-3">Claim Type</th>
+                  <th class="text-left p-3">Processing</th>
+                  <th class="text-left p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="closedDealsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Call Back & Follow-Up Queue</h2>
+            <p class="text-sm text-slate-500 mt-1">Assignments needing another touchpoint</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-50 text-blue-900">
+                <th class="text-left p-3">Appointment</th>
+                <th class="text-left p-3">Client</th>
+                <th class="text-left p-3">Campaign</th>
+                <th class="text-left p-3">Claim Type</th>
+                <th class="text-left p-3">Outcome</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="callbacksBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      getDocs,
+      collection,
+      query,
+      where
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
+    import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+    import { loadProcessingLinkIds } from "/legacy-closer-processing-links.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const getProcessingLinks = httpsCallable(getFunctions(app), "legacyCloserGetProcessingLinks");
+
+    const authLoader = document.getElementById("authLoader");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    let currentUser = null;
+    let currentContext = null;
+    let allAssignments = [];
+    let processingAssignmentIds = new Set();
+
+    const CLAIM_TYPE_LABELS = {
+      "airbnb refunds": "AIRBNB Refunds",
+      "car finance": "Car Finance",
+      "caravan/holiday park": "Caravan/Holiday Park",
+      "complaint letters": "Complaint Letters",
+      "contact me": "Contact Me",
+      "credit card fees": "Credit Card Fees",
+      "cruise compensation": "Cruise Compensation",
+      "crypto scam recovery": "Crypto Scam Recovery",
+      "cyber data breach": "Cyber Data Breach",
+      "debt recovery": "Debt Recovery",
+      "foam insulation": "Foam Insulation",
+      "formal escalation": "Formal Escalation",
+      "frozen accounts": "Frozen Accounts",
+      "holiday compensation": "Holiday Compensation",
+      "housing disrepair": "Housing Disrepair",
+      "investment platforms": "Investment Platforms",
+      "loans and mortgages": "Loans and Mortgages",
+      "medical negligence": "Medical Negligence",
+      "mis sold bank accounts": "Mis-sold Bank Accounts",
+      "mortgage review": "Mortgage Review",
+      "new build issues": "New Build Issues",
+      "pension administration": "Pension Administration",
+      "pension issues": "Pension Issues",
+      "platform failure": "Platform Failure",
+      "refund issues": "Refund Issues",
+      "return issues": "Return Issues",
+      "section 75 support": "Section 75 Support",
+      "solar support": "Solar Support",
+      "spanish mortgage": "Spanish Mortgage",
+      "survey review": "Survey Review",
+      "timeshare": "Timeshare",
+      "solar": "Solar Support",
+      "mortgage": "Mortgage Review",
+      "survey": "Survey Review",
+      "newbuild": "New Build Issues"
+    };
+
+    function hideLoader() {
+      if (authLoader) authLoader.style.display = "none";
+    }
+
+    function cleanValue(value) {
+      return String(value || "").trim();
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function appointmentDate(item) {
+      return cleanValue(item.appointment?.date || item.closerAppointmentDate || item.appointmentDate);
+    }
+
+    function appointmentTime(item) {
+      return cleanValue(item.appointment?.time || item.closerAppointmentTime || item.appointmentTime);
+    }
+
+    function appointmentText(item) {
+      const date = appointmentDate(item) || "-";
+      const time = appointmentTime(item) || "";
+      return `${date} ${time}`.trim();
+    }
+
+    function clientName(item) {
+      const first = cleanValue(item.client?.firstName || item.forename);
+      const second = cleanValue(item.client?.secondName || item.surname);
+      return `${first} ${second}`.trim() || "-";
+    }
+
+    function getClientEmail(item) {
+      return cleanValue(item.client?.email || item.email) || "-";
+    }
+
+    function getCampaignName(item) {
+      return cleanValue(
+        item.campaign ||
+        item.campaignName ||
+        item.campaignLabel ||
+        item.sourceCampaign ||
+        item.leadCampaign
+      ) || "-";
+    }
+
+    function normalizeClaimType(type) {
+      return cleanValue(type).toLowerCase();
+    }
+
+    function formatClaimType(type) {
+      const raw = cleanValue(type);
+      if (!raw) return "-";
+      return CLAIM_TYPE_LABELS[normalizeClaimType(raw)] || raw;
+    }
+
+    function getClaimType(item) {
+      return formatClaimType(
+        item.claimType ||
+        item.type ||
+        item.claim ||
+        item.claim_type
+      );
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return `£${num.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+
+    function getEffectiveStatus(item) {
+      return cleanValue(item.status || item.leadStatus) || "Assigned";
+    }
+
+    function getOutcome(item) {
+      return cleanValue(item.outcome || item.lastOutcome || item.result);
+    }
+
+    function isClosedDeal(item) {
+      return getOutcome(item) === "Closed Deal" || getEffectiveStatus(item) === "Closed";
+    }
+
+    function isCallbackOutcome(item) {
+      const outcome = getOutcome(item);
+      return outcome === "Call Back" || outcome === "No Answer";
+    }
+
+    function isOverdueAppointment(item) {
+      const date = appointmentDate(item);
+      if (!date) return false;
+      return date < todayIso() && !isClosedDeal(item);
+    }
+
+    function statusBadge(status) {
+      if (status === "Closed") return `<span class="badge badge-green">Closed</span>`;
+      if (status === "Appointment Booked") return `<span class="badge badge-blue">Appointment Booked</span>`;
+      if (status === "Contacted") return `<span class="badge badge-violet">Contacted</span>`;
+      if (status === "Assigned") return `<span class="badge badge-amber">Assigned</span>`;
+      if (status === "Sent to Processing") return `<span class="badge badge-violet">Sent to Processing</span>`;
+      return `<span class="badge badge-slate">${status || "-"}</span>`;
+    }
+
+    function outcomeBadge(outcome) {
+      if (outcome === "Closed Deal") return `<span class="badge badge-green">Closed Deal</span>`;
+      if (outcome === "Call Back") return `<span class="badge badge-amber">Call Back</span>`;
+      if (outcome === "Interested") return `<span class="badge badge-blue">Interested</span>`;
+      if (outcome === "No Answer") return `<span class="badge badge-red">No Answer</span>`;
+      if (outcome === "Not Interested") return `<span class="badge badge-slate">Not Interested</span>`;
+      return `<span class="badge badge-slate">-</span>`;
+    }
+
+    function processingBadge(sent) {
+      return sent
+        ? `<span class="badge badge-violet">Sent to Processing</span>`
+        : `<span class="badge badge-slate">Not Sent</span>`;
+    }
+
+    function sortByAppointment(a, b) {
+      const aKey = `${appointmentDate(a) || "9999-12-31"} ${appointmentTime(a) || "23:59"}`;
+      const bKey = `${appointmentDate(b) || "9999-12-31"} ${appointmentTime(b) || "23:59"}`;
+      return aKey.localeCompare(bKey);
+    }
+
+    function detailHref(item) {
+      return `/closer-panel.html?id=${item.id}`;
+    }
+
+    async function checkCloserAccess(user) {
+      const context=await resolveCrmWorkspace(db,user);
+      const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
+      if (userData.role !== "closer" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+        alert("You do not have permission to access this page.");
+        window.location.href = "/login.html";
+        return false;
+      }
+
+      currentUser = user;
+      currentContext = context;
+      applyWorkspaceChrome(context);
+      if (isCrm2(context)) {
+        const subtitle = document.querySelector("header p");
+        if (subtitle) subtitle.textContent = "Appointments, callbacks, closed deals, and follow-up overview";
+        const processingCard = document.getElementById("sentToProcessingStat")?.parentElement;
+        if (processingCard) {
+          processingCard.querySelector("div")?.replaceChildren(document.createTextNode("Processing — Integration Pending"));
+          document.getElementById("sentToProcessingStat").textContent = "—";
+        }
+      }
+      logoutBtn.classList.remove("hidden");
+      return true;
+    }
+
+    async function loadProcessingLinks() {
+      processingAssignmentIds = new Set();
+      if(isCrm2(currentContext))return;
+
+      try {
+        const processingCasesSnap = await getDocs(collection(db, "processingCases"));
+        processingCasesSnap.docs.forEach(d => {
+          const data = d.data() || {};
+          if (data.sourceAssignmentId) processingAssignmentIds.add(data.sourceAssignmentId);
+          if (data.assignmentId) processingAssignmentIds.add(data.assignmentId);
+        });
+      } catch (error) {
+        console.error("Could not load processingCases:", error);
+      }
+
+      try {
+        const ownerUid = currentUser.uid;
+        const visibleIds = allAssignments.map(item => item.id);
+        const links = await loadProcessingLinkIds(getProcessingLinks, visibleIds);
+        if (currentUser?.uid !== ownerUid || auth.currentUser?.uid !== ownerUid || JSON.stringify(allAssignments.map(item => item.id)) !== JSON.stringify(visibleIds)) return;
+        links.forEach(id => processingAssignmentIds.add(id));
+      } catch (error) {
+        console.error("Could not load processingFiles:", error);
+      }
+    }
+
+    async function loadData() {
+      const assignmentCollection=crmCollection(currentContext,"closerAssignments");
+      const assignmentsQuery = isCrm2(currentContext)?query(collection(db,assignmentCollection),where("assignedUserId","==",currentUser.uid)):query(collection(db,assignmentCollection),where("closer.uid", "==", currentUser.uid));
+
+      const assignmentsSnap = await getDocs(assignmentsQuery);
+      allAssignments = assignmentsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));
+      allAssignments.sort(sortByAppointment);
+
+      await loadProcessingLinks();
+      renderStats();
+      renderAppointments();
+      renderClosedDeals();
+      renderCallbacks();
+    }
+
+    function renderStats() {
+      const today = todayIso();
+      const closedDeals = allAssignments.filter(isClosedDeal);
+      const dueNow = closedDeals.reduce((sum, x) => sum + Number(x.amountDueNow || 0), 0);
+      const paidNow = closedDeals.reduce((sum, x) => sum + Number(x.amountPaidNow || 0), 0);
+      const followUp = closedDeals.reduce((sum, x) => sum + Number(x.followUpDue || 0), 0);
+      const upcoming = allAssignments.filter(x => appointmentDate(x) && appointmentDate(x) > today && !isClosedDeal(x)).length;
+      const overdue = allAssignments.filter(isOverdueAppointment).length;
+      const callbacks = allAssignments.filter(x => getOutcome(x) === "Call Back").length;
+      const sentToProcessing = allAssignments.filter(x => processingAssignmentIds.has(x.id)).length;
+      const inactiveOutcomes = allAssignments.filter(x => getOutcome(x) === "No Answer" || getOutcome(x) === "Not Interested").length;
+
+      document.getElementById("totalAssignmentsStat").textContent = String(allAssignments.length);
+      document.getElementById("todayAppointmentsStat").textContent = String(allAssignments.filter(x => appointmentDate(x) === today).length);
+      document.getElementById("upcomingAppointmentsStat").textContent = String(upcoming);
+      document.getElementById("overdueAppointmentsStat").textContent = String(overdue);
+      document.getElementById("callbacksStat").textContent = String(callbacks);
+      document.getElementById("closedDealsStat").textContent = String(closedDeals.length);
+      document.getElementById("sentToProcessingStat").textContent = String(sentToProcessing);
+      document.getElementById("inactiveOutcomesStat").textContent = String(inactiveOutcomes);
+      document.getElementById("dueNowTotal").textContent = money(dueNow);
+      document.getElementById("paidNowTotal").textContent = money(paidNow);
+      document.getElementById("followUpTotal").textContent = money(followUp);
+    }
+
+    function renderAppointments() {
+      const body = document.getElementById("appointmentsBody");
+      body.innerHTML = "";
+
+      const rows = allAssignments
+        .filter(item => {
+          const date = appointmentDate(item);
+          return !!date && !isClosedDeal(item);
+        })
+        .sort(sortByAppointment)
+        .slice(0, 8);
+
+      if (!rows.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-slate-500">No appointments found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">${appointmentText(item)}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(item)}</div>
+            <div class="text-xs text-slate-500">${getClientEmail(item)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+          <td class="p-3 cell-wrap">${getClaimType(item)}</td>
+          <td class="p-3 cell-wrap">${statusBadge(getEffectiveStatus(item))}</td>
+          <td class="p-3 cell-wrap">${outcomeBadge(getOutcome(item))}</td>
+          <td class="p-3">
+            <a href="${detailHref(item)}" class="table-link">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderClosedDeals() {
+      const body = document.getElementById("closedDealsBody");
+      body.innerHTML = "";
+
+      const deals = allAssignments
+        .filter(isClosedDeal)
+        .sort((a, b) => {
+          const aKey = `${appointmentDate(a) || "0000-00-00"} ${appointmentTime(a) || "00:00"}`;
+          const bKey = `${appointmentDate(b) || "0000-00-00"} ${appointmentTime(b) || "00:00"}`;
+          return bKey.localeCompare(aKey);
+        })
+        .slice(0, 8);
+
+      if (!deals.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-6 text-center text-slate-500">No closed deals found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      deals.forEach(item => {
+        const sent = processingAssignmentIds.has(item.id);
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(item)}</div>
+            <div class="text-xs text-slate-500">${getClientEmail(item)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+          <td class="p-3 cell-wrap">${getClaimType(item)}</td>
+          <td class="p-3 cell-wrap">${processingBadge(sent)}</td>
+          <td class="p-3">
+            <a href="${detailHref(item)}" class="table-link">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function renderCallbacks() {
+      const body = document.getElementById("callbacksBody");
+      body.innerHTML = "";
+
+      const callbacks = allAssignments
+        .filter(isCallbackOutcome)
+        .sort(sortByAppointment)
+        .slice(0, 10);
+
+      if (!callbacks.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-6 text-center text-slate-500">No callback or follow-up files found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      callbacks.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "border-t border-slate-200";
+        row.innerHTML = `
+          <td class="p-3 cell-wrap">${appointmentText(item)}</td>
+          <td class="p-3 cell-wrap">
+            <div class="font-semibold text-slate-800">${clientName(item)}</div>
+            <div class="text-xs text-slate-500">${getClientEmail(item)}</div>
+          </td>
+          <td class="p-3 cell-wrap">${getCampaignName(item)}</td>
+          <td class="p-3 cell-wrap">${getClaimType(item)}</td>
+          <td class="p-3 cell-wrap">${outcomeBadge(getOutcome(item))}</td>
+          <td class="p-3 cell-wrap">${statusBadge(getEffectiveStatus(item))}</td>
+          <td class="p-3">
+            <a href="${detailHref(item)}" class="table-link">Open</a>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        const allowed = await checkCloserAccess(user);
+        if (!allowed) return;
+        await loadData();
+        hideLoader();
+      } catch (error) {
+        console.error(error);
+        if (typeof hideLoader === "function") hideLoader();
+        showToast(isCrm2(currentContext) ? "The CRM4 Closer dashboard is temporarily unavailable. Please refresh and try again." : "The Closer dashboard is temporarily unavailable. Please refresh and try again.");
+      }
+    });
+
+    refreshBtn.addEventListener("click", async () => {
+      try {
+        await loadData();
+      } catch (error) {
+        console.error(error);
+        showToast("The Closer dashboard could not be refreshed. Please try again.");
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "/login.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not log out.");
+      }
+    });
+
+    const currentPath = window.location.pathname.split("/").pop();
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      const fileName = href.split("/").pop();
+      if (fileName && fileName === currentPath) {
+        link.classList.add('active-nav');
+      }
+    });
+  </script>
+</body>
+</html>

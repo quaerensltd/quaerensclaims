@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18202267837"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18202267837');
+</script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quaerens Agenda</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, sans-serif; background:#f8fafc; color:#0f172a; margin:0; }
+    .shell { width:min(1250px, calc(100% - 2rem)); margin:0 auto; }
+    .card { background:white; border:1px solid #dbeafe; border-radius:18px; box-shadow:0 10px 28px rgba(15,23,42,.07); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; border-radius:14px; font-weight:800; transition:.2s; border:0; cursor:pointer; text-decoration:none; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#eff6ff; color:#1d4ed8; }
+    .btn-secondary:hover { background:#dbeafe; }
+    .btn-green { background:#059669; color:white; }
+    .btn-red { background:#dc2626; color:white; }
+    .btn-amber { background:#d97706; color:white; }
+    .btn-dark { background:#0f172a; color:white; }
+    .input { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:.82rem .95rem; font-size:1rem; background:white; }
+    .badge { display:inline-flex; border-radius:999px; padding:.32rem .65rem; font-size:.78rem; font-weight:800; white-space:nowrap; }
+    .badge-blue { background:#dbeafe; color:#1e40af; }
+    .badge-green { background:#dcfce7; color:#166534; }
+    .badge-amber { background:#fef3c7; color:#92400e; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
+    .badge-slate { background:#e2e8f0; color:#334155; }
+    .muted { color:#64748b; }
+    #toast { position:fixed; right:1rem; bottom:1rem; background:#0f172a; color:white; padding:.9rem 1rem; border-radius:14px; opacity:0; transform:translateY(10px); transition:.2s; z-index:80; max-width:360px; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:760px) { .shell { width:min(100% - 1rem, 1250px); } .btn { width:100%; } }
+  </style>
+  <!-- Microsoft Clarity -->
+  <script>
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, 'clarity', 'script', 'win9cr05wh');
+  </script></head>
+<body>
+  <div id="toast"></div>
+  <div id="authLoader" class="fixed inset-0 bg-white/90 z-50 flex items-center justify-center">
+    <div class="card p-8 text-center">
+      <p class="text-xl font-extrabold text-blue-900">Loading agenda...</p>
+      <p class="text-slate-500 mt-2">Checking CRM access and follow-up items.</p>
+    </div>
+  </div>
+
+  <header class="bg-white border-b border-blue-100 sticky top-0 z-30">
+    <div class="shell py-5 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-blue-900">Quaerens Agenda</h1>
+        <p class="text-sm text-slate-500">Daily client files, follow-ups, notes and callbacks</p>
+      </div>
+      <nav class="flex items-center gap-3 flex-wrap">
+        <a id="dashboardLink" href="/staff-dashboard.html" class="btn btn-secondary py-2 px-4">Dashboard</a>
+        <a href="/dialer.html" class="btn btn-secondary py-2 px-4">Dialer</a>
+        <button id="refreshBtn" class="btn btn-secondary py-2 px-4" type="button">Refresh</button>
+        <button id="logoutBtn" class="btn btn-secondary py-2 px-4 hidden" type="button">Log Out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell py-8 space-y-6">
+    <section class="grid md:grid-cols-5 gap-4">
+      <div class="card p-5"><div class="muted text-sm">Today</div><div id="todayCount" class="text-3xl font-extrabold text-blue-900 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Overdue</div><div id="overdueCount" class="text-3xl font-extrabold text-red-600 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Upcoming</div><div id="upcomingCount" class="text-3xl font-extrabold text-indigo-700 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Completed</div><div id="completedCount" class="text-3xl font-extrabold text-green-700 mt-1">0</div></div>
+      <div class="card p-5"><div class="muted text-sm">Selected Date</div><div id="selectedDateLabel" class="text-xl font-extrabold text-slate-900 mt-2">-</div></div>
+    </section>
+
+    <section class="card p-6">
+      <div class="grid lg:grid-cols-6 gap-4 items-end">
+        <div>
+          <label for="agendaDate" class="block text-sm font-bold text-blue-900 mb-2">Agenda date</label>
+          <input id="agendaDate" class="input" type="date" />
+        </div>
+        <div>
+          <label for="viewMode" class="block text-sm font-bold text-blue-900 mb-2">View</label>
+          <select id="viewMode" class="input">
+            <option value="mine">My agenda</option>
+            <option value="all">All agenda items</option>
+          </select>
+        </div>
+        <div class="lg:col-span-2">
+          <label for="searchInput" class="block text-sm font-bold text-blue-900 mb-2">Search</label>
+          <input id="searchInput" class="input" placeholder="Client, phone, email, claim type..." />
+        </div>
+        <button id="todayBtn" class="btn btn-secondary py-3 px-5" type="button">Today</button>
+        <button id="newItemBtn" class="btn btn-primary py-3 px-5" type="button">Create Client File</button>
+      </div>
+    </section>
+
+    <section id="administrationOnboardingAvailability" class="card p-6 hidden scroll-mt-4" aria-labelledby="administrationOnboardingAvailabilityHeading">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p class="text-xs font-extrabold uppercase tracking-wider text-blue-600">Processing capacity</p>
+          <h2 id="administrationOnboardingAvailabilityHeading" class="text-2xl font-extrabold text-blue-950 mt-1">Administration Onboarding Availability</h2>
+          <p class="muted text-sm mt-1">Publish governed capacity for Closers. Bookings use the existing deterministic CRM4 appointment authority.</p>
+        </div>
+        <a class="btn btn-secondary py-2 px-4" href="#bookedAdministrationOnboardingCalls">View Booked Calls</a>
+      </div>
+      <div class="grid md:grid-cols-5 gap-3 mt-5">
+        <div><label class="block text-sm font-bold text-blue-900 mb-2" for="availabilityStartDate">Start date</label><input class="input" id="availabilityStartDate" type="date"></div>
+        <div><label class="block text-sm font-bold text-blue-900 mb-2" for="availabilityEndDate">End date</label><input class="input" id="availabilityEndDate" type="date"></div>
+        <div><label class="block text-sm font-bold text-blue-900 mb-2" for="availabilityStartTime">Start time</label><input class="input" id="availabilityStartTime" type="time"></div>
+        <div><label class="block text-sm font-bold text-blue-900 mb-2" for="availabilityDuration">Slot duration</label><select class="input" id="availabilityDuration"><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60" selected>60 minutes</option><option value="90">90 minutes</option></select></div>
+        <div class="flex items-end"><button class="btn btn-primary py-3 px-5 w-full" id="publishAvailabilityBtn" type="button">Publish Availability</button></div>
+      </div>
+      <fieldset class="mt-4"><legend class="text-sm font-bold text-blue-900">Recurring weekdays (optional)</legend><div class="flex flex-wrap gap-4 mt-2 text-sm"><label><input type="checkbox" name="availabilityWeekday" value="1"> Monday</label><label><input type="checkbox" name="availabilityWeekday" value="2"> Tuesday</label><label><input type="checkbox" name="availabilityWeekday" value="3"> Wednesday</label><label><input type="checkbox" name="availabilityWeekday" value="4"> Thursday</label><label><input type="checkbox" name="availabilityWeekday" value="5"> Friday</label></div></fieldset>
+      <div class="mt-6 overflow-x-auto"><h3 class="font-extrabold text-blue-950 mb-3">Future Availability</h3><table class="w-full text-sm"><thead><tr class="bg-blue-50"><th class="text-left p-3">Date</th><th class="text-left p-3">Time</th><th class="text-left p-3">Duration</th><th class="text-left p-3">Status</th><th class="text-left p-3">Actions</th></tr></thead><tbody id="availabilitySlotsBody"></tbody></table></div>
+      <div id="bookedAdministrationOnboardingCalls" class="mt-8 overflow-x-auto scroll-mt-4"><h3 class="font-extrabold text-blue-950 mb-3">Booked Administration Onboarding Calls</h3><table class="w-full text-sm"><thead><tr class="bg-indigo-50"><th class="text-left p-3">Date / Time</th><th class="text-left p-3">Client / CRM4 Lead</th><th class="text-left p-3">Route</th><th class="text-left p-3">Assigned Closer</th><th class="text-left p-3">Onboarding</th><th class="text-left p-3">Agreement / Payment</th><th class="text-left p-3">Action</th></tr></thead><tbody id="availabilityAppointmentsBody"></tbody></table></div>
+    </section>
+
+    <section class="grid lg:grid-cols-3 gap-6">
+      <section class="card p-6 lg:col-span-2">
+        <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-blue-900">Agenda Items</h2>
+            <p id="agendaSummary" class="muted text-sm mt-1">Select a date to view follow-ups.</p>
+          </div>
+        </div>
+        <div id="adminCallbackSections" class="hidden grid md:grid-cols-2 gap-4 mb-5">
+          <section class="rounded-2xl border border-amber-200 bg-amber-50 p-4"><h3 class="font-extrabold text-blue-950">Lister Callbacks</h3><div id="adminListerCallbacks" class="mt-3 space-y-2"></div></section>
+          <section class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4"><h3 class="font-extrabold text-blue-950">Closer Callbacks</h3><div id="adminCloserCallbacks" class="mt-3 space-y-2"></div></section>
+        </div>
+        <div id="agendaList" class="space-y-4"></div>
+      </section>
+
+      <aside id="quickCreatePanel" class="card p-6">
+        <h2 class="text-xl font-extrabold text-blue-900 mb-4">Quick Create</h2>
+        <form id="quickForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="clientName">Client name</label>
+            <input id="clientName" class="input" required />
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="clientPhone">Phone</label>
+              <input id="clientPhone" class="input" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="claimType">Claim type</label>
+              <input id="claimType" class="input" placeholder="Solar, finance, housing..." />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="clientEmail">Email</label>
+            <input id="clientEmail" class="input" type="email" />
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="nextActionDate">Follow-up date</label>
+              <input id="nextActionDate" class="input" type="date" required />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-blue-900 mb-2" for="nextActionTime">Time</label>
+              <input id="nextActionTime" class="input" type="time" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="nextAction">Next action</label>
+            <select id="nextAction" class="input">
+              <option value="Call back">Call back</option>
+              <option value="Send information">Send information</option>
+              <option value="Check documents">Check documents</option>
+              <option value="Prepare update">Prepare update</option>
+              <option value="Other follow-up">Other follow-up</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-blue-900 mb-2" for="notes">Notes</label>
+            <textarea id="notes" class="input" rows="4" placeholder="What was discussed and what needs to happen next?"></textarea>
+          </div>
+          <button class="btn btn-primary py-3 px-5 w-full" type="submit">Save Agenda Item</button>
+        </form>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "/__crm4/sdk/10.8.0/auth.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc,
+      query, where, serverTimestamp
+    } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
+    import { resolveCrmWorkspace, crmRouteFor, crmCollection, workspaceWrite, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
+
+    const firebaseConfig = {
+      apiKey: "crm4-local-only",
+      authDomain: "crm4-local-only",
+      projectId: "demo-quaerens-crm4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const functions = getFunctions(app, "us-central1");
+    const listCrm2Agenda = httpsCallable(functions, "crm4ListAgenda");
+    const updateCrm2Appointment = httpsCallable(functions, "crm4UpdateAppointment");
+    const listAdministrationOnboarding = httpsCallable(functions, "processingListAdministrationOnboarding");
+    const publishAdministrationOnboarding = httpsCallable(functions, "processingPublishAdministrationOnboardingSlots");
+    const updateAdministrationOnboardingSlot = httpsCallable(functions, "processingBlockAdministrationOnboardingSlot");
+
+    const allowedRoles = ["staff", "lister", "manager", "closer", "processing", "admin", "administrator"];
+    const roleDashboard = {
+      staff: "/staff-dashboard.html",
+      manager: "/manager-dashboard.html",
+      admin: "/admin-dashboard.html",
+      closer: "/closer-dashboard.html",
+      processing: "/processing-dashboard.html"
+    };
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentContext = null;
+    let agendaCollection = "agendaItems";
+    let allItems = [];
+    let administrationOnboarding = { slots: [], appointments: [] };
+
+    const els = {
+      authLoader: document.getElementById("authLoader"),
+      dashboardLink: document.getElementById("dashboardLink"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      agendaDate: document.getElementById("agendaDate"),
+      viewMode: document.getElementById("viewMode"),
+      searchInput: document.getElementById("searchInput"),
+      todayBtn: document.getElementById("todayBtn"),
+      newItemBtn: document.getElementById("newItemBtn"),
+      quickForm: document.getElementById("quickForm"),
+      agendaList: document.getElementById("agendaList"),
+      agendaSummary: document.getElementById("agendaSummary"),
+      selectedDateLabel: document.getElementById("selectedDateLabel"),
+      todayCount: document.getElementById("todayCount"),
+      overdueCount: document.getElementById("overdueCount"),
+      upcomingCount: document.getElementById("upcomingCount"),
+      completedCount: document.getElementById("completedCount")
+    };
+
+    function todayIso() {
+      const date = new Date();
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date.toISOString().slice(0, 10);
+    }
+
+    function addDaysIso(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date.toISOString().slice(0, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[char]));
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function redirectToLogin() {
+      sessionStorage.setItem("crmReturnTo", "/agenda.html");
+      window.location.href = "/login.html?next=%2Fagenda.html";
+    }
+
+    function roleOf(userData) {
+      if (userData?.admin === true) return "admin";
+      return userData?.role || "";
+    }
+
+    function canViewAll() {
+      const role = roleOf(currentUserData);
+      return ["manager", "processing", "admin", "administrator"].includes(role);
+    }
+
+    function canManageAdministrationOnboarding() {
+      return ["processing", "admin", "administrator"].includes(roleOf(currentUserData));
+    }
+
+    function processingLeadUrl(leadId) {
+      return "/processing-dashboard.html?queue=administration-onboarding&lead=" + encodeURIComponent(leadId);
+    }
+
+    function renderAdministrationOnboardingAvailability() {
+      const section = document.getElementById("administrationOnboardingAvailability");
+      if (!canManageAdministrationOnboarding()) { section.classList.add("hidden"); return; }
+      section.classList.remove("hidden");
+      const today = todayIso();
+      const slots = (administrationOnboarding.slots || []).filter((row) => row.date >= today);
+      document.getElementById("availabilitySlotsBody").innerHTML = slots.map((row) => `<tr class="border-t"><td class="p-3">${escapeHtml(row.date)}</td><td class="p-3">${escapeHtml(row.startTime)}</td><td class="p-3">${Number(row.durationMinutes || 60)} minutes</td><td class="p-3">${escapeHtml(row.status)}</td><td class="p-3 flex gap-2 flex-wrap">${row.status === "available" ? `<button class="btn btn-secondary py-2 px-3 availability-action" data-slot-id="${escapeHtml(row.id)}" data-action="block" type="button">Block</button><button class="btn btn-red py-2 px-3 availability-action" data-slot-id="${escapeHtml(row.id)}" data-action="cancel" type="button">Remove</button>` : ["blocked","cancelled"].includes(row.status) ? `<button class="btn btn-secondary py-2 px-3 availability-action" data-slot-id="${escapeHtml(row.id)}" data-action="release" type="button">Release</button>` : "Booked"}</td></tr>`).join("") || '<tr><td colspan="5" class="p-5 text-center text-slate-500">No future Administration Onboarding availability has been published.</td></tr>';
+      const appointments = (administrationOnboarding.appointments || []).filter((row) => row.date >= today && row.status !== "cancelled");
+      document.getElementById("availabilityAppointmentsBody").innerHTML = appointments.map((row) => `<tr class="border-t"><td class="p-3"><strong>${escapeHtml(row.date)}</strong><br>${escapeHtml(row.startTime)} · ${Number(row.durationMinutes || 60)} minutes</td><td class="p-3"><strong>${escapeHtml(row.clientName)}</strong><br><span class="text-xs">${escapeHtml(row.leadId)}</span></td><td class="p-3">${escapeHtml(row.route || "—")}</td><td class="p-3">${escapeHtml(row.assignedCloserName || "—")}</td><td class="p-3">${escapeHtml(row.onboardingStatus || row.status || "—")}</td><td class="p-3">Agreement: ${escapeHtml(row.agreementStatus || "—")}<br>Payment: ${escapeHtml(row.paymentStatus || "—")}</td><td class="p-3"><a class="btn btn-primary py-2 px-3" href="${processingLeadUrl(row.leadId)}">Open Processing Record</a></td></tr>`).join("") || '<tr><td colspan="7" class="p-5 text-center text-slate-500">No future Administration Onboarding calls are booked.</td></tr>';
+    }
+
+    async function loadAdministrationOnboardingAvailability() {
+      if (!canManageAdministrationOnboarding()) return;
+      administrationOnboarding = (await listAdministrationOnboarding({})).data || { slots: [], appointments: [] };
+      renderAdministrationOnboardingAvailability();
+      if (window.location.hash === "#administrationOnboardingAvailability") document.getElementById("administrationOnboardingAvailability").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function statusBadge(item) {
+      if (item.status === "completed") return '<span class="badge badge-green">Completed</span>';
+      if ((item.nextActionDate || "") < todayIso()) return '<span class="badge badge-red">Overdue</span>';
+      if ((item.nextActionDate || "") === todayIso()) return '<span class="badge badge-amber">Today</span>';
+      return '<span class="badge badge-blue">Upcoming</span>';
+    }
+
+    async function loadItems() {
+      if (!currentUser) return;
+      if (isCrm2(currentContext)) {
+        const requests = [listCrm2Agenda({})];
+        if (canManageAdministrationOnboarding()) requests.push(listAdministrationOnboarding({}));
+        const results = await Promise.all(requests);
+        allItems = results[0].data.appointments || [];
+        administrationOnboarding = results[1]?.data || { slots: [], appointments: [] };
+        renderAdministrationOnboardingAvailability();
+        if (window.location.hash === "#administrationOnboardingAvailability") document.getElementById("administrationOnboardingAvailability").scrollIntoView({ behavior: "smooth", block: "start" });
+        renderCrm2();
+        return;
+      }
+      const view = els.viewMode.value;
+      let snap;
+      if (view === "all" && canViewAll()) {
+        snap = await getDocs(collection(db, agendaCollection));
+      } else {
+        snap = await getDocs(query(collection(db, agendaCollection), where("ownerUid", "==", currentUser.uid)));
+      }
+      allItems = snap.docs.map((entry) => ({ id: entry.id, ...entry.data() })).filter((item) => !isCrm2(currentContext) || item.activityType === "agendaItems");
+      render();
+    }
+
+    function crm4LeadUrl(item) {
+      const role = roleOf(currentUserData);
+      if (role === "lister") return "/lister-leads.html?leadId=" + encodeURIComponent(item.leadId);
+      if (role === "closer") return "/closer-panel.html?id=" + encodeURIComponent(item.leadId);
+      if (role === "processing") return "/processing-dashboard.html?leadId=" + encodeURIComponent(item.leadId);
+      return "/manager-leads-overview.html?leadId=" + encodeURIComponent(item.leadId);
+    }
+
+    function renderCrm2() {
+      const selectedDate = els.agendaDate.value || todayIso();
+      const term = (els.searchInput.value || "").trim().toLowerCase();
+      const today = todayIso();
+      const active = allItems.filter((item) => !["completed", "cancelled"].includes(item.appointmentStatus));
+      els.todayCount.textContent = active.filter((item) => item.appointmentDate === today).length;
+      els.overdueCount.textContent = active.filter((item) => item.appointmentDate < today).length;
+      els.upcomingCount.textContent = active.filter((item) => item.appointmentDate > today).length;
+      els.completedCount.textContent = allItems.filter((item) => item.appointmentStatus === "completed").length;
+      els.selectedDateLabel.textContent = selectedDate;
+      let items = allItems.filter((item) => item.appointmentDate === selectedDate);
+      if (term) items = items.filter((item) => [item.clientName, item.claimType, item.campaign, item.currentStage, item.assignedCloserName, item.originatingListerName].join(" ").toLowerCase().includes(term));
+      items.sort((a,b) => ((a.appointmentTime || "99:99") + a.clientName).localeCompare((b.appointmentTime || "99:99") + b.clientName));
+      const adminSections = document.getElementById("adminCallbackSections"), callbackRow = item => `<div class="rounded-xl bg-white p-3 text-sm"><strong>${escapeHtml(item.appointmentTime)} — ${escapeHtml(item.clientName)}</strong><div>${escapeHtml(item.staffName || "Unassigned")} · ${escapeHtml(item.reason || "No reason recorded")}</div><div>Internal notes: ${escapeHtml(item.notes || "None")}</div><div>${escapeHtml(item.currentStage)}${item.type === "closer-callback" ? ` · ${escapeHtml(item.outcome || "No outcome")} · ${escapeHtml(item.paymentStatus)}` : ""}</div><a class="font-bold text-blue-700" href="${crm4LeadUrl(item)}">Open exact lead</a></div>`;
+      if (roleOf(currentUserData) === "administrator") { adminSections.classList.remove("hidden"); document.getElementById("adminListerCallbacks").innerHTML = items.filter(i => i.type === "lister-callback").map(callbackRow).join("") || "<p class='text-sm text-slate-600'>None for this date.</p>"; document.getElementById("adminCloserCallbacks").innerHTML = items.filter(i => i.type === "closer-callback").map(callbackRow).join("") || "<p class='text-sm text-slate-600'>None for this date.</p>"; } else adminSections.classList.add("hidden");
+      els.agendaSummary.textContent = items.length + " governed CRM4 appointment" + (items.length === 1 ? "" : "s") + " for " + selectedDate + ".";
+      if (!items.length) { els.agendaList.innerHTML = '<div class="rounded-2xl bg-slate-50 border border-slate-200 p-6 text-slate-600">No CRM4 appointments for this date.</div>'; return; }
+      const editable = ["manager", "processing", "admin", "administrator"].includes(roleOf(currentUserData));
+      els.agendaList.innerHTML = items.map((item) => `
+        <article class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm" data-lead-id="${escapeHtml(item.leadId)}">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div><div class="flex gap-2 flex-wrap"><span class="badge badge-blue">${escapeHtml(item.type ? item.type.replace("-", " ") : item.appointmentStatus)}</span><span class="badge badge-slate">${escapeHtml(item.currentStage)}</span></div><h3 class="text-2xl font-extrabold text-blue-950 mt-3">${escapeHtml(item.clientName)}</h3><p class="muted mt-1">${escapeHtml(item.reason || item.claimType || item.campaign || "General")}</p><a class="btn btn-primary py-2 px-4 mt-4" href="${crm4LeadUrl(item)}">Open Lead</a></div>
+            <div class="text-sm text-slate-600"><div class="font-extrabold text-blue-900">${escapeHtml(item.appointmentDate)} ${escapeHtml(item.appointmentTime)}</div><div>Duration: ${escapeHtml(item.durationMinutes || 60)} minutes</div><div>Route: ${escapeHtml(item.claimType || "—")}</div><div>Closer: ${escapeHtml(item.assignedCloserName || "Unassigned")}</div><div>Agreement: ${escapeHtml(item.agreementStatus || "—")}</div><div>Payment: ${escapeHtml(item.paymentStatus || "—")}</div><div>Onboarding: ${escapeHtml(item.administrationOnboardingStatus || item.appointmentStatus || "—")}</div><div>Processing: ${escapeHtml(item.processingStatus || "—")}</div></div>
+          </div>
+          ${editable && item.type !== "administration-onboarding" ? `<div class="mt-4 grid sm:grid-cols-4 gap-3"><input class="input crm4-date" type="date" value="${escapeHtml(item.appointmentDate)}"><input class="input crm4-time" type="time" value="${escapeHtml(item.appointmentTime)}"><select class="input crm4-status">${["scheduled","confirmed","completed","rescheduled","cancelled","no_show"].map((s) => `<option value="${s}" ${s === item.appointmentStatus ? "selected" : ""}>${s.replace("_"," ")}</option>`).join("")}</select><button class="btn btn-primary py-2 px-3" data-action="crm4-save" type="button">Save Appointment</button></div>` : ""}
+          ${item.canConfirmPayment ? '<p class="mt-4 text-sm"><a class="font-bold text-blue-700" href="/processing-dashboard.html">Open Processing payment action</a></p>' : ""}
+        </article>`).join("");
+    }
+
+    function render() {
+      const selectedDate = els.agendaDate.value || todayIso();
+      const term = (els.searchInput.value || "").trim().toLowerCase();
+      const today = todayIso();
+      const active = allItems.filter((item) => item.status !== "completed");
+      const completed = allItems.filter((item) => item.status === "completed");
+      els.todayCount.textContent = active.filter((item) => item.nextActionDate === today).length;
+      els.overdueCount.textContent = active.filter((item) => (item.nextActionDate || "") < today).length;
+      els.upcomingCount.textContent = active.filter((item) => (item.nextActionDate || "") > today).length;
+      els.completedCount.textContent = completed.length;
+      els.selectedDateLabel.textContent = selectedDate;
+
+      let items = allItems.filter((item) => item.nextActionDate === selectedDate);
+      if (term) {
+        items = items.filter((item) => [item.clientName, item.clientPhone, item.clientEmail, item.claimType, item.notes, item.nextAction]
+          .join(" ").toLowerCase().includes(term));
+      }
+      items.sort((a, b) => ((a.nextActionTime || "99:99") + " " + (a.clientName || "")).localeCompare((b.nextActionTime || "99:99") + " " + (b.clientName || "")));
+      els.agendaSummary.textContent = items.length + " item" + (items.length === 1 ? "" : "s") + " for " + selectedDate + ".";
+
+      if (!items.length) {
+        els.agendaList.innerHTML = '<div class="rounded-2xl bg-slate-50 border border-slate-200 p-6 text-slate-600">No agenda items for this date.</div>';
+        return;
+      }
+
+      els.agendaList.innerHTML = items.map((item) => `
+        <article class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm" data-id="${item.id}">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">${statusBadge(item)} <span class="badge badge-slate">${escapeHtml(item.nextAction || "Follow-up")}</span></div>
+              <h3 class="text-2xl font-extrabold text-blue-950 mt-3">${escapeHtml(item.clientName || "Unnamed client")}</h3>
+              <p class="muted mt-1">${escapeHtml(item.claimType || "General")} ${item.ownerName ? "- " + escapeHtml(item.ownerName) : ""}</p>
+              <a class="btn btn-primary py-2 px-4 mt-4" href="/client-file.html?source=${agendaCollection}&id=${item.id}">Open Client File</a>
+            </div>
+            <div class="text-right text-sm text-slate-600">
+              <div class="font-extrabold text-blue-900">${escapeHtml(item.nextActionDate || "-")} ${escapeHtml(item.nextActionTime || "")}</div>
+              <div>${escapeHtml(item.clientPhone || "No phone")}</div>
+              <div>${escapeHtml(item.clientEmail || "")}</div>
+              <a href="/client-file.html?source=${agendaCollection}&id=${item.id}" style="display:inline-flex;margin-top:12px;background:#2563eb;color:#fff;font-weight:800;padding:10px 14px;border-radius:12px;text-decoration:none;">OPEN CLIENT FILE</a>
+            </div>
+          </div>
+          <div class="mt-4 grid md:grid-cols-2 gap-4">
+            <textarea class="input item-notes" rows="4">${escapeHtml(item.notes || "")}</textarea>
+            <div class="grid gap-3 content-start">
+              <div class="grid grid-cols-2 gap-3">
+                <input class="input item-date" type="date" value="${escapeHtml(item.nextActionDate || selectedDate)}" />
+                <input class="input item-time" type="time" value="${escapeHtml(item.nextActionTime || "")}" />
+              </div>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <button class="btn btn-secondary py-2 px-3" data-action="tomorrow" type="button">Tomorrow</button>
+                <button class="btn btn-secondary py-2 px-3" data-action="twoDays" type="button">In 2 Days</button>
+                <button class="btn btn-secondary py-2 px-3" data-action="sevenDays" type="button">In 7 Days</button>
+                <button class="btn btn-primary py-2 px-3" data-action="save" type="button">Save Changes</button>
+                <button class="btn btn-green py-2 px-3" data-action="complete" type="button">Mark Completed</button>
+                <button class="btn btn-red py-2 px-3" data-action="reopen" type="button">Reopen</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function updateAgendaItem(card, changes) {
+      const id = card.dataset.id;
+      await updateDoc(doc(db, agendaCollection, id), {
+        ...changes,
+        updatedAt: serverTimestamp(),
+        updatedByUid: currentUser.uid,
+        updatedByEmail: currentUser.email || ""
+      });
+      showToast("Agenda updated.");
+      await loadItems();
+    }
+
+    async function createAgendaItem(event) {
+      event.preventDefault();
+      const clientName = document.getElementById("clientName").value.trim();
+      if (!clientName) {
+        showToast("Please enter a client name.");
+        return;
+      }
+      const nextDate = document.getElementById("nextActionDate").value || todayIso();
+      await addDoc(collection(db, agendaCollection), workspaceWrite(currentContext,"agendaItems",{
+        clientName,
+        clientPhone: document.getElementById("clientPhone").value.trim(),
+        clientEmail: document.getElementById("clientEmail").value.trim(),
+        claimType: document.getElementById("claimType").value.trim(),
+        nextAction: document.getElementById("nextAction").value,
+        nextActionDate: nextDate,
+        nextActionTime: document.getElementById("nextActionTime").value,
+        notes: document.getElementById("notes").value.trim(),
+        status: "open",
+        ownerUid: currentUser.uid,
+        ownerEmail: currentUser.email || "",
+        ownerName: currentUserData?.name || currentUserData?.displayName || currentUser.email || "",
+        ownerRole: roleOf(currentUserData),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }));
+      els.quickForm.reset();
+      document.getElementById("nextActionDate").value = nextDate;
+      els.agendaDate.value = nextDate;
+      showToast("Client file added to agenda.");
+      await loadItems();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setTimeout(() => {
+          if (!auth.currentUser) redirectToLogin();
+        }, 1800);
+        return;
+      }
+      try {
+        currentUser = user;
+        currentContext = await resolveCrmWorkspace(db,user);
+        currentUserData = currentContext.userData;
+        agendaCollection = crmCollection(currentContext,"agendaItems");
+        const role = currentContext.role;
+        if (!allowedRoles.includes(role)) {
+          alert("You do not have access to the agenda.");
+          redirectToLogin();
+          return;
+        }
+        els.dashboardLink.href = crmRouteFor(currentContext);
+        applyWorkspaceChrome(currentContext);
+        if (isCrm2(currentContext)) {
+          document.querySelector("h1").textContent = "CRM4 Shared Agenda";
+          document.querySelector("header p").textContent = "Canonical appointments from governed CRM4 lead authority";
+          document.getElementById("quickCreatePanel").classList.add("hidden");
+          els.newItemBtn.classList.add("hidden");
+          els.viewMode.value = canViewAll() ? "all" : "mine";
+          els.viewMode.disabled = true;
+        }
+        if (!canViewAll()) {
+          els.viewMode.value = "mine";
+          els.viewMode.querySelector('option[value="all"]').disabled = true;
+        }
+        const today = todayIso();
+        els.agendaDate.value = today;
+        document.getElementById("nextActionDate").value = today;
+        els.logoutBtn.classList.remove("hidden");
+        await loadItems();
+      } catch (error) {
+        console.warn("CRM agenda items are not currently available.");
+        const emptyMessage = currentContext && isCrm2(currentContext) ? "No CRM4 agenda items are currently available." : "No agenda items are currently available.";
+        if (els.agendaSummary) els.agendaSummary.textContent = emptyMessage;
+        if (els.agendaList) els.agendaList.innerHTML = `<div class="empty">${emptyMessage}</div>`;
+      } finally {
+        if (els.authLoader) els.authLoader.style.display = "none";
+      }
+    });
+
+    els.quickForm.addEventListener("submit", createAgendaItem);
+    els.refreshBtn.addEventListener("click", loadItems);
+    function renderCurrentAgenda() { if (isCrm2(currentContext)) renderCrm2(); else render(); }
+    els.todayBtn.addEventListener("click", () => { els.agendaDate.value = todayIso(); renderCurrentAgenda(); });
+    els.newItemBtn.addEventListener("click", () => document.getElementById("clientName").focus());
+    els.agendaDate.addEventListener("change", renderCurrentAgenda);
+    els.viewMode.addEventListener("change", loadItems);
+    els.searchInput.addEventListener("input", renderCurrentAgenda);
+    els.logoutBtn.addEventListener("click", async () => { sessionStorage.removeItem("quaerensProcessingSession"); await signOut(auth); window.location.replace("/login.html?next=/agenda.html"); });
+
+    document.getElementById("publishAvailabilityBtn")?.addEventListener("click", async () => {
+      const button = document.getElementById("publishAvailabilityBtn");
+      const startDate = document.getElementById("availabilityStartDate").value;
+      const endDate = document.getElementById("availabilityEndDate").value || startDate;
+      const startTime = document.getElementById("availabilityStartTime").value;
+      const durationMinutes = Number(document.getElementById("availabilityDuration").value);
+      const repeatWeekdays = [...document.querySelectorAll('input[name="availabilityWeekday"]:checked')].map((input) => Number(input.value));
+      if (!startDate || !startTime) { showToast("Choose a start date and time."); return; }
+      try { button.disabled = true; const result = (await publishAdministrationOnboarding({ startDate, endDate, startTime, durationMinutes, repeatWeekdays })).data; showToast(result.idempotent ? "That availability already exists." : `${result.count} slot(s) published.`); await loadAdministrationOnboardingAvailability(); }
+      catch (error) { showToast(error.message || "Availability could not be published."); }
+      finally { button.disabled = false; }
+    });
+
+    document.getElementById("availabilitySlotsBody")?.addEventListener("click", async (event) => {
+      const button = event.target.closest(".availability-action");
+      if (!button) return;
+      const reason = button.dataset.action === "block" ? (window.prompt("Reason this time is unavailable", "Unavailable") || "Unavailable") : "";
+      try { button.disabled = true; await updateAdministrationOnboardingSlot({ slotId: button.dataset.slotId, action: button.dataset.action, reason }); showToast(button.dataset.action === "release" ? "Availability released." : button.dataset.action === "cancel" ? "Availability removed." : "Time blocked."); await loadAdministrationOnboardingAvailability(); }
+      catch (error) { showToast(error.message || "Availability could not be updated."); button.disabled = false; }
+    });
+
+    els.agendaList.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      if (button.dataset.action === "crm4-save") {
+        const crm4Card = button.closest("article[data-lead-id]");
+        button.disabled = true;
+        try {
+          await updateCrm2Appointment({
+            leadId: crm4Card.dataset.leadId,
+            appointmentDate: crm4Card.querySelector(".crm4-date").value,
+            appointmentTime: crm4Card.querySelector(".crm4-time").value,
+            appointmentStatus: crm4Card.querySelector(".crm4-status").value
+          });
+          showToast("CRM4 appointment updated and audited.");
+          await loadItems();
+        } catch (error) {
+          showToast(error?.message || "Appointment update failed.");
+        } finally { button.disabled = false; }
+        return;
+      }
+      const card = button.closest("article[data-id]");
+      const notes = card.querySelector(".item-notes").value.trim();
+      const date = card.querySelector(".item-date").value;
+      const time = card.querySelector(".item-time").value;
+      const action = button.dataset.action;
+      if (action === "tomorrow") return updateAgendaItem(card, { nextActionDate: addDaysIso(1), nextActionTime: time, notes, status: "open" });
+      if (action === "twoDays") return updateAgendaItem(card, { nextActionDate: addDaysIso(2), nextActionTime: time, notes, status: "open" });
+      if (action === "sevenDays") return updateAgendaItem(card, { nextActionDate: addDaysIso(7), nextActionTime: time, notes, status: "open" });
+      if (action === "save") return updateAgendaItem(card, { nextActionDate: date, nextActionTime: time, notes, status: "open" });
+      if (action === "complete") return updateAgendaItem(card, { notes, status: "completed", completedAt: serverTimestamp() });
+      if (action === "reopen") return updateAgendaItem(card, { notes, status: "open" });
+    });
+  </script>
+</body>
+</html>
