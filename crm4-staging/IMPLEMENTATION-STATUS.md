@@ -1,5 +1,55 @@
 # CRM4 implementation checkpoint
 
+## Continuous-client checkpoint — 12 October 2026
+
+Supersedes earlier dependency counts: 38 pinned source bundles and 38 explicitly
+exposed local handlers. Only `crm4-staging/` changed from b104dd3. No deployment.
+
+`tests/continuous-journey.cjs` seeds staff identities/memberships only, then uses
+actual browser login and authenticated Firebase callable transport for one new
+synthetic client. The agreement is generated/saved as PDF by the cloned agreement
+page itself. No completed client state is seeded. Captured notifications are not
+delivery, and manual payment acknowledgment represents no money movement.
+
+Executed on the same client: referral/replay, identity input, analysis, confirmed
+review, v9 generation/finalisation, Lister handoff, Manager approval/assignment,
+appointment completion by Manager, Closer deal/replay, agreement generation and
+captured send, Processing signature acknowledgment, payment preview/captured
+request/exact-amount acknowledgment, slot publication and onboarding booking/replay.
+Rejected: premature handoff, wrong role, Closer appointment completion, stale
+agreement version, stale payment preview and wrong payment amount.
+
+**CONTINUOUS JOURNEY BLOCKED, NOT COMPLETE:** Paid Client Workspace rejects
+`The linked Framework B assessment could not be verified.` GenerateDraft stores
+`crmLink.caseRef`, `clientRef`, `workspaceId`, `sourceCollection`; the independently
+pinned paidClientGetWorkspace requires `crmLink.crm4LeadId`. This incompatibility
+comes from the preserved callable-specific source contracts, not a missing seeded
+field. No assessment record was patched to pass it. GetWorkspace creates its
+normal local workspace before the later projection read rejects; this is not a
+read-only operation. Portal activation/onboarding completion/next Processing
+transition have NOT executed on this client. The journey script deliberately
+exits nonzero and writes a BLOCKED result under ignored `.scratch/`.
+
+Two other preserved role/order constraints: assessment must precede formal
+Lister handoff; appointment completion belongs to Manager/Processing/Admin, not
+Closer. No role was widened. Compatibility remediation must retain authoritative
+lead/assessment/workspace linkage and requires a decision about departing from
+the pinned CRM2 contracts; no silent business-contract patch was made.
+
+Verification: 51/51 existing automated tests PASS, source hashes PASS for all
+bundles, CRM2 security regression PASS, whitespace PASS. Browser checks at
+390/768/1440 on Assessment Assistant, Manager, Closer and Processing: no document
+horizontal overflow or page exceptions. Lister assessment access correctly becomes
+denied after reassignment. Mobile table text remains cramped; absence of overflow
+does not certify usability or exact CRM2 visual parity. Full-journey tablet/mobile
+and Client Portal acceptance remain incomplete. See FEATURE-PARITY.md.
+
+The Auth adapter uses only the named demo app and refuses non-loopback Auth.
+Only the agreement PDF callable has a larger bounded request-body allowance;
+other calls retain 64 KiB. No live providers, credentials, production records,
+CRM2/CRM3 files, or shared framework business source were changed.
+
+
 ## Current assessment/operations checkpoint — 12 October 2026
 
 This section supersedes the older checkpoint counts below. Local development

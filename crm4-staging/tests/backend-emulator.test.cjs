@@ -17,6 +17,8 @@ test('actual Lister create/replay/duplicate and Manager draft read on demo Fires
       ...['UpdateClientIdentity', 'Analyse', 'ConfirmReview', 'SaveCorrections', 'GenerateDraft', 'PreviewDraftPdf', 'ReprojectDraft', 'Finalise', 'DownloadFinalPdf', 'GetState'].map(n => 'crm4AssessmentAssistant' + n),
       'crm4CloserBookAdministrationOnboarding', 'crm4CloserListAdministrationOnboardingSlots', 'crm4CloserRecordClosedDeal', 'crm4CloserGetLinkedAssessment',
       'crm4ListerCreateReferralLead', 'crm4ManagerGetLinkedAssessment', 'crm4ManagerUpdateLead', 'crm4ManagerSendToCloser',
+      ...['ListerSubmitToManager', 'UpdateAppointment', 'CloserGetAgreement', 'CloserSaveAgreement', 'CloserSendAgreement', 'CloserPreparePaymentEmail', 'CloserSendPaymentEmail'].map(n => 'crm4' + n),
+      'paidClientGetWorkspace', 'paidClientActivateLogin', 'paidClientUpdateOnboardingChecklist', 'paidClientAddDocumentRequirement', 'paidClientUpdateEvidence', 'portalClientGetDashboard', 'portalClientListCases', 'processingPublishAdministrationOnboardingSlots',
       'processingListAdministrationOnboarding', 'processingListOperationalDashboard', 'processingCompleteAdministrationOnboarding', 'processingMarkAgreementSigned', 'processingConfirmCrm2Payment'
     ].sort());
     await member.set({ active: true, workspaceId: 'CRM4', role: 'lister', name: 'Synthetic CRM4 Lister' });

@@ -26,7 +26,8 @@ async function start(port = 5001) {
     } catch { return reply(401, { error: { status: 'UNAUTHENTICATED', message: 'Valid demo-emulator sign-in required' } }); }
     try {
       let body = '', length = 0;
-      for await (const chunk of req) { length += chunk.length; if (length > 65536) throw Object.assign(Error('Request too large'), { code: 'invalid-argument' }); body += chunk; }
+      const bodyLimit = match[1] === 'crm4CloserSendAgreement' ? 9500000 : 65536;
+      for await (const chunk of req) { length += chunk.length; if (length > bodyLimit) throw Object.assign(Error('Request too large'), { code: 'invalid-argument' }); body += chunk; }
       let parsed;
       try { parsed = JSON.parse(body); } catch { throw Object.assign(Error('Valid JSON required'), { code: 'invalid-argument' }); }
       if (!parsed || Object.keys(parsed).some(key => key !== 'data')) throw Object.assign(Error('Callable data envelope required'), { code: 'invalid-argument' });

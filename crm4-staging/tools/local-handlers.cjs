@@ -17,7 +17,11 @@ function createLocalHandlers(env = process.env) {
   const forbidden = () => { throw Error('External providers are disabled in CRM4 local integration'); };
   const providers = require('./local-providers.cjs').createLocalProviders();
   const storage = require('./local-storage.cjs').createLocalStorage();
-  const deps = { db, admin: { firestore: require('firebase-admin').firestore, storage: () => storage }, HttpsError, onCall: (...args) => args.at(-1),
+  const localAuth = () => {
+    if (process.env.FIREBASE_AUTH_EMULATOR_HOST !== '127.0.0.1:9099') throw Error('Loopback Auth emulator required');
+    return require('firebase-admin/auth').getAuth(app);
+  };
+  const deps = { db, admin: { firestore: require('firebase-admin').firestore, storage: () => storage, auth: localAuth }, HttpsError, onCall: (...args) => args.at(-1),
     resendSecret: { value: forbidden }, resend: providers.resend };
   const referral = require('../backend-sources/crm4ListerCreateReferralLead/crm4ManualReferral.js').registerCrm2ManualReferral(deps);
   const manager = require('../backend-sources/crm4ManagerGetLinkedAssessment/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps);
@@ -40,16 +44,22 @@ function createLocalHandlers(env = process.env) {
     const factory = require('../backend-sources/' + name + '/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant;
     handlers[name] = factory({ ...deps, openaiSecret: { value: () => 'LOCAL_SYNTHETIC_NOT_A_CREDENTIAL' } })[name];
   }
-  for (const suffix of ['ManagerUpdateLead', 'ManagerSendToCloser', 'CloserRecordClosedDeal', 'CloserGetLinkedAssessment']) {
+  for (const suffix of ['ManagerUpdateLead', 'ManagerSendToCloser', 'CloserRecordClosedDeal', 'CloserGetLinkedAssessment', 'ListerSubmitToManager', 'UpdateAppointment', 'CloserGetAgreement', 'CloserSaveAgreement', 'CloserSendAgreement', 'CloserPreparePaymentEmail', 'CloserSendPaymentEmail']) {
     const name = 'crm4' + suffix;
     handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
   const { isolated } = require('./local-ai.cjs');
-  for (const name of ['processingCompleteAdministrationOnboarding', 'crm4CloserListAdministrationOnboardingSlots']) {
+  for (const name of ['processingCompleteAdministrationOnboarding', 'crm4CloserListAdministrationOnboardingSlots', 'processingPublishAdministrationOnboardingSlots']) {
     handlers[name] = require('../backend-sources/' + name + '/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
   }
   for (const name of ['processingMarkAgreementSigned', 'processingConfirmCrm2Payment']) {
     handlers[name] = require('../backend-sources/' + name + '/processingOperations.js').registerProcessingOperations(deps)[name];
+  }
+  for (const name of ['paidClientGetWorkspace', 'paidClientActivateLogin', 'paidClientUpdateOnboardingChecklist', 'paidClientAddDocumentRequirement', 'paidClientUpdateEvidence']) {
+    handlers[name] = require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace(deps)[name];
+  }
+  for (const name of ['portalClientGetDashboard', 'portalClientListCases']) {
+    handlers[name] = require('../backend-sources/' + name + '/clientPortal.js').registerClientPortal(deps)[name];
   }
   for (const name of Object.keys(handlers)) {
     const handler = isolated(handlers[name]);

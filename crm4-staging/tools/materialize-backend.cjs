@@ -16,6 +16,21 @@ async function materialize(name) {
   const directory = await sourceDirectory(source.bucket, source.object, source.generation);
   const root = path.resolve(__dirname, '../backend-sources', name.replace(/^crm2/, 'crm4'));
   const entryModules = {
+    crm2ListerSubmitToManager: 'crm2OperationalFlow.js',
+    paidClientGetWorkspace: 'paidClientWorkspace.js',
+    paidClientActivateLogin: 'paidClientWorkspace.js',
+    paidClientUpdateOnboardingChecklist: 'paidClientWorkspace.js',
+    paidClientAddDocumentRequirement: 'paidClientWorkspace.js',
+    paidClientUpdateEvidence: 'paidClientWorkspace.js',
+    portalClientGetDashboard: 'clientPortal.js',
+    portalClientListCases: 'clientPortal.js',
+    processingPublishAdministrationOnboardingSlots: 'crm2AdministrationOnboarding.js',
+    crm2CloserGetAgreement: 'crm2OperationalFlow.js',
+    crm2CloserSaveAgreement: 'crm2OperationalFlow.js',
+    crm2CloserSendAgreement: 'crm2OperationalFlow.js',
+    crm2CloserPreparePaymentEmail: 'crm2OperationalFlow.js',
+    crm2CloserSendPaymentEmail: 'crm2OperationalFlow.js',
+    crm2UpdateAppointment: 'crm2OperationalFlow.js',
     crm2AssessmentAssistantDownloadFinalPdf: 'crm2AssessmentAssistant.js',
     crm2CloserGetLinkedAssessment: 'crm2OperationalFlow.js',
     crm2AssessmentAssistantUpdateClientIdentity: 'crm2AssessmentAssistant.js',
