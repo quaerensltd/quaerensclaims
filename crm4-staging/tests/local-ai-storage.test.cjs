@@ -9,6 +9,7 @@ test('every pinned callable bundle retains its materialised source hashes and br
   }
   const brochure = require('../backend-sources/crm4AssessmentAssistantFinalise/crm4InformationBrochure.js');
   assert(brochure.verifiedInformationBrochure(Error).length > 100);
+  assert(require('../backend-sources/crm4AssessmentAssistantFinaliseCorrection/crm4InformationBrochure.js').verifiedInformationBrochure(Error).length > 100);
 });
 test('synthetic AI boundary refuses real external requests and unmarked input', async () => {
   const { isolated } = require('../tools/local-ai.cjs');
@@ -24,4 +25,7 @@ test('capture storage retains bytes locally and rejects arbitrary paths', async 
   assert.throws(() => storage.bucket().file('../../credentials'), /Unapproved/);
   const object = storage.bucket().file('professional-assessments/synthetic/versions/v1/report.pdf');
   await object.save(Buffer.from('%PDF synthetic')); assert.equal((await object.download())[0].toString(), '%PDF synthetic');
+  await assert.rejects(object.save(Buffer.from('overwrite'), { preconditionOpts: { ifGenerationMatch: 0 } }), e => e.code === 412);
+  assert.equal((await object.download())[0].toString(), '%PDF synthetic');
+  assert.throws(() => storage.bucket().file('clientPortal/case/client-uploads/user/test.txt'), /Explicit local/);
 });

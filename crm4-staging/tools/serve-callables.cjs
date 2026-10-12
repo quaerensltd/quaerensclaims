@@ -14,8 +14,18 @@ async function start(port = 5001) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Firebase-GMPID');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+    const ticketMatch = /^\/__local-document\/([a-f0-9]{64})$/.exec(req.url);
+    if (req.method === 'GET' && ticketMatch) {
+      const ticket = runtime.downloadTickets.get(ticketMatch[1]);
+      if (!ticket || ticket.expires <= Date.now()) {
+        runtime.downloadTickets.delete(ticketMatch[1]);
+        return reply(404, { error: { status: 'NOT_FOUND' } });
+      }
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="synthetic-document"', 'X-Content-Type-Options': 'nosniff' });
+      return res.end(ticket.bytes);
+    }
     if (req.method !== 'POST') return reply(405, { error: { status: 'INVALID_ARGUMENT' } });
     const match = /^\/demo-quaerens-crm4\/us-central1\/([A-Za-z0-9]+)$/.exec(req.url);
     if (!match || !Object.hasOwn(runtime.handlers, match[1])) return reply(404, { error: { status: 'NOT_FOUND', message: 'Callable not enabled locally' } });

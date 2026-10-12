@@ -1,5 +1,45 @@
 # CRM4 implementation checkpoint
 
+## Portal and post-finalisation correction extension — 12 October 2026
+
+49 callable-specific pinned handlers are now available locally (11 added).
+The same-client journey additionally executes the actual portal message and upload
+forms, staff response/read receipt, protected client/staff document downloads,
+then Manager correction start/replay, stale-preview rejection, PDF preview,
+finalise/replay and immutable previous-version comparison. Same QAR retained.
+All provider outputs are captures; no email, payment or external AI is sent.
+Uploads use the demo Storage emulator only, with owner-only create, verified
+email, active-case ownership, MIME/size checks and no overwrite/direct read.
+Governed document access issues short-lived loopback-only capability URLs.
+
+Security/concurrency additions cover wrong-client/disabled/unverified uploads,
+unsafe MIME, overwrite, direct read, three simultaneous payment acknowledgments
+(one history event), and two competing leads for one slot (one winner, loser
+unchanged). Source snapshots remain byte-hash verified. Correction finalisation's
+brochure is separately copied and hash-verified from its own source package.
+
+Final local regression: 57/57 assertions pass, including the explicitly labelled
+known-failure diagnostic (not a notification-resilience pass). CRM2 function
+security regression passes. The expanded continuous journey passes independently.
+
+Important blocker: the preserved portal message handler leaves a notification
+PENDING after provider failure, and replay does not retry it. The diagnostic test
+proves this limitation; it does not certify recovery. No shared business logic
+was silently changed. Upload partial-failure recovery is also not certified.
+See CALLABLE-COVERAGE.md for explicit remaining dependencies and Vercel evidence.
+
+The continuous journey completes using staff-only seed accounts and one new client.
+15 responsive checks (five views, 390/768/1440) show no document overflow or page
+exceptions. Representative screenshots were inspected; exact current authenticated
+CRM2 comparison remains unverified. The emulator warning is deliberately visible.
+Portal read-receipt dates render without a date in the local screenshots; timestamp
+transport/presentation parity remains unverified and is not a visual PASS claim.
+No CRM2/CRM3/production source, infrastructure or configuration was modified.
+
+Deployment readiness: NO. Local workflow progress is not universal parity or
+production security certification. Notification recovery needs a governed decision;
+remaining callable closure, visual baseline and independent infrastructure remain.
+
 ## Linkage compatibility and completed continuous journey — 12 October 2026
 
 Supersedes the blocked checkpoint below. The same-client journey now completes

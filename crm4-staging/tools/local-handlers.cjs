@@ -16,7 +16,7 @@ function createLocalHandlers(env = process.env) {
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
   const forbidden = () => { throw Error('External providers are disabled in CRM4 local integration'); };
   const providers = require('./local-providers.cjs').createLocalProviders();
-  const storage = require('./local-storage.cjs').createLocalStorage();
+  const storage = require('./local-storage.cjs').createLocalStorage(app);
   const localAuth = () => {
     if (process.env.FIREBASE_AUTH_EMULATOR_HOST !== '127.0.0.1:9099') throw Error('Loopback Auth emulator required');
     return require('firebase-admin/auth').getAuth(app);
@@ -39,7 +39,7 @@ function createLocalHandlers(env = process.env) {
   };
   // Each callable uses its own pinned deployment package, never another
   // callable's convenient factory version. Unlisted exports remain inaccessible.
-  for (const suffix of ['UpdateClientIdentity', 'Analyse', 'ConfirmReview', 'SaveCorrections', 'GenerateDraft', 'PreviewDraftPdf', 'ReprojectDraft', 'Finalise', 'DownloadFinalPdf']) {
+  for (const suffix of ['UpdateClientIdentity', 'Analyse', 'ConfirmReview', 'SaveCorrections', 'GenerateDraft', 'PreviewDraftPdf', 'ReprojectDraft', 'Finalise', 'DownloadFinalPdf', 'StartCorrection', 'PreviewCorrectionPdf', 'FinaliseCorrection']) {
     const name = 'crm4AssessmentAssistant' + suffix;
     const factory = require('../backend-sources/' + name + '/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant;
     handlers[name] = factory({ ...deps, openaiSecret: { value: () => 'LOCAL_SYNTHETIC_NOT_A_CREDENTIAL' } })[name];
@@ -55,10 +55,10 @@ function createLocalHandlers(env = process.env) {
   for (const name of ['processingMarkAgreementSigned', 'processingConfirmCrm2Payment']) {
     handlers[name] = require('../backend-sources/' + name + '/processingOperations.js').registerProcessingOperations(deps)[name];
   }
-  for (const name of ['paidClientGetWorkspace', 'paidClientActivateLogin', 'paidClientUpdateOnboardingChecklist', 'paidClientAddDocumentRequirement', 'paidClientUpdateEvidence']) {
+  for (const name of ['paidClientGetWorkspace', 'paidClientActivateLogin', 'paidClientUpdateOnboardingChecklist', 'paidClientAddDocumentRequirement', 'paidClientUpdateEvidence', 'paidClientStaffCreateMessage', 'paidClientMarkMessageRead', 'paidClientDownloadDocument', 'paidClientCreateMessage', 'paidClientRegisterUpload']) {
     handlers[name] = require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace(deps)[name];
   }
-  for (const name of ['portalClientGetDashboard', 'portalClientListCases']) {
+  for (const name of ['portalClientGetDashboard', 'portalClientListCases', 'portalClientCreateMessage', 'portalClientRegisterUpload', 'portalClientGetDocumentUrl']) {
     handlers[name] = require('../backend-sources/' + name + '/clientPortal.js').registerClientPortal(deps)[name];
   }
   handlers.paidClientGetWorkspace = require('./linkage-boundary.cjs').workspaceBoundary(db, deps,
@@ -81,6 +81,6 @@ function createLocalHandlers(env = process.env) {
       return handler(request);
     };
   }
-  return { db, app, providerReceipts: providers.receipts, storageObjects: storage.objects, handlers: Object.freeze(handlers), async close() { await db.terminate(); await deleteApp(app); } };
+  return { db, app, providerReceipts: providers.receipts, downloadTickets: storage.tickets, storageObjects: storage.objects, handlers: Object.freeze(handlers), async close() { await db.terminate(); await deleteApp(app); } };
 }
 module.exports = { createLocalHandlers };

@@ -18,7 +18,10 @@ test('synthetic agreement and manual-payment acknowledgments retain role, worksp
     assert.equal((await invoke('processingMarkAgreementSigned', agreement)).status, 'AGREEMENT_SIGNED');
     assert.equal((await invoke('processingMarkAgreementSigned', agreement)).idempotent, true);
     await assert.rejects(invoke('processingConfirmCrm2Payment', { confirmedAmount: 949 }), e => e.code === 'failed-precondition');
-    assert.equal((await invoke('processingConfirmCrm2Payment', { confirmedAmount: 950, paymentReference: 'SYNTHETIC-NO-PAYMENT' })).status, 'PAYMENT_CONFIRMED_READY_FOR_ADMINISTRATION_ONBOARDING');
+    const concurrent = await Promise.all([1, 2, 3].map(() => invoke('processingConfirmCrm2Payment', { confirmedAmount: 950, paymentReference: 'SYNTHETIC-NO-PAYMENT' })));
+    assert.equal(concurrent.filter(r => !r.idempotent).length, 1);
+    assert(concurrent.every(r => r.status === (r.idempotent ? 'ALREADY_CONFIRMED_READY_FOR_ADMINISTRATION_ONBOARDING' : 'PAYMENT_CONFIRMED_READY_FOR_ADMINISTRATION_ONBOARDING')));
+    assert.equal((await lead.get()).data().actionHistory.filter(e => e.action === 'intake_assessment_fee_paid').length, 1);
     assert.equal((await invoke('processingConfirmCrm2Payment', { confirmedAmount: 950 })).idempotent, true);
     await lead.update({ workspaceId: 'CRM2' });
     await assert.rejects(invoke('processingConfirmCrm2Payment', { confirmedAmount: 950 }), e => e.code === 'permission-denied');
