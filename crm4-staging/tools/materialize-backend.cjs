@@ -16,6 +16,7 @@ async function materialize(name) {
   const directory = await sourceDirectory(source.bucket, source.object, source.generation);
   const root = path.resolve(__dirname, '../backend-sources', name.replace(/^crm2/, 'crm4'));
   const entryModules = {
+    portalStaffRevokeAccess: 'clientPortal.js',
     paidClientCreateMessage: 'paidClientWorkspace.js',
     paidClientRegisterUpload: 'paidClientWorkspace.js',
     portalClientCreateMessage: 'clientPortal.js',

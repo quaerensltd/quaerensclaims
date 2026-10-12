@@ -1,5 +1,35 @@
 # CRM4 implementation checkpoint
 
+## Resilience continuation — 12 October 2026
+
+Current authority: RESILIENCE-CONTRACT.md supersedes the notification/upload gap
+descriptions below for the two current paidClient client operations. Pinned sources
+remain unchanged. Transactional outbox, authorised bounded retry, durable captured
+receipt deduplication and audit history now execute in the demo emulator. Legacy
+pending messages and partial upload registrations recover without rewriting their
+original records. Orphan cleanup is staff-only, exact-path, aged and generation-
+guarded; recent and registered evidence is retained.
+
+The portal timestamp formatter now handles both callable timestamp shapes; visible
+dates are asserted in the browser journey. Portal screenshots inspected at
+390/768/1440. Exact current authenticated CRM2 parity is still unverified.
+
+Verification: full CRM4 suite 61/61; CRM2 security regression and source integrity
+pass. Same-client journey including correction completes; 15 responsive checks
+have no overflow/page exceptions. Final focused recovery/upload reruns pass.
+The historical unwrapped failure diagnostic is explicitly not a claim that the
+old source was fixed; the separately tested CRM4 boundary supplies recovery.
+
+One additional pinned callable, portalStaffRevokeAccess, is integrated and tested.
+The runtime now exposes 50 pinned handlers plus two explicit CRM4 recovery controls
+(52 total). Static inventory coverage is 37/82; no automatic factory exposure.
+Source retrieval was read-only code-artifact retrieval, not production record access.
+
+Deployment readiness remains NO: remaining callable parity, broader staff/legacy
+notification recovery, safe live visual baseline and independent infrastructure/
+provider configuration are outstanding. No merge, deployment, production records,
+real notifications, AI calls or payments. Original CRM2/CRM3 sources unchanged.
+
 ## Portal and post-finalisation correction extension — 12 October 2026
 
 49 callable-specific pinned handlers are now available locally (11 added).

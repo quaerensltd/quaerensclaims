@@ -9,6 +9,7 @@ const crmPage = p => seeds.includes(p) || /^(?:crm2|manager-|lister-|closer-|pro
 const eligible = p => !/(?:^|\/)(?:\.|.*(?:secret|credential|service.account))/i.test(p) &&
   !p.includes('..') && !p.includes('\\') && /\.(?:html|js|mjs|css|png|jpg|jpeg|svg|webp|ico|woff2?)$/i.test(p);
 function transform(source, modules) {
+  source = source.replace('const d = v && v.seconds ? new Date(v.seconds * 1000) : new Date(v);', 'const seconds = v && (v.seconds ?? v._seconds); const d = Number.isFinite(seconds) ? new Date(seconds * 1000) : new Date(v);');
   let text = source.replace(/\r\n/g, '\n').replace(/crm2/g, 'crm4').replace(/CRM2/g, 'CRM4');
   if (/<title>Quaerens (Manager Panel|Closer Panel|Processing Dashboard)<\/title>/.test(text)) text = text.replace('</head>', '<style data-crm4-table-boundary>.card{min-width:0}.overflow-x-auto{max-width:100%;overflow-x:auto}.overflow-x-auto>table{min-width:760px}</style>\n</head>');
   // CRM4-specific entry routing; keep the existing Processing screen/workflow.

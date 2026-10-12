@@ -1,5 +1,11 @@
 # CRM4 dependency closure checkpoint
 
+Update 12 October: portalStaffRevokeAccess is now individually pinned, exposed
+through the CRM4 case boundary and regression tested. Current counts: 50 pinned
+handlers plus 2 CRM4 recovery controls; 37/82 static names covered. The historical
+counts and defect diagnosis below are retained as baseline evidence. Current
+client notification/upload recovery is specified in RESILIENCE-CONTRACT.md.
+
 Scope: the preserved static CRM2 inventory, not an assertion that every dynamic
 call has been discovered. 82 distinct inventory callable names; 36 have pinned
 local counterparts. The local allow-list has 49 handlers including 13 additional

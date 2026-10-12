@@ -63,6 +63,18 @@ function createLocalHandlers(env = process.env) {
   }
   handlers.paidClientGetWorkspace = require('./linkage-boundary.cjs').workspaceBoundary(db, deps,
     require('../backend-sources/paidClientGetWorkspace/paidClientWorkspace.js').registerPaidClientWorkspace);
+  const recovery = require('./portal-recovery.cjs').createPortalRecovery(db, deps);
+  for (const name of ['paidClientCreateMessage','paidClientRegisterUpload']) handlers[name] = recovery.wrap(name, require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace);
+  handlers.crm4RecoverPortalNotification = recovery.recover;
+  handlers.crm4ReconcilePortalUpload = recovery.reconcileUpload;
+  const revoke = require('../backend-sources/portalStaffRevokeAccess/clientPortal.js').registerClientPortal(deps).portalStaffRevokeAccess;
+  handlers.portalStaffRevokeAccess = async request => {
+    const caseId = request.data?.caseId;
+    if (typeof caseId !== 'string' || !caseId.startsWith('crm4-') || caseId.includes('/')) throw new HttpsError('permission-denied','CRM4 case required');
+    const portal = (await db.collection('clientPortalCases').doc(caseId).get()).data();
+    if (!portal || [portal.workspaceId,portal.crmLink?.workspaceId].some(v=>v && v!=='CRM4')) throw new HttpsError('permission-denied','CRM4 case required');
+    return revoke(request);
+  };
   for (const name of ['paidClientActivateLogin', 'paidClientUpdateOnboardingChecklist', 'paidClientAddDocumentRequirement', 'paidClientUpdateEvidence']) {
     const original = handlers[name];
     handlers[name] = async request => {

@@ -6,7 +6,7 @@ function createLocalStorage(app) {
   function portal(name) {
     if (!app || process.env.GCLOUD_PROJECT !== 'demo-quaerens-crm4' || process.env.STORAGE_EMULATOR_HOST !== 'http://127.0.0.1:9199') throw Error('Explicit local Storage emulator required');
     const file = require('firebase-admin/storage').getStorage(app).bucket('demo-quaerens-crm4.appspot.com').file(name);
-    return { exists: () => file.exists(), download: () => file.download(),
+    return { exists: () => file.exists(), download: () => file.download(), getMetadata: () => file.getMetadata(), delete: options => file.delete(options),
       async getSignedUrl() {
         const [bytes] = await file.download(), token = require('node:crypto').randomBytes(32).toString('hex');
         tickets.set(token,{bytes,expires:Date.now()+300000});

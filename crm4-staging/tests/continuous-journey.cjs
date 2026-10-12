@@ -166,6 +166,10 @@ async function run() {
     assert.equal(afterCorrection.qarReference, original.qarReference);
     assert.deepEqual((await db.collection('professionalAssessmentVersions').doc(original.currentVersionId).get()).data(), originalVersion);
     assert(service.runtime.providerReceipts.every(r => r.delivered === false));
+    const captures=await db.collection('crm4CapturedNotifications').get();
+    assert(captures.docs.every(d=>d.data().delivered===false));
+    await portal.reload(); await portal.locator('#dashboard').waitFor({state:'visible'});
+    assert.match(await portal.locator('#messages').innerText(), /Seen by (?:client|Processing) on \d{2}\/\d{2}\/\d{4}/);
     console.log('CONTINUOUS JOURNEY COMPLETE', leadId);
   } catch (e) {
     blocked = e.message;
