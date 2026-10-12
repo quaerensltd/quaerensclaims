@@ -61,6 +61,15 @@ function createLocalHandlers(env = process.env) {
   for (const name of ['portalClientGetDashboard', 'portalClientListCases']) {
     handlers[name] = require('../backend-sources/' + name + '/clientPortal.js').registerClientPortal(deps)[name];
   }
+  handlers.paidClientGetWorkspace = require('./linkage-boundary.cjs').workspaceBoundary(db, deps,
+    require('../backend-sources/paidClientGetWorkspace/paidClientWorkspace.js').registerPaidClientWorkspace);
+  for (const name of ['paidClientActivateLogin', 'paidClientUpdateOnboardingChecklist', 'paidClientAddDocumentRequirement', 'paidClientUpdateEvidence']) {
+    const original = handlers[name];
+    handlers[name] = async request => {
+      await db.runTransaction(tx => require('./linkage-boundary.cjs').verifyRequest(db, tx, request, deps));
+      return original(request);
+    };
+  }
   for (const name of Object.keys(handlers)) {
     const handler = isolated(handlers[name]);
     handlers[name] = async request => {

@@ -1,8 +1,8 @@
 # CRM4 functional parity — continuous-client evidence
 
 Local emulators only. Not production certification. Business source versions stay
-separately pinned. The complete journey currently fails, rather than substituting
-pre-completed fixtures for missing transitions.
+separately pinned. The same-client journey completes through active Processing
+and the next governed evidence transition without pre-completed client fixtures.
 
 | Capability | Continuous-client result | Qualification |
 |---|---|---|
@@ -18,23 +18,22 @@ pre-completed fixtures for missing transitions.
 | Signature acknowledgment | Tested | Processing; stale version denied |
 | Payment prerequisites | Tested | Synthetic manual acknowledgment; no Stripe/money |
 | Administration slot/booking | Tested | Published by handler, not seeded; duplicate protected |
-| Paid Client Workspace | BLOCKED | caseRef versus crm4LeadId contract mismatch |
-| Portal activation/login | Unexecuted | Handler dependencies loaded, not functional certification |
-| Onboarding completion | Separate seeded regression only | NOT proven for continuous client |
-| Processing next evidence transition | Unexecuted | Awaiting upstream contract resolution |
-| Cross-workspace/security | Existing regressions pass | Portal-specific boundaries still unverified |
-| Responsive 390/768/1440 | Partial | Four views no overflow/exceptions; mobile tables cramped |
+| Paid Client Workspace | Tested | Validated read alias; atomic projection/creation |
+| Portal activation/login | Tested | Actual synthetic portal login; wrong case denied |
+| Onboarding completion | Tested | Same client; replay protected |
+| Processing next evidence transition | Tested | HIGH-priority evidence request; audit retained |
+| Cross-workspace/security | Regression tested | Link conflicts/QAR/version/workspace rejected; portal wrong-case denial |
+| Responsive 390/768/1440 | Covered views tested | Five views no overflow/exceptions; tables scroll inside cards |
 | Exact CRM2 visual parity | Unverified | No authenticated baseline comparison this phase |
 | Remaining callable inventory | Incomplete | 38 explicit local handlers; no broad factory exposure |
 
 ## Required before deployment
 
-- Approve/resolve the preserved assessment-linkage contract incompatibility,
-  retaining workspace, lead ID, assessment ID and QAR verification. No direct
-  record patch or shortcut handler is acceptable.
-- Finish portal, onboarding and Processing chain and negative tests using the
-  same client. Complete full-width workflow/visual acceptance and remaining
-  dependency coverage; no claim of full parity until then.
+- Linkage incompatibility resolved in the approved CRM4 boundary, not the pinned
+  bundles or assessment records. Broader role/provider/concurrency and remaining
+  portal action/upload/message coverage is still needed.
+- Complete authenticated CRM2 visual comparison and remaining dependency coverage;
+  the exercised same-client journey is not proof of every CRM2 workflow.
 - Decide independent infrastructure/provider configuration, persistent isolated
   document storage and deployment packaging under separate authority. Existing
   local transport and captured providers are not deployable production services.

@@ -90,11 +90,34 @@ async function run() {
     const assessment = (await db.collection('professionalAssessments').doc(draft.assessmentId).get()).data();
     assert.equal(assessment.crmLink.caseRef, leadId);
     await invoke('processing', 'paidClientGetWorkspace');
-    await invoke('processing', 'paidClientActivateLogin', { password });
+    const activation = await invoke('processing', 'paidClientActivateLogin', { password });
+    assert(activation.clientUid);
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    await context.route('**/*', r => ['127.0.0.1', 'www.gstatic.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(new URL(r.request().url()).hostname) ? r.continue() : r.abort());
+    const portal = pages.client = await context.newPage();
+    await portal.goto('http://127.0.0.1:4404/client-portal.html');
+    await portal.locator('#loginEmail').fill(clientEmail); await portal.locator('#loginPassword').fill(password);
+    await portal.locator('#loginForm button[type=submit]').click();
+    await portal.locator('#dashboard').waitFor({ state: 'visible' });
+    await invoke('client', 'portalClientGetDashboard', { caseId: 'crm4-' + leadId });
+    await invoke('client', 'portalClientGetDashboard', { caseId: 'crm4-wrong-client' }, 'permission-denied');
+    await invoke('client', 'paidClientGetWorkspace', {}, 'permission-denied');
     for (const key of ['identityReviewed', 'loginExplained', 'uploadExplained', 'messageBoardExplained', 'notesRecorded']) await invoke('processing', 'paidClientUpdateOnboardingChecklist', { key, complete: true, notes: 'Synthetic onboarding rehearsal completed; no customer contact.' });
     const requirement = await invoke('processing', 'paidClientAddDocumentRequirement', { title: 'Synthetic invoice', description: 'Synthetic evidence only', required: true });
     await invoke('processing', 'processingCompleteAdministrationOnboarding', { notes: 'Synthetic administration completion' });
+    assert.equal((await invoke('processing', 'processingCompleteAdministrationOnboarding', { notes: 'Replay' })).idempotent, true);
     await invoke('processing', 'paidClientUpdateEvidence', { requirementId: requirement.id, priority: 'HIGH', requested: true });
+    const currentLead = (await db.collection('crm4Leads').doc(leadId).get()).data();
+    assert.equal(currentLead.processingStatus, 'accepted');
+    assert.equal(currentLead.administrationOnboardingStatus, 'completed');
+    assert.equal(currentLead.actionHistory.filter(e => e.action === 'processing_activated_after_administration_onboarding').length, 1);
+    const audits = await db.collection('clientPortalAudit').where('caseId', '==', 'crm4-' + leadId).get();
+    const auditActions = audits.docs.map(d => d.data().action || d.data().event);
+    for (const action of ['CLIENT_PORTAL_ACTIVATED','ONBOARDING_CHECKLIST_UPDATED','DOCUMENT_REQUIREMENT_ADDED','EVIDENCE_GOVERNANCE_UPDATED','ADMINISTRATION_ONBOARDING_COMPLETED']) assert(auditActions.includes(action), action);
+    assert.equal(auditActions.filter(a => a === 'ADMINISTRATION_ONBOARDING_COMPLETED').length, 1);
+    assert.equal((await db.collection('processingCases').doc('crm4-' + leadId).get()).data().assessmentId, draft.assessmentId);
+    assert.equal((await db.collection('clientPortalRequirements').doc(requirement.id).get()).data().requested, true);
+    await invoke('processing', 'paidClientGetWorkspace');
     assert(service.runtime.providerReceipts.every(r => r.delivered === false));
     console.log('CONTINUOUS JOURNEY COMPLETE', leadId);
   } catch (e) {
@@ -102,9 +125,9 @@ async function run() {
     throw e;
   } finally {
     const responsive = [];
-    if (leadId) for (const role of ['lister', 'manager', 'closer', 'processing']) {
+    if (leadId) for (const role of ['lister', 'manager', 'closer', 'processing', ...(pages.client ? ['client'] : [])]) {
       const page = pages[role];
-      const route = { lister: 'crm4-assessment-assistant.html?leadId=' + leadId, manager: 'manager-panel.html', closer: 'closer-panel.html?id=' + leadId, processing: 'processing-dashboard.html' }[role];
+      const route = { lister: 'crm4-assessment-assistant.html?leadId=' + leadId, manager: 'manager-panel.html', closer: 'closer-panel.html?id=' + leadId, processing: 'processing-dashboard.html', client: 'client-portal.html' }[role];
       const errors = []; page.on('pageerror', e => errors.push(e.message));
       try {
         await page.goto('http://127.0.0.1:4404/' + route); await page.waitForTimeout(1200);

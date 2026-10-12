@@ -1,5 +1,47 @@
 # CRM4 implementation checkpoint
 
+## Linkage compatibility and completed continuous journey — 12 October 2026
+
+Supersedes the blocked checkpoint below. The same-client journey now completes
+through active Processing and a governed evidence-priority/request update.
+Staff accounts alone are seeded. Every client transition uses authenticated local
+handlers; agreement PDF creation and portal login use the actual cloned pages.
+No production requests, provider calls, emails, payments or deployment occurred.
+
+`tools/linkage-boundary.cjs` supplies a validated read-only canonical alias to the
+older Paid Client Workspace projection. The assessment record is not rewritten.
+Workspace/collection, every supplied link ID, assessment ID, QAR, completed state
+and current document version must agree. All enabled paid-workspace mutations
+receive the same preflight while retaining their original handler authorization.
+Workspace get/creation runs in a Firestore transaction with buffered writes and
+read-your-writes, so later projection failure rolls back workspace/template writes.
+The facade is deliberately limited to the existing get-workspace contract; it is
+not a generic Firestore replacement. Original source bundles/manifests unchanged.
+See LINKAGE-COMPATIBILITY.md for scope and trace.
+
+Continuous evidence: referral/replay -> assessment -> Manager -> appointment ->
+Closed Deal -> actual agreement PDF/captured send -> signature -> synthetic manual
+payment acknowledgment -> published/booked onboarding -> paid workspace -> portal
+activation and real synthetic login -> checklist -> onboarding completion ->
+Processing case -> requested HIGH-priority evidence. Completion replay creates no
+second activation. Wrong portal case/staff role, stale agreement/payment preview,
+invalid payment amount and premature handoff are rejected. Existing CRM2 role
+order remains: assessment before handoff, appointment completion by Manager rather
+than Closer. All captured provider receipts remain delivered:false.
+
+54/54 regression tests passed, including canonical/legacy validation, rejection
+matrix and emulator rollback. CRM2 security regression passed. Five covered views
+at 390/768/1440 have no document overflow or page exceptions. Three local CRM4
+table containers now preserve readable width with contained horizontal scrolling;
+source-transform and asset fingerprints updated. Screenshots are local ignored
+evidence, not a claim of exact authenticated CRM2 baseline parity.
+
+Remaining: broader callable inventory, full post-finalisation correction and
+portal upload/message/action workflows, exhaustive concurrency/provider failure
+acceptance and independent deployment packaging/infrastructure. Memory document
+storage and capture providers remain local-only. No production readiness claim.
+
+
 ## Continuous-client checkpoint — 12 October 2026
 
 Supersedes earlier dependency counts: 38 pinned source bundles and 38 explicitly
