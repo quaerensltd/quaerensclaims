@@ -529,7 +529,7 @@
     let staffUsers = [];
 
     function hideLoader() {
-      authLoader.style.display = "none";
+      if (authLoader) authLoader.style.display = "none";
     }
 
     function cleanValue(value) {
@@ -1281,6 +1281,13 @@ async function loadSubmissions() {
           patch.status = isCrm2(currentContext)?({more_info_needed:"information-requested"}[finalDecision]||finalDecision):finalDecision;
         }
 
+        if (isCrm2(currentContext)) {
+          const action = ({ approved: 'APPROVE', rejected: 'REJECT', more_info_needed: 'REQUEST_INFORMATION' })[finalDecision] || 'SAVE_REVIEW';
+          await httpsCallable(functions, 'crm4ManagerUpdateLead')({ leadId: selectedSubmission.id, action, managerNotes: notes, managerOutcome: outcome });
+          await refreshSelectedSubmission();
+          showModalMessage('Manager review updated.');
+          return;
+        }
         await updateDoc(doc(db,currentSubmissionCollection,selectedSubmission.id),patch);
 
         if (selectedSubmission.sourceLeadId) {

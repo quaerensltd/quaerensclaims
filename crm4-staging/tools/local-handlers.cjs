@@ -7,6 +7,8 @@ function createLocalHandlers(env = process.env) {
   }
   // Validate the real SDK environment as well as a caller-provided environment.
   if (process.env.GCLOUD_PROJECT !== env.GCLOUD_PROJECT || process.env.FIRESTORE_EMULATOR_HOST !== env.FIRESTORE_EMULATOR_HOST) throw Error('SDK environment mismatch');
+  if (process.env.ASSESSMENT_REPORT_ARCHIVE_EMAIL && process.env.ASSESSMENT_REPORT_ARCHIVE_EMAIL !== 'archive@example.test') throw Error('Synthetic archive recipient required');
+  process.env.ASSESSMENT_REPORT_ARCHIVE_EMAIL = 'archive@example.test';
   const { initializeApp, deleteApp } = require('firebase-admin/app');
   const { getFirestore } = require('firebase-admin/firestore');
   const app = initializeApp({ projectId: 'demo-quaerens-crm4' }, 'crm4-local-' + require('node:crypto').randomUUID());
@@ -14,7 +16,8 @@ function createLocalHandlers(env = process.env) {
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
   const forbidden = () => { throw Error('External providers are disabled in CRM4 local integration'); };
   const providers = require('./local-providers.cjs').createLocalProviders();
-  const deps = { db, admin: {}, HttpsError, onCall: (...args) => args.at(-1),
+  const storage = require('./local-storage.cjs').createLocalStorage();
+  const deps = { db, admin: { firestore: require('firebase-admin').firestore, storage: () => storage }, HttpsError, onCall: (...args) => args.at(-1),
     resendSecret: { value: forbidden }, resend: providers.resend };
   const referral = require('../backend-sources/crm4ListerCreateReferralLead/crm4ManualReferral.js').registerCrm2ManualReferral(deps);
   const manager = require('../backend-sources/crm4ManagerGetLinkedAssessment/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps);
@@ -22,13 +25,43 @@ function createLocalHandlers(env = process.env) {
   const onboarding = require('../backend-sources/crm4CloserBookAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
   const assessment = require('../backend-sources/crm4AssessmentAssistantGetState/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant({ ...deps, openaiSecret: { value: forbidden } });
   const processingOnboarding = require('../backend-sources/processingListAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
-  return { db, app, providerReceipts: providers.receipts, handlers: Object.freeze({
+  const handlers = {
     crm4ListerCreateReferralLead: referral.crm4ListerCreateReferralLead,
     crm4ManagerGetLinkedAssessment: manager.crm4ManagerGetLinkedAssessment,
     crm4CloserBookAdministrationOnboarding: onboarding.crm4CloserBookAdministrationOnboarding,
     crm4AssessmentAssistantGetState: assessment.crm4AssessmentAssistantGetState,
     processingListOperationalDashboard: processing.processingListOperationalDashboard,
     processingListAdministrationOnboarding: processingOnboarding.processingListAdministrationOnboarding
-  }), async close() { await db.terminate(); await deleteApp(app); } };
+  };
+  // Each callable uses its own pinned deployment package, never another
+  // callable's convenient factory version. Unlisted exports remain inaccessible.
+  for (const suffix of ['UpdateClientIdentity', 'Analyse', 'ConfirmReview', 'SaveCorrections', 'GenerateDraft', 'PreviewDraftPdf', 'ReprojectDraft', 'Finalise', 'DownloadFinalPdf']) {
+    const name = 'crm4AssessmentAssistant' + suffix;
+    const factory = require('../backend-sources/' + name + '/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant;
+    handlers[name] = factory({ ...deps, openaiSecret: { value: () => 'LOCAL_SYNTHETIC_NOT_A_CREDENTIAL' } })[name];
+  }
+  for (const suffix of ['ManagerUpdateLead', 'ManagerSendToCloser', 'CloserRecordClosedDeal', 'CloserGetLinkedAssessment']) {
+    const name = 'crm4' + suffix;
+    handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
+  }
+  const { isolated } = require('./local-ai.cjs');
+  for (const name of ['processingCompleteAdministrationOnboarding', 'crm4CloserListAdministrationOnboardingSlots']) {
+    handlers[name] = require('../backend-sources/' + name + '/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
+  }
+  for (const name of ['processingMarkAgreementSigned', 'processingConfirmCrm2Payment']) {
+    handlers[name] = require('../backend-sources/' + name + '/processingOperations.js').registerProcessingOperations(deps)[name];
+  }
+  for (const name of Object.keys(handlers)) {
+    const handler = isolated(handlers[name]);
+    handlers[name] = async request => {
+      if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Demo authentication required');
+      if (request.data?.leadId) {
+        const lead = await db.collection('crm4Leads').doc(request.data.leadId).get();
+        if (lead.exists && lead.data().workspaceId !== 'CRM4') throw new HttpsError('permission-denied', 'Local CRM4 workspace boundary');
+      }
+      return handler(request);
+    };
+  }
+  return { db, app, providerReceipts: providers.receipts, storageObjects: storage.objects, handlers: Object.freeze(handlers), async close() { await db.terminate(); await deleteApp(app); } };
 }
 module.exports = { createLocalHandlers };

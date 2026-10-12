@@ -16,6 +16,22 @@ async function materialize(name) {
   const directory = await sourceDirectory(source.bucket, source.object, source.generation);
   const root = path.resolve(__dirname, '../backend-sources', name.replace(/^crm2/, 'crm4'));
   const entryModules = {
+    crm2AssessmentAssistantDownloadFinalPdf: 'crm2AssessmentAssistant.js',
+    crm2CloserGetLinkedAssessment: 'crm2OperationalFlow.js',
+    crm2AssessmentAssistantUpdateClientIdentity: 'crm2AssessmentAssistant.js',
+    processingCompleteAdministrationOnboarding: 'crm2AdministrationOnboarding.js',
+    crm2CloserListAdministrationOnboardingSlots: 'crm2AdministrationOnboarding.js',
+    processingMarkAgreementSigned: 'processingOperations.js',
+    processingConfirmCrm2Payment: 'processingOperations.js',
+    crm2AssessmentAssistantAnalyse: 'crm2AssessmentAssistant.js',
+    crm2AssessmentAssistantConfirmReview: 'crm2AssessmentAssistant.js',
+    crm2AssessmentAssistantSaveCorrections: 'crm2AssessmentAssistant.js',
+    crm2AssessmentAssistantPreviewDraftPdf: 'crm2AssessmentAssistant.js',
+    crm2AssessmentAssistantReprojectDraft: 'crm2AssessmentAssistant.js',
+    crm2AssessmentAssistantFinalise: 'crm2AssessmentAssistant.js',
+    crm2ManagerUpdateLead: 'crm2OperationalFlow.js',
+    crm2ManagerSendToCloser: 'crm2OperationalFlow.js',
+    crm2CloserRecordClosedDeal: 'crm2OperationalFlow.js',
     crm2AssessmentAssistantGenerateDraft: 'crm2AssessmentAssistant.js',
     crm2AssessmentAssistantGetState: 'crm2AssessmentAssistant.js',
     crm2ManagerGetLinkedAssessment: 'crm2OperationalFlow.js',

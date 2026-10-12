@@ -22,10 +22,10 @@ test('authenticated local callable roles, onboarding and provider isolation', as
     assert.equal((await invoke('crm4ManagerGetLinkedAssessment', null)).status, 401);
     assert.equal((await invoke('crm4ManagerGetLinkedAssessment', { token: 'invalid' })).status, 401);
     assert.equal((await invoke('crm4ManagerGetLinkedAssessment', manager, {}, 'https://example.com')).status, 403);
-    assert.equal((await invoke('crm4AssessmentAssistantFinalise', manager)).status, 404);
     assert.equal((await invoke('crm4ManagerGetLinkedAssessment', lister)).status, 403);
     const leadId = 'synthetic-' + suffix;
     const lead = await seed('crm4Leads', leadId, { workspaceId: 'CRM4', closerUid: closer.uid, email: 'client-' + suffix + '@example.test', clientName: 'Synthetic Client', outcome: 'Closed Deal', paymentStatus: 'payment_confirmed', paymentConfirmedAt: new Date(), processingStatus: 'ready_for_administration_onboarding' });
+    assert.equal((await invoke('crm4AssessmentAssistantFinalise', manager, { leadId })).status, 403);
     assert.equal((await invoke('crm4ManagerGetLinkedAssessment', manager, { leadId })).body.result.assessment, null);
     assert.equal((await invoke('crm4AssessmentAssistantGetState', manager, { leadId })).status, 403);
     await seed('users', manager.uid, { assessmentCapabilities: ['assessmentIssuer'] });
@@ -45,6 +45,18 @@ test('authenticated local callable roles, onboarding and provider isolation', as
     assert(service.runtime.providerReceipts.every(receipt => receipt.delivered === false));
     assert.equal((await lead.get()).data().administrationOnboardingStatus, 'confirmation_sent');
     assert.equal((await invoke('processingListOperationalDashboard', processing)).status, 200);
+    assert.equal((await invoke('processingCompleteAdministrationOnboarding', closer, { leadId })).status, 403);
+    assert.equal((await invoke('processingCompleteAdministrationOnboarding', processing, { leadId })).status, 400);
+    // Independent synthetic portal prerequisite fixture, not evidence that the
+    // portal activation/checklist workflow itself has executed.
+    await lead.update({ agreementStatus: 'signed', agreementSignedAt: new Date(), assessmentId: 'synthetic-assessment-' + suffix, assessmentStatus: 'COMPLETED' });
+    await seed('clientPortalCases', 'crm4-' + leadId, { accessState: 'ACTIVE', onboardingNotes: 'Synthetic reviewed checklist', onboardingChecklist: { identityReviewed: true, loginExplained: true, documentChecklistCreated: true, uploadExplained: true, messageBoardExplained: true, notesRecorded: true } });
+    const completed = await invoke('processingCompleteAdministrationOnboarding', processing, { leadId, notes: 'Synthetic completion' });
+    assert.equal(completed.status, 200, JSON.stringify(completed.body));
+    assert.equal(completed.body.result.status, 'ADMINISTRATION_ONBOARDING_COMPLETED');
+    assert.equal((await invoke('processingCompleteAdministrationOnboarding', processing, { leadId })).body.result.idempotent, true);
+    assert.equal((await lead.get()).data().processingStatus, 'accepted');
+    documents.push(db.collection('processingCases').doc('crm4-' + leadId), db.collection('clientPortalActivity').doc('administration-onboarding-completed:crm4-' + leadId), db.collection('clientPortalAudit').doc('administration-onboarding-completed:crm4-' + leadId));
     await db.collection('crm4Memberships').doc(manager.uid).update({ workspaceId: 'CRM2' });
     assert.equal((await invoke('crm4ManagerGetLinkedAssessment', manager, { leadId })).status, 403);
   } finally {

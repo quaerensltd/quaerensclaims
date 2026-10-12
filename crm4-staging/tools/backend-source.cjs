@@ -27,8 +27,7 @@ async function sourceDirectory(bucket, object, generation) {
     entries.push({ name, flags: central.readUInt16LE(p + 8), method: central.readUInt16LE(p + 10), size: central.readUInt32LE(p + 20), offset: central.readUInt32LE(p + 42) });
     p += 46 + nameLength + extra + comment;
   }
-  async function readJavaScript(name) {
-    if (!/^[\w/-]+\.(?:js|cjs|mjs)$/.test(name) || /secret|credential|service.?account|node_modules/i.test(name)) throw new Error('Source path not authorised');
+  async function readEntry(name) {
     const entry = entries.find(e => e.name === name); if (!entry) throw new Error('Source entry absent');
     if (entry.flags & 1 || entry.size > 10_000_000) throw new Error('Unsupported source entry');
     const header = await range(entry.offset, 30);
@@ -38,6 +37,15 @@ async function sourceDirectory(bucket, object, generation) {
     if (entry.method === 8) return zlib.inflateRawSync(payload, { maxOutputLength: 20_000_000 });
     throw new Error('Unsupported source compression');
   }
-  return { entries, readJavaScript };
+  async function readJavaScript(name) {
+    if (!/^[\w/-]+\.(?:js|cjs|mjs)$/.test(name) || /secret|credential|service.?account|node_modules/i.test(name)) throw new Error('Source path not authorised');
+    return readEntry(name);
+  }
+  async function readInformationBrochure() {
+    const bytes = await readEntry('internal-assets/client-information-brochure-en-2026-08-13.pdf');
+    if (require('node:crypto').createHash('sha256').update(bytes).digest('hex') !== '6188112b85b08f495cf6a83485dd4e6fa44b5fe6cd38ae7509468be64351fcf6') throw Error('Brochure hash mismatch');
+    return bytes;
+  }
+  return { entries, readJavaScript, readInformationBrochure };
 }
 module.exports = { sourceDirectory };

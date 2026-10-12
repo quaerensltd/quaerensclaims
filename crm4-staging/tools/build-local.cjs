@@ -13,6 +13,18 @@ function transform(source, modules) {
   // CRM4-specific entry routing; keep the existing Processing screen/workflow.
   if (text.includes('export const roleRoutes = Object.freeze({')) text = text.replace('administrator: "/manager-dashboard.html"', 'administrator: "/manager-dashboard.html",\n  processing: "/processing-dashboard.html"');
   text = text.replace(/(?<!if \(authLoader\) )authLoader\.style\.display = "none";/g, 'if (authLoader) authLoader.style.display = "none";');
+  // Table cards must be allowed to shrink inside grid tracks on narrow screens.
+  if (/Quaerens (Manager|Closer) Dashboard/.test(text)) text = text.replace('.card { background:', '.card { min-width: 0; background:');
+  // CRM4 Manager UI uses the existing governed action instead of broad client
+  // writes. The backend remains responsible for transitions and audit history.
+  text = text.replace('        await updateDoc(doc(db,currentSubmissionCollection,selectedSubmission.id),patch);', `        if (isCrm2(currentContext)) {
+          const action = ({ approved: 'APPROVE', rejected: 'REJECT', more_info_needed: 'REQUEST_INFORMATION' })[finalDecision] || 'SAVE_REVIEW';
+          await httpsCallable(functions, 'crm4ManagerUpdateLead')({ leadId: selectedSubmission.id, action, managerNotes: notes, managerOutcome: outcome });
+          await refreshSelectedSubmission();
+          showModalMessage('Manager review updated.');
+          return;
+        }
+        await updateDoc(doc(db,currentSubmissionCollection,selectedSubmission.id),patch);`);
   text = text.replace(/https:\/\/us-central1-quaerensclaims\.cloudfunctions\.net\//g, 'http://127.0.0.1:5001/demo-quaerens-crm4/us-central1/');
   // Public Firebase client configuration is not carried into the clone.
   for (const key of ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId', 'databaseURL']) {

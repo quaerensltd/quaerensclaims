@@ -1,5 +1,73 @@
 # CRM4 implementation checkpoint
 
+## Current assessment/operations checkpoint — 12 October 2026
+
+This section supersedes the older checkpoint counts below. Local development
+only; no production deployment, records, email delivery, payments or AI calls.
+
+### Implemented and executed
+
+- 23 separately pinned callable source bundles; 22 explicitly enabled local
+  handlers. Each handler is loaded from its own source manifest, not a convenient
+  neighbouring factory version. Source-byte integrity checks cover every bundle.
+- Assessment editor: authoritative client input, synthetic extraction, confirmed
+  review, v9 generation, transient PDF preview, staff correction/regeneration,
+  same-QAR revision preservation, finalisation, and final PDF retrieval. The
+  pinned public information brochure is hash-verified. Documents are stored only
+  in memory; provider receipts are capture-only (`delivered: false`). The copied
+  business handler's local `SENT` markers mean capture acceptance, not delivery.
+- Synthetic AI responses require `CRM4_SYNTHETIC_ASSESSMENT` in the notes. The
+  request-scoped adapter rejects non-loopback network fetches except its exact
+  intercepted synthetic Responses request. No provider key is used.
+- Manager approval/review uses the existing governed ManagerUpdateLead callable
+  in the local Manager panel. This replaces its legacy direct-write branch;
+  client Firestore write permissions were not widened. CRM2 remains untouched.
+- Actual authenticated browser actions: Lister referral creation; Assessment
+  Assistant analysis/review/generation/preview/finalisation/download; Manager
+  panel approval; Closer Administration Onboarding booking. Manager, Lister,
+  Closer, Assessment Assistant and Processing views render without JS errors or
+  failed local HTTP requests in the covered paths.
+- Emulator/API transitions: correction -> same-QAR revision 2, current-version
+  reprojection no-op, forbidden reprojection/finalisation roles/states, Manager
+  approval -> assigned Closer appointment -> Closed Deal. Commercial guards
+  still reject onboarding before payment prerequisites are satisfied.
+- Separate synthetic prerequisite fixtures execute agreement acknowledgment,
+  exact-amount manual payment acknowledgment (no payment API), onboarding
+  booking -> Processing activation. Role denial, cross-workspace denial,
+  incorrect version/amount, idempotency and audit events are tested.
+- Manager/Closer grid cards now use `min-width: 0`; table scrolling stays inside
+  cards. 390/768/1440 browser checks show no document horizontal overflow.
+  All six Manager/Closer screenshots were visually inspected. The local Auth
+  emulator warning is intentionally retained. Exact authenticated CRM2 visual
+  equivalence is not claimed.
+
+### Verification
+
+- CRM4 automated suite: 51/51 PASS.
+- Actual browser workflows/responsive assertions: PASS at 390/768/1440 for the
+  covered views; evidence under ignored `.scratch/browser-workflows/`.
+- Existing CRM2 Cloud Function security regression: PASS; source unchanged.
+- Only `crm4-staging/` changed. CRM2/CRM3, shared production framework sources,
+  production rules, configuration and providers remain unchanged.
+
+### Remaining gaps — not full end-to-end parity
+
+The complete single referral -> commercial agreement -> payment -> activated
+portal/checklist -> Processing chain has NOT been executed entirely through the
+browser. Agreement delivery, portal activation/checklists and commercial provider
+prerequisites are separate seeded fixtures, not certified transitions. No live
+Stripe webhook or payment is permitted. Full post-finalisation correction,
+portal/Processing case lifecycle and the remainder of the 125-callable dependency
+inventory are not closed. Current-version reprojection no-op/denials are covered;
+an older-version migration fixture still needs browser acceptance. Generated PDFs
+are verified as returned PDF bytes, not a new report-semantics/visual certification.
+
+Memory-only document storage intentionally disappears on transport restart;
+restart the non-exported emulators and reseed together for a fresh test run.
+Do not use this local transport as a production Function deployment package.
+Independent Firebase infrastructure, production provider/configuration decisions,
+full workflow/security acceptance and explicit deployment approval remain required.
+
 ## Latest browser-integration checkpoint
 
 Local browser login is enabled by explicit CRM4 emulator rules, not wildcard

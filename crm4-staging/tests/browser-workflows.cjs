@@ -34,8 +34,51 @@ async function run() {
         const created = await callables.runtime.db.collection('crm4Leads').where('email', '==', email).get();
         require('node:assert/strict').equal(created.size, 1);
         await page.waitForTimeout(1500);
+        await page.goto('http://127.0.0.1:4404/crm4-assessment-assistant.html?leadId=' + fixtures.assessmentLeadId);
+        await page.waitForFunction(() => document.querySelector('#firstName').value === 'Synthetic');
+        await page.locator('#narrative').fill('CRM4_SYNTHETIC_ASSESSMENT: installation, damp treatment and removal reported. Synthetic records only.');
+        await page.locator('#sameAddress').check();
+        async function action(button, callable) {
+          const reply = page.waitForResponse(r => r.url().endsWith('/' + callable) && r.request().method() === 'POST');
+          await page.locator(button).click();
+          let response;
+          try { response = await reply; } catch (error) { console.error(await page.locator('#status').innerText()); throw error; }
+          require('node:assert/strict').equal(response.status(), 200, await response.text());
+          return (await response.json()).result;
+        }
+        await action('#analyse', 'crm4AssessmentAssistantAnalyse');
+        await action('#confirmReview', 'crm4AssessmentAssistantConfirmReview');
+        const generated = await action('#draft', 'crm4AssessmentAssistantGenerateDraft');
+        const preview = await action('#previewDraft', 'crm4AssessmentAssistantPreviewDraftPdf');
+        require('node:assert/strict').equal(Buffer.from(preview.content, 'base64').subarray(0, 4).toString(), '%PDF');
+        page.once('dialog', d => d.accept());
+        const completed = await action('#finalise', 'crm4AssessmentAssistantFinalise');
+        require('node:assert/strict').equal(completed.assessmentId, generated.assessmentId);
+        require('node:assert/strict').equal(completed.status, 'COMPLETED');
+        const finalPdf = await action('#downloadFinal', 'crm4AssessmentAssistantDownloadFinalPdf');
+        require('node:assert/strict').equal(Buffer.from(finalPdf.content, 'base64').subarray(0, 4).toString(), '%PDF');
+        require('node:assert/strict').equal(callables.runtime.providerReceipts.length, 2);
+        require('node:assert/strict').ok(callables.runtime.providerReceipts.every(r => !r.delivered));
       }
       const views = [{ name: role, url: page.url() }];
+      if (role === 'manager') {
+        await page.goto('http://127.0.0.1:4404/manager-panel.html');
+        await page.locator('[data-open-submission="' + fixtures.leadId + '"]').click();
+        const approvalReply = page.waitForResponse(r => r.url().endsWith('/crm4ManagerUpdateLead') && r.request().method() === 'POST');
+        await page.locator('#approveBtn').click();
+        require('node:assert/strict').equal((await approvalReply).status(), 200);
+        require('node:assert/strict').equal((await callables.runtime.db.collection('crm4Leads').doc(fixtures.leadId).get()).data().managerDecision, 'approved');
+      }
+      if (role === 'closer') {
+        await page.goto('http://127.0.0.1:4404/closer-panel.html?id=crm4-synthetic-closer-lead');
+        await page.locator('#administrationOnboardingDate').selectOption('2099-01-12');
+        const options = await page.locator('#administrationOnboardingSlot option').evaluateAll(nodes => nodes.map(n => n.value).filter(Boolean));
+        require('node:assert/strict').ok(options.length);
+        await page.locator('#administrationOnboardingSlot').selectOption(options[0]);
+        const bookingReply = page.waitForResponse(r => r.url().endsWith('/crm4CloserBookAdministrationOnboarding') && r.request().method() === 'POST');
+        await page.locator('#bookAdministrationOnboardingBtn').click();
+        require('node:assert/strict').equal((await bookingReply).status(), 200);
+      }
       if (role === 'manager') views.push({ name: 'assessment', url: 'http://127.0.0.1:4404/crm4-assessment-assistant.html?leadId=' + fixtures.leadId });
       for (const view of views) {
         if (page.url() !== view.url) { await page.goto(view.url); await page.waitForTimeout(2000); }
@@ -53,6 +96,7 @@ async function run() {
     require('node:assert/strict').deepEqual(result.errors, [], result.view);
     require('node:assert/strict').deepEqual(result.failedResponses, [], result.view);
     require('node:assert/strict').equal(result.url.includes('crm4-login'), false, result.view);
+    require('node:assert/strict').equal(result.overflow, false, result.view + ' ' + result.width);
   }
   // Overflow is deliberately reported separately; passing functional assertions
   // does not certify responsive parity.

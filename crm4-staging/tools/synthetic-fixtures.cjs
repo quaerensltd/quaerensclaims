@@ -12,12 +12,14 @@ async function seed() {
     users[role] = { uid, email, password };
   }
   const leadId = 'crm4-synthetic-browser-lead';
+  const assessmentLeadId = 'crm4-synthetic-assessment-' + require('node:crypto').randomUUID();
+  await runtime.db.collection('crm4Leads').doc(assessmentLeadId).set({ workspaceId: 'CRM4', assignedToUid: users.lister.uid, claimType: 'foam_insulation', firstName: 'Synthetic', lastName: 'Browser Assessment', email: 'assessment@example.test', mobile: '07700900000', addressLine1: '1 Synthetic Street', town: 'Test Town', postcode: 'ZZ1 1ZZ', country: 'United Kingdom' });
   await runtime.db.collection('crm4Leads').doc(leadId).set({ workspaceId: 'CRM4', source: 'manual_crm4', clientName: 'Synthetic Browser Client', forename: 'Synthetic', surname: 'Browser Client', email: 'client@example.test', claimType: 'foam_insulation', assignedToUid: users.lister.uid, assignedUserId: users.lister.uid, assignedToName: 'Synthetic lister', closerUid: users.closer.uid, status: 'approved', assessmentStatus: 'NOT_STARTED', createdBy: users.lister.uid, createdAt: new Date(), telephone: '07700900000' });
   await runtime.db.collection('crm4Leads').doc('crm4-synthetic-closer-lead').set({ workspaceId: 'CRM4', source: 'manual_crm4', clientName: 'Synthetic Onboarding Client', email: 'onboarding@example.test', claimType: 'foam_insulation', assignedUserId: users.closer.uid, closerUid: users.closer.uid, assignedToUid: users.lister.uid, status: 'appointment-booked', outcome: 'Closed Deal', paymentStatus: 'payment_confirmed', paymentConfirmedAt: new Date(), processingStatus: 'ready_for_administration_onboarding', appointmentDate: '2099-01-12', appointmentTime: '12:00' });
   await runtime.db.collection('crm4AdministrationOnboardingSlots').doc('crm4-synthetic-slot').set({ date: '2099-01-12', startTime: '12:00', durationMinutes: 60, status: 'available' });
   await runtime.db.collection('processingCases').doc('crm4-synthetic-processing-case').set({ crm4LeadId: 'crm4-synthetic-closer-lead', caseReference: 'SYNTHETIC-CRM4-CASE', client: { name: 'Synthetic Processing Client', email: 'processing-client@example.test' }, assignedToUid: users.processing.uid, assignedToName: 'Synthetic processing', caseStage: 'evidence_review', createdAt: new Date() });
   await runtime.close();
-  return { users, leadId };
+  return { users, leadId, assessmentLeadId };
 }
 module.exports = { seed };
 if (require.main === module) seed().then(() => console.log('Demo-only synthetic fixtures seeded. Accounts: <role>@crm4.example.test; password documented in synthetic-fixtures.cjs.')).catch(e => { console.error(e.message); process.exitCode = 1; });
