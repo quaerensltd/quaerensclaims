@@ -14,6 +14,10 @@ test('actual Lister create/replay/duplicate and Manager draft read on demo Fires
   const member = db.collection('crm4Memberships').doc(uid); touched.push(member);
   try {
     assert.deepEqual(Object.keys(handlers).sort(), [
+      ...['ListerRetryManagerNotification','ListerSendGeneralInformationEmail','SendCallbackConfirmation','ManagerSendAppointmentConfirmation','CloserSendAdministrationOnboardingConfirmation'].map(n=>'crm4'+n),
+      ...['CreateUser','UpdateMembership','SendPasswordSetupEmail','ProvisionExistingProcessing'].map(n=>'crm4Admin'+n),
+      'crm4SaveCallback', 'crm4ListAgenda', 'crm4CancelAdministrationOnboarding', 'processingBlockAdministrationOnboardingSlot',
+      'crm4ManagerDownloadLinkedAssessmentReport', 'crm4CloserDownloadLinkedAssessmentReport', 'crm4ManagerPreviewAppointmentEmail', 'crm4CloserPreviewAgreementEmail', 'crm4PreviewCallbackConfirmation', 'crm4CloserPreviewAdministrationOnboardingConfirmation',
       ...['UpdateClientIdentity', 'Analyse', 'ConfirmReview', 'SaveCorrections', 'GenerateDraft', 'PreviewDraftPdf', 'ReprojectDraft', 'Finalise', 'DownloadFinalPdf', 'GetState', 'StartCorrection', 'PreviewCorrectionPdf', 'FinaliseCorrection'].map(n => 'crm4AssessmentAssistant' + n),
       'portalClientCreateMessage', 'portalClientRegisterUpload', 'portalClientGetDocumentUrl',
       'paidClientStaffCreateMessage', 'paidClientMarkMessageRead', 'paidClientDownloadDocument',

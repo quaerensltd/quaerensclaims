@@ -29,6 +29,7 @@ async function run() {
     for (const role of ['lister', 'manager', 'closer', 'processing', 'administrator']) {
       const uid = 'journey-' + role + '-' + runId, email = uid + '@example.test';
       await auth.createUser({ uid, email, password });
+      if(role==='administrator')await auth.setCustomUserClaims(uid,{platformAdmin:true});
       await db.collection('crm4Memberships').doc(uid).set({ active: true, workspaceId: 'CRM4', role, email, displayName: 'Synthetic ' + role });
       await db.collection('users').doc(uid).set({ role, assessmentCapabilities: ['manager', 'administrator'].includes(role) ? ['assessmentIssuer'] : [] });
       users[role] = { uid, email };
@@ -44,9 +45,29 @@ async function run() {
       console.log('Authenticated browser', role);
     }
     const clientEmail = 'client-' + runId + '@example.test';
+    const staffInput={email:'staff-'+runId+'@example.test',displayName:'Synthetic new staff',role:'processing',workspaceId:'CRM4'};
+    await invoke('manager','crm4AdminCreateUser',staffInput,'permission-denied');
+    const staff=await invoke('administrator','crm4AdminCreateUser',staffInput);
+    assert.equal(staff.linkReturned,false);
+    await invoke('administrator','crm4AdminSendPasswordSetupEmail',{uid:staff.uid});
+    await invoke('administrator','crm4AdminUpdateMembership',{uid:staff.uid,role:'processing',active:false});
+    assert.equal((await auth.getUser(staff.uid)).disabled,true);
+    await invoke('administrator','crm4AdminUpdateMembership',{uid:staff.uid,role:'processing',active:true});
+    assert.equal((await auth.getUser(staff.uid)).disabled,false);
+    await invoke('administrator','crm4AdminProvisionExistingProcessing');
     const referral = { requestId: runId, forename: 'Synthetic', surname: 'Continuous Journey', email: clientEmail, claimType: 'foam_insulation', referralSource: 'direct_enquiry' };
     const created = await invoke('lister', 'crm4ListerCreateReferralLead', referral); leadId = created.leadId; assert(leadId);
     assert.equal((await invoke('lister', 'crm4ListerCreateReferralLead', referral)).leadId, leadId);
+    const callback={callbackType:'lister',callbackDate:'2099-01-10',callbackTime:'10:00',reason:'Client needs time',notes:'Synthetic callback'};
+    await invoke('lister','crm4SaveCallback',callback);
+    assert.equal((await invoke('lister','crm4SaveCallback',callback)).idempotent,true);
+    assert((await invoke('lister','crm4ListAgenda')).callbacks.some(row=>row.leadId===leadId));
+    const callbackPreview=await invoke('lister','crm4PreviewCallbackConfirmation',{callbackType:'lister'});assert(callbackPreview.previewKey);
+    await invoke('lister','crm4SendCallbackConfirmation',{callbackType:'lister',previewKey:'stale'},'failed-precondition');
+    await invoke('lister','crm4SendCallbackConfirmation',{callbackType:'lister',previewKey:callbackPreview.previewKey});
+    assert.equal((await invoke('lister','crm4SendCallbackConfirmation',{callbackType:'lister',previewKey:callbackPreview.previewKey})).idempotent,true);
+    await invoke('lister','crm4ListerSendGeneralInformationEmail');
+    assert.equal((await invoke('lister','crm4ListerSendGeneralInformationEmail')).idempotent,true);
     await invoke('closer', 'crm4ManagerUpdateLead', { action: 'APPROVE' }, 'permission-denied');
     const handoff = { appointmentDate: '2099-01-12', appointmentTime: '12:00', appointmentAgentName: 'Synthetic Onboarding' };
     await invoke('lister', 'crm4ListerSubmitToManager', handoff, 'failed-precondition');
@@ -56,14 +77,27 @@ async function run() {
     const draft = await invoke('lister', 'crm4AssessmentAssistantGenerateDraft', { artifactId: confirmed.id });
     const final = await invoke('lister', 'crm4AssessmentAssistantFinalise'); assert.equal(final.assessmentId, draft.assessmentId);
     await invoke('lister', 'crm4ListerSubmitToManager', handoff);
+    assert.equal((await invoke('lister','crm4ListerRetryManagerNotification')).idempotent,true);
     await invoke('manager', 'crm4ManagerUpdateLead', { action: 'APPROVE' });
     await invoke('manager', 'crm4ManagerSendToCloser', { closerUid: users.closer.uid, mode: 'book', appointmentDate: '2099-01-12', appointmentTime: '12:00' });
+    const appointmentPreview=await invoke('manager','crm4ManagerPreviewAppointmentEmail');assert(appointmentPreview.previewKey);
+    await invoke('manager','crm4ManagerSendAppointmentConfirmation',{appointmentDate:'2099-01-12',appointmentTime:'12:00',previewKey:appointmentPreview.previewKey});
+    await invoke('lister','crm4ManagerDownloadLinkedAssessmentReport',{},'permission-denied');
+    for(const role of ['manager','closer']) {
+      const name=role==='manager'?'crm4ManagerDownloadLinkedAssessmentReport':'crm4CloserDownloadLinkedAssessmentReport';
+      const report=await invoke(role,name);
+      assert.equal(report.contentType,'application/pdf');
+      const bytes=Buffer.from(report.content,'base64');
+      assert.equal(bytes.subarray(0,4).toString(),'%PDF');
+      assert.equal(require('node:crypto').createHash('sha256').update(bytes).digest('hex'),report.hash);
+    }
     const appointmentCompletion = { appointmentDate: '2099-01-12', appointmentTime: '12:00', appointmentStatus: 'completed' };
     await invoke('closer', 'crm4UpdateAppointment', appointmentCompletion, 'permission-denied');
     await invoke('manager', 'crm4UpdateAppointment', appointmentCompletion);
     assert.equal((await invoke('manager', 'crm4UpdateAppointment', appointmentCompletion)).idempotent, true);
     await invoke('closer', 'crm4CloserRecordClosedDeal', { paymentOptionId: 'bank_transfer_gbp_950' });
     assert.equal((await invoke('closer', 'crm4CloserRecordClosedDeal', { paymentOptionId: 'bank_transfer_gbp_950' })).idempotent, true);
+    assert((await invoke('closer','crm4CloserPreviewAgreementEmail',{emailBody:'Synthetic agreement preview only.'})).html);
     await pages.closer.goto('http://127.0.0.1:4404/agreement-generator.html?source=crm4Leads&id=' + encodeURIComponent(leadId));
     await pages.closer.waitForFunction(() => document.querySelector('#agreementText')?.value.length > 100);
     const sent = pages.closer.waitForResponse(r => r.url().endsWith('/crm4CloserSendAgreement') && r.request().method() === 'POST');
@@ -87,6 +121,8 @@ async function run() {
     await invoke('closer', 'crm4CloserListAdministrationOnboardingSlots');
     await invoke('closer', 'crm4CloserBookAdministrationOnboarding', { slotId });
     assert.equal((await invoke('closer', 'crm4CloserBookAdministrationOnboarding', { slotId })).idempotent, true);
+    const onboardingPreview=await invoke('closer','crm4CloserPreviewAdministrationOnboardingConfirmation');assert(onboardingPreview.previewKey);
+    assert.equal((await invoke('closer','crm4CloserSendAdministrationOnboardingConfirmation',{previewKey:onboardingPreview.previewKey})).idempotent,true);
     const assessment = (await db.collection('professionalAssessments').doc(draft.assessmentId).get()).data();
     assert.equal(assessment.crmLink.caseRef, leadId);
     await invoke('processing', 'paidClientGetWorkspace');

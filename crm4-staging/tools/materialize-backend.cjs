@@ -16,6 +16,32 @@ async function materialize(name) {
   const directory = await sourceDirectory(source.bucket, source.object, source.generation);
   const root = path.resolve(__dirname, '../backend-sources', name.replace(/^crm2/, 'crm4'));
   const entryModules = {
+    paidClientGlobalClientSearch: 'paidClientWorkspace.js',
+    portalClientClaimInvitation: 'clientPortal.js',
+    portalStaffCreateInvitation: 'clientPortal.js',
+    portalStaffCreateMessage: 'clientPortal.js',
+    portalStaffListCases: 'clientPortal.js',
+    portalStaffRegisterDocument: 'clientPortal.js',
+    portalStaffUpsertCase: 'clientPortal.js',
+    crm2ListerRetryManagerNotification: 'crm2OperationalFlow.js',
+    crm2ListerSendGeneralInformationEmail: 'crm2OperationalFlow.js',
+    crm2SendCallbackConfirmation: 'crm2OperationalFlow.js',
+    crm2ManagerSendAppointmentConfirmation: 'crm2OperationalFlow.js',
+    crm2CloserSendAdministrationOnboardingConfirmation: 'crm2AdministrationOnboarding.js',
+    crm2AdminCreateUser: 'index.js',
+    crm2AdminUpdateMembership: 'index.js',
+    crm2AdminSendPasswordSetupEmail: 'index.js',
+    crm2AdminProvisionExistingProcessing: 'index.js',
+    crm2ManagerDownloadLinkedAssessmentReport: 'crm2OperationalFlow.js',
+    crm2CloserDownloadLinkedAssessmentReport: 'crm2OperationalFlow.js',
+    crm2ManagerPreviewAppointmentEmail: 'crm2OperationalFlow.js',
+    crm2CloserPreviewAgreementEmail: 'crm2OperationalFlow.js',
+    crm2PreviewCallbackConfirmation: 'crm2OperationalFlow.js',
+    crm2CloserPreviewAdministrationOnboardingConfirmation: 'crm2AdministrationOnboarding.js',
+    crm2SaveCallback: 'crm2OperationalFlow.js',
+    crm2ListAgenda: 'crm2OperationalFlow.js',
+    crm2CancelAdministrationOnboarding: 'crm2AdministrationOnboarding.js',
+    processingBlockAdministrationOnboardingSlot: 'crm2AdministrationOnboarding.js',
     portalStaffRevokeAccess: 'clientPortal.js',
     paidClientCreateMessage: 'paidClientWorkspace.js',
     paidClientRegisterUpload: 'paidClientWorkspace.js',
@@ -74,6 +100,8 @@ async function materialize(name) {
     let bytes;
     try { bytes = await directory.readJavaScript(file); }
     catch (error) { throw new Error(`${file}: ${error.message}`); }
+    const originalIndex = file === 'index.js' && name.startsWith('crm2Admin') ? sha(bytes) : null;
+    if (originalIndex) bytes = Buffer.from(require('./select-admin-source.cjs').select(bytes.toString('utf8'), name));
     const text = bytes.toString('utf8');
     const converted = transform(text);
     for (const match of text.matchAll(/require\(\s*["']([^"']+)["']\s*\)/g)) {
@@ -87,7 +115,7 @@ async function materialize(name) {
     const targetName = file.replace(/crm2/g, 'crm4'), target = path.resolve(root, targetName);
     if (!target.startsWith(root + path.sep)) throw new Error('Escaping source path');
     fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, converted);
-    records.push({ original: file, target: targetName, originalSha256: sha(bytes), cloneSha256: sha(Buffer.from(converted)) });
+    records.push({ original: file, target: targetName, originalSha256: sha(bytes), cloneSha256: sha(Buffer.from(converted)), ...(originalIndex ? { fullEntrypointSha256: originalIndex, selection: 'Exact export plus lexical declaration closure; entrypoint is never executed' } : {}) });
   }
   const result = { callable: name.replace(/^crm2/, 'crm4'), originalCallable: name, source,
     executable: false, reason: 'Provider adapters, runtime assets and backend isolation acceptance pending',

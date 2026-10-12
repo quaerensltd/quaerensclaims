@@ -22,7 +22,7 @@ function createPortalRecovery(db, deps, options = {}) {
     const ref = db.collection(OUTBOX).doc(id), owner = randomUUID();
     const row = await db.runTransaction(async tx => {
       const snap = await tx.get(ref); if (!snap.exists) fail('not-found', 'Notification not found');
-      const data = snap.data(); await authorised(tx, request, data.caseId);
+      const data = snap.data(); await authorised(tx, request, data.caseId, data.staffOnly === true);
       const receipt=await tx.get(db.collection(RECEIPTS).doc(id));
       if(receipt.exists && data.state!=='CAPTURED') {
         tx.update(ref,{state:'CAPTURED',leaseUntil:0,nextAttemptAt:0,owner:null});
@@ -68,13 +68,16 @@ function createPortalRecovery(db, deps, options = {}) {
   function wrap(name, factory) {
     return async request => {
       const result = await db.runTransaction(async tx => {
-        const caseId = request.data?.caseId;
+        const staffMessage = name === 'paidClientStaffCreateMessage';
+        const caseId = staffMessage ? 'crm4-' + request.data?.leadId : request.data?.caseId;
         if (typeof caseId !== 'string' || !caseId || caseId.includes('/')) fail('invalid-argument', 'Exact case required');
-        await authorised(tx, request, caseId);
+        await authorised(tx, request, caseId, staffMessage);
+        const linkage = staffMessage ? await require('./linkage-boundary.cjs').verifyRequest(db,tx,request,deps) : null;
+        const messagePrefix = staffMessage ? 'staff' : 'client', destination = staffMessage ? 'client' : 'internal';
         const writes = new Map(); let intent;
         let legacyMessagePath, legacyEventPath, legacyUploadPath;
-        if (name === 'paidClientCreateMessage' && /^[a-zA-Z0-9-]{16,80}$/.test(request.data.requestId || '')) {
-          const messageId=`client-${caseId}-${request.data.requestId}`, eventId=`portal-message:${messageId}:internal`;
+        if (['paidClientCreateMessage','paidClientStaffCreateMessage'].includes(name) && /^[a-zA-Z0-9-]{16,80}$/.test(request.data.requestId || '')) {
+          const messageId=`${messagePrefix}-${caseId}-${request.data.requestId}`, eventId=`portal-message:${messageId}:${destination}`;
           const prior=(await tx.get(db.collection('clientPortalMessages').doc(messageId))).data();
           const event=(await tx.get(db.collection('clientPortalNotifications').doc(eventId))).data();
           const outbox=await tx.get(db.collection(OUTBOX).doc(hash('crm4-'+eventId)));
@@ -83,15 +86,18 @@ function createPortalRecovery(db, deps, options = {}) {
             legacyMessagePath='clientPortalMessages/'+messageId; legacyEventPath='clientPortalNotifications/'+eventId;
           }
         }
-        const allowed = new Set(['clientPortalMessages','clientPortalNotifications','clientPortalAudit','clientPortalActivity','clientPortalDocuments','clientPortalRequirements']);
+        const allowed = new Set(['clientPortalMessages','clientPortalNotifications','clientPortalAudit','clientPortalActivity','clientPortalDocuments','clientPortalRequirements',...(staffMessage?['clientPortalCases']:[])]);
+        function merge(a,b) { const value={...a};for(const [key,item] of Object.entries(b))value[key]=item&&Object.getPrototypeOf(item)===Object.prototype?merge(value[key],item):item;return value; }
         function document(ref) {
           return { id: ref.id, path: ref.path,
-            get: async () => { const s = await tx.get(ref); const value = ref.path===legacyMessagePath ? undefined : writes.get(ref.path)?.data || s.data(); return { exists: value !== undefined, id: ref.id, ref: document(ref), data: () => value }; },
+            get: async () => { const s = await tx.get(ref); const value = linkage && ref.path==='professionalAssessments/'+linkage.assessmentId ? linkage.canonical : ref.path===legacyMessagePath ? undefined : writes.get(ref.path)?.data || s.data(); return { exists: value !== undefined, id: ref.id, ref: document(ref), data: () => value }; },
+            set: async (data,options) => { if(!allowed.has(ref.parent.id))throw Error('Unexpected write');const old=await tx.get(ref),prior=writes.get(ref.path);writes.set(ref.path,{ref,data:options?.merge?merge(prior?.data||old.data(),data):data,create:!!prior?.create}); },
             create: async data => { if (!allowed.has(ref.parent.id)) throw Error('Unexpected write'); const old=await tx.get(ref); if(ref.path===legacyMessagePath || ref.path===legacyUploadPath)return; if(ref.path===legacyEventPath){writes.set(ref.path,{ref,data:{...data,...old.data()},create:false});return;} if (old.exists || writes.has(ref.path)) fail('already-exists','Record exists'); writes.set(ref.path,{ref,data,create:true}); },
             update: async data => { if (!allowed.has(ref.parent.id)) throw Error('Unexpected write'); const prior = writes.get(ref.path); const s = await tx.get(ref); if (!prior && !s.exists) fail('not-found','Record missing'); writes.set(ref.path,{ref,data:{...(prior?.data || s.data()),...data},create:!!prior?.create}); }
           };
         }
-        const view = { collection: name => ({ doc: id => document(id ? db.collection(name).doc(id) : db.collection(name).doc()), add: async data => { const r = document(db.collection(name).doc()); await r.create(data); return r; } }) };
+        function collection(name,query=db.collection(name)) { return { doc:id=>document(id?db.collection(name).doc(id):db.collection(name).doc()),add:async data=>{const r=document(db.collection(name).doc());await r.create(data);return r;},where:(...args)=>collection(name,query.where(...args)),limit:n=>collection(name,query.limit(n)),get:()=>tx.get(query) }; }
+        const view = { collection, batch:()=>{const jobs=[];const batch={create:(r,d)=>{jobs.push(r.create(d));return batch;},set:(r,d,o)=>{jobs.push(r.set(d,o));return batch;},commit:()=>Promise.all(jobs)};return batch;} };
         const provider = { emails: { send: async (payload, config) => { if (intent) throw Error('One notification expected'); intent = { payload, key: config.idempotencyKey }; return { data: { id: 'local-pending' } }; } } };
         const original = factory({ ...deps, db: view, resend: provider });
         let reply;
@@ -123,15 +129,15 @@ function createPortalRecovery(db, deps, options = {}) {
             }
           }
         } else {
-          const previous = (await tx.get(db.collection('clientPortalMessages').doc(`client-${caseId}-${request.data.requestId}`))).data();
+          const previous = (await tx.get(db.collection('clientPortalMessages').doc(`${messagePrefix}-${caseId}-${request.data.requestId}`))).data();
           if (previous && (previous.body !== String(request.data.body || '').trim().slice(0,8000) || previous.senderUid !== request.auth.uid)) fail('failed-precondition','Conflicting message replay');
         }
         reply ||= await original[name](request);
-        const eventId = name === 'paidClientCreateMessage' ? 'portal-message:' + reply.id + ':internal' : 'portal-upload:' + reply.id + ':internal';
+        const eventId = name !== 'paidClientRegisterUpload' ? 'portal-message:' + reply.id + ':' + destination : 'portal-upload:' + reply.id + ':internal';
         const id = hash('crm4-' + eventId), outboxRef = db.collection(OUTBOX).doc(id);
         const old = await tx.get(outboxRef);
         if (intent && !old.exists) {
-          tx.create(outboxRef, { ...intent, caseId, eventId, state:'PENDING', attempts:0, nextAttemptAt:0, leaseUntil:0, createdAt:clock() });
+          tx.create(outboxRef, { ...intent, caseId, eventId, staffOnly:staffMessage, state:'PENDING', attempts:0, nextAttemptAt:0, leaseUntil:0, createdAt:clock() });
           const pending = writes.get('clientPortalNotifications/' + eventId);
           pending.data = { ...pending.data, status:'PENDING', capturedOnly:true, delivered:false, providerMessageId:null, sentAt:null };
         }

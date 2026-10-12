@@ -65,3 +65,19 @@ production retention policy remain unverified/unauthorised. Exact authenticated
 CRM2 visual comparison requires a safe equivalent-data baseline. The preserved
 static source baseline and CRM4 screenshots do not establish current live parity.
 Remaining callable gaps are listed in CALLABLE-COVERAGE.md. Not deployment-ready.
+# Functional-completeness extension — 12 October 2026
+
+The same outbox now wraps paidClientStaffCreateMessage. Staff authority and exact
+assessment/lead/QAR/version linkage are verified inside the transaction. Workspace
+projection, message, notification, activity and audit writes commit together.
+Recovery of staff-origin notifications is staff-only; client case ownership does
+not grant that recovery operation. Pinned business source is unchanged.
+
+Staff tests execute provider failure, bounded backoff, new boundary instance,
+concurrent retries, duplicate/conflicting replay, legacy PENDING-message recovery
+without message rewriting, wrong-workspace denial and terminal failure. Existing
+client tests retain the separate-process restart and uncertain-acknowledgment
+controls. All providers remain captured, not delivered.
+
+This is not recovery certification for Admin setup emails, general-information
+email locks, legacy portal-v2 operations or every historical staff email path.

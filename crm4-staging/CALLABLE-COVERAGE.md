@@ -1,5 +1,27 @@
 # CRM4 dependency closure checkpoint
 
+## Current functional-completeness checkpoint
+
+71 exposed handlers: 69 individually pinned callables plus two CRM4 recovery
+controls. Static coverage 56/82. Of the 26 missing static names, 11 are deliberately
+excluded CRM3/Guided Support functions. No automatic export registration.
+
+19 newly integrated: four Admin operations; SaveCallback/ListAgenda; cancellation
+and slot blocking; Manager/Closer report downloads; four confirmation/agreement
+previews; Lister retry/general-information email; callback, Manager appointment
+and Closer onboarding confirmations. Each uses its own catalog source generation.
+
+Current gaps: AssessmentAssistantCompleteIssue; frameworkBAssessmentApprove,
+GenerateDocuments, Issue, RequestCorrections; legacyCloserGetProcessingLinks;
+paidClientGlobalClientSearch; two Stripe operations; portalClientClaimInvitation;
+portalStaffCreateInvitation/CreateMessage/ListCases/RegisterDocument/UpsertCase.
+Legacy portal-v2 operations must not downgrade current portal-v3 cases. Selected
+source snapshots may be present for inspection without runtime registration.
+
+The older counts and gap lists below are retained as historical checkpoints,
+not the current integrated-handler inventory. DEPLOYMENT-READINESS.md and
+RESILIENCE-CONTRACT.md describe remaining acceptance limitations.
+
 Update 12 October: portalStaffRevokeAccess is now individually pinned, exposed
 through the CRM4 case boundary and regression tested. Current counts: 50 pinned
 handlers plus 2 CRM4 recovery controls; 37/82 static names covered. The historical

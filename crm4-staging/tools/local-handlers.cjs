@@ -49,6 +49,20 @@ function createLocalHandlers(env = process.env) {
     handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
   const { isolated } = require('./local-ai.cjs');
+  for(const suffix of ['ListerRetryManagerNotification','ListerSendGeneralInformationEmail','SendCallbackConfirmation','ManagerSendAppointmentConfirmation']) {
+    const name='crm4'+suffix;handlers[name]=require('../backend-sources/'+name+'/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
+  }
+  handlers.crm4CloserSendAdministrationOnboardingConfirmation=require('../backend-sources/crm4CloserSendAdministrationOnboardingConfirmation/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps).crm4CloserSendAdministrationOnboardingConfirmation;
+  for (const suffix of ['CreateUser','UpdateMembership','SendPasswordSetupEmail','ProvisionExistingProcessing']) {
+    const name='crm4Admin'+suffix;
+    handlers[name]=require('./local-admin.cjs').loadAdmin(name,deps);
+  }
+  for (const name of ['crm4SaveCallback', 'crm4ListAgenda', 'crm4ManagerDownloadLinkedAssessmentReport', 'crm4CloserDownloadLinkedAssessmentReport', 'crm4ManagerPreviewAppointmentEmail', 'crm4CloserPreviewAgreementEmail', 'crm4PreviewCallbackConfirmation']) {
+    handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
+  }
+  for (const name of ['crm4CancelAdministrationOnboarding', 'processingBlockAdministrationOnboardingSlot', 'crm4CloserPreviewAdministrationOnboardingConfirmation']) {
+    handlers[name] = require('../backend-sources/' + name + '/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
+  }
   for (const name of ['processingCompleteAdministrationOnboarding', 'crm4CloserListAdministrationOnboardingSlots', 'processingPublishAdministrationOnboardingSlots']) {
     handlers[name] = require('../backend-sources/' + name + '/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
   }
@@ -64,7 +78,7 @@ function createLocalHandlers(env = process.env) {
   handlers.paidClientGetWorkspace = require('./linkage-boundary.cjs').workspaceBoundary(db, deps,
     require('../backend-sources/paidClientGetWorkspace/paidClientWorkspace.js').registerPaidClientWorkspace);
   const recovery = require('./portal-recovery.cjs').createPortalRecovery(db, deps);
-  for (const name of ['paidClientCreateMessage','paidClientRegisterUpload']) handlers[name] = recovery.wrap(name, require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace);
+  for (const name of ['paidClientCreateMessage','paidClientRegisterUpload','paidClientStaffCreateMessage']) handlers[name] = recovery.wrap(name, require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace);
   handlers.crm4RecoverPortalNotification = recovery.recover;
   handlers.crm4ReconcilePortalUpload = recovery.reconcileUpload;
   const revoke = require('../backend-sources/portalStaffRevokeAccess/clientPortal.js').registerClientPortal(deps).portalStaffRevokeAccess;

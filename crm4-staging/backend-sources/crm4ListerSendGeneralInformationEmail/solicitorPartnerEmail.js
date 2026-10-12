@@ -1,0 +1,6 @@
+"use strict";
+// Explicit opt-in only. No referral, acceptance or client authority is created.
+const lines=["OUR SOLICITOR PARTNER","GSP Law","80 Strand","London","WC2R 0RL","United Kingdom","Authorised and regulated by the Solicitors Regulation Authority","SRA ID: 598379","Website: https://www.gsplaw.co.uk","GSP Law is our independent solicitor partner. The presence of this information does not mean that GSP Law has accepted or is acting in relation to your individual matter."];
+const text=()=>lines.join("\n");
+const html=()=>`<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:20px;border-top:1px solid #ccd6e3;width:100%;max-width:680px;font:12px/1.5 Arial,sans-serif;color:#43546b"><tr><td style="padding-top:16px"><strong>OUR SOLICITOR PARTNER</strong><br><img src="https://www.quaerens.co.uk/images/gsplogo.png" width="100" height="76" alt="GSP Law" style="display:block;width:100px;height:auto;background:#fff;margin:10px 0;border:0"><strong>GSP Law</strong><br>80 Strand<br>London<br>WC2R 0RL<br>United Kingdom<br>Authorised and regulated by the Solicitors Regulation Authority<br>SRA ID: 598379<br>Website: <a href="https://www.gsplaw.co.uk" style="color:#145dcc">www.gsplaw.co.uk</a><p>${lines[9]}</p></td></tr></table>`;
+module.exports={text,html};

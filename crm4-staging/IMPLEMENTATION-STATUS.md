@@ -1,5 +1,40 @@
 # CRM4 implementation checkpoint
 
+## Functional-completeness continuation — 12 October 2026
+
+Added 19 individually pinned operational/Admin callables. Runtime: 69 pinned
+handlers plus two CRM4 recovery controls (71 total); static inventory: 56/82.
+No CRM3 or Guided Support handlers were added. Existing snapshots are unchanged.
+
+Admin declarations are selected lexically from each callable's own deployed
+entrypoint, with complete-entrypoint and selected-byte hashes. The production
+entrypoint initialization is never evaluated. Only reviewed dependencies and
+demo Auth/Firestore/captured email services are injected. Create/setup/block/
+reactivate/Processing provisioning execute with synthetic identities; platform
+administrator claims remain mandatory. Concurrent Admin creation and crash-safe
+setup-email recovery are not certified by these tests.
+
+Callbacks/agendas, protected Manager/Closer PDF-byte downloads, appointment and
+agreement previews, general-information capture, Manager notification replay,
+appointment confirmation and onboarding confirmation now execute in the browser
+journey. Cancellation/slot blocking execute separately with role/ownership,
+concurrent cancellation, replay and audit assertions.
+
+Staff paid-workspace messages now use the CRM4 transactional outbox, including
+legacy PENDING recovery, immutable original message, staff-only recovery,
+backoff, concurrent capture deduplication and terminal failure. This does not
+claim universal recovery for all older email handlers.
+
+Verification: 66/66 CRM4 tests passed; full same-client journey COMPLETE with
+synthetic client wX8Iiv4KYrgqs5eoaHRr; 15 responsive checks (390/768/1440) report
+no document overflow or page exceptions. One earlier browser run hit a login
+timing failure; the final expanded run completed. CRM2 security regression passed.
+No current authenticated CRM2 visual reference was accessed; exact parity is
+still UNVERIFIED. No UI files were changed in this phase.
+
+Remaining operational and approval requirements: DEPLOYMENT-READINESS.md.
+This is a development checkpoint, not full parity or deployment certification.
+
 ## Resilience continuation — 12 October 2026
 
 Current authority: RESILIENCE-CONTRACT.md supersedes the notification/upload gap

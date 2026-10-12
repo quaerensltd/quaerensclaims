@@ -7,6 +7,11 @@ and the next governed evidence transition without pre-completed client fixtures.
 | Capability | Continuous-client result | Qualification |
 |---|---|---|
 | Staff authentication | Tested | Five roles through actual login |
+| Admin create/setup/block/reactivate/provision | Tested via authenticated browser callables and emulator | Exact selected source; synthetic identities, captured setup emails; concurrent-create/crash recovery incomplete |
+| Callback/agenda/confirmation | Tested via authenticated browser callables | Owner, stale-preview rejection, replay and captured email |
+| Manager/Closer report download and previews | Tested via authenticated browser callables | Protected returned PDF bytes/hash checked; Lister denied |
+| General-information and appointment notifications | Tested via authenticated browser callables | Pinned brochure, capture-only providers, replay; not blanket crash-recovery acceptance |
+| Onboarding cancellation/slot blocking | Tested in emulator | Actual booking precedes cancellation; concurrent cancel yields one event; role and booked-slot guards |
 | Lister referral | Tested | Authenticated callable; replay same lead |
 | Assessment input/analysis/review | Tested | Synthetic AI adapter only |
 | Generation/finalisation | Tested | Same assessment; memory-only documents; capture-only email |
@@ -24,6 +29,7 @@ and the next governed evidence transition without pre-completed client fixtures.
 | Portal upload security | Tested | Owner create only; wrong client, unverified, disabled, overwrite, direct read, unsafe MIME denied |
 | Payment/appointment concurrency | Tested | Three concurrent payment acknowledgments yield one event; two leads yield one slot booking |
 | Client notification failure/retry | Tested in CRM4 boundary | Durable outbox, bounded retries, concurrent/restarted recovery, legacy pending recovery, terminal failure; captures only |
+| Staff portal notification recovery | Tested in CRM4 boundary | Staff-only recovery, concurrent retry, new runtime instance, legacy pending recovery and terminal failure; original message retained |
 | Upload crash recovery | Tested in CRM4 boundary | Atomic registration, metadata/identity conflict denial, partial-registration repair, staff-only aged orphan cleanup |
 | Portal access revocation | Tested | Own pinned source; wrong roles/workspaces denied; revoked client denied |
 | Portal receipt timestamps | Tested | Both timestamp shapes; visible browser dates at responsive widths |
@@ -32,7 +38,7 @@ and the next governed evidence transition without pre-completed client fixtures.
 | Cross-workspace/security | Regression tested | Link conflicts/QAR/version/workspace rejected; portal wrong-case denial |
 | Responsive 390/768/1440 | Covered views tested | Five views no overflow/exceptions; tables scroll inside cards |
 | Exact CRM2 visual parity | Unverified | No authenticated baseline comparison this phase |
-| Remaining callable inventory | Incomplete | 50 pinned handlers + 2 CRM4 recovery controls; 37/82 static inventory names covered |
+| Remaining callable inventory | Incomplete | 69 pinned handlers + 2 CRM4 recovery controls; 56/82 static inventory names covered; 11 intentionally excluded CRM3/Guided Support names |
 
 ## Required before deployment
 

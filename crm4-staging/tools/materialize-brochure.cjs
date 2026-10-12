@@ -1,7 +1,7 @@
 'use strict';
 // One explicitly pinned public document asset, never arbitrary archive entries.
 async function materialize(callable = 'crm4AssessmentAssistantFinalise') {
-  if (!['crm4AssessmentAssistantFinalise', 'crm4AssessmentAssistantFinaliseCorrection'].includes(callable)) throw Error('Unapproved brochure consumer');
+  if (!['crm4AssessmentAssistantFinalise', 'crm4AssessmentAssistantFinaliseCorrection', 'crm4ListerSendGeneralInformationEmail'].includes(callable)) throw Error('Unapproved brochure consumer');
   const fs = require('node:fs'), path = require('node:path');
   const root = path.resolve(__dirname, '../backend-sources', callable);
   const { source } = require(path.join(root, 'source-manifest.json'));
