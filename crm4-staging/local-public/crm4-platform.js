@@ -13,7 +13,8 @@ export const roleRoutes = Object.freeze({
   lister: "/staff-dashboard.html",
   manager: "/manager-dashboard.html",
   closer: "/closer-dashboard.html",
-  administrator: "/manager-dashboard.html"
+  administrator: "/manager-dashboard.html",
+  processing: "/processing-dashboard.html"
 });
 
 export function loginRoute() {

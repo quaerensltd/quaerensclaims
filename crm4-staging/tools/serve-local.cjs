@@ -3,7 +3,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
 const root = path.resolve(__dirname, '../local-public');
 const mime = { '.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.jpg':'image/jpeg', '.webp':'image/webp' };
 // Network isolation also covers old direct fetches that do not use Firebase SDKs.
-const csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://127.0.0.1:9099 http://127.0.0.1:8080 http://127.0.0.1:5001 http://127.0.0.1:9199 ws://127.0.0.1:8080; frame-src 'self' blob:; form-action 'none'; object-src 'none'; base-uri 'self'";
+const csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://127.0.0.1:9099 http://127.0.0.1:8080 http://127.0.0.1:5001 http://127.0.0.1:9199 ws://127.0.0.1:8080; frame-src 'self' blob:; form-action 'none'; object-src 'none'; base-uri 'self'";
 function handler(req, res) {
   res.setHeader('Content-Security-Policy', csp); res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow'); res.setHeader('X-Content-Type-Options', 'nosniff');

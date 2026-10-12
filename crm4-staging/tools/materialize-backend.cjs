@@ -22,6 +22,7 @@ async function materialize(name) {
     crm2ListerCreateReferralLead: 'crm2ManualReferral.js',
     crm2CloserBookAdministrationOnboarding: 'crm2AdministrationOnboarding.js',
     processingListOperationalDashboard: 'processingOperations.js'
+    ,processingListAdministrationOnboarding: 'crm2AdministrationOnboarding.js'
   };
   if (!entryModules[name]) throw new Error('Reviewed entry module mapping required');
   const pending = [entryModules[name]], seen = new Set(), records = [], unresolved = new Set(), packages = new Set();

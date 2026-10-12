@@ -10,6 +10,9 @@ const eligible = p => !/(?:^|\/)(?:\.|.*(?:secret|credential|service.account))/i
   !p.includes('..') && !p.includes('\\') && /\.(?:html|js|mjs|css|png|jpg|jpeg|svg|webp|ico|woff2?)$/i.test(p);
 function transform(source, modules) {
   let text = source.replace(/\r\n/g, '\n').replace(/crm2/g, 'crm4').replace(/CRM2/g, 'CRM4');
+  // CRM4-specific entry routing; keep the existing Processing screen/workflow.
+  if (text.includes('export const roleRoutes = Object.freeze({')) text = text.replace('administrator: "/manager-dashboard.html"', 'administrator: "/manager-dashboard.html",\n  processing: "/processing-dashboard.html"');
+  text = text.replace(/(?<!if \(authLoader\) )authLoader\.style\.display = "none";/g, 'if (authLoader) authLoader.style.display = "none";');
   text = text.replace(/https:\/\/us-central1-quaerensclaims\.cloudfunctions\.net\//g, 'http://127.0.0.1:5001/demo-quaerens-crm4/us-central1/');
   // Public Firebase client configuration is not carried into the clone.
   for (const key of ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId', 'databaseURL']) {

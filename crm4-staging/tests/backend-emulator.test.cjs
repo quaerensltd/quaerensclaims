@@ -13,7 +13,7 @@ test('actual Lister create/replay/duplicate and Manager draft read on demo Fires
   const touched = [];
   const member = db.collection('crm4Memberships').doc(uid); touched.push(member);
   try {
-    assert.deepEqual(Object.keys(handlers).sort(), ['crm4AssessmentAssistantGetState', 'crm4CloserBookAdministrationOnboarding', 'crm4ListerCreateReferralLead', 'crm4ManagerGetLinkedAssessment', 'processingListOperationalDashboard']);
+    assert.deepEqual(Object.keys(handlers).sort(), ['crm4AssessmentAssistantGetState', 'crm4CloserBookAdministrationOnboarding', 'crm4ListerCreateReferralLead', 'crm4ManagerGetLinkedAssessment', 'processingListAdministrationOnboarding', 'processingListOperationalDashboard']);
     await member.set({ active: true, workspaceId: 'CRM4', role: 'lister', name: 'Synthetic CRM4 Lister' });
     const request = { auth: { uid, token: {} }, data: { requestId: suffix, forename: 'Synthetic', surname: 'CRM4 Test', email: suffix + '@example.test', claimType: 'foam_insulation', referralSource: 'direct_enquiry' } };
     const first = await handlers.crm4ListerCreateReferralLead(request);

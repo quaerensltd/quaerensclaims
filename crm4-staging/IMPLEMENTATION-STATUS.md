@@ -1,5 +1,47 @@
 # CRM4 implementation checkpoint
 
+## Latest browser-integration checkpoint
+
+Local browser login is enabled by explicit CRM4 emulator rules, not wildcard
+access. Active membership/workspace checks govern reads; Lister leads must be
+assigned to that user, Closer leads must be assigned/linked to that Closer, and
+Manager/Administrator can read workspace operational collections. Self-membership
+and self-capability reads support the shared login/editor contract. Membership,
+lead, assessment and provider-state client writes remain denied; own attendance
+writes are scoped to the signed-in UID. CRM2/CRM3 collections remain denied.
+This local policy is narrower than the historical repository rules and is not
+certification of complete current-production rule equivalence.
+
+Synthetic fixture seeding (`tools/synthetic-fixtures.cjs`) requires demo Auth and
+Firestore emulator endpoints. It creates named example.test role accounts, an
+assigned Lister lead, Closer appointment-ready lead, available onboarding slot
+and Processing case. These are local-only persistent development fixtures, not
+customer records. They disappear when non-exported emulator state is stopped.
+
+`tests/browser-workflows.cjs` logs in through the actual form, renders Manager,
+Lister, Closer, Assessment Assistant and Processing pages at 390/768/1440 and
+submits the actual Lister referral form. The protected local callable creates
+exactly one matching synthetic record. Authenticated browser traffic cannot
+reach production APIs. Browser screenshots/results are under ignored
+`.scratch/browser-workflows/`. Runtime failure assertions are separate from
+responsive observations; Manager/Closer 390px overflow remains a failed visual
+gate. Full visual parity against authenticated CRM2 is NOT certified.
+
+Local clone boundary corrections: Processing login destination, Tailwind CDN
+script permission (production API connect restrictions unchanged), and absent
+loader null guards on Staff/Processing/Lister pages. Reproducible transforms and
+clone hashes are updated. No educational/public/CRM2/CRM3 asset is edited.
+
+The separately pinned `processingListAdministrationOnboarding` dependency is
+added to local callable transport. Seven source bundles / six enabled callable
+handlers now exist. Assessment state works; analysis/confirmation/generation/
+preview/finalisation are NOT yet integrated end-to-end. Manager write actions,
+all Closer/Processing transitions and complete dependency closure remain open.
+External providers remain captured or unavailable. No production changes.
+
+Regression suite: 46/46 PASS, including actual emulator rule permission checks.
+This is a partial functional implementation, not a complete CRM2 parity claim.
+
 Status: **LOCAL FRONTEND CLONED; SIX PINNED BACKEND BUNDLES; FIVE LOCAL AUTHENTICATED HANDLERS — NOT DEPLOYABLE**.
 
 ## Backend continuation checkpoint

@@ -21,12 +21,14 @@ function createLocalHandlers(env = process.env) {
   const processing = require('../backend-sources/processingListOperationalDashboard/processingOperations.js').registerProcessingOperations(deps);
   const onboarding = require('../backend-sources/crm4CloserBookAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
   const assessment = require('../backend-sources/crm4AssessmentAssistantGetState/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant({ ...deps, openaiSecret: { value: forbidden } });
+  const processingOnboarding = require('../backend-sources/processingListAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
   return { db, app, providerReceipts: providers.receipts, handlers: Object.freeze({
     crm4ListerCreateReferralLead: referral.crm4ListerCreateReferralLead,
     crm4ManagerGetLinkedAssessment: manager.crm4ManagerGetLinkedAssessment,
     crm4CloserBookAdministrationOnboarding: onboarding.crm4CloserBookAdministrationOnboarding,
     crm4AssessmentAssistantGetState: assessment.crm4AssessmentAssistantGetState,
-    processingListOperationalDashboard: processing.processingListOperationalDashboard
+    processingListOperationalDashboard: processing.processingListOperationalDashboard,
+    processingListAdministrationOnboarding: processingOnboarding.processingListAdministrationOnboarding
   }), async close() { await db.terminate(); await deleteApp(app); } };
 }
 module.exports = { createLocalHandlers };
