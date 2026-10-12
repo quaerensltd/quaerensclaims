@@ -13,13 +13,20 @@ function createLocalHandlers(env = process.env) {
   const db = getFirestore(app);
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
   const forbidden = () => { throw Error('External providers are disabled in CRM4 local integration'); };
+  const providers = require('./local-providers.cjs').createLocalProviders();
   const deps = { db, admin: {}, HttpsError, onCall: (...args) => args.at(-1),
-    resendSecret: { value: forbidden }, resend: { emails: { send: forbidden } } };
+    resendSecret: { value: forbidden }, resend: providers.resend };
   const referral = require('../backend-sources/crm4ListerCreateReferralLead/crm4ManualReferral.js').registerCrm2ManualReferral(deps);
   const manager = require('../backend-sources/crm4ManagerGetLinkedAssessment/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps);
-  return { db, handlers: Object.freeze({
+  const processing = require('../backend-sources/processingListOperationalDashboard/processingOperations.js').registerProcessingOperations(deps);
+  const onboarding = require('../backend-sources/crm4CloserBookAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
+  const assessment = require('../backend-sources/crm4AssessmentAssistantGetState/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant({ ...deps, openaiSecret: { value: forbidden } });
+  return { db, app, providerReceipts: providers.receipts, handlers: Object.freeze({
     crm4ListerCreateReferralLead: referral.crm4ListerCreateReferralLead,
-    crm4ManagerGetLinkedAssessment: manager.crm4ManagerGetLinkedAssessment
+    crm4ManagerGetLinkedAssessment: manager.crm4ManagerGetLinkedAssessment,
+    crm4CloserBookAdministrationOnboarding: onboarding.crm4CloserBookAdministrationOnboarding,
+    crm4AssessmentAssistantGetState: assessment.crm4AssessmentAssistantGetState,
+    processingListOperationalDashboard: processing.processingListOperationalDashboard
   }), async close() { await db.terminate(); await deleteApp(app); } };
 }
 module.exports = { createLocalHandlers };

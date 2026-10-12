@@ -17,6 +17,7 @@ async function materialize(name) {
   const root = path.resolve(__dirname, '../backend-sources', name.replace(/^crm2/, 'crm4'));
   const entryModules = {
     crm2AssessmentAssistantGenerateDraft: 'crm2AssessmentAssistant.js',
+    crm2AssessmentAssistantGetState: 'crm2AssessmentAssistant.js',
     crm2ManagerGetLinkedAssessment: 'crm2OperationalFlow.js',
     crm2ListerCreateReferralLead: 'crm2ManualReferral.js',
     crm2CloserBookAdministrationOnboarding: 'crm2AdministrationOnboarding.js',

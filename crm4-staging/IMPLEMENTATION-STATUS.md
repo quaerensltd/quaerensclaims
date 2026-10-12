@@ -1,8 +1,46 @@
 # CRM4 implementation checkpoint
 
-Status: **LOCAL FRONTEND CLONED; FIVE BACKEND SOURCE BUNDLES PRESERVED; TWO HANDLERS INTEGRATION-TESTED — NOT DEPLOYABLE**.
+Status: **LOCAL FRONTEND CLONED; SIX PINNED BACKEND BUNDLES; FIVE LOCAL AUTHENTICATED HANDLERS — NOT DEPLOYABLE**.
 
 ## Backend continuation checkpoint
+
+### Authenticated transport continuation (12 October 2026)
+
+`tools/serve-callables.cjs` now offers a loopback-only development callable
+transport on port 5001, compatible with the generated SDK endpoint. It validates
+Auth-emulator ID tokens, restricts browser origin, bounds request size/time and
+exposes only five pinned handlers: Lister referral creation, Manager linked
+assessment read, Assessment Assistant state, Closer onboarding booking and Processing dashboard. Unknown
+functions (including finalisation) fail closed. This is local development
+infrastructure, not a deployed Firebase Function or a replacement CRM workflow.
+
+Set GCLOUD_PROJECT to `demo-quaerens-crm4`, FIRESTORE_EMULATOR_HOST to
+`127.0.0.1:8080`, FIREBASE_AUTH_EMULATOR_HOST to `127.0.0.1:9099` before starting.
+No real credentials are used. `local-providers.cjs` captures synthetic/internal
+notification receipts in memory, with no SDK/network or actual delivery. It
+rejects non-test client recipients and preserves provider idempotency keys.
+
+Current suite: **45/45 PASS**. Existing CRM2 security regression also PASS.
+Authenticated synthetic tests cover Manager/Lister/Closer/Processing identities,
+invalid tokens/origins, unavailable operations, wrong roles/workspaces, onboarding
+booking/replay, two capture-only notifications and Processing dashboard read.
+Assessment state requires the copied Manager capability contract; missing
+capabilities and Closer access are denied. Its separately pinned source is older
+than GenerateDraft's source and has not been silently upgraded or consolidated.
+The pinned production handler logic is unchanged. Auth users and test records
+are removed after tests. These fixtures are ephemeral, not production data.
+
+Frontend direct Firestore access still uses deny-all rules. Therefore this
+transport does NOT yet make authenticated browser screens fully operational.
+Assessment generation remains unexposed: its extraction/review dependencies,
+runtime document assets, AI/provider adapter and complete pinned callable set
+are not ready. Remaining source/dependency closure and role-rule reconciliation
+are implementation work, not permission to weaken boundaries or claim parity.
+
+The six bundles contain 38 fingerprinted JavaScript files. These are development
+source snapshots, not independently packaged/deployable Functions. CRM2/CRM3
+files and original shared framework sources remain byte-for-byte unchanged in
+this branch's continuation diff. No production provisioning was attempted.
 
 Five callable-specific deployed source trees now live in `backend-sources/`:
 Assessment Assistant GenerateDraft, Manager linked-assessment read, Lister manual

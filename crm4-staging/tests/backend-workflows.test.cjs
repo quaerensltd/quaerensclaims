@@ -7,7 +7,8 @@ const definitions = [
   ['crm4ManagerGetLinkedAssessment', 'crm4OperationalFlow.js', 'registerCrm2OperationalFlow'],
   ['crm4ListerCreateReferralLead', 'crm4ManualReferral.js', 'registerCrm2ManualReferral'],
   ['crm4CloserBookAdministrationOnboarding', 'crm4AdministrationOnboarding.js', 'registerCrm2AdministrationOnboarding'],
-  ['processingListOperationalDashboard', 'processingOperations.js', 'registerProcessingOperations']
+  ['processingListOperationalDashboard', 'processingOperations.js', 'registerProcessingOperations'],
+  ['crm4AssessmentAssistantGetState', 'crm4AssessmentAssistant.js', 'registerCrm2AssessmentAssistant']
 ];
 function harness(definition, records = {}) {
   const reads = [];
