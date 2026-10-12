@@ -1,5 +1,26 @@
 # CRM4 dependency closure checkpoint
 
+## Current final-contract classification — 13 October 2026
+
+**83 exposed = 81 pinned handlers + 2 CRM4 recovery controls; 68/82 static names.**
+Newly connected: frameworkBAssessmentApprove/GenerateDocuments/Issue/
+RequestCorrections; crm4AssessmentAssistantCompleteIssue; paidClientGlobalClientSearch;
+portalStaffListCases/UpsertCase/CreateInvitation/CreateMessage/RegisterDocument;
+portalClientClaimInvitation. Every handler uses its own preserved source package.
+
+Remaining 14:
+- Five crm3Lister and six guidedSupportAdmin operations: out of scope.
+- legacyCloserGetProcessingLinks: intentionally inapplicable, not missing parity.
+  Both cloned Closer pages skip this call in the shared workspace; its individually
+  pinned handler explicitly denies CRM4/CRM3 members. Tested, not exposed.
+- crm4CreateStripePaymentRequest / crm4RefundStripePayment: disabled pending
+  separate provider approval. Synthetic payment pathway remains tested.
+
+Six new source bundles, five connected and one inspection-only; seven previously
+inspected bundles explicitly connected. No automatic export registration.
+This inventory is not proof of complete dynamic/UI/recovery parity.
+All counts and gap lists below are historical, superseded by this section.
+
 ## Current functional-completeness checkpoint
 
 71 exposed handlers: 69 individually pinned callables plus two CRM4 recovery

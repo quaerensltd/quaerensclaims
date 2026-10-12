@@ -16,6 +16,12 @@ async function materialize(name) {
   const directory = await sourceDirectory(source.bucket, source.object, source.generation);
   const root = path.resolve(__dirname, '../backend-sources', name.replace(/^crm2/, 'crm4'));
   const entryModules = {
+    legacyCloserGetProcessingLinks: 'legacyCloserProcessingLinks.js',
+    frameworkBAssessmentApprove: 'frameworkB.js',
+    frameworkBAssessmentGenerateDocuments: 'frameworkB.js',
+    frameworkBAssessmentIssue: 'frameworkB.js',
+    frameworkBAssessmentRequestCorrections: 'frameworkB.js',
+    crm2AssessmentAssistantCompleteIssue: 'crm2AssessmentAssistant.js',
     paidClientGlobalClientSearch: 'paidClientWorkspace.js',
     portalClientClaimInvitation: 'clientPortal.js',
     portalStaffCreateInvitation: 'clientPortal.js',

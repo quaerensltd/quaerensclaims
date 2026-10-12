@@ -49,6 +49,14 @@ function createLocalHandlers(env = process.env) {
     handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
   const { isolated } = require('./local-ai.cjs');
+  for (const suffix of ['Approve', 'GenerateDocuments', 'Issue', 'RequestCorrections']) {
+    const name = 'frameworkBAssessment' + suffix;
+    const original = require('../backend-sources/' + name + '/frameworkB.js').registerFrameworkB(deps)[name];
+    handlers[name] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, name, original);
+  }
+  const completeName = 'crm4AssessmentAssistantCompleteIssue';
+  handlers[completeName] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, completeName,
+    require('../backend-sources/' + completeName + '/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant(deps)[completeName]);
   for(const suffix of ['ListerRetryManagerNotification','ListerSendGeneralInformationEmail','SendCallbackConfirmation','ManagerSendAppointmentConfirmation']) {
     const name='crm4'+suffix;handlers[name]=require('../backend-sources/'+name+'/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
@@ -78,6 +86,12 @@ function createLocalHandlers(env = process.env) {
   handlers.paidClientGetWorkspace = require('./linkage-boundary.cjs').workspaceBoundary(db, deps,
     require('../backend-sources/paidClientGetWorkspace/paidClientWorkspace.js').registerPaidClientWorkspace);
   const recovery = require('./portal-recovery.cjs').createPortalRecovery(db, deps);
+  handlers.paidClientGlobalClientSearch = require('./search-boundary.cjs').searchBoundary(db,deps,
+    require('../backend-sources/paidClientGlobalClientSearch/paidClientWorkspace.js').registerPaidClientWorkspace);
+  for(const name of ['portalStaffListCases','portalStaffUpsertCase','portalStaffCreateInvitation','portalClientClaimInvitation','portalStaffCreateMessage','portalStaffRegisterDocument']) {
+    handlers[name]=require('./legacy-portal-boundary.cjs').legacyPortal(db,deps,name,
+      require('../backend-sources/'+name+'/clientPortal.js').registerClientPortal);
+  }
   for (const name of ['paidClientCreateMessage','paidClientRegisterUpload','paidClientStaffCreateMessage']) handlers[name] = recovery.wrap(name, require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace);
   handlers.crm4RecoverPortalNotification = recovery.recover;
   handlers.crm4ReconcilePortalUpload = recovery.reconcileUpload;

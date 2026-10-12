@@ -1,5 +1,34 @@
 # CRM4 local portal resilience boundary
 
+## Final-contract extension — 13 October 2026
+
+Legacy v2 uses `legacy-portal-boundary.cjs`: pinned factories run within one
+Firestore transaction with buffered writes and nested transaction flattening.
+Role checks still execute; deduplicated replies recheck staff authority. Exact
+case/lead/version checks share the transaction. Interrupted message/audit writes
+roll back together; competing v3 upgrades cannot be downgraded. New projections
+use deterministic local IDs and refuse another projection for the same lead.
+
+Invitation creation rejects an unexpired existing token or active/revoked case.
+Claim validates verified email and current ownership/version; used tokens reject
+without a second mapping. Raw tokens are not logged or stored in a replay ledger;
+returned URLs are localhost-only. No invitation delivery occurs.
+
+Staff message replay uses explicit request ID when supplied. The unchanged legacy
+UI lacks one, so exact author/case/body replay is conservatively deduplicated;
+intentional later identical messages need a distinct request ID. Registration binds
+actual Storage metadata/path/document identity and replay payload. Shared uploads
+are immutable and limited to active CRM4 staff on linked v2 cases; downloads remain
+protected callable routes. Existing current-v3 paid-workspace outbox is unchanged.
+
+Admin failure tests are diagnostics, NOT successful resilience certification.
+Pinned source creates Auth/membership before email and updates membership before
+Auth; it lacks setup idempotency. Tests reproduce racing-create rejection, partial
+Auth failure and repeated setup capture. Explicit retries converge. No silent
+business-source rewrite or claim of universal recovery. A governed cross-service
+operation contract remains required. Callback failure/retry/replay is verified,
+but not every legacy staff email crash path.
+
 Scope: Shared CRM Framework reuse, CRM4 demo emulators only. Pinned callable
 snapshots are unchanged. `portal-recovery.cjs` wraps paidClientCreateMessage and
 paidClientRegisterUpload with a restricted buffered Firestore transaction view.

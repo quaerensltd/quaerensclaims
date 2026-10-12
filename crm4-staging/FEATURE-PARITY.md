@@ -1,5 +1,22 @@
 # CRM4 functional parity — continuous-client evidence
 
+## Final-contract acceptance — 13 October 2026 (supersedes affected rows below)
+
+| Feature | Actual evidence | Limitation |
+|---|---|---|
+| Manual Framework B operations | Authenticated local approval/corrections, immutable PDF/DOCX, captured issue, legacy completion | Full manual authoring UI and issuance crash recovery unverified; v9 remains separate |
+| Legacy portal v2 | Actual projection/message/upload/invitation forms; client claim/download/revocation contract tests | No arbitrary v2-to-v3 migration; old UI identical-message replay conservatively deduplicated |
+| Global search | Actual Processing UI; role and explicit workspace visibility tests | Legacy source references can appear separately; no automatic migration |
+| Legacy Closer Processing links | Both page guards and source denial tested | Inapplicable to CRM4, intentionally not exposed |
+| Admin resilience | Concurrent-create rejection, partial Auth failure, setup replay duplication reproduced; retry converges | NOT atomic/exactly-once recovery acceptance |
+| Staff callback email | Provider failure leaves unsent state; retry/replay captures once | Not universal legacy-email crash certification |
+| Responsive views | Seven screens, 21 checks at 390/768/1440, no overflow/page exceptions | Current authenticated CRM2 visual baseline unavailable; emulator warning visible |
+| Runtime inventory | 81 pinned + 2 recovery; 68/82 static names | 11 out of scope, 1 inapplicable, 2 Stripe disabled; not all dynamic functionality certified |
+
+No cloned UI or existing source snapshots changed in this phase. New visual
+inspection covered portal Admin and search. Same-client v9 journey re-executed.
+Historical rows below describe earlier evidence, not additional acceptance claims.
+
 Local emulators only. Not production certification. Business source versions stay
 separately pinned. The same-client journey completes through active Processing
 and the next governed evidence transition without pre-completed client fixtures.

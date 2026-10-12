@@ -1,6 +1,19 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    match /clientPortal/{caseId}/shared/{filename} {
+      allow create: if bucket == 'demo-quaerens-crm4.appspot.com'
+        && resource == null && request.auth != null
+        && firestore.get(/databases/(default)/documents/crm4Memberships/$(request.auth.uid)).data.active == true
+        && firestore.get(/databases/(default)/documents/crm4Memberships/$(request.auth.uid)).data.workspaceId == 'CRM4'
+        && firestore.get(/databases/(default)/documents/crm4Memberships/$(request.auth.uid)).data.role in ['manager','administrator','processing']
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.portalVersion == 2
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.crmLink.workspaceId == 'CRM4'
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.crmLink.collection == 'crm4Leads'
+        && firestore.get(/databases/(default)/documents/crm4Leads/$(firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.crmLink.caseId)).data.workspaceId == 'CRM4'
+        && request.resource.size > 0 && request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    }
     match /clientPortal/{caseId}/client-uploads/{uid}/{filename} {
       allow create: if bucket == 'demo-quaerens-crm4.appspot.com'
         && resource == null

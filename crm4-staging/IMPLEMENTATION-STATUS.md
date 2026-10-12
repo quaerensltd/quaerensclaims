@@ -1,5 +1,35 @@
 # CRM4 implementation checkpoint
 
+## Final functional contracts — 13 October 2026
+
+Twelve further own-source handlers integrated: four manual Framework B operations,
+legacy Assistant CompleteIssue, global search and six legacy portal operations.
+Runtime: **81 pinned handlers + 2 recovery controls = 83**. Static coverage 68/82;
+remaining 14 classified as out-of-scope, inapplicable legacy or disabled Stripe.
+No existing pinned source or cloned UI bytes changed.
+
+Manual approval/documents/captured issuance use separate callable-specific source
+packages and CRM4 identity/current-version/hash checks. Versioned Assistant records
+cannot enter these legacy routes. Manual tests start with UNDER REVIEW fixtures;
+the full manual authoring UI is not certified. Existing v9 continuous-client
+journey completed again through correction and Processing.
+
+Legacy v2 factories now execute atomically with ownership/version gates, duplicate
+projection prevention, local-only invitations and message/document replay guards.
+No v3 downgrade. Actual staff projection/message/upload/invitation forms and global
+search pass at 390/768/1440 without overflow/page exceptions. The five original
+journey screens also pass all 15 responsive checks. Exact current authenticated
+CRM2 comparison remains unavailable, not claimed.
+
+Admin diagnostics reproduce inherited concurrency/partial-failure defects: one
+racing create rejects; retry retains the UID; Auth failure leaves membership
+changed; retry converges; successful creation replay captures another setup email.
+These are NOT resilience PASS. A governed cross-service recovery contract remains
+required. Callback email failure/retry/replay is separately tested; no blanket
+legacy email resilience claim. Final evidence: FINAL-CONTRACTS-EVIDENCE.md.
+
+No merge, deployment, production data, real provider calls or CRM2/CRM3 changes.
+
 ## Functional-completeness continuation — 12 October 2026
 
 Added 19 individually pinned operational/Admin callables. Runtime: 69 pinned

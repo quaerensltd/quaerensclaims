@@ -15,6 +15,7 @@ function createLocalStorage(app) {
   }
   return { objects, tickets, bucket: () => ({ file(name) {
     if (/^clientPortal\/[\w-]+\/client-uploads\/[\w-]+\/[\w.-]+$/.test(name)) return portal(name);
+    if (/^clientPortal\/[\w-]+\/shared\/[\w. -]+$/.test(name)) return portal(name);
     if (!/^professional-assessments\/[\w-]+\/versions\/[\w-]+\/(report\.pdf|internal\.docx)$/.test(name)) throw Error('Unapproved synthetic document path');
     return {
       async save(bytes, options = {}) {
