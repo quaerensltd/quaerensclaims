@@ -1,5 +1,7 @@
 # CRM4 Spain Storage correction — 14 October 2026
 
+Latest result: [Full live Storage acceptance and temporary-access removal](STORAGE-LIVE-ACCEPTANCE.md). Earlier failures below are historical.
+
 Shared CRM Framework. Continuation of 5b283718 on feature/crm4-isolated-clone. Only CRM4 files and quaerens-crm4-spain-test / 558324850479 were changed. No container build, application deployment, real staff, provider delivery, API enablement or IAM grant occurred.
 
 ## Implemented and published

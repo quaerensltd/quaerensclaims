@@ -1,5 +1,7 @@
 # CRM4 Spain Auth and web readiness — 14 October 2026
 
+Latest result: [Full live Storage acceptance and temporary-access removal](STORAGE-LIVE-ACCEPTANCE.md). Earlier failures below are historical.
+
 Latest continuation: [Storage correction and live acceptance limits](STORAGE-CORRECTION-RESULT.md). This document records the preceding diagnostic state.
 
 Shared CRM Framework; continuation of `3ff8eab8`. Verified only `quaerens-crm4-spain-test` / `558324850479`. Auth, app configuration and API-key restrictions were inspected read-only; no settings, IAM, APIs, rules or bucket protections were changed. No build or application deployment occurred.
