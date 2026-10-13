@@ -380,6 +380,8 @@
       doc,
       getDoc,
       getDocs,
+      query,
+      where,
       collection
     } from "/__crm4/sdk/10.8.0/firestore.js";
     import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
@@ -441,7 +443,7 @@
       try {
         const scopedName=crmCollection(currentContext,collectionName);
         if(!scopedName)return {docs:[]};
-        return await getDocs(collection(db,scopedName));
+        return await getDocs(scopedName === "crm4Leads" ? query(collection(db,scopedName),where("workspaceId","==","CRM4")) : collection(db,scopedName));
       } catch (error) {
         console.warn(`Workspace collection unavailable: ${collectionName}`);
         showToast(isCrm2(currentContext) ? "Some CRM4 dashboard information is not currently available." : "Some dashboard information is not currently available.");
@@ -596,11 +598,11 @@
       const select = document.createElement("select");
       select.className = "rounded-xl border border-blue-200 bg-white px-3 py-2";
       select.setAttribute("aria-label", `Role for ${member.email || member.uid}`);
-      for (const role of CRM4_ADMIN_ROLES) {
+      for (const role of [...CRM4_ADMIN_ROLES,"lister_closer"]) {
         const option = document.createElement("option");
         option.value = role;
-        option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-        option.selected = member.role === role;
+        option.textContent = role === "lister_closer" ? "Lister + Closer" : role.charAt(0).toUpperCase() + role.slice(1);
+        option.selected = (member.roles?.length === 2 && member.roles.includes("lister") && member.roles.includes("closer") ? "lister_closer" : member.role) === role;
         select.appendChild(option);
       }
       return select;
@@ -626,7 +628,7 @@
       setAdminMessage("Updating protected CRM4 membership...");
       try {
         const updateMembership = httpsCallable(functions, "crm4AdminUpdateMembership");
-        await updateMembership({ uid:member.uid, role:roleSelect.value, active:activeSelect.value === "true", workspaceId:"CRM4" });
+        await updateMembership({ uid:member.uid, role:roleSelect.value === "lister_closer" ? "lister" : roleSelect.value, ...(roleSelect.value === "lister_closer" ? {roles:["lister","closer"]} : {}), active:activeSelect.value === "true", workspaceId:"CRM4" });
         setAdminMessage(`CRM4 membership updated for ${member.email || "the selected user"}.`);
         await loadCrm2Memberships();
       } catch (error) {

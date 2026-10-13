@@ -3,12 +3,13 @@
 function registerHandlers(deps) {
   const {db,HttpsError}=deps;
   const forbidden=()=>{throw Error('External providers disabled');};
-  const referral = require('../backend-sources/crm4ListerCreateReferralLead/crm4ManualReferral.js').registerCrm2ManualReferral(deps);
-  const manager = require('../backend-sources/crm4ManagerGetLinkedAssessment/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps);
+  const {loadStaffModule}=require('./staff-factory-extension.cjs');
+  const referral = loadStaffModule('crm4ListerCreateReferralLead','crm4ManualReferral.js').registerCrm2ManualReferral(deps);
+  const manager = loadStaffModule('crm4ManagerGetLinkedAssessment','crm4OperationalFlow.js').registerCrm2OperationalFlow(deps);
   const processing = require('../backend-sources/processingListOperationalDashboard/processingOperations.js').registerProcessingOperations(deps);
-  const onboarding = require('../backend-sources/crm4CloserBookAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
+  const onboarding = loadStaffModule('crm4CloserBookAdministrationOnboarding','crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
   const assessment = require('../backend-sources/crm4AssessmentAssistantGetState/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant({ ...deps, openaiSecret: { value: forbidden } });
-  const processingOnboarding = require('../backend-sources/processingListAdministrationOnboarding/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
+  const processingOnboarding = loadStaffModule('processingListAdministrationOnboarding','crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps);
   const handlers = {
     crm4ListerCreateReferralLead: referral.crm4ListerCreateReferralLead,
     crm4ManagerGetLinkedAssessment: manager.crm4ManagerGetLinkedAssessment,
@@ -26,7 +27,7 @@ function registerHandlers(deps) {
   }
   for (const suffix of ['ManagerUpdateLead', 'ManagerSendToCloser', 'CloserRecordClosedDeal', 'CloserGetLinkedAssessment', 'ListerSubmitToManager', 'UpdateAppointment', 'CloserGetAgreement', 'CloserSaveAgreement', 'CloserSendAgreement', 'CloserPreparePaymentEmail', 'CloserSendPaymentEmail']) {
     const name = 'crm4' + suffix;
-    handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
+    handlers[name] = loadStaffModule(name,'crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
   const { isolated } = require('./local-ai.cjs');
   for (const suffix of ['Approve', 'GenerateDocuments', 'Issue', 'RequestCorrections']) {
@@ -41,22 +42,22 @@ function registerHandlers(deps) {
   handlers[completeName] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, completeName,
     require('../backend-sources/' + completeName + '/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant(deps)[completeName]);
   for(const suffix of ['ListerRetryManagerNotification','ListerSendGeneralInformationEmail','SendCallbackConfirmation','ManagerSendAppointmentConfirmation']) {
-    const name='crm4'+suffix;handlers[name]=require('../backend-sources/'+name+'/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
+    const name='crm4'+suffix;handlers[name]=loadStaffModule(name,'crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
-  handlers.crm4CloserSendAdministrationOnboardingConfirmation=require('../backend-sources/crm4CloserSendAdministrationOnboardingConfirmation/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps).crm4CloserSendAdministrationOnboardingConfirmation;
+  handlers.crm4CloserSendAdministrationOnboardingConfirmation=loadStaffModule('crm4CloserSendAdministrationOnboardingConfirmation','crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps).crm4CloserSendAdministrationOnboardingConfirmation;
   for (const suffix of ['CreateUser','UpdateMembership','SendPasswordSetupEmail','ProvisionExistingProcessing']) {
     const name='crm4Admin'+suffix;
     handlers[name]=require('./local-admin.cjs').loadAdmin(name,deps);
   }
   handlers.crm4AdminCreateUser = require('./admin-create-recovery.cjs').adminCreateRecovery(deps);
   for (const name of ['crm4SaveCallback', 'crm4ListAgenda', 'crm4ManagerDownloadLinkedAssessmentReport', 'crm4CloserDownloadLinkedAssessmentReport', 'crm4ManagerPreviewAppointmentEmail', 'crm4CloserPreviewAgreementEmail', 'crm4PreviewCallbackConfirmation']) {
-    handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
+    handlers[name] = loadStaffModule(name,'crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }
   for (const name of ['crm4CancelAdministrationOnboarding', 'processingBlockAdministrationOnboardingSlot', 'crm4CloserPreviewAdministrationOnboardingConfirmation']) {
-    handlers[name] = require('../backend-sources/' + name + '/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
+    handlers[name] = loadStaffModule(name,'crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
   }
   for (const name of ['processingCompleteAdministrationOnboarding', 'crm4CloserListAdministrationOnboardingSlots', 'processingPublishAdministrationOnboardingSlots']) {
-    handlers[name] = require('../backend-sources/' + name + '/crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
+    handlers[name] = loadStaffModule(name,'crm4AdministrationOnboarding.js').registerCrm2AdministrationOnboarding(deps)[name];
   }
   for (const name of ['processingMarkAgreementSigned', 'processingConfirmCrm2Payment']) {
     handlers[name] = require('../backend-sources/' + name + '/processingOperations.js').registerProcessingOperations(deps)[name];

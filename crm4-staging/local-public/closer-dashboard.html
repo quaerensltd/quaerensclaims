@@ -440,7 +440,7 @@
     async function checkCloserAccess(user) {
       const context=await resolveCrmWorkspace(db,user);
       const userData={...context.userData,role:context.role,workspaceId:context.workspaceId};
-      if (userData.role !== "closer" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+      if (!context.capabilities?.includes("closer") && userData.role !== "closer" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -490,7 +490,7 @@
 
     async function loadData() {
       const assignmentCollection=crmCollection(currentContext,"closerAssignments");
-      const assignmentsQuery = isCrm2(currentContext)?query(collection(db,assignmentCollection),where("assignedUserId","==",currentUser.uid)):query(collection(db,assignmentCollection),where("closer.uid", "==", currentUser.uid));
+      const assignmentsQuery = isCrm2(currentContext)?query(collection(db,assignmentCollection),where("workspaceId","==","CRM4"),where("assignedUserId","==",currentUser.uid)):query(collection(db,assignmentCollection),where("workspaceId","==","CRM4"),where("closer.uid", "==", currentUser.uid));
 
       const assignmentsSnap = await getDocs(assignmentsQuery);
       allAssignments = assignmentsSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));

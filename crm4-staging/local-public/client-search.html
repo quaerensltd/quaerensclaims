@@ -50,7 +50,7 @@
   <script type="module">
     import { initializeApp } from "/__crm4/sdk/10.8.0/app.js";
     import { getAuth, onAuthStateChanged, signOut } from "/__crm4/sdk/10.8.0/auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc } from "/__crm4/sdk/10.8.0/firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc , query, where} from "/__crm4/sdk/10.8.0/firestore.js";
     import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
     import { resolveCrmWorkspace, crmRouteFor, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
@@ -108,7 +108,7 @@
 
     async function loadCollection(collectionConfig) {
       try {
-        const snap = await getDocs(collection(db, collectionConfig.key));
+        const snap = await getDocs(collectionConfig.key === "crm4Leads" ? query(collection(db,collectionConfig.key),where("workspaceId","==","CRM4")) : collection(db,collectionConfig.key));
         return snap.docs.map((documentSnap) => recordFromDoc(collectionConfig.key, documentSnap.id, normalizeCrmRecord(currentContext,documentSnap.id,documentSnap.data())));
       } catch (error) {
         console.warn("Could not load " + collectionConfig.key, error);

@@ -12,7 +12,9 @@ function loadAdmin(name,deps) {
     if(!id.startsWith('./')||!manifest.records.some(r=>r.target===target))throw Error('Unreviewed Admin dependency');
     return require(path.join(root,target));
   };
-  require('node:vm').compileFunction(fs.readFileSync(path.join(root,'index.js'),'utf8'),['exports','require','admin','db','onCall','HttpsError','resend','resendApiKeySecret','FieldValue','process'],{filename:path.join(root,'index.js')})(exports,localRequire,deps.admin,deps.db,deps.onCall,deps.HttpsError,deps.resend,{},deps.admin.firestore.FieldValue,Object.freeze({env:Object.freeze({FUNCTIONS_EMULATOR:'false'})}));
+  let source=fs.readFileSync(path.join(root,'index.js'),'utf8');
+  if(name==='crm4AdminUpdateMembership')source=require('./admin-capability-extension.cjs').extendMembershipUpdate(source);
+  require('node:vm').compileFunction(source,['exports','require','admin','db','onCall','HttpsError','resend','resendApiKeySecret','FieldValue','process','crm4Capabilities'],{filename:path.join(root,'index.js')})(exports,localRequire,deps.admin,deps.db,deps.onCall,deps.HttpsError,deps.resend,{},deps.admin.firestore.FieldValue,Object.freeze({env:Object.freeze({FUNCTIONS_EMULATOR:'false'})}),require('./staff-capabilities.cjs'));
   return async request=>{
     if(request.auth?.token?.platformAdmin!==true)throw new deps.HttpsError('permission-denied','Platform administrator required');
     const synthetic=email=>{if(!/^[^@\s]+@(?:crm4\.)?example\.test$/.test(email||''))throw new deps.HttpsError('permission-denied','Synthetic emulator identity required');};

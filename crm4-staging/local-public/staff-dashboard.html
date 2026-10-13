@@ -709,7 +709,7 @@
     async function checkStaffAccess(user) {
       const context = await resolveCrmWorkspace(db,user);
       const userData = {...context.userData,role:context.role,workspaceId:context.workspaceId};
-      if (userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
+      if (!context.capabilities?.includes("lister") && userData.role !== "staff" && userData.role !== "manager" && userData.role !== "admin" && userData.admin !== true) {
         alert("You do not have permission to access this page.");
         window.location.href = "/login.html";
         return false;
@@ -725,7 +725,7 @@
 
     async function loadLeads() {
       const leadCollection=crmCollection(currentContext,"leadAssignments");
-      const leadsQuery = query(collection(db,leadCollection),where("assignedToUid", "==", currentUser.uid));
+      const leadsQuery = query(collection(db,leadCollection),where("workspaceId","==","CRM4"),where("assignedToUid", "==", currentUser.uid));
 
       const snapshot = await getDocs(leadsQuery);
       allLeads = snapshot.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data()));

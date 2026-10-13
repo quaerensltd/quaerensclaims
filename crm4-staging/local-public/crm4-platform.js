@@ -1,3 +1,4 @@
+import {resolveActor} from "/crm4-staff-capabilities.js";
 import { initializeApp, getApps } from "/__crm4/sdk/10.8.0/app.js";
 import { getAuth, onAuthStateChanged, signOut } from "/__crm4/sdk/10.8.0/auth.js";
 import { getFirestore, doc, getDoc } from "/__crm4/sdk/10.8.0/firestore.js";
@@ -38,7 +39,7 @@ export async function requireCrm2(allowedRoles) {
     location.replace("/crm4-login.html?error=workspace-access");
     throw new Error("CRM4 membership required");
   }
-  if (allowedRoles && !allowedRoles.includes(membership.role)) {
+  if (allowedRoles && !allowedRoles.some(role=>resolveActor(user.uid,membership).roles.includes(role))) {
     location.replace(roleRoutes[membership.role] || "/crm4-login.html?error=role");
     throw new Error("CRM4 role not allowed");
   }

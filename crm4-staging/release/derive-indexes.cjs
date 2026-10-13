@@ -12,8 +12,20 @@ function deriveIndexes(){
  }
  function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(/\.(js|cjs)$/.test(entry.name))scan(file);}}
  walk(path.join(root,'backend-sources'));walk(path.join(root,'tools'));
+ // Explicit reviewed modular browser query contracts. These complement the backend scanner.
+ for(const [source,fields] of [
+  ['staff-dashboard.html',['workspaceId','assignedToUid']],
+  ['closer-dashboard.html',['workspaceId','assignedUserId']],
+  ['crm4-dashboard.js',['workspaceId','updatedAt']],
+  ['crm4-dashboard.js',['workspaceId','status','updatedAt']]
+ ]){
+  const text=fs.readFileSync(path.join(root,'local-public',source),'utf8');
+  if(fields.some(field=>!text.includes('"'+field+'"')))throw Error('Browser query contract drift: '+source);
+  const row={collectionGroup:'crm4Leads',queryScope:'COLLECTION',fields:fields.map(fieldPath=>({fieldPath,order:fieldPath==='updatedAt'?'DESCENDING':'ASCENDING'}))};
+  indexes.set(JSON.stringify(row),row);evidence.push({source:'local-public/'+source,collection:'crm4Leads',fields,reviewedModularQuery:true});
+ }
  const result={indexes:[...indexes.values()].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),fieldOverrides:[]};
- return {result,evidence,limitations:['Literal chained backend queries only; dynamic query builders and modular browser queries require cloud failed-precondition acceptance.','Firestore emulator does not certify production index sufficiency.']};
+ return {result,evidence,limitations:['Literal chained backend queries and four reviewed modular browser query contracts; remaining dynamic query builders require cloud failed-precondition acceptance.','Firestore emulator does not certify production index sufficiency.']};
 }
 module.exports={deriveIndexes};
 if(require.main===module){const data=deriveIndexes();fs.writeFileSync(path.join(__dirname,'firestore.indexes.json'),JSON.stringify(data.result,null,2)+'\n');fs.writeFileSync(path.join(__dirname,'query-index-evidence.json'),JSON.stringify({evidence:data.evidence,limitations:data.limitations},null,2)+'\n');console.log(data.result.indexes.length+' candidate composite indexes');}

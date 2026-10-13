@@ -425,7 +425,7 @@
       query,
       where
     } from "/__crm4/sdk/10.8.0/firestore.js";
-    import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
+    import { resolveCrmWorkspace, membershipHasCapability, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
     import { getFunctions, httpsCallable } from "/__crm4/sdk/10.8.0/functions.js";
 
     const firebaseConfig = {
@@ -1163,7 +1163,7 @@
 
     async function loadLeads() {
       try {
-        const leadSnap = await getDocs(collection(db, leadCollection));
+        const leadSnap = await getDocs(leadCollection === "crm4Leads" ? query(collection(db,leadCollection),where("workspaceId","==","CRM4")) : collection(db,leadCollection));
         let userDocs = [];
         try {
           const userSnap = await getDocs(collection(db, isCrm2(currentContext)?"crm4Memberships":"users"));
@@ -1175,7 +1175,7 @@
         allLeads = leadSnap.docs.map(d => normalizeCrmRecord(currentContext,d.id,d.data())).filter(lead => !isCrm2(currentContext) || ["awaiting-manager-review", "approved", "closer-assigned", "appointment-booked", "onboarded"].includes(lead.status));
         allUsers = userDocs.map(d => ({ id:d.id,...d.data(),role:isCrm2(currentContext)&&d.data().role==="lister"?"staff":d.data().role,name:d.data().name||d.data().displayName||"" }));
         listerUsers = allUsers.filter(user => user.role === "staff");
-        closerUsers = allUsers.filter(user => user.role === "closer" && (!isCrm2(currentContext) || (user.active === true && user.workspaceId === "CRM4")));
+        closerUsers = allUsers.filter(user => membershipHasCapability(user,"closer") && (!isCrm2(currentContext) || (user.active === true && user.workspaceId === "CRM4")));
 
         populateUserFilters();
         populateCampaignAndClaimFilters();

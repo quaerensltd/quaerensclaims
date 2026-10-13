@@ -10,6 +10,10 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.workspaceId == 'CRM4';
     }
     function role() { return get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.role; }
+    function staffRole(expected) {
+      let m=get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data;
+      return (!('roles' in m) && m.role == expected) || (m.role in ['lister','closer'] && m.roles is list && m.roles.size() == 2 && m.roles.hasAll(['lister','closer']) && expected in ['lister','closer']);
+    }
     function supervisor() { return member() && role() in ['manager', 'administrator']; }
     match /crm4Memberships/{uid} {
       allow get: if request.auth != null && (request.auth.uid == uid || supervisor());
@@ -17,9 +21,9 @@ service cloud.firestore {
     }
     match /users/{uid} { allow get: if member() && request.auth.uid == uid; }
     match /crm4Leads/{id} {
-      allow read: if supervisor() || (member() && (
-        (role() == 'lister' && resource.data.assignedToUid == request.auth.uid)
-        || (role() == 'closer' && (resource.data.closerUid == request.auth.uid || resource.data.assignedUserId == request.auth.uid))));
+      allow read: if resource.data.workspaceId == 'CRM4' && (supervisor() || (member() && (
+        (staffRole('lister') && resource.data.assignedToUid == request.auth.uid)
+        || (staffRole('closer') && (resource.data.closerUid == request.auth.uid || resource.data.assignedUserId == request.auth.uid)))));
     }
     match /crm4Assessments/{id} { allow read: if supervisor(); }
     match /crm4Activities/{id} {

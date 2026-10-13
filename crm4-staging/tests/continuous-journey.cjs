@@ -3,7 +3,7 @@
 // the pinned authenticated handlers; Admin Firestore is used for assertions only.
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 async function run() {
-  const manual=process.env.CRM4_JOURNEY_MODE==='manual';
+  const manual=process.env.CRM4_JOURNEY_MODE==='manual',dualStaff=process.env.CRM4_DUAL_STAFF==='true';
   Object.assign(process.env, { GCLOUD_PROJECT: 'demo-quaerens-crm4', FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080', FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099', STORAGE_EMULATOR_HOST: 'http://127.0.0.1:9199' });
   const service = await require('../tools/serve-callables.cjs').start();
   const db = service.runtime.db, auth = require('firebase-admin/auth').getAuth(service.runtime.app);
@@ -11,7 +11,7 @@ async function run() {
   const server = http.createServer(require('../tools/serve-local.cjs').handler);
   await new Promise(r => server.listen(4404, '127.0.0.1', r));
   const browser = await require(process.env.CRM4_PLAYWRIGHT_MODULE).chromium.launch({ channel: 'msedge', headless: true });
-  const output = path.resolve(__dirname, '../.scratch/'+(manual?'manual-continuous-journey':'continuous-journey')); fs.mkdirSync(output, { recursive: true });
+  const output = path.resolve(__dirname, '../.scratch/'+(dualStaff?'dual-':'')+(manual?'manual-continuous-journey':'continuous-journey')); fs.mkdirSync(output, { recursive: true });
   let leadId, blocked = null;
   async function invoke(role, name, data = {}, expectedError) {
     const reply = await pages[role].evaluate(async ({ name, data }) => {
@@ -31,7 +31,7 @@ async function run() {
       const uid = 'journey-' + role + '-' + runId, email = uid + '@example.test';
       await auth.createUser({ uid, email, password });
       if(role==='administrator')await auth.setCustomUserClaims(uid,{platformAdmin:true});
-      await db.collection('crm4Memberships').doc(uid).set({ active: true, workspaceId: 'CRM4', role, email, displayName: 'Synthetic ' + role });
+      await db.collection('crm4Memberships').doc(uid).set({ active: true, workspaceId: 'CRM4', role, ...(dualStaff&&['lister','closer'].includes(role)?{role:'lister',roles:['lister','closer']}:{}), email, displayName: 'Synthetic ' + role });
       await db.collection('users').doc(uid).set({ role, assessmentCapabilities: ['manager', 'administrator'].includes(role) ? ['assessmentIssuer'] : [] });
       if(manual)await db.collection('users').doc(uid).set({role,assessmentCapabilities:role==='lister'?['assessmentAuthor']:role==='manager'?['assessmentIssuer','assessmentApprover']:[],assessmentCategoryAccess:['spray-foam'],assessmentWorkspaceAccess:['CRM4']});
       users[role] = { uid, email };

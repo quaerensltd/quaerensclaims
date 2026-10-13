@@ -1,3 +1,5 @@
+> Superseding local implementation checkpoint: dual Lister + Closer capability support is now implemented and locally tested for two individual CRM4 accounts. Earlier single-role-only limitations below describe historical evidence. See [current acceptance and remaining deployment gates](release/DUAL-ROLE-ACCEPTANCE.md). Cloud provisioning, IAM grants and application deployment remain unapproved.
+
 > **Latest CRM4 Spain preparation — 13 October 2026:** 84/84 full-suite tests,
 > separate packaging test and CRM2 security regression pass. Both v9 and manual
 > Spray Foam continuous browser journeys reach Processing; manual reissuance

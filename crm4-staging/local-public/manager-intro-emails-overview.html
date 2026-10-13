@@ -313,7 +313,7 @@
       collection,
       serverTimestamp,
       arrayUnion
-    } from "/__crm4/sdk/10.8.0/firestore.js";
+    , query, where} from "/__crm4/sdk/10.8.0/firestore.js";
     import { resolveCrmWorkspace, crmCollection, normalizeCrmRecord, applyWorkspaceChrome, isCrm2 } from "/crm-workspace.js";
 
     const firebaseConfig = {
@@ -506,7 +506,7 @@ Quaerens`;
       }
       allUsers = userDocs.map(d => ({ id: d.id, ...d.data(),role:isCrm2(currentContext)&&d.data().role==="lister"?"staff":d.data().role,name:d.data().name||d.data().displayName||"" }));
 
-      const leadsSnap = await getDocs(collection(db, currentLeadCollection));
+      const leadsSnap = await getDocs(currentLeadCollection === "crm4Leads" ? query(collection(db,currentLeadCollection),where("workspaceId","==","CRM4")) : collection(db,currentLeadCollection));
       allLeads = leadsSnap.docs
         .map(d => normalizeCrmRecord(currentContext,d.id,d.data()))
         .filter(lead => lead.introEmailNeeded || lead.introEmailSent || lead.introEmailBody);

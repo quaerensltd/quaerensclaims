@@ -1,3 +1,4 @@
+import {resolveActor} from "/crm4-staff-capabilities.js";
 import { doc, getDoc } from "/__crm4/sdk/10.8.0/firestore.js";
 
 const CRM4_ROLE_TO_CRM_ROLE=Object.freeze({lister:"staff",manager:"manager",closer:"closer",processing:"processing",administrator:"admin"});
@@ -12,10 +13,12 @@ export async function resolveCrmWorkspace(db,user){
   if(crm4Snap.exists()){
     const membership=crm4Snap.data();
     if(membership.active!==true||membership.workspaceId!=="CRM4")throw new Error("CRM4 workspace access is inactive");
+    const capabilities=resolveActor(user.uid,membership).roles;
     const role=CRM4_ROLE_TO_CRM_ROLE[membership.role];
     if(!role)throw new Error("Unsupported CRM4 role");
-    return Object.freeze({workspaceId:"CRM4",workspaceLabel:"CRM4",countryCode:"UK",language:"en",locale:"en-GB",currency:"GBP",currencySymbol:"£",role,membershipRole:membership.role,userData:Object.freeze({...membership,role,admin:membership.role==="administrator"}),internetLeads:false,processing:membership.role==="processing"||membership.role==="administrator",assessments:["solar","nl-solar","spray-foam"]});
+    return Object.freeze({workspaceId:"CRM4",workspaceLabel:"CRM4 Spain",capabilities,countryCode:"UK",language:"en",locale:"en-GB",currency:"GBP",currencySymbol:"£",role,membershipRole:membership.role,userData:Object.freeze({...membership,role,admin:membership.role==="administrator"}),internetLeads:false,processing:membership.role==="processing"||membership.role==="administrator",assessments:["solar","nl-solar","spray-foam"]});
   }
+  throw new Error("Active CRM4 membership required; other workspaces are not available here");
   const crm3Snap=await getDoc(doc(db,"crm3Memberships",user.uid));
   if(crm3Snap.exists()){
     const membership=crm3Snap.data(),role=membership.role;
@@ -51,6 +54,9 @@ export function applyWorkspaceChrome(context){
     return;
   }
   if(!isCrm2(context))return;
+  if(context.capabilities?.includes('lister')&&context.capabilities?.includes('closer')&&!document.querySelector('[data-staff-capabilities]')){
+    const nav=document.createElement('nav');nav.dataset.staffCapabilities='';nav.setAttribute('aria-label','CRM4 staff workspaces');nav.style.cssText='display:flex;gap:1rem;padding:.75rem 1rem;background:#eef2ff';nav.innerHTML='<a href="/staff-dashboard.html">Lister workspace</a><a href="/closer-dashboard.html">Closer workspace</a>';document.querySelector('header')?.appendChild(nav);
+  }
   const heading=document.querySelector("header h1");
   if(heading&&!heading.parentElement.querySelector("[data-workspace-badge]")){const badge=document.createElement("span");badge.dataset.workspaceBadge="";badge.textContent="CRM4";badge.style.cssText="display:inline-flex;margin-left:.65rem;padding:.25rem .55rem;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:.75rem;font-weight:800;vertical-align:middle";heading.appendChild(badge)}
   document.querySelectorAll('a[href*="processing"]').forEach(link=>disableWorkspaceLink(link,"Processing is disabled for CRM4 — Integration Pending."));
@@ -62,3 +68,5 @@ export function applyWorkspaceChrome(context){
 
 function disableWorkspaceLink(link,reason){link.dataset.workspaceDisabled="true";link.setAttribute("aria-disabled","true");link.setAttribute("title",reason);link.style.cssText+=";opacity:.55;cursor:not-allowed";link.addEventListener("click",event=>{event.preventDefault();showWorkspaceMessage(reason)})}
 function showWorkspaceMessage(reason){let panel=document.querySelector("[data-workspace-message]");if(!panel){panel=document.createElement("div");panel.dataset.workspaceMessage="";panel.setAttribute("role","status");panel.style.cssText="position:fixed;right:1rem;bottom:1rem;z-index:99999;max-width:30rem;padding:1rem 1.25rem;border-radius:1rem;background:#0f172a;color:#fff;box-shadow:0 18px 45px rgba(15,23,42,.3);font:600 14px/1.45 Arial,sans-serif";document.body.appendChild(panel)}panel.textContent=reason;panel.hidden=false;clearTimeout(panel._hideTimer);panel._hideTimer=setTimeout(()=>{panel.hidden=true},6000)}
+
+export function membershipHasCapability(member,role){try{return resolveActor("membership",member).roles.includes(role)}catch{return false}}

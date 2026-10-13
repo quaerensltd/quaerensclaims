@@ -26,7 +26,7 @@ test('durable provider capture and document tickets survive adapter restart and 
   const receipts=await Promise.all([create(db),create(db),create(db)].map(p=>p.resend.emails.send(payload,key)));assert.equal(new Set(receipts.map(x=>x.data.id)).size,1);
   await assert.rejects(create(db).resend.emails.send({...payload,subject:'changed'},key),/Conflicting/);
   await assert.rejects(create(db).resend.emails.send({...payload,to:'real@example.com'}),/Synthetic/);
-  let disabled=false;const storage={bucket:()=>({file:()=>({download:async()=>[Buffer.from('persisted synthetic bytes')]})})},auth={getUser:async()=>({disabled})};
+  let disabled=false,tokensValidAfterTime;const storage={bucket:()=>({file:()=>({download:async()=>[Buffer.from('persisted synthetic bytes')]})})},auth={getUser:async()=>({disabled,tokensValidAfterTime})};
   const links=()=>require('../release/document-links.cjs').createDocumentLinks(db,storage,auth,'https://private.example.test');
   await db.collection('crm4Memberships').doc(uid).set({active:true,workspaceId:'CRM4',role:'closer'});
   await assert.rejects(links().issue('professional-assessments/synthetic.pdf'),/context/);
@@ -34,6 +34,9 @@ test('durable provider capture and document tickets survive adapter restart and 
   assert.equal((await links().download(token,{sub:'iap-'+id})).toString(),'persisted synthetic bytes');
   await assert.rejects(links().download(token,{sub:'other'}),/denied/);
   disabled=true;await assert.rejects(links().download(token,{sub:'iap-'+id}),/disabled/);disabled=false;
+  tokensValidAfterTime=new Date(Date.now()+2000).toISOString();await assert.rejects(links().download(token,{sub:'iap-'+id}),/sessions revoked/);tokensValidAfterTime=undefined;
+  await db.collection('crm4Memberships').doc(uid).update({role:'lister'});await assert.rejects(links().download(token,{sub:'iap-'+id}),/revoked/);
+  await db.collection('crm4Memberships').doc(uid).update({role:'closer'});
   await db.collection('crm4Memberships').doc(uid).update({active:false});await assert.rejects(links().download(token,{sub:'iap-'+id}),/revoked/);
  }finally{await runtime.close();}
 });

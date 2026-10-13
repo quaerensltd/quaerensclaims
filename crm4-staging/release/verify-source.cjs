@@ -11,6 +11,14 @@ function verifySource() {
   const sha256=hash(fs.readFileSync(full));if(expected&&sha256!==expected)throw Error('Source drift: '+relative);
   files.push({path:relative,sha256});
  };
+ const browser=JSON.parse(fs.readFileSync(path.join(root,'clone-manifest.json')));
+ for(const row of browser.records){
+  if(row.target.includes('..')||path.isAbsolute(row.target)||row.target.includes('\\'))throw Error('Unsafe browser package path');
+  const bytes=fs.readFileSync(path.join(root,'local-public',row.target));
+  if(crypto.createHash('sha1').update(bytes).digest('hex')!==row.cloneSha1)throw Error('Browser source drift: '+row.target);
+  add('local-public/'+row.target);
+ }
+ add('clone-manifest.json');
  const dependencies=new Set(['firebase-admin','firebase-functions']);
  for(const name of fs.readdirSync(path.join(root,'backend-sources')).sort()){
   const base='backend-sources/'+name+'/',m=JSON.parse(fs.readFileSync(path.join(root,base,'source-manifest.json')));
@@ -28,10 +36,10 @@ function verifySource() {
  const queue=['local-handlers.cjs'],seen=new Set();
  while(queue.length){const name=queue.shift();if(seen.has(name))continue;seen.add(name);add('tools/'+name);const source=fs.readFileSync(path.join(root,'tools',name),'utf8');for(const match of source.matchAll(/require\(['"]\.\/([^'"]+\.cjs)['"]\)/g))queue.push(match[1]);}
  for(const name of fs.readdirSync(__dirname).filter(name=>/\.(cjs|json|rules)$/.test(name)||['Dockerfile','.dockerignore'].includes(name)).sort())add('release/'+name);
- return {schemaVersion:1,workspace:'CRM4',team:'Spain',deployable:false,reason:'Offline cloud runtime and routing candidates only; organization/provisioning authorization, dual-role support and cloud acceptance remain blocked',files:files.sort((a,b)=>a.path.localeCompare(b.path)),dependencies:pkg.dependencies};
+ return {schemaVersion:1,workspace:'CRM4',team:'Spain',deployable:false,reason:'Offline cloud runtime and routing candidates only; organization/provisioning authorization and actual cloud/container acceptance remain outstanding',files:files.sort((a,b)=>a.path.localeCompare(b.path)),dependencies:pkg.dependencies};
 }
 function packageReview() {
- const report=verifySource(),out=path.join(root,'.scratch','release-review');fs.mkdirSync(out,{recursive:true});
+ const report=verifySource(),out=path.join(root,'.scratch','release-review',hash(JSON.stringify(report)).slice(0,16));fs.mkdirSync(out,{recursive:true});
  for(const row of report.files){const target=path.join(out,row.path);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,row.path),target);}
  fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify({files:report.files.length,deployable:report.deployable,output:out}));

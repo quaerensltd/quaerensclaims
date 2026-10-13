@@ -38,6 +38,8 @@ function transform(source, modules) {
   text = text.replace(/(<script\s+src=["']https:\/\/www\.gstatic\.com\/firebasejs\/[\d.]+\/firebase-storage-compat\.js["']><\/script>)/g,
     '$1<script src="/__crm4/compat.js"></script>');
   text = require('./adapt-manual-page.cjs').adaptManualPage(text);
+  text = require('./scope-browser-queries.cjs').scopeQueries(text);
+  text = require('./adapt-staff-browser.cjs').adaptStaffBrowser(text);
   return text.replace(/^[\t ]+$/gm, '').replace(/\s+$/, '') + '\n';
 }
 function compatWrapper() {
@@ -101,6 +103,9 @@ async function build(manifest, deploymentId) {
     const [version, service] = key.split('/'), target = path.join(out, '__crm4/sdk', version, service + '.js');
     fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, wrapper(version, service));
   }
+  const capabilityBytes=Buffer.from(require('./adapt-staff-browser.cjs').browserCapabilities());
+  fs.writeFileSync(path.join(out,'crm4-staff-capabilities.js'),capabilityBytes);
+  records.push({source:'tools/staff-capabilities.cjs',target:'crm4-staff-capabilities.js',generated:true,cloneSha1:hash(capabilityBytes)});
   const report = { deploymentId, mode: 'LOCAL_EMULATOR_ONLY', records, modules: [...modules].sort(), support: ['__crm4/compat.js'], missing: [...new Set(missing)].sort(), blocked };
   fs.writeFileSync(path.join(root, 'clone-manifest.json'), JSON.stringify(report, null, 2) + '\n');
   return report;

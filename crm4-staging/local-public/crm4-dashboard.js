@@ -47,6 +47,6 @@ if(expectedRole==='administrator'){
   document.getElementById('userForm').addEventListener('submit',async event=>{event.preventDefault();const result=document.getElementById('userResult');result.textContent='Creating secure CRM4 access…';try{const payload=Object.fromEntries(new FormData(event.currentTarget).entries());const response=await httpsCallable(functions,'crm4AdminCreateUser')(payload);result.innerHTML=`CRM4 user created: <strong>${escapeHtml(response.data.email)}</strong>. Secure reset link: <a href="${escapeHtml(response.data.resetLink)}">open password setup</a>.`;event.currentTarget.reset()}catch(error){result.textContent=error.message}})
 }
 const leadQuery = expectedRole === "closer"
-  ? query(collection(db,"crm4Leads"), where("status", "in", allowedStatuses.closer), orderBy("updatedAt","desc"))
-  : query(collection(db,"crm4Leads"),orderBy("updatedAt","desc"));
+  ? query(collection(db,"crm4Leads"),where("workspaceId","==","CRM4"), where("status", "in", allowedStatuses.closer), orderBy("updatedAt","desc"))
+  : query(collection(db,"crm4Leads"),where("workspaceId","==","CRM4"),orderBy("updatedAt","desc"));
 onSnapshot(leadQuery,snapshot=>{const leads=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));updateStats(leads);renderQueue(leads)},error=>{document.getElementById('queue').innerHTML=`<div class="notice">Could not load CRM4 records: ${escapeHtml(error.message)}</div>`});
