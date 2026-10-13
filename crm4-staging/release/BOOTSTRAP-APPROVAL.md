@@ -1,5 +1,7 @@
 # CRM4 Spain bootstrap approval package
 
+Status update: Phase 1 was approved and API enablement completed. See `PHASE1-RESULT.md` for actual changes, automatic IAM drift and the current pause. The unapproved flags below describe the original proposal, not the later scoped user authorization.
+
 Shared CRM Framework. Target is only `quaerens-crm4-spain-test` / `558324850479`, No organization, `europe-west1`. Continue from `0c04d04d`; no original business source, staff capability contract or other CRM is changed.
 
 ## Concrete artifacts
