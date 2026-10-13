@@ -1,3 +1,5 @@
+> Owner tester confirmed, 13 October 2026: the proposed IAP allowlist is brusseljeroen@gmail.com only. This confirms the tester identity, not an IAM grant or Firebase role. Resource provisioning, IAM changes, real accounts and application deployment require separate authorization. Organization/folder remains unconfirmed. Owner CRM4 Administrator membership must be separately authorized; staff remain deferred pending dual-role acceptance.
+
 # CRM4 Spain access policy and offline preparation
 
 Classification: Shared CRM Framework. This checkpoint changes only CRM4 staging files. Preserved backend source manifests remain unchanged; no CRM2, CRM3 or CRM5 source changes.
@@ -12,7 +14,7 @@ A possible shared-framework improvement is a canonical capability resolver that 
 
 ## Infrastructure status
 
-Project `quaerens-crm4-spain-test`, region `europe-west1`, Firebase Payment billing, USD 25/month alert and synthetic Auth processing limitation are approved in principle. Read-only discovery found the open billing account `016627-0BEE7F-D03ADE`. The CLI returned no visible organizations, which does not confirm that No organization is the correct parent. Neither actual parent/folder nor named Google IAP testers has been established. The active CLI account is not presumed to be an authorized tester or owner.
+Project `quaerens-crm4-spain-test`, region `europe-west1`, Firebase Payment billing, USD 25/month alert and synthetic Auth processing limitation are approved in principle. Read-only discovery found the open billing account `016627-0BEE7F-D03ADE`. The CLI returned no visible organizations, which does not confirm that No organization is the correct parent. The actual parent/folder remains unconfirmed. The owner Google IAP tester is now confirmed by the later decision above. The active CLI account is not presumed to be an authorized tester or owner.
 
 No resources, billing links, APIs, budgets, cloud accounts or deployments were created. The budget amount is a requested alert, not a spend cap. No real customer records, credentials or secrets were imported.
 
@@ -33,3 +35,5 @@ Focused cloud preparation/package tests: 5/5 passed. Private HTTP and durable ca
 All cloud-shaped identifiers and web API keys in tests are synthetic fixtures. Browser/IAM/Firestore index/cloud Storage concurrency acceptance and positive dual-role acceptance remain outstanding. Historical browser evidence in PREPARATION-EVIDENCE.md predates this checkpoint and is not a claim of cloud acceptance.
 
 Final execution: full local suite 89/89 PASS (246.3 seconds), no failures or skips. Final focused cloud suite 7/7 PASS (14.0 seconds); its two cloud-boundary tests were added after the full-suite invocation. Do not sum these overlapping invocations. Server syntax and git diff whitespace checks passed.
+
+Owner-only policy checkpoint: 7/7 targeted tests passed. Validation rejects empty, substituted, expanded and public-principal allowlists; IAP checks use mocked signed claims and do not contact Google or establish live IAM acceptance. The owner address is excluded from generated browser assets. No Firebase user/membership was created; no Google IAM binding or cloud resource was changed. CRM2/CRM3/CRM5 unchanged. Earlier full-suite results are historical, not rerun for this configuration change.
