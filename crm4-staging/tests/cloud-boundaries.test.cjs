@@ -40,3 +40,12 @@ test('durable provider capture and document tickets survive adapter restart and 
   await db.collection('crm4Memberships').doc(uid).update({active:false});await assert.rejects(links().download(token,{sub:'iap-'+id}),/revoked/);
  }finally{await runtime.close();}
 });
+
+test('staff upload HTTP route keeps IAP/token gates and a bounded file envelope',async()=>{
+ const config={projectId:'quaerens-crm4-spain-test',origin:'https://crm4-spain-test-synthetic.europe-west1.run.app'};let calls=0;
+ const runtime={config,auth:{verifyIdToken:async(token,revoked)=>{assert(revoked);if(token!=='valid')throw Error();return {uid:'synthetic',aud:config.projectId,iss:'https://securetoken.google.com/'+config.projectId};}},documents:{withActor:(_a,fn)=>fn()},handlers:{portalStaffUploadDocument:async()=>{calls++;return {status:'SHARED'};}}};
+ const server=http.createServer(require('../release/http.cjs').createCloudHandler({runtime,verifyIap:async v=>{if(v!=='valid')throw Error();return {sub:'synthetic-iap'};},webRoot:__dirname,manifest:{files:[]},csp:"default-src 'self'"}));await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const url='http://127.0.0.1:'+server.address().port+'/__crm4/call/portalStaffUploadDocument',headers={'x-goog-iap-jwt-assertion':'valid','X-CRM4-ID-Token':'valid',Origin:config.origin,'Content-Type':'application/json'};
+ const send=(h={},n=100000)=>fetch(url,{method:'POST',headers:{...headers,...h},body:JSON.stringify({data:{base64:'A'.repeat(n)}})});
+ try{assert.equal((await send({'x-goog-iap-jwt-assertion':'invalid'})).status,403);assert.equal((await send({'X-CRM4-ID-Token':'invalid'})).status,401);assert.equal((await send({Origin:'https://other.example.test'})).status,403);assert.equal((await send()).status,200);assert.equal((await send({},21037057)).status,413);assert.equal(calls,1);}finally{await new Promise(r=>server.close(r));}
+});

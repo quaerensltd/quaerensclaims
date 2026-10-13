@@ -20,7 +20,7 @@ function createCloudHandler({runtime,verifyIap,webRoot,manifest,csp}){
     if(req.headers.origin!==origin||!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))return reply(403,{error:{status:'PERMISSION_DENIED'}});
     if(!Object.hasOwn(runtime.handlers,callable[1]))return reply(404,{error:{status:'NOT_FOUND'}});
     let decoded;try{const token=req.headers['x-crm4-id-token'];if(typeof token!=='string'||token.length>16000)throw Error();decoded=await runtime.auth.verifyIdToken(token,true);if(decoded.aud!==runtime.config.projectId||decoded.iss!=='https://securetoken.google.com/'+runtime.config.projectId)throw Error();}catch{return reply(401,{error:{status:'UNAUTHENTICATED'}});}
-    let size=0,chunks=[],limit=callable[1]==='crm4CloserSendAgreement'?9500000:65536;
+    let size=0,chunks=[],limit=callable[1]==='portalStaffUploadDocument'?21037056:callable[1]==='crm4CloserSendAgreement'?9500000:65536;
     for await(const chunk of req){size+=chunk.length;if(size>limit)return reply(413,{error:{status:'RESOURCE_EXHAUSTED'}});chunks.push(chunk);}
     let parsed;try{parsed=JSON.parse(Buffer.concat(chunks));}catch{return reply(400,{error:{status:'INVALID_ARGUMENT'}});}
     if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||Object.keys(parsed).some(k=>k!=='data'))return reply(400,{error:{status:'INVALID_ARGUMENT'}});

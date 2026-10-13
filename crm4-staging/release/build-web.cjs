@@ -30,6 +30,11 @@ function buildWeb(configuration,out){
   if(/\.(html|js|mjs|css)$/.test(row.target)){
    let text=bytes.toString('utf8').replaceAll('http://127.0.0.1:5001/demo-quaerens-crm4/us-central1/','/__crm4/disabled/').replaceAll('demo-quaerens-crm4',config.projectId);
    if(text.includes('127.0.0.1:')||text.includes('connectAuthEmulator(')||text.includes('useEmulator('))throw Error('Unexpected emulator code: '+row.target);
+   if(row.target==='client-portal-admin.html') {
+    const before='await storage.ref(path).put(file,{contentType:file.type,customMetadata:{caseId:activeCase,clientVisible:"true"}});await call("portalStaffRegisterDocument")({';
+    if(text.split(before).length!==2)throw Error('Staff upload transport drift');
+    text=text.replace(before,'const bytes=new Uint8Array(await file.arrayBuffer());let binary="";for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));await call("portalStaffUploadDocument")({base64:btoa(binary),filename:name,');
+   }
    bytes=Buffer.from(text);
   }
   write(row.target,bytes);

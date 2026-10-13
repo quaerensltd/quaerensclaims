@@ -17,7 +17,7 @@ test('actual Lister create/replay/duplicate and Manager draft read on demo Fires
       'crm4ManualAssessment',
       'crm4AssessmentAssistantCompleteIssue',
       'paidClientGlobalClientSearch',
-      'portalStaffListCases','portalStaffUpsertCase','portalStaffCreateInvitation','portalClientClaimInvitation','portalStaffCreateMessage','portalStaffRegisterDocument',
+      'portalStaffListCases','portalStaffUpsertCase','portalStaffCreateInvitation','portalClientClaimInvitation','portalStaffCreateMessage','portalStaffUploadDocument', 'portalStaffRegisterDocument',
       ...['Approve','GenerateDocuments','Issue','RequestCorrections'].map(n=>'frameworkBAssessment'+n),
       ...['ListerRetryManagerNotification','ListerSendGeneralInformationEmail','SendCallbackConfirmation','ManagerSendAppointmentConfirmation','CloserSendAdministrationOnboardingConfirmation'].map(n=>'crm4'+n),
       ...['CreateUser','UpdateMembership','SendPasswordSetupEmail','ProvisionExistingProcessing'].map(n=>'crm4Admin'+n),

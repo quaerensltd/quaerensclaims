@@ -6,16 +6,7 @@ const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
 function legacyPortal(db,deps,name,factory) {
  const fail=(code,message)=>{throw new deps.HttpsError(code,message);};
  const valid=x=>typeof x==='string'&&/^[\w-]+$/.test(x);
- async function owned(tx,id,version) {
-  if(!valid(id))fail('invalid-argument','Exact portal case required');
-  const c=(await tx.get(db.collection('clientPortalCases').doc(id))).data(), link=c?.crmLink;
-  if(!c||link?.workspaceId!=='CRM4'||link.collection!=='crm4Leads'||!valid(link.caseId)||
-   (c.workspaceId&&c.workspaceId!=='CRM4')||(c.crm4LeadId&&c.crm4LeadId!==link.caseId))fail('permission-denied','Owned CRM4 portal link required');
-  const lead=(await tx.get(db.collection('crm4Leads').doc(link.caseId))).data();
-  if(lead?.workspaceId!=='CRM4')fail('permission-denied','CRM4 lead required');
-  if(version&&c.portalVersion!==version)fail('failed-precondition','Legacy operation requires version 2; current cases cannot be downgraded');
-  return {c,lead};
- }
+ const owned=(tx,id,version)=>ownedPortal(db,tx,id,version,fail);
  return async request=>{
   if(name==='portalStaffListCases') {
    const out=await factory(deps)[name](request),cases=[];
@@ -69,7 +60,7 @@ function legacyPortal(db,deps,name,factory) {
    // Re-check original staff authority even on a deduplicated request.
    if(name!=='portalClientClaimInvitation') {
     const member=(await tx.get(db.collection('crm4Memberships').doc(request.auth.uid))).data();
-    if(request.auth.token?.platformAdmin!==true&&!(member?.active===true&&member.workspaceId==='CRM4'&&['manager','processing','administrator'].includes(member.role)))fail('permission-denied','Authorised CRM4 portal staff required');
+    if((deps.crm4RequireActiveMembership||request.auth.token?.platformAdmin!==true)&&!(member?.active===true&&member.workspaceId==='CRM4'&&['manager','processing','administrator'].includes(member.role)))fail('permission-denied','Authorised CRM4 portal staff required');
    }
    const fingerprint=hash(JSON.stringify({uid:request.auth.uid,data}));
    if(operation) {
@@ -91,4 +82,16 @@ function legacyPortal(db,deps,name,factory) {
   });
  };
 }
-module.exports={legacyPortal};
+async function ownedPortal(db,tx,id,version,fail) {
+  const valid=x=>typeof x==='string'&&/^[\w-]+$/.test(x);
+  if(!valid(id))fail('invalid-argument','Exact portal case required');
+  const c=(await tx.get(db.collection('clientPortalCases').doc(id))).data(), link=c?.crmLink;
+  if(!c||link?.workspaceId!=='CRM4'||link.collection!=='crm4Leads'||!valid(link.caseId)||
+   (Object.hasOwn(c,'workspaceId')&&c.workspaceId!=='CRM4')||(Object.hasOwn(c,'crm4LeadId')&&c.crm4LeadId!==link.caseId))fail('permission-denied','Owned CRM4 portal link required');
+  const lead=(await tx.get(db.collection('crm4Leads').doc(link.caseId))).data();
+  if(lead?.workspaceId!=='CRM4')fail('permission-denied','CRM4 lead required');
+  if(version&&c.portalVersion!==version)fail('failed-precondition','Legacy operation requires version 2; current cases cannot be downgraded');
+  return {c,lead};
+ }
+
+module.exports={legacyPortal,ownedPortal};

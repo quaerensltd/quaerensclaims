@@ -1,0 +1,28 @@
+{
+  "status": "NOT_APPROVED_NOT_APPLIED",
+  "projectId": "quaerens-crm4-spain-test",
+  "projectNumber": "558324850479",
+  "resource": "//storage.googleapis.com/quaerens-crm4-spain-test.firebasestorage.app",
+  "purpose": "Complete live synthetic server-upload metadata verification; provisioner currently has create/delete but lacks object get and runtime impersonation",
+  "binding": {
+    "role": "roles/storage.objectViewer",
+    "members": [
+      "user:martijnpronk76@gmail.com"
+    ],
+    "condition": {
+      "title": "crm4-synthetic-upload-acceptance-only",
+      "description": "Temporary read only for CRM4 synthetic acceptance objects; remove immediately after verified cleanup",
+      "expression": "resource.name.startsWith(\"projects/_/buckets/quaerens-crm4-spain-test.firebasestorage.app/objects/clientPortal/crm4-cloud-\") && request.time < timestamp(\"2026-10-15T23:59:59Z\")"
+    }
+  },
+  "before": [
+    "Separate user approval required",
+    "Re-read project ID/number and bucket project/location",
+    "Read bucket IAM version 3 and current etag; stop on unexpected drift or expired condition",
+    "Preserve all bindings, service agents and SDK Token Creator"
+  ],
+  "rollback": "Remove only this exact conditional binding using a fresh version-3 policy and etag after fixtures are cleaned; verify original bindings are unchanged",
+  "alternative": "Execute acceptance under the already authorized CRM4 runtime identity without granting provisioner reads, once an explicitly approved execution mechanism exists",
+  "noPublicAccess": true,
+  "noApplicationDeployment": true
+}

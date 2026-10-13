@@ -28,6 +28,7 @@ test('cloud browser artifact contains only public SDK fields and private callabl
  const manifest=require('../release/build-web.cjs').buildWeb({...config,firebaseWeb:{projectId:config.projectId,storageBucket:config.bucket,authDomain:config.authDomain,apiKey:'synthetic-public-key',appId:'synthetic-app',secret:'MUST-NOT-SERIALIZE'}},out);
  assert(manifest.files.length>10);
  for(const name of manifest.files.filter(n=>/\.(html|js)$/.test(n))){const source=fs.readFileSync(path.join(out,name),'utf8');assert(!source.includes('MUST-NOT-SERIALIZE'));assert(!source.includes('127.0.0.1:'));assert(!source.includes('brusseljeroen@gmail.com'));}
+ const portal=fs.readFileSync(path.join(out,'client-portal-admin.html'),'utf8');assert(portal.includes('portalStaffUploadDocument'));assert(!portal.includes('storage.ref(path).put'));
  assert(fs.readFileSync(path.join(out,'__crm4/compat.js'),'utf8').includes('onAuthStateChanged'));
 });
 test('three synthetic identities do not silently grant unsupported dual roles',async()=>{

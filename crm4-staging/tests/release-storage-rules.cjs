@@ -18,9 +18,11 @@ async function run(){
   await ref.update({workspaceId:'CRM4',crmLink:{workspaceId:'CRM4'},accessState:'ACTIVE'});await check('unsafe MIME',upload('text/html'),403);
   await ref.update({clientUid:id+'-other'});await check('wrong case owner',upload(),403);
   await ref.update({clientUid:uid,portalVersion:2,crmLink:{workspaceId:'CRM4',collection:'crm4Leads',caseId:id}});await r.db.collection('crm4Leads').doc(id).set({workspaceId:'CRM4'});
+  await ref.update({crm4LeadId:'conflict'});await check('conflicting canonical lead marker',upload(),403);await ref.update({crm4LeadId:id});
+  await r.db.collection('crm4Leads').doc(id).update({workspaceId:'CRM3'});await check('case owner foreign linked lead',upload(),403);await r.db.collection('crm4Leads').doc(id).update({workspaceId:'CRM4'});await check('case owner two-document linked upload',upload(),200);
   const shared=(credential,name='shared-'+counter+++'.txt')=>require('./storage-upload-helper.cjs').uploadSynthetic(base,credential,'clientPortal/'+id+'/shared/'+name);
   const adminUid=id+'-admin',adminToken=await create(adminUid),member=r.db.collection('crm4Memberships').doc(adminUid);
-  await member.set({workspaceId:'CRM4',active:true,role:'administrator'});await check('active CRM4 administrator shared upload',shared(adminToken,'same.txt'),200);await check('existing object overwrite denied',shared(adminToken,'same.txt'),403);
+  await member.set({workspaceId:'CRM4',active:true,role:'administrator'});await check('direct administrator shared upload requires server boundary',shared(adminToken,'same.txt'),403);await check('existing object overwrite denied',shared(adminToken,'same.txt'),403);
   await member.update({active:false});await check('inactive administrator',shared(adminToken),403);
   for(const workspaceId of ['CRM2','CRM3','CRM5']){await member.update({active:true,workspaceId});await check(workspaceId+' membership',shared(adminToken),403);}
   await member.update({workspaceId:'CRM4'});await r.db.collection('crm4Leads').doc(id).update({workspaceId:'CRM3'});await check('foreign linked lead',shared(adminToken),403);await r.db.collection('crm4Leads').doc(id).update({workspaceId:'CRM4'});

@@ -80,6 +80,7 @@ function registerHandlers(deps) {
   for (const name of ['paidClientCreateMessage','paidClientRegisterUpload','paidClientStaffCreateMessage']) handlers[name] = recovery.wrap(name, require('../backend-sources/' + name + '/paidClientWorkspace.js').registerPaidClientWorkspace);
   handlers.crm4RecoverPortalNotification = recovery.recover;
   handlers.crm4ReconcilePortalUpload = recovery.reconcileUpload;
+  handlers.portalStaffUploadDocument = require('./portal-upload-boundary.cjs').portalUpload(deps);
   const revoke = require('../backend-sources/portalStaffRevokeAccess/clientPortal.js').registerClientPortal(deps).portalStaffRevokeAccess;
   handlers.portalStaffRevokeAccess = async request => {
     const caseId = request.data?.caseId;
