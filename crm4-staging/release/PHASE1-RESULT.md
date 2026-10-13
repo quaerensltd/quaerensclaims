@@ -1,5 +1,7 @@
 # CRM4 Spain Phase 1 result
 
+Latest status: see `PHASE1-CONTINUATION.md` for the approved Editor correction, completed infrastructure and current blockers. This document remains historical evidence.
+
 Shared CRM Framework. Continuation of `f104960f`; project `quaerens-crm4-spain-test`, number `558324850479`, No organization, region `europe-west1`. Phase 1 was explicitly approved by the owner. Application builds, deployments, public invocation and real accounts remain unapproved.
 
 ## Applied and verified
