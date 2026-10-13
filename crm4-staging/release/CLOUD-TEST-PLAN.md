@@ -1,3 +1,5 @@
+> Final preflight: see [verified cloud findings and exact remaining gates](FINAL-PREFLIGHT.md) and [machine-readable infrastructure scope](infrastructure-scope.json). These supersede the historical engineering status and USD budget assumptions below.
+
 > Superseding local implementation checkpoint: dual Lister + Closer capability support is now implemented and locally tested for two individual CRM4 accounts. Earlier single-role-only limitations below describe historical evidence. See [current acceptance and remaining deployment gates](DUAL-ROLE-ACCEPTANCE.md). Cloud provisioning, IAM grants and application deployment remain unapproved.
 
 > Owner tester confirmed, 13 October 2026: the proposed IAP allowlist is brusseljeroen@gmail.com only. This confirms the tester identity, not an IAM grant or Firebase role. Resource provisioning, IAM changes, real accounts and application deployment require separate authorization. Organization/folder remains unconfirmed. Owner CRM4 Administrator membership must be separately authorized; staff remain deferred pending dual-role acceptance.
