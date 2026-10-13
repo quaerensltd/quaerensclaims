@@ -55,6 +55,7 @@ function createLocalHandlers(env = process.env) {
     handlers[name] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, name, original);
   }
   const completeName = 'crm4AssessmentAssistantCompleteIssue';
+  handlers.crm4ManualAssessment = require('./manual-authoring.cjs').manualAuthoring(deps);
   handlers.frameworkBAssessmentIssue = require('./manual-issue-recovery.cjs').manualIssueRecovery(deps,
     require('../backend-sources/frameworkBAssessmentIssue/frameworkB.js').registerFrameworkB);
   handlers[completeName] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, completeName,

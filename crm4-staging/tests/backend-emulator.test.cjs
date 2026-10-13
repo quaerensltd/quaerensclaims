@@ -14,6 +14,7 @@ test('actual Lister create/replay/duplicate and Manager draft read on demo Fires
   const member = db.collection('crm4Memberships').doc(uid); touched.push(member);
   try {
     assert.deepEqual(Object.keys(handlers).sort(), [
+      'crm4ManualAssessment',
       'crm4AssessmentAssistantCompleteIssue',
       'paidClientGlobalClientSearch',
       'portalStaffListCases','portalStaffUpsertCase','portalStaffCreateInvitation','portalClientClaimInvitation','portalStaffCreateMessage','portalStaffRegisterDocument',

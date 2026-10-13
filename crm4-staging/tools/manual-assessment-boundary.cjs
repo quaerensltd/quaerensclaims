@@ -4,6 +4,9 @@
 function manualBoundary(db, deps, name, original) {
   const fail = message => { throw new deps.HttpsError('failed-precondition', message); };
   return async request => {
+    if(!request.auth?.uid)throw new deps.HttpsError('unauthenticated','Authentication required');
+    const membership=(await db.collection('crm4Memberships').doc(request.auth.uid).get()).data();
+    if(membership?.workspaceId!=='CRM4'||membership.active!==true)throw new deps.HttpsError('permission-denied','Active CRM4 membership required');
     const id = request.data?.id || request.data?.assessmentId;
     if (typeof id !== 'string' || !/^[\w-]+$/.test(id)) fail('Existing assessment ID required');
     const assessment = (await db.collection('professionalAssessments').doc(id).get()).data();

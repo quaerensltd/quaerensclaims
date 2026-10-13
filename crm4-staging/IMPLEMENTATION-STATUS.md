@@ -1,5 +1,13 @@
 # CRM4 implementation checkpoint
 
+## Manual browser authoring — current
+
+Spray Foam author/save/reopen/edit/review/approve/generate/captured issue/correction
+through version 2 executed in the actual browser. Same QAR and immutable hashes.
+New CRM4-only transactional compatibility endpoint; pinned sources/rules unchanged.
+Runtime now 84 endpoints (81 pinned, two recovery controls, one authoring adapter).
+See MANUAL-AUTHORING-EVIDENCE.md. Earlier authoring-blocked statements are historical.
+
 ## Final functional contracts — 13 October 2026
 
 Twelve further own-source handlers integrated: four manual Framework B operations,

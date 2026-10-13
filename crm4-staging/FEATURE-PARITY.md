@@ -1,5 +1,13 @@
 # CRM4 functional parity — continuous-client evidence
 
+## Current manual authoring acceptance
+
+Actual Spray Foam browser lifecycle through two issued versions: tested, including
+independent approval, same-QAR correction, hashes and 390/768/1440 responsive views.
+Concurrent/stale saves and source/v9 isolation tested. Solar manual authoring and
+manual Processing handoff remain unavailable; no legacy record migration.
+See MANUAL-AUTHORING-EVIDENCE.md; supersedes older manual-authoring gaps below.
+
 ## Final-contract acceptance — 13 October 2026 (supersedes affected rows below)
 
 | Feature | Actual evidence | Limitation |

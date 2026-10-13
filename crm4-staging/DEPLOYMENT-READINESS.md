@@ -5,8 +5,10 @@
 Current recovery extension supersedes the older CreateUser/issuance limitations
 below: durable account creation and capture-only atomic manual issuance are tested.
 Demo report Storage now supports fresh-runtime recovery when explicitly configured.
-Actual manual authoring remains blocked: legacy crm4Assessments direct writes are
-not the governed professionalAssessments pipeline. See ADMIN-RECOVERY-EVIDENCE.md.
+Spray Foam manual authoring now uses the transactional compatibility endpoint and
+has completed browser acceptance through two issued versions. Solar, existing-draft
+migration and manual Processing handoff remain separate gaps. See
+MANUAL-AUTHORING-EVIDENCE.md; older manual-authoring gaps below are historical.
 
 ## Executed evidence
 

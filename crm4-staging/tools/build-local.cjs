@@ -37,6 +37,7 @@ function transform(source, modules) {
     (_, version, service) => { modules.add(`${version}/${service}`); return `/__crm4/sdk/${version}/${service}.js`; });
   text = text.replace(/(<script\s+src=["']https:\/\/www\.gstatic\.com\/firebasejs\/[\d.]+\/firebase-storage-compat\.js["']><\/script>)/g,
     '$1<script src="/__crm4/compat.js"></script>');
+  text = require('./adapt-manual-page.cjs').adaptManualPage(text);
   return text.replace(/^[\t ]+$/gm, '').replace(/\s+$/, '') + '\n';
 }
 function compatWrapper() {

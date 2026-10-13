@@ -1,5 +1,9 @@
 # CRM4 dependency closure checkpoint
 
+Current extension: **84 exposed = 81 pinned + 2 recovery + 1 CRM4 manual-authoring
+compatibility endpoint**. Static captured-name coverage remains 68/82; no inflation
+for factory exports reused behind the new adapter. See MANUAL-AUTHORING-EVIDENCE.md.
+
 ## Current final-contract classification — 13 October 2026
 
 **83 exposed = 81 pinned handlers + 2 CRM4 recovery controls; 68/82 static names.**
