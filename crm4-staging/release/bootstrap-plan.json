@@ -1,0 +1,559 @@
+{
+  "schemaVersion": 1,
+  "projectId": "quaerens-crm4-spain-test",
+  "projectNumber": "558324850479",
+  "region": "europe-west1",
+  "executable": false,
+  "approved": false,
+  "sourceHashes": {
+    "firestore.rules": "f5980594f7b268f25bba66cfa018c4d1f5e5398f25307d44c01e2d20e26a5b70",
+    "storage.rules": "69864ee6fcfbe33701791dcdb1da57e127e01fc3fc740f656129bb0c0e107746",
+    "firestore.indexes.json": "ca47745915b1c75889464e6a1db6bf090a67b86f476b4918082ed386ae3b7191",
+    "package-lock.json": "98c21ccada67605105d2d9db43924883c406fa01ae9ed1517c838bba0d1e0acb",
+    "Dockerfile": "1e66faf3b2aa43fa35e4b2940c7375dca6fc93043f031cbb62086db143c8a2ae"
+  },
+  "steps": [
+    {
+      "id": "enable-apis",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://serviceusage.googleapis.com/v1/projects/558324850479/services:batchEnable",
+      "body": {
+        "serviceIds": [
+          "billingbudgets.googleapis.com",
+          "firestore.googleapis.com",
+          "firebasestorage.googleapis.com",
+          "run.googleapis.com",
+          "artifactregistry.googleapis.com",
+          "cloudbuild.googleapis.com",
+          "iam.googleapis.com",
+          "iap.googleapis.com"
+        ]
+      },
+      "dependsOn": [],
+      "before": "Re-read enabled APIs; skip already-enabled entries. Explicit API approval required."
+    },
+    {
+      "id": "inspect-existing",
+      "stage": "read-only",
+      "approved": false,
+      "dependsOn": [
+        "enable-apis"
+      ],
+      "checks": [
+        "Read SDK account metadata, user-managed keys, service-account policy and project IAM again",
+        "Read existing budget including project filters, amount, thresholds, channel names and etag; never create a second budget",
+        "GET database, default bucket, repository, service accounts and Run service; reuse only matching resources, stop on drift"
+      ],
+      "stopIf": "Unexpected existing resources, keys, workloads or policy changes"
+    },
+    {
+      "id": "remove-sdk-token-creator",
+      "stage": "iam",
+      "approved": false,
+      "dependsOn": [
+        "inspect-existing"
+      ],
+      "resource": "projects/quaerens-crm4-spain-test",
+      "proposal": {
+        "policy": {
+          "bindings": [
+            {
+              "members": [
+                "serviceAccount:service-558324850479@gcp-sa-firebase.iam.gserviceaccount.com"
+              ],
+              "role": "roles/firebase.managementServiceAgent"
+            },
+            {
+              "members": [
+                "serviceAccount:firebase-adminsdk-fbsvc@quaerens-crm4-spain-test.iam.gserviceaccount.com"
+              ],
+              "role": "roles/firebase.sdkAdminServiceAgent"
+            },
+            {
+              "members": [
+                "user:martijnpronk76@gmail.com"
+              ],
+              "role": "roles/owner"
+            }
+          ],
+          "etag": "BwZdvctVdXQ=",
+          "version": 1
+        },
+        "removedMember": "serviceAccount:firebase-adminsdk-fbsvc@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+        "removedRole": "roles/iam.serviceAccountTokenCreator",
+        "applyApproved": false
+      },
+      "before": "Approve this one removal after account/key/dependency review; regenerate against freshly read policy and preserve etag, audit configs, other members and bindings; no automatic rollback grant"
+    },
+    {
+      "id": "firestore",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://firestore.googleapis.com/v1/projects/quaerens-crm4-spain-test/databases?databaseId=%28default%29",
+      "body": {
+        "locationId": "europe-west1",
+        "type": "FIRESTORE_NATIVE",
+        "databaseEdition": "STANDARD",
+        "concurrencyMode": "PESSIMISTIC"
+      },
+      "dependsOn": [
+        "inspect-existing"
+      ]
+    },
+    {
+      "id": "firestore-backup",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://firestore.googleapis.com/v1/projects/quaerens-crm4-spain-test/databases/(default)/backupSchedules",
+      "body": {
+        "retention": "604800s",
+        "dailyRecurrence": {}
+      },
+      "dependsOn": [
+        "firestore"
+      ]
+    },
+    {
+      "id": "firebase-default-bucket",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://firebasestorage.googleapis.com/v1alpha/projects/quaerens-crm4-spain-test/defaultBucket",
+      "body": {
+        "location": "europe-west1"
+      },
+      "dependsOn": [
+        "inspect-existing"
+      ]
+    },
+    {
+      "id": "harden-default-bucket",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "PATCH",
+      "url": "https://storage.googleapis.com/storage/v1/b/quaerens-crm4-spain-test.firebasestorage.app",
+      "body": {
+        "iamConfiguration": {
+          "uniformBucketLevelAccess": {
+            "enabled": true
+          },
+          "publicAccessPrevention": "enforced"
+        },
+        "softDeletePolicy": {
+          "retentionDurationSeconds": "604800"
+        }
+      },
+      "dependsOn": [
+        "firebase-default-bucket"
+      ],
+      "before": "Read bucket metageneration; supply ifMetagenerationMatch and verify exact project/location before patch"
+    },
+    {
+      "id": "rules-indexes",
+      "stage": "infrastructure",
+      "approved": false,
+      "dependsOn": [
+        "firestore",
+        "harden-default-bucket"
+      ],
+      "cwd": "crm4-staging",
+      "command": [
+        "firebase",
+        "deploy",
+        "--project",
+        "quaerens-crm4-spain-test",
+        "--config",
+        "release/firebase.cloud.json",
+        "--only",
+        "firestore:rules,firestore:indexes,storage"
+      ],
+      "before": "Approve rules publication separately; no Hosting, Functions or application targets. Verify default-deny access before any user or web-app use."
+    },
+    {
+      "id": "initialize-firebase-auth",
+      "stage": "infrastructure",
+      "approved": false,
+      "dependsOn": [
+        "rules-indexes"
+      ],
+      "console": "Firebase Authentication Get started on quaerens-crm4-spain-test",
+      "settings": {
+        "emailPassword": true,
+        "emailLink": false,
+        "phone": false,
+        "anonymous": false,
+        "socialProviders": [],
+        "usersCreated": 0
+      },
+      "before": "Initialize Firebase Auth only; do not silently upgrade to Identity Platform or create users"
+    },
+    {
+      "id": "auth-settings",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "PATCH",
+      "url": "https://identitytoolkit.googleapis.com/admin/v2/projects/quaerens-crm4-spain-test/config?updateMask=signIn.email,signIn.phoneNumber,signIn.anonymous,signIn.allowDuplicateEmails,client.permissions",
+      "body": {
+        "signIn": {
+          "email": {
+            "enabled": true,
+            "passwordRequired": true
+          },
+          "phoneNumber": {
+            "enabled": false
+          },
+          "anonymous": {
+            "enabled": false
+          },
+          "allowDuplicateEmails": false
+        },
+        "client": {
+          "permissions": {
+            "disabledUserSignup": true,
+            "disabledUserDeletion": true
+          }
+        }
+      },
+      "dependsOn": [
+        "initialize-firebase-auth"
+      ],
+      "before": "Read current config first. If client permission settings are unavailable on Firebase Auth, stop for review; do not upgrade product or relax signup restrictions automatically."
+    },
+    {
+      "id": "firebase-web-app",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://firebase.googleapis.com/v1beta1/projects/quaerens-crm4-spain-test/webApps",
+      "body": {
+        "displayName": "CRM4 Spain Private Synthetic Test"
+      },
+      "dependsOn": [
+        "auth-settings"
+      ]
+    },
+    {
+      "id": "artifact-repository",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://artifactregistry.googleapis.com/v1/projects/quaerens-crm4-spain-test/locations/europe-west1/repositories?repositoryId=crm4-release",
+      "body": {
+        "format": "DOCKER",
+        "description": "CRM4 Spain private synthetic runtime images",
+        "dockerConfig": {
+          "immutableTags": true
+        }
+      },
+      "dependsOn": [
+        "inspect-existing"
+      ]
+    },
+    {
+      "id": "build-source-bucket",
+      "stage": "infrastructure",
+      "approved": false,
+      "method": "POST",
+      "url": "https://storage.googleapis.com/storage/v1/b?project=quaerens-crm4-spain-test",
+      "body": {
+        "name": "quaerens-crm4-spain-test-build-source",
+        "location": "europe-west1",
+        "storageClass": "STANDARD",
+        "iamConfiguration": {
+          "uniformBucketLevelAccess": {
+            "enabled": true
+          },
+          "publicAccessPrevention": "enforced"
+        },
+        "softDeletePolicy": {
+          "retentionDurationSeconds": "604800"
+        }
+      },
+      "dependsOn": [
+        "inspect-existing"
+      ]
+    },
+    {
+      "id": "crm4-runtime",
+      "stage": "iam",
+      "approved": false,
+      "method": "POST",
+      "url": "https://iam.googleapis.com/v1/projects/quaerens-crm4-spain-test/serviceAccounts",
+      "body": {
+        "accountId": "crm4-runtime",
+        "serviceAccount": {
+          "displayName": "crm4-runtime Spain synthetic test"
+        }
+      },
+      "dependsOn": [
+        "remove-sdk-token-creator"
+      ]
+    },
+    {
+      "id": "crm4-build",
+      "stage": "iam",
+      "approved": false,
+      "method": "POST",
+      "url": "https://iam.googleapis.com/v1/projects/quaerens-crm4-spain-test/serviceAccounts",
+      "body": {
+        "accountId": "crm4-build",
+        "serviceAccount": {
+          "displayName": "crm4-build Spain synthetic test"
+        }
+      },
+      "dependsOn": [
+        "remove-sdk-token-creator"
+      ]
+    },
+    {
+      "id": "iap-agent",
+      "stage": "iam",
+      "approved": false,
+      "method": "POST",
+      "url": "https://serviceusage.googleapis.com/v1beta1/projects/558324850479/services/iap.googleapis.com:generateServiceIdentity",
+      "body": {},
+      "dependsOn": [
+        "enable-apis"
+      ]
+    },
+    {
+      "id": "resource-iam-bindings",
+      "stage": "iam",
+      "approved": false,
+      "dependsOn": [
+        "crm4-runtime",
+        "crm4-build",
+        "artifact-repository",
+        "build-source-bucket",
+        "harden-default-bucket"
+      ],
+      "bindings": [
+        {
+          "principal": "serviceAccount:crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "role": "roles/datastore.user",
+          "scope": "project",
+          "resource": "projects/quaerens-crm4-spain-test"
+        },
+        {
+          "principal": "serviceAccount:crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "role": "roles/firebaseauth.admin",
+          "scope": "project",
+          "resource": "projects/quaerens-crm4-spain-test"
+        },
+        {
+          "principal": "serviceAccount:crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "role": "roles/storage.objectUser",
+          "scope": "bucket",
+          "resource": "//storage.googleapis.com/quaerens-crm4-spain-test.firebasestorage.app"
+        },
+        {
+          "principal": "serviceAccount:crm4-build@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "role": "roles/artifactregistry.writer",
+          "scope": "repository/crm4-release",
+          "resource": "projects/quaerens-crm4-spain-test/locations/europe-west1/repositories/crm4-release"
+        },
+        {
+          "principal": "serviceAccount:crm4-build@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "role": "roles/logging.logWriter",
+          "scope": "project",
+          "resource": "projects/quaerens-crm4-spain-test"
+        },
+        {
+          "principal": "serviceAccount:crm4-build@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "role": "roles/storage.objectViewer",
+          "scope": "bucket/quaerens-crm4-spain-test-build-source",
+          "resource": "//storage.googleapis.com/quaerens-crm4-spain-test-build-source"
+        }
+      ],
+      "before": "Read-modify-write each resource IAM policy with its own current etag; preserve existing agents and unrelated bindings. No owner/editor, tokenCreator, service-account keys or cross-project grants. Verify provisioner actAs; do not add grants already supplied by Owner."
+    },
+    {
+      "id": "budget-notification",
+      "stage": "infrastructure",
+      "approved": false,
+      "dependsOn": [
+        "inspect-existing"
+      ],
+      "channelBody": {
+        "type": "email",
+        "displayName": "CRM4 Spain budget company contact",
+        "labels": {
+          "email_address": "info@quaerens.co.uk"
+        },
+        "enabled": true
+      },
+      "channelEndpoint": "https://monitoring.googleapis.com/v3/projects/quaerens-crm4-spain-test/notificationChannels",
+      "budgetDesired": {
+        "displayName": "CRM4 Spain test monthly GBP20",
+        "budgetFilter": {
+          "projects": [
+            "projects/558324850479"
+          ],
+          "calendarPeriod": "MONTH"
+        },
+        "amount": {
+          "specifiedAmount": {
+            "currencyCode": "GBP",
+            "units": "20"
+          }
+        },
+        "thresholdRules": [
+          {
+            "thresholdPercent": 0.4,
+            "spendBasis": "CURRENT_SPEND"
+          },
+          {
+            "thresholdPercent": 0.8,
+            "spendBasis": "CURRENT_SPEND"
+          },
+          {
+            "thresholdPercent": 1,
+            "spendBasis": "CURRENT_SPEND"
+          }
+        ],
+        "notificationsRule": {
+          "disableDefaultIamRecipients": false,
+          "monitoringNotificationChannels": [
+            "projects/quaerens-crm4-spain-test/notificationChannels/<channelId>"
+          ]
+        }
+      },
+      "before": "Read existing budget and linked channels; reuse a matching company-email channel; after approval update existing budget by name with etag. Stop if scope differs from CRM4-only. No duplicate budget."
+    },
+    {
+      "id": "oauth",
+      "stage": "iam",
+      "approved": false,
+      "dependsOn": [
+        "iap-agent"
+      ],
+      "settings": {
+        "testerEmails": [
+          "brusseljeroen@gmail.com"
+        ],
+        "oauthAudience": "External",
+        "initialConsoleSetupRequired": true,
+        "oauthClientConfigured": false,
+        "supportEmail": "info@quaerens.co.uk",
+        "developerContactEmail": "info@quaerens.co.uk",
+        "secretsInRepository": false,
+        "contactEligibilityVerified": false,
+        "supportEmailEligibility": "Must be selectable as the signed-in Google account or a Google Group managed by that account; no account creation or IAM grants authorized",
+        "expectedJwtAudience": "/projects/558324850479/locations/europe-west1/services/crm4-spain-test"
+      },
+      "before": "External OAuth setup in Console; support email must be eligible. Keep OAuth secrets out of repository/image. No alternative contact or account creation without approval."
+    },
+    {
+      "id": "container-build",
+      "stage": "build",
+      "approved": false,
+      "dependsOn": [
+        "resource-iam-bindings",
+        "firebase-web-app"
+      ],
+      "region": "europe-west1",
+      "sourceBucket": "quaerens-crm4-spain-test-build-source",
+      "prepareTool": "prepare-container.cjs",
+      "nodeImage": "node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392",
+      "builderImage": "gcr.io/cloud-builders/docker@sha256:f772ab459889c67835bd959c2b9e9351f2c0752c4f989710ecda20c229f0733e",
+      "before": "Separate build submission approval required. Review actual public Firebase config and expected Run origin; produce content-addressed context, upload only its allowlist; regional build runs as crm4-build; no deploy step. Scan result and record immutable application digest."
+    },
+    {
+      "id": "private-run-service",
+      "stage": "deployment",
+      "approved": false,
+      "method": "POST",
+      "url": "https://run.googleapis.com/v2/projects/quaerens-crm4-spain-test/locations/europe-west1/services?serviceId=crm4-spain-test",
+      "body": {
+        "ingress": "INGRESS_TRAFFIC_ALL",
+        "iapEnabled": true,
+        "invokerIamDisabled": false,
+        "template": {
+          "serviceAccount": "crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+          "scaling": {
+            "minInstanceCount": 0,
+            "maxInstanceCount": 2
+          },
+          "maxInstanceRequestConcurrency": 8,
+          "timeout": "120s",
+          "containers": [
+            {
+              "image": "europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:<approved-image-digest>",
+              "ports": [
+                {
+                  "containerPort": 8080
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1",
+                  "memory": "1Gi"
+                },
+                "cpuIdle": true
+              },
+              "env": [
+                {
+                  "name": "GCLOUD_PROJECT",
+                  "value": "quaerens-crm4-spain-test"
+                },
+                {
+                  "name": "CRM4_CONFIG_FILE",
+                  "value": "/app/release/runtime-config.json"
+                },
+                {
+                  "name": "CRM4_DEPLOYMENT_APPROVED",
+                  "value": "true"
+                },
+                {
+                  "name": "ASSESSMENT_REPORT_ARCHIVE_EMAIL",
+                  "value": "archive@example.test"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "container-build",
+        "oauth"
+      ],
+      "before": "Separate exact-image deployment approval required; replace digest placeholder, verify runtime approval config and origin. Never create a placeholder service under infrastructure-only approval."
+    },
+    {
+      "id": "private-service-access",
+      "stage": "deployment",
+      "approved": false,
+      "dependsOn": [
+        "private-run-service"
+      ],
+      "bindings": [
+        {
+          "principal": "serviceAccount:service-558324850479@gcp-sa-iap.iam.gserviceaccount.com",
+          "role": "roles/run.invoker",
+          "scope": "service/crm4-spain-test",
+          "resource": "projects/quaerens-crm4-spain-test/locations/europe-west1/services/crm4-spain-test"
+        },
+        {
+          "principal": "user:brusseljeroen@gmail.com",
+          "role": "roles/iap.httpsResourceAccessor",
+          "scope": "iap-service/crm4-spain-test",
+          "resource": "IAP Cloud Run service projects/quaerens-crm4-spain-test/locations/europe-west1/services/crm4-spain-test"
+        }
+      ],
+      "before": "Service-specific IAM/IAP access only. Verify no inherited accessor policy broadens the sole tester and no public invoker exists."
+    }
+  ],
+  "unresolved": [
+    "SDK account/key/dependency inspection after IAM API approval",
+    "Existing budget settings after Budget API approval",
+    "OAuth support email eligibility",
+    "Auth initialization and client-permission support",
+    "Actual Firebase web config, service origin, image digest and live cloud acceptance"
+  ],
+  "noProjectCreation": true,
+  "noBillingAttachment": true
+}

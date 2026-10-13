@@ -1,3 +1,5 @@
+> Next phase: [exact bootstrap approval package](BOOTSTRAP-APPROVAL.md) and `bootstrap-plan.json` refine the minimum API list to eight and specify the Token Creator treatment. No changes have been applied.
+
 # CRM4 Spain — owner-created project verification
 
 Shared CRM Framework; branch `feature/crm4-isolated-clone`. Read-only observations are saved in `cloud-observed-state.json`. All agent-controlled mutation approvals remain false. The owner performed project creation, Blaze upgrade and reported budget creation outside this task.
