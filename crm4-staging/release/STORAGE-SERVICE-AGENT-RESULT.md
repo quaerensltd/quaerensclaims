@@ -1,5 +1,7 @@
 # CRM4 Spain Storage service-agent grant result
 
+Latest status: `AUTH-WEB-READINESS.md` verifies owner-created Auth/web configuration and records the live administrator upload quota blocker. Auth is no longer uninitialized.
+
 Shared CRM Framework. Continued from `5cbc2c7e` on `feature/crm4-isolated-clone`. Only project `quaerens-crm4-spain-test` / `558324850479` was mutated. The user explicitly approved this grant; no additional approval was inferred.
 
 ## Applied change and verification
