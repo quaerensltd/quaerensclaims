@@ -6,7 +6,7 @@ function manualAuthoring(deps) {
  const factory=require('../backend-sources/frameworkBAssessmentApprove/frameworkB.js').registerFrameworkB;
  const actions={create:'Create',get:'Get',save:'SaveDraft',submit:'SubmitReview',correct:'StartSupersedingRevision'};
  return async request=>{
-  if(process.env.GCLOUD_PROJECT!=='demo-quaerens-crm4'||process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080')throw Error('Demo only');
+  require('./runtime-boundary.cjs').assertRuntime(deps, false);
   if(!request.auth?.uid)fail('unauthenticated','Authentication required');
   const data=request.data||{}, action=data.action;
   if(action==='complete')return require('./manual-completion.cjs').manualCompletion(deps)(request);

@@ -1,12 +1,14 @@
+> Current decision, 13 October 2026: infrastructure approved in principle for quaerens-crm4-spain-test, europe-west1, Firebase Payment and a USD 25 monthly budget alert. Synthetic Firebase Authentication processing limitation accepted. Resource creation is paused pending the actual organization/folder and named testers. Application deployment, public access and real accounts remain unapproved. Offline runtime/routing/rules/index candidates now exist; cloud acceptance is unexecuted. See [current access and preparation evidence](ACCESS-POLICY-EVIDENCE.md).
+
 # CRM4 Spain private cloud test plan — 13 October 2026
 
-Classification: Shared CRM Framework. Scope: CRM4 only, branch `feature/crm4-isolated-clone`. CRM5 remains reserved for London. The user selected a new independent Spain project, EU regional storage, synthetic clients and captured providers. This selection is not resource, API, billing or deployment approval.
+Classification: Shared CRM Framework. Scope: CRM4 only, branch `feature/crm4-isolated-clone`. CRM5 remains reserved for London. The user selected a new independent Spain project, EU regional storage, synthetic clients and captured providers. The later in-principle infrastructure decision supersedes the initial selection; creation remains conditional on organization/folder and named tester confirmation. Application deployment is separately gated.
 
 ## Decision for review
 
 Propose `quaerens-crm4-spain-test` (availability not checked/reserved), one Firebase project and default Firestore database, with Cloud Run, Firestore and Storage in `europe-west1` (Belgium, EU). A separate project supplies independent Firebase Authentication; no CRM2/CRM3 tenants, memberships, service accounts, buckets, secrets, exports or client data are copied.
 
-Firebase Authentication itself processes data in the United States. EU Firestore/Storage selection does **not** make the entire system EU-only. Only synthetic client identities are proposed. Named staff/tester identity processing also needs acceptance before provisioning. [Firebase privacy](https://firebase.google.com/support/privacy), [location selection](https://firebase.google.com/docs/projects/locations).
+Firebase Authentication itself processes data in the United States. EU Firestore/Storage selection does **not** make the entire system EU-only. Only synthetic client identities are proposed. The user accepted this limitation for synthetic testing only; real identities remain unapproved. [Firebase privacy](https://firebase.google.com/support/privacy), [location selection](https://firebase.google.com/docs/projects/locations).
 
 ## Exact proposed resources
 

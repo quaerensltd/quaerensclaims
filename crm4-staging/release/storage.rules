@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /clientPortal/{caseId}/shared/{filename} {
+      allow create: if bucket == 'quaerens-crm4-spain-test.firebasestorage.app'
+        && resource == null && request.auth != null
+        && firestore.get(/databases/(default)/documents/crm4Memberships/$(request.auth.uid)).data.active == true
+        && firestore.get(/databases/(default)/documents/crm4Memberships/$(request.auth.uid)).data.workspaceId == 'CRM4'
+        && firestore.get(/databases/(default)/documents/crm4Memberships/$(request.auth.uid)).data.role in ['manager','administrator','processing']
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.portalVersion == 2
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.crmLink.workspaceId == 'CRM4'
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.crmLink.collection == 'crm4Leads'
+        && firestore.get(/databases/(default)/documents/crm4Leads/$(firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.crmLink.caseId)).data.workspaceId == 'CRM4'
+        && request.resource.size > 0 && request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    }
+    match /clientPortal/{caseId}/client-uploads/{uid}/{filename} {
+      allow create: if bucket == 'quaerens-crm4-spain-test.firebasestorage.app'
+        && resource == null
+        && request.auth != null && request.auth.uid == uid
+        && request.auth.token.email_verified == true
+        && (firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.get('workspaceId','') == 'CRM4' || firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.get('crmLink',{}).get('workspaceId','') == 'CRM4')
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.clientUid == uid
+        && firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data.accessState == 'ACTIVE'
+        && request.resource.size > 0 && request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    }
+    match /{object=**} { allow read, write: if false; }
+  }
+}

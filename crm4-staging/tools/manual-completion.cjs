@@ -5,7 +5,7 @@ const hash=value=>createHash('sha256').update(value).digest('hex');
 function manualCompletion(deps,{checkpoint=async()=>{}}={}){
  const db=deps.db,fail=(code,message)=>{throw new deps.HttpsError(code,message);};
  return async request=>{
-  if(process.env.GCLOUD_PROJECT!=='demo-quaerens-crm4'||process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080')throw Error('CRM4 demo only');
+  require('./runtime-boundary.cjs').assertRuntime(deps, false);
   if(!request.auth?.uid)fail('unauthenticated','Authentication required');
   const d=request.data||{},uid=request.auth.uid;
   if(![d.id,d.leadId,d.versionId].every(v=>typeof v==='string'&&/^[\w-]+$/.test(v))||!Number.isInteger(d.revision)||typeof d.qarReference!=='string')fail('invalid-argument','Exact assessment, lead, QAR, revision and version required');

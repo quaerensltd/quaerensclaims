@@ -7,7 +7,7 @@ const hash = value => createHash('sha256').update(JSON.stringify(value)).digest(
 function adminCreateRecovery(deps, options = {}) {
   const db = deps.db, fault = options.checkpoint || (async () => {});
   return async request => {
-    if (process.env.GCLOUD_PROJECT !== 'demo-quaerens-crm4' || process.env.FIRESTORE_EMULATOR_HOST !== '127.0.0.1:8080' || process.env.FIREBASE_AUTH_EMULATOR_HOST !== '127.0.0.1:9099') throw Error('CRM4 demo emulators required');
+    require('./runtime-boundary.cjs').assertRuntime(deps, true);
     const fail = (code, message) => { throw new deps.HttpsError(code, message); };
     if (!request.auth?.uid || request.auth.token?.platformAdmin !== true) fail('permission-denied', 'Platform administrator required');
     const d = request.data || {}, input = { email: String(d.email || '').trim().toLowerCase(), displayName: String(d.displayName || '').trim(), role: String(d.role || '').trim().toLowerCase(), active: d.active === undefined ? true : d.active, workspaceId: d.workspaceId === undefined ? 'CRM4' : d.workspaceId };

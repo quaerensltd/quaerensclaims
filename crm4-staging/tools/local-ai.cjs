@@ -21,9 +21,9 @@ function install() {
       if (!JSON.stringify(input).includes('CRM4_SYNTHETIC_ASSESSMENT')) throw Error('Explicit synthetic assessment marker required');
       return new Response(JSON.stringify({ id: 'crm4-local-synthetic-response', output_text: JSON.stringify(fixture(input.category)) }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
-    if (new URL(address).hostname !== '127.0.0.1') throw Error('External network disabled during local handler invocation');
+    if (new URL(address).hostname !== '127.0.0.1' && !(new URL(address).protocol === 'https:' && context.getStore().includes(new URL(address).hostname))) throw Error('External network disabled during local handler invocation');
     return originalFetch(url, options);
   };
 }
-function isolated(handler) { install(); return request => context.run(true, () => handler(request)); }
+function isolated(handler, allowedHosts = []) { install(); return request => context.run(allowedHosts, () => handler(request)); }
 module.exports = { fixture, isolated };

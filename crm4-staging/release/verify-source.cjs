@@ -27,8 +27,8 @@ function verifySource() {
  for(const [name,version]of Object.entries(pkg.dependencies))if(lock.packages['node_modules/'+name]?.version!==version)throw Error('Lock mismatch: '+name);
  const queue=['local-handlers.cjs'],seen=new Set();
  while(queue.length){const name=queue.shift();if(seen.has(name))continue;seen.add(name);add('tools/'+name);const source=fs.readFileSync(path.join(root,'tools',name),'utf8');for(const match of source.matchAll(/require\(['"]\.\/([^'"]+\.cjs)['"]\)/g))queue.push(match[1]);}
- for(const name of ['package.json','package-lock.json','configuration.cjs','persistent-storage.cjs','infrastructure.proposed.json'])add('release/'+name);
- return {schemaVersion:1,workspace:'CRM4',team:'Spain',deployable:false,reason:'Cloud runtime, SDK routing, rules/indexes and IAP acceptance are outstanding; review package only',files:files.sort((a,b)=>a.path.localeCompare(b.path)),dependencies:pkg.dependencies};
+ for(const name of fs.readdirSync(__dirname).filter(name=>/\.(cjs|json|rules)$/.test(name)||['Dockerfile','.dockerignore'].includes(name)).sort())add('release/'+name);
+ return {schemaVersion:1,workspace:'CRM4',team:'Spain',deployable:false,reason:'Offline cloud runtime and routing candidates only; organization/testers, dual-role support and cloud acceptance remain blocked',files:files.sort((a,b)=>a.path.localeCompare(b.path)),dependencies:pkg.dependencies};
 }
 function packageReview() {
  const report=verifySource(),out=path.join(root,'.scratch','release-review');fs.mkdirSync(out,{recursive:true});

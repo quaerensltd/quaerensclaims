@@ -4,7 +4,7 @@ const { createHash, randomUUID } = require('node:crypto');
 const hash = value => createHash('sha256').update(value).digest('hex');
 const OUTBOX = 'crm4PortalOutbox', RECEIPTS = 'crm4CapturedNotifications';
 function createPortalRecovery(db, deps, options = {}) {
-  if (process.env.GCLOUD_PROJECT !== 'demo-quaerens-crm4' || process.env.FIRESTORE_EMULATOR_HOST !== '127.0.0.1:8080') throw Error('CRM4 demo Firestore required');
+  require('./runtime-boundary.cjs').assertRuntime(deps, false);
   const clock = options.clock || Date.now;
   const fail = (code, message) => { throw new deps.HttpsError(code, message); };
   async function authorised(tx, request, caseId, staffOnly = false) {

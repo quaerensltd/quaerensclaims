@@ -86,7 +86,7 @@ function legacyPortal(db,deps,name,factory) {
    const result=await factory({...deps,db:view})[name]({...request,data});
    for(const [method,...args] of writes)tx[method](...args);
    if(operation)tx.create(operation,{fingerprint,result,caseId,actorUid:request.auth.uid});
-   if(result.claimUrl)result.claimUrl='http://127.0.0.1:4404/client-portal.html?claim='+encodeURIComponent(result.token);
+   if(result.claimUrl)result.claimUrl=(deps.crm4Cloud?.origin || 'http://127.0.0.1:4404')+'/client-portal.html?claim='+encodeURIComponent(result.token);
    return result;
   });
  };

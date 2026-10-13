@@ -1,3 +1,5 @@
+> Current decision, 13 October 2026: infrastructure approved in principle for quaerens-crm4-spain-test, europe-west1, Firebase Payment and a USD 25 monthly budget alert. Synthetic Firebase Authentication processing limitation accepted. Resource creation is paused pending the actual organization/folder and named testers. Application deployment, public access and real accounts remain unapproved. Offline runtime/routing/rules/index candidates now exist; cloud acceptance is unexecuted. See [current access and preparation evidence](release/ACCESS-POLICY-EVIDENCE.md).
+
 > **Latest CRM4 Spain preparation — 13 October 2026:** 84/84 full-suite tests,
 > separate packaging test and CRM2 security regression pass. Both v9 and manual
 > Spray Foam continuous browser journeys reach Processing; manual reissuance

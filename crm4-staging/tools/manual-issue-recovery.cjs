@@ -4,7 +4,7 @@
 // assessment status and audit commit together or not at all.
 function manualIssueRecovery(deps, factory, options={}) {
  const db=deps.db, checkpoint=options.checkpoint|| (async()=>{});
- if(process.env.GCLOUD_PROJECT!=='demo-quaerens-crm4'||process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080')throw Error('CRM4 demo only');
+ require('./runtime-boundary.cjs').assertRuntime(deps, false);
  return request=>db.runTransaction(async tx=>{
   const writes=[],raw=ref=>ref._raw||ref;
   const allowed=new Set(['professionalAssessments','professionalAssessmentVersions','professionalAssessmentDeliveries','professionalAssessmentAudit','crm4ManualIssueCaptures']);

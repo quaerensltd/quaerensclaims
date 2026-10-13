@@ -1,3 +1,5 @@
+> Current decision, 13 October 2026: infrastructure approved in principle for quaerens-crm4-spain-test, europe-west1, Firebase Payment and a USD 25 monthly budget alert. Synthetic Firebase Authentication processing limitation accepted. Resource creation is paused pending the actual organization/folder and named testers. Application deployment, public access and real accounts remain unapproved. Offline runtime/routing/rules/index candidates now exist; cloud acceptance is unexecuted. See [current access and preparation evidence](ACCESS-POLICY-EVIDENCE.md).
+
 # CRM4 Spain preparation evidence — 13 October 2026
 
 Shared CRM Framework. Existing branch `feature/crm4-isolated-clone`, starting HEAD `99177d207f6d5bbbab6a7f8e6de683a97605b67f`. The pre-existing CRM4-only manual completion, linkage, browser and Solar diagnostic changes were preserved, inspected and verified; no clone restart or backend-source consolidation.
