@@ -4,7 +4,7 @@ const proposal=require('../release/infrastructure.proposed.json');
 const config={...proposal,projectNumber:'123456789012',origin:'https://crm4-spain-test-synthetic.europe-west1.run.app'};
 test('cloud startup refuses missing confirmations and unapproved deployment',()=>{
  const {validateCloudRuntime}=require('../release/cloud-configuration.cjs'),{assertRuntime}=require('../tools/runtime-boundary.cjs');
- assert.throws(()=>validateCloudRuntime(proposal),/project number/);assert.equal(validateCloudRuntime(config).projectId,proposal.projectId);
+ assert.throws(()=>validateCloudRuntime({...proposal,projectNumber:null}),/project number/);assert.throws(()=>validateCloudRuntime(proposal),/origin/);assert.equal(validateCloudRuntime(config).projectId,proposal.projectId);
  for(const patch of [{testerEmails:[]},{testerEmails:['other@example.test']},{testerEmails:[...proposal.testerEmails,'other@example.test']},{testerEmails:['allUsers']},{testerEmails:['allAuthenticatedUsers']},{origin:'https://example.test'},{projectId:'quaerensclaims'}])assert.throws(()=>validateCloudRuntime({...config,...patch}));
  assert.throws(()=>assertRuntime({crm4Cloud:config,db:{projectId:config.projectId}},false,{GCLOUD_PROJECT:config.projectId}),/approval/);
  const approved={...config,deploymentApproved:true},env={GCLOUD_PROJECT:config.projectId,CRM4_DEPLOYMENT_APPROVED:'true'};

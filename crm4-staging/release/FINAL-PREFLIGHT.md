@@ -1,3 +1,5 @@
+> Superseded cloud-state gates: the owner has now created the project and enabled billing. See [verified resource checkpoint and remaining approvals](CLOUD-RESOURCE-CHECKPOINT.md). Project availability/creation and billing attachment are no longer outstanding; previous findings below are historical.
+
 # CRM4 Spain final infrastructure preflight — 13 October 2026
 
 Shared CRM Framework; CRM4-only continuation of `deaa7e1a`. This document supersedes older cloud plan statements about unimplemented local runtime work. The approved dual-role contract and original backend source fingerprints remain unchanged. All infrastructure and deployment approvals remain false.
