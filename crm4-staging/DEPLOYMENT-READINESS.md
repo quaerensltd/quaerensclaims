@@ -2,6 +2,15 @@
 
 **NOT READY FOR DEPLOYMENT.** Local demo integration only.
 
+Latest acceptance: 79/79 regressions and CRM2 security PASS. Spray Foam manual
+browser reissuance and Manager protected report access verified. Solar is blocked
+by all captured manual Create contracts allowing only Spray Foam; manual CRM
+completion is blocked by the available CompleteIssue requiring AI_ASSISTED.
+Neither was bypassed. Read-only legacy preflight is implemented, but migration is
+only a proposed explicit process; no historical data touched. Required contract
+decisions are in MANUAL-LEGACY-COMPATIBILITY.md. These are functional release
+blockers, independent of production infrastructure/provider approvals.
+
 Current recovery extension supersedes the older CreateUser/issuance limitations
 below: durable account creation and capture-only atomic manual issuance are tested.
 Demo report Storage now supports fresh-runtime recovery when explicitly configured.

@@ -26,6 +26,10 @@ async function run(){
   await page.waitForLoadState('domcontentloaded');await page.waitForTimeout(1000);
   await page.goto('http://127.0.0.1:4404/crm4-assessment-builder.html?caseId='+id);
   await page.locator('#caseId option[value="'+id+'"]').waitFor({state:'attached'});
+  await page.locator('#submitReview').waitFor({state:'attached'});
+  assert.equal(await page.locator('#route option[value=solar]').evaluate(option=>option.disabled),true);
+  assert.match(await page.locator('form').innerText(),/Solar authoring is unavailable/);
+  evidence.solar='BLOCKED: preserved Create permits Spray Foam only; disabled honestly';
   await page.locator('#route').selectOption('spray-foam');
   await page.locator('[name=issueSummary]').fill('Synthetic client-reported roof concerns. Evidence unverified.');
   await page.locator('[name=financialPosition]').fill('Unquantified pending evidence.');
@@ -69,6 +73,26 @@ async function run(){
   assert.equal((await db.collection('professionalAssessmentVersions').doc(versionId).get()).data().status,'SUPERSEDED');
   const documents=await db.collection('professionalAssessmentDocuments').where('assessmentId','==',assessmentId).get();assert.equal(documents.size,2);
   for(const d of documents.docs){assert.equal(require('node:crypto').createHash('sha256').update(service.runtime.storageObjects.get(d.data().pdfPath)).digest('hex'),d.data().pdfHash);}
+  // Use the signed-in Manager browser transport, not direct test writes.
+  const leadBefore=(await db.collection('crm4Leads').doc(id).get()).data();
+  const managerAccess=await reviewPage.evaluate(async({leadId,assessmentId})=>{
+   const {functions}=await import('/crm4-platform.js');
+   const {httpsCallable}=await import('/__crm4/sdk/10.8.0/functions.js');
+   const call=(name,data)=>httpsCallable(functions,name)(data).then(r=>r.data);
+   const linked=await call('crm4ManagerGetLinkedAssessment',{leadId});
+   const pdf=await call('crm4ManagerDownloadLinkedAssessmentReport',{leadId});
+   let completion;
+   try{await call('crm4AssessmentAssistantCompleteIssue',{leadId,assessmentId});completion='UNEXPECTED_SUCCESS';}catch(e){completion=e.code;}
+   return {linked,pdf,completion};
+  },{leadId:id,assessmentId});
+  assert.equal(managerAccess.linked.assessment.id,assessmentId);
+  assert.equal(managerAccess.linked.assessment.qarReference,qar);
+  assert.equal(managerAccess.linked.assessment.assessmentSource,'FRAMEWORK_B');
+  assert.equal(require('node:crypto').createHash('sha256').update(Buffer.from(managerAccess.pdf.content,'base64')).digest('hex'),managerAccess.pdf.hash);
+  assert.equal(managerAccess.completion,'functions/permission-denied');
+  assert.deepEqual((await db.collection('crm4Leads').doc(id).get()).data(),leadBefore);
+  assert.equal((await a.get()).data().assessmentSource,'FRAMEWORK_B');
+  evidence.manualHandoff={managerLinkedReport:'PASS',protectedDownload:'PASS',completion:'BLOCKED: existing completion callable is AI-assisted only',leadUnchanged:true};
   await page.reload();await page.locator('#manualIdentity').filter({hasText:'Version 2'}).waitFor();
   assert.match(await page.locator('#preview').innerText(),/Assessment route: Spray Foam Loft Insulation/);
   assert.equal(await page.locator('[name=status]').inputValue(),'ISSUED');

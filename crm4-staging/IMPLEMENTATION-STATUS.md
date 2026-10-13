@@ -1,5 +1,14 @@
 # CRM4 implementation checkpoint
 
+## Manual category/handoff contract verification — latest
+
+Read-only legacy preflight implemented and tested; no automatic migration. Solar
+creation rejected by preserved category contract even with explicit capability.
+Manual browser lifecycle and Manager download retested; manual completion rejects
+without mutation. No pinned/source/rules changes. 79/79 suite and CRM2 security
+PASS. See MANUAL-LEGACY-COMPATIBILITY.md for the exact approval-required contract
+gaps; Solar and manual end-to-end handoff are NOT certified complete.
+
 ## Manual browser authoring — current
 
 Spray Foam author/save/reopen/edit/review/approve/generate/captured issue/correction

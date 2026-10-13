@@ -11,6 +11,11 @@ test('manual browser contract creates linked identity atomically and serialises 
   const input={action:'create',leadId:id,category:'spray-foam',form:{issueSummary:'Reported only',financialPosition:'Unquantified'}};
   await assert.rejects(call(input,'stranger'),e=>e.code==='permission-denied');
   await assert.rejects(call({...input,category:'solar'}));
+  // Prove the block is the preserved category contract, not merely missing scope.
+  await r.db.collection('users').doc(id).update({assessmentCategoryAccess:['spray-foam','solar']});
+  await assert.rejects(call({...input,category:'solar'}),e=>e.code==='invalid-argument'&&/Only the authorised Spray Foam/.test(e.message));
+  assert.equal((await r.db.collection('professionalAssessments').where('crmLink.caseRef','==',id).get()).size,0);
+  assert.equal((await r.db.collection('crm4Leads').doc(id).get()).data().assessmentId,undefined);
   const results=await Promise.allSettled([call(input),call(input)]);
   assert.equal(results.filter(x=>x.status==='fulfilled').length,1);
   const created=results.find(x=>x.status==='fulfilled').value;

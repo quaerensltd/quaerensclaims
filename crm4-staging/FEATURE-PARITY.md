@@ -1,5 +1,17 @@
 # CRM4 functional parity — continuous-client evidence
 
+## Latest manual boundary verification
+
+| Feature | Executed result | Remaining boundary |
+|---|---|---|
+| Spray Foam manual lifecycle | Browser retested through version 2, protected Manager download/hash | Manual operational completion not supported |
+| Solar manual creation | Rejection verified with Solar permission; disabled UI verified | All preserved manual Create contracts permit Spray Foam only |
+| Legacy compatibility | Pure preflight and conflict/digest tests pass | Explicit migration plan only; no records migrated |
+| Manual handoff | Manager linked report/download pass; completion rejects without lead mutation | Closer/onboarding/Processing continuation NOT EXECUTED for manual reports |
+| Regressions | 79/79 plus CRM2 security pass | Does not establish missing Solar/manual handoff parity |
+
+See MANUAL-LEGACY-COMPATIBILITY.md. Runtime coverage remains 84; no new callable.
+
 ## Current manual authoring acceptance
 
 Actual Spray Foam browser lifecycle through two issued versions: tested, including

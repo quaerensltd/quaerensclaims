@@ -1,5 +1,33 @@
 # CRM4 manual authoring compatibility — 13 October 2026
 
+## Follow-on acceptance from 99855b4
+
+- Added a pure read-only legacy preflight with deterministic source digest and
+  explicit blocking reasons. No migration callable, identity allocation or writes.
+  See MANUAL-LEGACY-COMPATIBILITY.md for traced legacy shape and proposed process.
+- Solar rejection now tested with explicit Solar category permission: original
+  Create returns invalid-argument and leaves no assessment/lead pointer. All four
+  available manual bundles contain the same Spray Foam-only creation guard.
+  Solar lifecycle is BLOCKED, not implemented or passed.
+- Actual browser repeated Spray Foam author/save/reopen/edit/review/independent
+  approve/documents/captured issue/correction/reissue. Fixture DIazb7YsVUTSBkRZIJrs,
+  QAR-20261013-FC660ADF, two immutable versions and both PDF hashes verified.
+- Authenticated Manager browser transport retrieved that same manual assessment
+  and protected PDF successfully. CompleteIssue rejected manual source as expected;
+  lead unchanged. Manual onboarding/Processing not executed: no preserved manual
+  completion contract. No spoofed AI source or seeded completion was used.
+- Full suite 79/79 PASS, zero skips/failures. CRM2 security PASS. Existing diagnostic
+  tests remain diagnostics, not recovery acceptance. Initial browser assertion used
+  Playwright isDisabled on an option; corrected to native option.disabled, rerun PASS.
+- Separate v9 continuous browser journey PASS, lead T88rBXwHY8w7gyypcYf7, through
+  Processing and same-QAR correction. This is not a manual handoff acceptance claim.
+- 390/768/1440 screenshots inspected; no horizontal overflow/page exceptions.
+  Emulator warning overlays remain visible; this is not exact CRM2 visual-parity
+  certification. Existing working-copy preview remains separate from issued PDFs.
+
+No pinned sources, production code/rules or cloned page changed in this follow-on.
+Solar creation and manual completion need the explicit contracts documented above.
+
 Shared CRM Framework reuse. Local demo emulators and synthetic users/records only.
 
 ## Authoritative preserved contracts
