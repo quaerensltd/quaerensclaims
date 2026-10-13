@@ -24,7 +24,8 @@ function prepareContainer({config,nodeImage,builderImage}) {
  const image='europe-west1-docker.pkg.dev/'+runtime.projectId+'/crm4-release/crm4-spain:'+digest.slice(0,16);
  const build={steps:[{name:builderImage,args:['build','--build-arg','NODE_IMAGE='+nodeImage,'--file','release/Dockerfile','--tag',image,'.']}],images:[image],timeout:'900s',serviceAccount:'projects/'+runtime.projectId+'/serviceAccounts/crm4-build@'+runtime.projectId+'.iam.gserviceaccount.com',options:{logging:'CLOUD_LOGGING_ONLY',machineType:'E2_MEDIUM'}};
  fs.writeFileSync(path.join(out,'cloudbuild.json'),JSON.stringify(build,null,2)+'\n');
- const result={output:out,image,sourceDigest:digest,cloudWritesPerformed:false,buildExecuted:false,deploymentAuthorized:false};
+ const sealed=require('./context-integrity.cjs').sealContext(out);
+ const result={...sealed,output:out,image,sourceDigest:digest,cloudWritesPerformed:false,buildExecuted:false,deploymentAuthorized:false};
  fs.writeFileSync(path.join(out,'preparation.json'),JSON.stringify(result,null,2)+'\n');
  return result;
 }
