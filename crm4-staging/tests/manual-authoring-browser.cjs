@@ -92,7 +92,13 @@ async function run(){
   assert.equal(managerAccess.completion,'functions/permission-denied');
   assert.deepEqual((await db.collection('crm4Leads').doc(id).get()).data(),leadBefore);
   assert.equal((await a.get()).data().assessmentSource,'FRAMEWORK_B');
-  evidence.manualHandoff={managerLinkedReport:'PASS',protectedDownload:'PASS',completion:'BLOCKED: existing completion callable is AI-assisted only',leadUnchanged:true};
+  evidence.manualHandoff={managerLinkedReport:'PASS',protectedDownload:'PASS',aiOnlyCompletion:'DENIED',aiRejectionLeadUnchanged:true};
+  await reviewPage.locator('#completeManual').click();await reviewPage.locator('#result').filter({hasText:'completed'}).waitFor();
+  const completed=(await db.collection('crm4Leads').doc(id).get()).data();
+  assert.equal(completed.assessmentStatus,'COMPLETED');assert.equal(completed.assessmentSource,'FRAMEWORK_B');
+  await reviewPage.locator('#completeManual').click();await reviewPage.locator('#result').filter({hasText:'completed'}).waitFor();
+  assert.equal((await db.collection('crm4Leads').doc(id).get()).data().actionHistory.filter(e=>e.action==='professional_assessment_completed').length,1);
+  evidence.manualHandoff.completion='PASS: manual boundary; AI-only route remains denied; replay one event';
   await page.reload();await page.locator('#manualIdentity').filter({hasText:'Version 2'}).waitFor();
   assert.match(await page.locator('#preview').innerText(),/Assessment route: Spray Foam Loft Insulation/);
   assert.equal(await page.locator('[name=status]').inputValue(),'ISSUED');

@@ -1,6 +1,6 @@
 'use strict';
-// Reports retain a test inspection cache, with durable emulator storage whenever
-// explicitly configured. Neither path permits a production bucket.
+// Runtime reports persist in isolated emulator Storage. Cache is inspection only.
+// Only the app-less unit-test adapter is memory-backed; no production fallback.
 function createLocalStorage(app) {
   const objects = new Map();
   const tickets = new Map();
@@ -20,11 +20,11 @@ function createLocalStorage(app) {
     if (!/^professional-assessments\/[\w-]+\/versions\/[\w-]+\/(report\.pdf|internal\.docx)$/.test(name)) throw Error('Unapproved synthetic document path');
     return {
       async save(bytes, options = {}) {
-        if (options.preconditionOpts?.ifGenerationMatch === 0 && objects.has(name)) throw Object.assign(Error('Synthetic object already exists'), { code: 412 });
-        if (process.env.STORAGE_EMULATOR_HOST) await portal(name).save(bytes, options);
+        if (options.preconditionOpts?.ifGenerationMatch === 0 && (app ? (await portal(name).exists())[0] : objects.has(name))) throw Object.assign(Error('Synthetic object already exists'), { code: 412 });
+        if (app) await portal(name).save(bytes, options);
         objects.set(name, Buffer.from(bytes));
       },
-      async download() { if (!objects.has(name)) { if(process.env.STORAGE_EMULATOR_HOST)return portal(name).download(); throw Error('Local document missing'); } return [Buffer.from(objects.get(name))]; }
+      async download() { if (app) return portal(name).download(); if (!objects.has(name)) throw Error('Local document missing'); return [Buffer.from(objects.get(name))]; }
     };
   } }) };
 }

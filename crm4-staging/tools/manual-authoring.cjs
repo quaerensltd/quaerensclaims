@@ -9,6 +9,7 @@ function manualAuthoring(deps) {
   if(process.env.GCLOUD_PROJECT!=='demo-quaerens-crm4'||process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080')throw Error('Demo only');
   if(!request.auth?.uid)fail('unauthenticated','Authentication required');
   const data=request.data||{}, action=data.action;
+  if(action==='complete')return require('./manual-completion.cjs').manualCompletion(deps)(request);
   if(!actions[action])fail('invalid-argument','Unsupported manual action');
   return db.runTransaction(async tx=>{
    const uid=request.auth.uid, member=(await tx.get(db.collection('crm4Memberships').doc(uid))).data();

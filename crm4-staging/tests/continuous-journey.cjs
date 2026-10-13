@@ -3,6 +3,7 @@
 // the pinned authenticated handlers; Admin Firestore is used for assertions only.
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 async function run() {
+  const manual=process.env.CRM4_JOURNEY_MODE==='manual';
   Object.assign(process.env, { GCLOUD_PROJECT: 'demo-quaerens-crm4', FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080', FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099', STORAGE_EMULATOR_HOST: 'http://127.0.0.1:9199' });
   const service = await require('../tools/serve-callables.cjs').start();
   const db = service.runtime.db, auth = require('firebase-admin/auth').getAuth(service.runtime.app);
@@ -10,7 +11,7 @@ async function run() {
   const server = http.createServer(require('../tools/serve-local.cjs').handler);
   await new Promise(r => server.listen(4404, '127.0.0.1', r));
   const browser = await require(process.env.CRM4_PLAYWRIGHT_MODULE).chromium.launch({ channel: 'msedge', headless: true });
-  const output = path.resolve(__dirname, '../.scratch/continuous-journey'); fs.mkdirSync(output, { recursive: true });
+  const output = path.resolve(__dirname, '../.scratch/'+(manual?'manual-continuous-journey':'continuous-journey')); fs.mkdirSync(output, { recursive: true });
   let leadId, blocked = null;
   async function invoke(role, name, data = {}, expectedError) {
     const reply = await pages[role].evaluate(async ({ name, data }) => {
@@ -32,6 +33,7 @@ async function run() {
       if(role==='administrator')await auth.setCustomUserClaims(uid,{platformAdmin:true});
       await db.collection('crm4Memberships').doc(uid).set({ active: true, workspaceId: 'CRM4', role, email, displayName: 'Synthetic ' + role });
       await db.collection('users').doc(uid).set({ role, assessmentCapabilities: ['manager', 'administrator'].includes(role) ? ['assessmentIssuer'] : [] });
+      if(manual)await db.collection('users').doc(uid).set({role,assessmentCapabilities:role==='lister'?['assessmentAuthor']:role==='manager'?['assessmentIssuer','assessmentApprover']:[],assessmentCategoryAccess:['spray-foam'],assessmentWorkspaceAccess:['CRM4']});
       users[role] = { uid, email };
       const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
       await context.route('**/*', r => ['127.0.0.1', 'www.gstatic.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(new URL(r.request().url()).hostname) ? r.continue() : r.abort());
@@ -71,11 +73,26 @@ async function run() {
     await invoke('closer', 'crm4ManagerUpdateLead', { action: 'APPROVE' }, 'permission-denied');
     const handoff = { appointmentDate: '2099-01-12', appointmentTime: '12:00', appointmentAgentName: 'Synthetic Onboarding' };
     await invoke('lister', 'crm4ListerSubmitToManager', handoff, 'failed-precondition');
+    let draft;
+    if(manual){
+      const createdManual=await invoke('lister','crm4ManualAssessment',{action:'create',category:'spray-foam',form:{issueSummary:'Synthetic client-reported roof concerns',financialPosition:'Unquantified pending evidence'}});
+      draft={assessmentId:createdManual.id};
+      await invoke('lister','crm4ManualAssessment',{action:'submit',id:createdManual.id,revision:2});
+      const approved=await invoke('manager','frameworkBAssessmentApprove',{id:createdManual.id,checklist:{identity:true,facts:true,calculations:true,evidence:true,wording:true}});
+      await invoke('manager','frameworkBAssessmentGenerateDocuments',{id:createdManual.id});
+      await invoke('manager','frameworkBAssessmentIssue',{id:createdManual.id});
+      const current=(await db.collection('professionalAssessments').doc(createdManual.id).get()).data();
+      const complete={action:'complete',id:createdManual.id,versionId:approved.versionId,revision:current.revision,qarReference:current.qarReference};
+      await invoke('lister','crm4ManualAssessment',complete,'permission-denied');
+      await invoke('manager','crm4ManualAssessment',complete);
+      assert.equal((await invoke('manager','crm4ManualAssessment',complete)).idempotent,true);
+    }else{
     await invoke('lister', 'crm4AssessmentAssistantUpdateClientIdentity', { client: { firstName: 'Synthetic', lastName: 'Continuous Journey', email: clientEmail, mobile: '07700900000', address: { addressLine1: '1 Synthetic Street', town: 'Test Town', postcode: 'ZZ1 1ZZ', country: 'United Kingdom' } } });
     const extracted = await invoke('lister', 'crm4AssessmentAssistantAnalyse', { narrative: 'CRM4_SYNTHETIC_ASSESSMENT: separate installation, damp treatment and removal.', caseContext: { sameAsClientAddress: true } });
     const confirmed = await invoke('lister', 'crm4AssessmentAssistantConfirmReview', { artifactId: extracted.id, reviewedExtraction: extracted.output });
-    const draft = await invoke('lister', 'crm4AssessmentAssistantGenerateDraft', { artifactId: confirmed.id });
+    draft = await invoke('lister', 'crm4AssessmentAssistantGenerateDraft', { artifactId: confirmed.id });
     const final = await invoke('lister', 'crm4AssessmentAssistantFinalise'); assert.equal(final.assessmentId, draft.assessmentId);
+    }
     await invoke('lister', 'crm4ListerSubmitToManager', handoff);
     assert.equal((await invoke('lister','crm4ListerRetryManagerNotification')).idempotent,true);
     await invoke('manager', 'crm4ManagerUpdateLead', { action: 'APPROVE' });
@@ -182,6 +199,7 @@ async function run() {
     assert.equal((await db.collection('processingCases').doc('crm4-' + leadId).get()).data().assessmentId, draft.assessmentId);
     assert.equal((await db.collection('clientPortalRequirements').doc(requirement.id).get()).data().requested, true);
     await invoke('processing', 'paidClientGetWorkspace');
+    if(!manual){
     const original = (await db.collection('professionalAssessments').doc(draft.assessmentId).get()).data();
     const originalVersion = (await db.collection('professionalAssessmentVersions').doc(original.currentVersionId).get()).data();
     const correctionInput = { expectedAssessmentId: draft.assessmentId, expectedQarReference: original.qarReference, expectedCurrentRevision: original.revision, expectedCurrentFinalVersion: original.currentVersion };
@@ -201,6 +219,10 @@ async function run() {
     assert.equal(afterCorrection.currentVersion, original.currentVersion + 1);
     assert.equal(afterCorrection.qarReference, original.qarReference);
     assert.deepEqual((await db.collection('professionalAssessmentVersions').doc(original.currentVersionId).get()).data(), originalVersion);
+    }else{
+      assert.equal((await db.collection('professionalAssessments').doc(draft.assessmentId).get()).data().assessmentSource,'FRAMEWORK_B');
+      assert.equal((await db.collection('crm4Leads').doc(leadId).get()).data().assessmentSource,'FRAMEWORK_B');
+    }
     assert(service.runtime.providerReceipts.every(r => r.delivered === false));
     const captures=await db.collection('crm4CapturedNotifications').get();
     assert(captures.docs.every(d=>d.data().delivered===false));

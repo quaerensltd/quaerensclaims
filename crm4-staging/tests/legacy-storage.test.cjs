@@ -9,7 +9,7 @@ test('staff shared upload rules require active CRM4 staff, owned v2 link, immuta
   const member=r.db.collection('crm4Memberships').doc(id),lead=r.db.collection('crm4Leads').doc(id),portal=r.db.collection('clientPortalCases').doc(id);
   await member.set({workspaceId:'CRM4',active:true,role:'manager'});await lead.set({workspaceId:'CRM4'});await portal.set({portalVersion:2,crmLink:{workspaceId:'CRM4',collection:'crm4Leads',caseId:id}});
   const base='http://127.0.0.1:9199/v0/b/demo-quaerens-crm4.appspot.com/o';
-  const put=(suffix,type='text/plain')=>fetch(base+'?uploadType=media&name='+encodeURIComponent(`clientPortal/${id}/shared/${suffix}.txt`),{method:'POST',headers:{Authorization:'Firebase '+token,'Content-Type':type},body:'Synthetic evidence'});
+  const put=(suffix,type='text/plain')=>require('./storage-upload-helper.cjs').uploadSynthetic(base,token,`clientPortal/${id}/shared/${suffix}.txt`,type);
   assert.equal((await put('valid')).status,200);assert.equal((await put('valid')).status,403);
   assert.equal((await put('unsafe','text/html')).status,403);
   await member.update({role:'lister'});assert.equal((await put('lister')).status,403);

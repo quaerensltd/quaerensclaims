@@ -7,7 +7,7 @@ import { httpsCallable } from '/__crm4/sdk/10.8.0/functions.js';
 const {user,membership}=await requireCrm2();bindLogout();
 document.querySelector('a[href="/manager-dashboard.html"]').href=roleRoutes[membership.role]||'/crm4-login.html';
 const form=document.getElementById('form'),preview=document.getElementById('preview'),result=document.getElementById('result'),params=new URLSearchParams(location.search);
-let assessmentId=params.get('assessmentId')||'',revision=0,state='DRAFT',busy=false;
+let assessmentId=params.get('assessmentId')||'',revision=0,state='DRAFT',busy=false,versionId='',qarReference='';
 function values() { const data = Object.fromEntries(new FormData(form).entries()); data.assessmentRoute=form.elements.assessmentRoute.value; data.caseId=form.elements.caseId.value; data.flags = new FormData(form).getAll("flags"); return data; }
 function report(data) { const route = data.assessmentRoute === "spray-foam" ? "Spray Foam Loft Insulation" : "Solar PV / Renewable Energy"; const flags = data.flags?.length ? data.flags.map(flag => `- ${flag}`).join("\n") : "- No assessment checks selected"; return ["QUAERENS CRM4 DRAFT ASSESSMENT","",`Assessment route: ${route}`,`CRM4 reference: ${data.reference || "[Not recorded]"}`,`Client: ${data.clientName || "[Not recorded]"}`,`Property: ${data.propertyAddress || "[Not recorded]"}`,`Installer / provider: ${data.provider || "[Not recorded]"}`,`Sale / installation date: ${data.saleDate || "[Not recorded]"}`,`Finance / payment route: ${data.financeRoute || "[Not recorded]"}`,"","ISSUE SUMMARY",data.issueSummary || "[Not recorded]","","FINANCIAL POSITION",data.financialPosition || "[Not recorded]","","EVIDENCE AVAILABLE",data.evidenceAvailable || "[Not recorded]","","EVIDENCE GAPS OR CAUTIONS",data.evidenceGaps || "[Not recorded]","","ASSESSMENT CHECKS",flags,"","PRELIMINARY NOTE","This draft organises the currently available information. It does not guarantee any refund, compensation, recovery or legal outcome.","","DOCUMENT STATUS","Draft CRM4 assessment only. No Processing case has been created."].join("\n"); }
 function updatePreview() { preview.textContent = report(values()); }
@@ -24,15 +24,19 @@ form.elements.status.disabled=true;
 const controls=document.createElement('div');controls.className='full grid';
 controls.innerHTML='<p id="manualIdentity" aria-live="polite"></p><p>Governed manual Spray Foam route. Solar authoring is unavailable in this preserved contract. No legacy records are migrated.</p><button type="button" class="btn" id="submitReview">Submit for review</button><fieldset id="reviewChecks"><legend>Independent approval checklist</legend>'+['identity','facts','calculations','evidence','wording'].map(k=>`<label><input type="checkbox" data-review="${k}"> ${k}</label>`).join('')+'</fieldset><button type="button" class="btn" id="approveManual">Approve reviewed version</button><button type="button" class="btn" id="generateManual">Generate governed documents</button><button type="button" class="btn" id="issueManual">Issue (local capture only)</button><button type="button" class="btn" id="correctManual">Start correction revision</button>';
 result.before(controls);result.setAttribute('role','status');
+const completion=document.createElement('button');completion.type='button';completion.className='btn';completion.id='completeManual';completion.textContent='Link issued manual assessment (local capture only)';controls.append(completion);
+completion.onclick=()=>run(async()=>{await bridge({action:'complete',id:assessmentId,leadId:form.elements.caseId.value,revision,versionId,qarReference});await refresh();});
 document.getElementById('reviewChecks').className='checks';
 function renderState(){
  form.elements.status.replaceChildren(new Option(state,state));
  document.getElementById('caseId').disabled=!!assessmentId;form.elements.assessmentRoute.disabled=!!assessmentId;
  document.getElementById('save').disabled=busy||state!=='DRAFT';
+ completion.disabled=busy||state!=='ISSUED'||!['manager','administrator'].includes(membership.role);
  for(const [id,allowed]of Object.entries({submitReview:assessmentId&&state==='DRAFT',approveManual:state==='UNDER REVIEW',generateManual:state==='APPROVED',issueManual:state==='APPROVED',correctManual:state==='ISSUED'}))document.getElementById(id).disabled=busy||!allowed;
 }
 async function refresh(){
  const {assessment:a}=await bridge({action:'get',id:assessmentId});revision=a.revision;state=a.status;populate(a.structuredIntake?.manualForm||{});
+ versionId=a.currentVersionId||'';qarReference=a.qarReference;
  form.elements.caseId.value=a.crmLink.caseRef;
  document.getElementById('manualIdentity').textContent=`${a.qarReference} | ${a.status} | Revision ${a.revision} | Version ${a.currentVersion}`;
  history.replaceState(null,'',`?caseId=${encodeURIComponent(a.crmLink.caseRef)}&assessmentId=${encodeURIComponent(assessmentId)}`);renderState();

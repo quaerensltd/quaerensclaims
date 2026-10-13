@@ -4,7 +4,7 @@ import { httpsCallable } from '/__crm4/sdk/10.8.0/functions.js';
 const {user,membership}=await requireCrm2();bindLogout();
 document.querySelector('a[href="/manager-dashboard.html"]').href=roleRoutes[membership.role]||'/crm4-login.html';
 const form=document.getElementById('form'),preview=document.getElementById('preview'),result=document.getElementById('result'),params=new URLSearchParams(location.search);
-let assessmentId=params.get('assessmentId')||'',revision=0,state='DRAFT',busy=false;
+let assessmentId=params.get('assessmentId')||'',revision=0,state='DRAFT',busy=false,versionId='',qarReference='';
 /* ORIGINAL_PRESENTATION_HELPERS */
 const bridge=data=>httpsCallable(functions,'crm4ManualAssessment')(data).then(r=>r.data);
 const cases=await getDocs(query(collection(db,'crm4Leads'),orderBy('updatedAt','desc')));
@@ -16,15 +16,19 @@ form.elements.status.disabled=true;
 const controls=document.createElement('div');controls.className='full grid';
 controls.innerHTML='<p id="manualIdentity" aria-live="polite"></p><p>Governed manual Spray Foam route. Solar authoring is unavailable in this preserved contract. No legacy records are migrated.</p><button type="button" class="btn" id="submitReview">Submit for review</button><fieldset id="reviewChecks"><legend>Independent approval checklist</legend>'+['identity','facts','calculations','evidence','wording'].map(k=>`<label><input type="checkbox" data-review="${k}"> ${k}</label>`).join('')+'</fieldset><button type="button" class="btn" id="approveManual">Approve reviewed version</button><button type="button" class="btn" id="generateManual">Generate governed documents</button><button type="button" class="btn" id="issueManual">Issue (local capture only)</button><button type="button" class="btn" id="correctManual">Start correction revision</button>';
 result.before(controls);result.setAttribute('role','status');
+const completion=document.createElement('button');completion.type='button';completion.className='btn';completion.id='completeManual';completion.textContent='Link issued manual assessment (local capture only)';controls.append(completion);
+completion.onclick=()=>run(async()=>{await bridge({action:'complete',id:assessmentId,leadId:form.elements.caseId.value,revision,versionId,qarReference});await refresh();});
 document.getElementById('reviewChecks').className='checks';
 function renderState(){
  form.elements.status.replaceChildren(new Option(state,state));
  document.getElementById('caseId').disabled=!!assessmentId;form.elements.assessmentRoute.disabled=!!assessmentId;
  document.getElementById('save').disabled=busy||state!=='DRAFT';
+ completion.disabled=busy||state!=='ISSUED'||!['manager','administrator'].includes(membership.role);
  for(const [id,allowed]of Object.entries({submitReview:assessmentId&&state==='DRAFT',approveManual:state==='UNDER REVIEW',generateManual:state==='APPROVED',issueManual:state==='APPROVED',correctManual:state==='ISSUED'}))document.getElementById(id).disabled=busy||!allowed;
 }
 async function refresh(){
  const {assessment:a}=await bridge({action:'get',id:assessmentId});revision=a.revision;state=a.status;populate(a.structuredIntake?.manualForm||{});
+ versionId=a.currentVersionId||'';qarReference=a.qarReference;
  form.elements.caseId.value=a.crmLink.caseRef;
  document.getElementById('manualIdentity').textContent=`${a.qarReference} | ${a.status} | Revision ${a.revision} | Version ${a.currentVersion}`;
  history.replaceState(null,'',`?caseId=${encodeURIComponent(a.crmLink.caseRef)}&assessmentId=${encodeURIComponent(assessmentId)}`);renderState();

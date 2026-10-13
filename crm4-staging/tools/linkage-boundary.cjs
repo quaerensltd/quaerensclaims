@@ -1,6 +1,7 @@
 'use strict';
 // CRM4-only compatibility. Immutable pinned sources remain historical evidence.
-function validateLink(leadId, lead, assessmentId, assessment, documents, fail) {
+const MANUAL_ISSUED=Symbol('verified CRM4 manual completion');
+function validateLink(leadId, lead, assessmentId, assessment, documents, fail, proof) {
   const link = assessment?.crmLink;
   const id = v => typeof v === 'string' && v.length > 0 && !v.includes('/');
   if (!id(leadId) || lead?.workspaceId !== 'CRM4' || !id(assessmentId) || lead.assessmentId !== assessmentId ||
@@ -8,7 +9,7 @@ function validateLink(leadId, lead, assessmentId, assessment, documents, fail) {
       ![link.caseRef, link.crm4LeadId].some(v => v === leadId) ||
       ['caseRef', 'crm4LeadId', 'clientRef'].some(k => link[k] !== undefined && link[k] !== leadId) ||
       !id(lead.assessmentQar) || assessment.qarReference !== lead.assessmentQar ||
-      lead.assessmentStatus !== 'COMPLETED' || !['GENERATED', 'COMPLETED'].includes(assessment.status) ||
+      lead.assessmentStatus !== 'COMPLETED' || (!['GENERATED', 'COMPLETED'].includes(assessment.status) && !(proof===MANUAL_ISSUED&&assessment.status==='ISSUED')) ||
       !Number.isInteger(assessment.currentVersion) || assessment.currentVersion < 1 ||
       (lead.assessmentVersion !== undefined && lead.assessmentVersion !== assessment.currentVersion)) fail();
   const current = documents.filter(d => d.assessmentId === assessmentId && d.version === assessment.currentVersion);
@@ -71,7 +72,22 @@ async function verifyRequest(db, tx, request, deps) {
     const assessmentId = lead.assessmentId;
     const assessment = (await tx.get(db.collection('professionalAssessments').doc(assessmentId))).data();
     const documents = await tx.get(db.collection('professionalAssessmentDocuments').where('assessmentId','==',assessmentId));
-    const canonical = validateLink(leadId,lead,assessmentId,assessment,documents.docs.map(d=>d.data()),fail);
+    let proof;
+    if(assessment?.assessmentSource==='FRAMEWORK_B'){
+      const hash=v=>require('node:crypto').createHash('sha256').update(v).digest('hex');
+      const versionId=assessment.currentVersionId;
+      if(typeof versionId!=='string'||!/^[\w-]+$/.test(versionId)||assessment.status!=='ISSUED'||assessment.generationContractVersion||assessment.structuredIntake?.crm4ManualAuthoringVersion!==1||lead.assessmentSource!=='FRAMEWORK_B'||lead.assessmentVersionId!==versionId||lead.assessmentCompletionMethod!=='CRM4_MANUAL_CAPTURE_ONLY')fail();
+      const version=(await tx.get(db.collection('professionalAssessmentVersions').doc(versionId))).data();
+      const audit=(await tx.get(db.collection('professionalAssessmentAudit').doc('manual-completion-'+hash(assessmentId+':'+versionId)))).data();
+      const delivery=(await tx.get(db.collection('professionalAssessmentDeliveries').doc(assessmentId+'_'+versionId))).data();
+      const current=documents.docs.filter(d=>d.data().versionId===versionId);
+      if(current.length!==1)fail();const doc=current[0].data();
+      if(!version||version.status!=='ISSUED'||version.immutable!==true||version.assessmentId!==assessmentId||version.qarReference!==assessment.qarReference||version.version!==assessment.currentVersion||hash(JSON.stringify(version.projection))!==version.projectionHash||version.projectionHash!==assessment.approvedContentHash||
+         !audit||audit.event!=='CRM4_MANUAL_COMPLETION_LINKED'||audit.captureOnly!==true||audit.leadId!==leadId||audit.assessmentId!==assessmentId||audit.versionId!==versionId||audit.qarReference!==assessment.qarReference||audit.projectionHash!==version.projectionHash||audit.pdfHash!==doc.pdfHash||audit.docxHash!==doc.docxHash||
+         !delivery||delivery.status!=='COMPLETE'||delivery.assessmentId!==assessmentId||delivery.versionId!==versionId||delivery.documentId!==current[0].id||delivery.pdfHash!==doc.pdfHash||delivery.qarReference!==assessment.qarReference||delivery.client?.status!=='SENT'||delivery.archive?.status!=='SENT')fail();
+      proof=MANUAL_ISSUED;
+    }
+    const canonical = validateLink(leadId,lead,assessmentId,assessment,documents.docs.map(d=>d.data()),fail,proof);
     return { assessmentId, canonical };
 }
 function workspaceBoundary(db, deps, factory) {

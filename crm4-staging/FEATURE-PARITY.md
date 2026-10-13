@@ -1,3 +1,14 @@
+> **Latest CRM4 Spain preparation — 13 October 2026:** 84/84 full-suite tests,
+> separate packaging test and CRM2 security regression pass. Both v9 and manual
+> Spray Foam continuous browser journeys reach Processing; manual reissuance
+> retains two versions. Runtime report reads now use isolated emulator Storage,
+> with no memory fallback. This supersedes older manual-handoff and memory-only
+> limitations below, but not cloud readiness. Independent configuration,
+> dependency lock, storage adapter candidate and source review package are prepared.
+> **Not deployable:** cloud bootstrap/routing, rules/indexes, IAP and cloud-specific
+> acceptance remain. See [preparation evidence](release/PREPARATION-EVIDENCE.md)
+> and [infrastructure, costs and rollback plan](release/CLOUD-TEST-PLAN.md).
+
 # CRM4 functional parity — continuous-client evidence
 
 ## Latest manual boundary verification

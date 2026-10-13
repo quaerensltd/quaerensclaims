@@ -16,7 +16,7 @@ test('portal Storage emulator permits owner create only; denies other clients, r
     await caseRef.set({ clientUid: id + '-owner', accessState: 'ACTIVE' });
     const name = 'clientPortal/' + id + '/client-uploads/' + id + '-owner/test.txt';
     const base = 'http://127.0.0.1:9199/v0/b/demo-quaerens-crm4.appspot.com/o';
-    const put = (role, path = name, type = 'text/plain') => fetch(base + '?uploadType=media&name=' + encodeURIComponent(path), { method: 'POST', headers: { Authorization: 'Firebase ' + tokens[role], 'Content-Type': type }, body: 'Synthetic evidence' });
+    const put = (role, path = name, type = 'text/plain') => require('./storage-upload-helper.cjs').uploadSynthetic(base, tokens[role], path, type);
     assert.equal((await put('other')).status, 403);
     assert.equal((await put('unverified')).status, 403);
     assert.equal((await put('owner', name + '.html', 'text/html')).status, 403);

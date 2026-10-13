@@ -16,6 +16,8 @@ function createLocalHandlers(env = process.env) {
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
   const forbidden = () => { throw Error('External providers are disabled in CRM4 local integration'); };
   const providers = require('./local-providers.cjs').createLocalProviders();
+  if (!process.env.STORAGE_EMULATOR_HOST) process.env.STORAGE_EMULATOR_HOST = 'http://127.0.0.1:9199';
+  if (process.env.STORAGE_EMULATOR_HOST !== 'http://127.0.0.1:9199') throw Error('CRM4 loopback Storage required');
   const storage = require('./local-storage.cjs').createLocalStorage(app);
   const localAuth = () => {
     if (process.env.FIREBASE_AUTH_EMULATOR_HOST !== '127.0.0.1:9099') throw Error('Loopback Auth emulator required');
