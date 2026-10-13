@@ -553,3 +553,8 @@ configuration is included in this checkpoint.
 No production record reads/writes, callable invocations, submissions, emails,
 payments or deployments were performed for this checkpoint. Source/control-plane
 GETs only were used. No production readiness is asserted.
+# Durable recovery extension — 13 October 2026
+
+New CRM4-only Admin creation and manual issuance boundaries implemented beyond
+4b360e2. See ADMIN-RECOVERY-EVIDENCE.md for executed recovery and the specific
+manual-authoring browser blocker. No deployment or production mutation.

@@ -1,12 +1,13 @@
 'use strict';
-// Reports stay volatile; portal files use only the explicitly guarded demo Storage emulator.
+// Reports retain a test inspection cache, with durable emulator storage whenever
+// explicitly configured. Neither path permits a production bucket.
 function createLocalStorage(app) {
   const objects = new Map();
   const tickets = new Map();
   function portal(name) {
     if (!app || process.env.GCLOUD_PROJECT !== 'demo-quaerens-crm4' || process.env.STORAGE_EMULATOR_HOST !== 'http://127.0.0.1:9199') throw Error('Explicit local Storage emulator required');
     const file = require('firebase-admin/storage').getStorage(app).bucket('demo-quaerens-crm4.appspot.com').file(name);
-    return { exists: () => file.exists(), download: () => file.download(), getMetadata: () => file.getMetadata(), delete: options => file.delete(options),
+    return { exists: () => file.exists(), save: (bytes, options) => file.save(bytes, options), download: () => file.download(), getMetadata: () => file.getMetadata(), delete: options => file.delete(options),
       async getSignedUrl() {
         const [bytes] = await file.download(), token = require('node:crypto').randomBytes(32).toString('hex');
         tickets.set(token,{bytes,expires:Date.now()+300000});
@@ -20,9 +21,10 @@ function createLocalStorage(app) {
     return {
       async save(bytes, options = {}) {
         if (options.preconditionOpts?.ifGenerationMatch === 0 && objects.has(name)) throw Object.assign(Error('Synthetic object already exists'), { code: 412 });
+        if (process.env.STORAGE_EMULATOR_HOST) await portal(name).save(bytes, options);
         objects.set(name, Buffer.from(bytes));
       },
-      async download() { if (!objects.has(name)) throw Error('Local document missing'); return [Buffer.from(objects.get(name))]; }
+      async download() { if (!objects.has(name)) { if(process.env.STORAGE_EMULATOR_HOST)return portal(name).download(); throw Error('Local document missing'); } return [Buffer.from(objects.get(name))]; }
     };
   } }) };
 }

@@ -2,6 +2,12 @@
 
 **NOT READY FOR DEPLOYMENT.** Local demo integration only.
 
+Current recovery extension supersedes the older CreateUser/issuance limitations
+below: durable account creation and capture-only atomic manual issuance are tested.
+Demo report Storage now supports fresh-runtime recovery when explicitly configured.
+Actual manual authoring remains blocked: legacy crm4Assessments direct writes are
+not the governed professionalAssessments pipeline. See ADMIN-RECOVERY-EVIDENCE.md.
+
 ## Executed evidence
 
 - Focused final-contract tests and CRM2 security regression pass. Final full-suite

@@ -22,8 +22,11 @@ test('pinned Admin create/setup/block/reactivate and Processing provisioning rem
   const first=await invoke('ProvisionExistingProcessing',{});assert(first.provisioned>=1);
   const second=await invoke('ProvisionExistingProcessing',{});assert.equal(second.provisioned,0);
   assert.equal((await r.db.collection('crm4Memberships').doc(legacy.uid).get()).data().workspaceId,'CRM4');
-  assert(r.providerReceipts.length>=3);assert(r.providerReceipts.every(v=>v.delivered===false));
-  const audit=await r.db.collection('crm4MembershipAudit').where('actorUid','==',id).get();assert(audit.size>=5);
+  assert(r.providerReceipts.length>=1);assert(r.providerReceipts.every(v=>v.delivered===false));
+  const setupCaptures=await r.db.collection('crm4AdminSetupCaptures').where('recipient','==',input.email).get();
+  assert.equal(setupCaptures.size,1,'Create and replay share one durable setup capture');
+  assert.equal(setupCaptures.docs[0].data().delivered,false);
+  const audit=await r.db.collection('crm4MembershipAudit').where('actorUid','==',id).get();assert(audit.size>=4);
   assert(audit.docs.every(d=>!d.data().password&&!d.data().setupLink));
  } finally {await r.close();}
 });

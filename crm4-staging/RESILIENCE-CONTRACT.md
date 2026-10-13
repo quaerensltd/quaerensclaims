@@ -1,5 +1,13 @@
 # CRM4 local portal resilience boundary
 
+## Current Admin/issuance extension
+
+See ADMIN-RECOVERY-EVIDENCE.md. CreateUser now has a durable Firestore recovery
+boundary and capture deduplication; the diagnostic Admin limitations below describe
+the untouched source, not the wrapped creation route. UpdateMembership atomicity
+remains unverified. Manual capture-only issuance now commits receipts/status/audit
+atomically; explicit demo Storage supports restart without the memory cache.
+
 ## Final-contract extension — 13 October 2026
 
 Legacy v2 uses `legacy-portal-boundary.cjs`: pinned factories run within one

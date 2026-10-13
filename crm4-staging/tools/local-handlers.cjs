@@ -55,6 +55,8 @@ function createLocalHandlers(env = process.env) {
     handlers[name] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, name, original);
   }
   const completeName = 'crm4AssessmentAssistantCompleteIssue';
+  handlers.frameworkBAssessmentIssue = require('./manual-issue-recovery.cjs').manualIssueRecovery(deps,
+    require('../backend-sources/frameworkBAssessmentIssue/frameworkB.js').registerFrameworkB);
   handlers[completeName] = require('./manual-assessment-boundary.cjs').manualBoundary(db, deps, completeName,
     require('../backend-sources/' + completeName + '/crm4AssessmentAssistant.js').registerCrm2AssessmentAssistant(deps)[completeName]);
   for(const suffix of ['ListerRetryManagerNotification','ListerSendGeneralInformationEmail','SendCallbackConfirmation','ManagerSendAppointmentConfirmation']) {
@@ -65,6 +67,7 @@ function createLocalHandlers(env = process.env) {
     const name='crm4Admin'+suffix;
     handlers[name]=require('./local-admin.cjs').loadAdmin(name,deps);
   }
+  handlers.crm4AdminCreateUser = require('./admin-create-recovery.cjs').adminCreateRecovery(deps);
   for (const name of ['crm4SaveCallback', 'crm4ListAgenda', 'crm4ManagerDownloadLinkedAssessmentReport', 'crm4CloserDownloadLinkedAssessmentReport', 'crm4ManagerPreviewAppointmentEmail', 'crm4CloserPreviewAgreementEmail', 'crm4PreviewCallbackConfirmation']) {
     handlers[name] = require('../backend-sources/' + name + '/crm4OperationalFlow.js').registerCrm2OperationalFlow(deps)[name];
   }

@@ -69,3 +69,12 @@ and the next governed evidence transition without pre-completed client fixtures.
 - Decide independent infrastructure/provider configuration, persistent isolated
   document storage and deployment packaging under separate authority. Existing
   local transport and captured providers are not deployable production services.
+# Recovery extension — 13 October 2026
+
+- Admin CreateUser: durable operation, concurrent/failure/restart recovery and
+  one setup capture tested. Original source snapshots unchanged.
+- Manual Issue: transactional synthetic capture/status/audit, crash rollback and
+  retry from fresh runtime with demo Storage tested.
+- Actual manual authoring UI: input/preview/RTF and responsive checks executed;
+  governed save/review/issue journey BLOCKED by legacy collection contract.
+- See ADMIN-RECOVERY-EVIDENCE.md; prior blanket Admin/issuance gaps are historical.
