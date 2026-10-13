@@ -1,5 +1,7 @@
 # CRM4 Spain Phase 1 continuation
 
+Latest status: `STORAGE-SERVICE-AGENT-RESULT.md` records the now-approved and applied cross-service grant, synthetic test results and remaining Auth/OAuth work. The blocker list below is historical.
+
 Shared CRM Framework. Continued from `13311437` on `feature/crm4-isolated-clone`. All mutations were restricted to `quaerens-crm4-spain-test` / `558324850479`, with both identifiers and ACTIVE state checked immediately before each write. Region remains `europe-west1`, parent No organization. No CRM2, CRM3, CRM5 or production resource was modified.
 
 ## Approved Editor correction completed
