@@ -1,5 +1,7 @@
 # CRM4 Spain private-origin and OAuth review
 
+OAuth update: the owner has confirmed support martijnpronk76@gmail.com and creation of the existing client. The older support-eligibility discussion below is historical. Use OAUTH-OWNER-HANDOFF.md for current verification and secret handling.
+
 Current approval sequence and precise pending deltas: [FINAL-PRIVATE-RELEASE.md](FINAL-PRIVATE-RELEASE.md). The first restriction change preserves all 27 API targets; pruning remains separately gated.
 
 Shared CRM Framework; CRM4 project quaerens-crm4-spain-test / 558324850479 only. Read-only verification is in evidence/phase1/storage-correction-access-review.json. No OAuth, key, domain, IAM or application changes were made.

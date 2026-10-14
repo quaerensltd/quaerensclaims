@@ -8,15 +8,11 @@ Shared CRM Framework. Prepared from 47a578b0; original framework bundles and CRM
 
 This follows Google's [deterministic URL format](https://docs.cloud.google.com/run/docs/custom-urls). No placeholder service is needed. Project quaerens-crm4-spain-test / 558324850479, service crm4-spain-test, europe-west1. After approved creation, verify the returned service URLs include this origin; stop on mismatch. Do not widen the origin policy or add a custom domain to compensate. The browser adapter requires this exact origin. Native IAP must protect every service URL, including any generated alias.
 
-## Console OAuth instructions and support-contact gate
+## OAuth owner handoff
 
-Read-only eligibility check: select project quaerens-crm4-spain-test and confirm number 558324850479. Open [Google Auth Platform Branding](https://console.cloud.google.com/auth/branding?project=quaerens-crm4-spain-test). Inspect the User support email dropdown without saving. Record signed-in identity, available eligible contact and project in a redacted receipt.
+The owner reports that Branding and one Web OAuth client are saved: External/Testing, support martijnpronk76@gmail.com, developer contact info@quaerens.co.uk, sole tester brusseljeroen@gmail.com. Do not create another client. The exposed original secret was disabled/deleted and the replacement remains privately held by the owner (owner-reported).
 
-`info@quaerens.co.uk` is eligible only if selectable as the signed-in Google account or a Google Group managed by that account. CLI authentication as martijnpronk76@gmail.com does not establish group ownership or eligibility. Console automation failed to initialize, so eligibility remains UNKNOWN. If absent, stop this setup step: supported alternatives are an already eligible owner-controlled Google account/group or separately approved substitution of another eligible support address. Creating accounts/groups or granting project access is outside this approval. Developer contact remains info@quaerens.co.uk subject to validation. [Google support-email rules](https://support.google.com/cloud/answer/15549049).
-
-After separate OAuth approval: Branding app name `Quaerens CRM4 Spain Test`; use the verified support contact. Audience External, publishing status Testing, sole test user brusseljeroen@gmail.com. No additional API data scopes. Clients: create one Web application client `CRM4 Spain private IAP`; edit its redirect URI to `https://iap.googleapis.com/v1/oauth/clientIds/CLIENT_ID:handleRedirect`. Keep its secret outside Git, build context, logs and screenshots. Apply this custom OAuth client to the CRM4 project IAP settings only. No organization-level configuration. After the approved service exists: Cloud Run > crm4-spain-test > Security > IAP > Edit policy / Configure in IAP; verify custom client and sole accessor. The Console can automatically grant invoker permission; include that exact delta in deployment approval. [Official IAP setup](https://docs.cloud.google.com/run/docs/securing/identity-aware-proxy-cloud-run).
-
-No organization is supported with custom OAuth. The old IAP brands API's organization error is not a reason to move projects or enable Identity Platform. Never publish OAuth to Production just to bypass a test-user problem.
+Follow [OAUTH-OWNER-HANDOFF.md](OAUTH-OWNER-HANDOFF.md) to verify the exact saved redirect and configure the existing client securely. Saved client configuration is distinct from applying credentials to IAP. Exact redirect verification remains blocked by unavailable Console access and missing public client ID/URI evidence.
 
 ## Auth and browser key: staged exact changes
 
@@ -50,7 +46,7 @@ Dependency audit: 0 high/critical; 3 moderate entries represent the existing spr
 
 | Approval | Exact requested action | Exclusions / rollback |
 | --- | --- | --- |
-| OAuth | Verified support contact, External/Testing brand, one custom web client, sole test user, CRM4-only IAP OAuth settings | Preserve prior settings; restore only new delta; revoke newly created client if unused. No secret in evidence. |
+| OAuth | Verify existing client/redirect; owner privately applies existing replacement credentials to CRM4-only IAP settings under separate approval; preserve saved brand/tester | Preserve prior settings; restore only new delta; revoke newly created client if unused. No secret in evidence. |
 | Auth/key | Exact referrer/domain additions above | Preserve etags and old fields; no API-target pruning, provider enablement or duplicate app. |
 | Build | Activate candidate config under explicit approval, review new hashes, upload one source archive and submit one regional build with existing build SA/repository | No deploy. Preserve build receipt; delete only approved source generation/image if rollback is requested. |
 | Deploy/IAM | One digest-pinned crm4-spain-test service in europe-west1; native IAP true; invoker check enabled; runtime SA crm4-runtime; 1 CPU/1024 MiB; min 0/max 2; concurrency 8; timeout 120s; request billing; capture-only providers | No public invoker, load balancer, Hosting or custom domain. On failure withdraw tester binding first; preserve unrelated IAM; delete only the newly created service under approved rollback. |
