@@ -1,5 +1,7 @@
 # CRM4 zlib native validation — approval handoff
 
+> Historical procedure: its single approved execution timed out on 14 October 2026. See [the execution result](ZLIB-LINUX-VALIDATION-RESULT.md). The approval is consumed; do not resubmit these commands.
+
 Status: both source copies patched locally; Linux compilation and patched-runtime acceptance **pending**. Private synthetic and production deployment remain **NO-GO**. This is Shared CRM Framework release preparation; no shared application behavior changed.
 
 ## Recommended next action
