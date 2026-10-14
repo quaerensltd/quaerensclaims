@@ -1,5 +1,7 @@
 # Hardened CRM4 replacement build result
 
+> The owner-submitted hardened-image scan is now complete: 25 OS findings, including one unresolved effective HIGH zlib finding. See [HARDENED-SECURITY-RESULT.md](HARDENED-SECURITY-RESULT.md). No additional scan is authorized by the historical next-step instructions below.
+
 **Build succeeded; deployment remains NO-GO.** One replacement build was submitted under the owner's approval. No paid scan, deployment, real-account provisioning or IAM change occurred.
 
 - Source commit: `753b7c7700165848c6ac1f1f74c5ce5033560d31`.

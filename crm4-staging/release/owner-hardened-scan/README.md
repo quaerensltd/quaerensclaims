@@ -1,5 +1,7 @@
 # One hardened-image scan: owner authorized 14 October 2026
 
+> The one authorized scan has been submitted and completed. **Do not execute this script again.** Correct verified operation: d46b1b50-94e5-4f50-bdcc-7ebcbc3cf2e9. See [the completed assessment](../HARDENED-SECURITY-RESULT.md). Instructions below are retained for audit history.
+
 The owner has authorized ONE paid scan of:
 
 `europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:0e26c3427691a8daa5144a0a40589a676d0a6d3ad5f800bf296bdd2e0fbdffce`
