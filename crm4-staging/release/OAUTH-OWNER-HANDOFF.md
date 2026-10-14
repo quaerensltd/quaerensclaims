@@ -2,7 +2,11 @@
 
 Shared CRM Framework. Target only quaerens-crm4-spain-test / 558324850479, No organization. Owner confirmation dated 14 October 2026 supersedes the earlier proposed support email. No further cloud changes are authorized by this document.
 
-## Verify without disclosing credentials
+## Saved client confirmed by owner
+
+Owner-verified Console evidence dated 14 October 2026: client ID `558324850479-brnmdsdg9brs2frq0hb3ha0suhugn64k.apps.googleusercontent.com`; saved redirect `https://iap.googleapis.com/v1/oauth/clientIds/558324850479-brnmdsdg9brs2frq0hb3ha0suhugn64k.apps.googleusercontent.com:handleRedirect`. The local exact-string comparison passes. This closes the saved-redirect gate on the owner-provided evidence; it is not independently verified API evidence. No repeat Console check or secret disclosure is required. Receipt: evidence/oauth-confirmed/owner-console.json.
+
+The steps below are the reference procedure for any future configuration change.
 
 Open [Google Auth Platform Clients](https://console.cloud.google.com/auth/clients?project=quaerens-crm4-spain-test), select the existing Web client **CRM4 Spain private IAP**, and confirm the project ID/number. Do not create another client or download its credentials JSON. Read only its public client ID and saved Authorized redirect URIs; navigate away and reopen to distinguish saved values from an unsaved form. The sole expected redirect is:
 
@@ -12,11 +16,11 @@ Replace CLIENT_ID with the full public client ID including `.apps.googleusercont
 
 Confirm Branding app name Quaerens CRM4 Spain Test, support martijnpronk76@gmail.com, developer contact info@quaerens.co.uk, Audience External/Testing and only brusseljeroen@gmail.com as test user. Support contact does not grant IAP access. Record only public metadata and observation date. The owner reports the old exposed secret disabled/deleted and one enabled replacement; verify statuses privately without displaying/copying values into evidence. No secret needs to be sent to the agent.
 
-Independent redirect verification remains pending: browser initialization failed, the public client ID is not yet available, and deprecated IAP OAuth CLI commands are not a generic Web-client inspection mechanism. Owner-reported settings are labelled separately from fresh API evidence in evidence/oauth-handoff/read-only.json.
+Owner Console evidence now supplies the exact public client ID and saved redirect. Historical API observations remain in evidence/oauth-handoff/read-only.json; fresh Firebase-only reads are in evidence/oauth-confirmed/firebase-read-only.json. No OAuth credential endpoint was queried during this confirmation.
 
 Fresh read-only APIs returned HTTP 200 for project IAP settings, with no custom OAuth client ID configured. Firebase authorizedDomains remain localhost, quaerens-crm4-spain-test.firebaseapp.com and quaerens-crm4-spain-test.web.app. The browser key retains 27 API targets and no referrer restriction. Email/password, disabled signup/deletion and enumeration protection remain verified. These checks do not establish the saved OAuth client redirect.
 
-The current refreshed offline context receipt is evidence/oauth-handoff/container-preparation.json; the prior context is historical after metadata updates. Source integrity and all 679 context file hashes were verified. No functional code changed and completed acceptance tests were not rerun.
+The current refreshed offline context receipt is evidence/oauth-confirmed/container-preparation.json; the prior context is historical after metadata updates. Source integrity and all 679 context file hashes were verified. No functional code changed and completed acceptance tests were not rerun.
 
 ## Owner-only credential configuration, after separate approval
 
@@ -30,8 +34,8 @@ Verify the configured client ID and sole service-specific IAP accessor without p
 
 ## Remaining gates in order
 
-1. Verify the full saved public client ID/redirect and metadata above. No build/deploy approval is inferred from the owner's configuration update.
-2. Approve the existing exact Auth-domain and browser-key referrer additions in evidence/final-private/pending-deltas.json; refresh etags before execution, retain current API targets and Auth protections.
+1. Saved public client ID/redirect gate is complete on owner-verified Console evidence. Approve applying this existing client to CRM4 IAP using the owner-only secret procedure; no build/deploy approval is inferred from the confirmation.
+2. Approve the existing exact Auth-domain and browser-key referrer additions in evidence/oauth-confirmed/firebase-pending-deltas.json; refresh etags before execution, retain current API targets and Auth protections.
 3. Approve candidate deployment flag activation, regenerate and review source/context hashes, and submit one regional build with the dedicated build identity. Current offline contexts remain disabled; no build has been submitted. Review actual resulting image digest, provenance and security findings before a separate deployment approval.
 4. Approve one private native-IAP Cloud Run service plus only the documented service invoker/IAP accessor bindings. Apply existing OAuth credentials using the private owner flow above under that explicit scope. No public invocation or extra tester.
 5. Separately confirm/approve owner Firebase sign-in identity, CRM4 administrator membership and any central bootstrap authority. Google tester identity alone supplies none of these rights. No real staff provisioning.

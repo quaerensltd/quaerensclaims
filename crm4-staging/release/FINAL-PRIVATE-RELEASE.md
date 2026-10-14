@@ -12,7 +12,7 @@ This follows Google's [deterministic URL format](https://docs.cloud.google.com/r
 
 The owner reports that Branding and one Web OAuth client are saved: External/Testing, support martijnpronk76@gmail.com, developer contact info@quaerens.co.uk, sole tester brusseljeroen@gmail.com. Do not create another client. The exposed original secret was disabled/deleted and the replacement remains privately held by the owner (owner-reported).
 
-Follow [OAUTH-OWNER-HANDOFF.md](OAUTH-OWNER-HANDOFF.md) to verify the exact saved redirect and configure the existing client securely. Saved client configuration is distinct from applying credentials to IAP. Exact redirect verification remains blocked by unavailable Console access and missing public client ID/URI evidence.
+Follow [OAUTH-OWNER-HANDOFF.md](OAUTH-OWNER-HANDOFF.md) to verify the exact saved redirect and configure the existing client securely. Saved client configuration is distinct from applying credentials to IAP. The exact saved redirect and public client ID are now owner-verified Console evidence in evidence/oauth-confirmed/owner-console.json; the local equality check passed. No independent API verification is claimed.
 
 ## Auth and browser key: staged exact changes
 
@@ -34,7 +34,7 @@ Future staff retain one UID each, primary role lister, roles [lister, closer], a
 
 ## Immutable build preparation
 
-Run the existing offline prepare-container.cjs with the reviewed public Firebase config and the pinned Node/Docker builder digests in infrastructure-scope.json. evidence/final-private/container-preparation.json records the local context location, source digest, context digest and image tag. context-manifest.json covers every copied/generated input, including browser output, lockfile, Dockerfile, runtime config and cloudbuild.json. It excludes only itself and the non-executable preparation receipt. Verify with `node crm4-staging/release/context-integrity.cjs CONTEXT EXPECTED_CONTEXT_SHA256` immediately before packaging/submission; the expected hash comes from separately reviewed evidence.
+Run the existing offline prepare-container.cjs with the reviewed public Firebase config and the pinned Node/Docker builder digests in infrastructure-scope.json. evidence/oauth-confirmed/container-preparation.json records the local context location, source digest, context digest and image tag. context-manifest.json covers every copied/generated input, including browser output, lockfile, Dockerfile, runtime config and cloudbuild.json. It excludes only itself and the non-executable preparation receipt. Verify with `node crm4-staging/release/context-integrity.cjs CONTEXT EXPECTED_CONTEXT_SHA256` immediately before packaging/submission; the expected hash comes from separately reviewed evidence.
 
 Current context deliberately embeds deploymentApproved=false and cannot start as a cloud application. Build approval must explicitly authorize preparing the deployment candidate with deploymentApproved=true while submission and deployment remain separate gates; regenerate, record and verify its new source/context hashes BEFORE submission. Do not patch a frozen context or reuse this review tag for changed bytes. The independent CRM4_DEPLOYMENT_APPROVED environment gate remains required. No approval flag has been enabled by this preparation.
 
@@ -46,7 +46,7 @@ Dependency audit: 0 high/critical; 3 moderate entries represent the existing spr
 
 | Approval | Exact requested action | Exclusions / rollback |
 | --- | --- | --- |
-| OAuth | Verify existing client/redirect; owner privately applies existing replacement credentials to CRM4-only IAP settings under separate approval; preserve saved brand/tester | Preserve prior settings; restore only new delta; revoke newly created client if unused. No secret in evidence. |
+| OAuth | Existing client/redirect owner-verified; owner privately applies existing replacement credentials to CRM4-only IAP settings under separate approval; preserve saved brand/tester | Preserve prior settings; restore only new delta; revoke newly created client if unused. No secret in evidence. |
 | Auth/key | Exact referrer/domain additions above | Preserve etags and old fields; no API-target pruning, provider enablement or duplicate app. |
 | Build | Activate candidate config under explicit approval, review new hashes, upload one source archive and submit one regional build with existing build SA/repository | No deploy. Preserve build receipt; delete only approved source generation/image if rollback is requested. |
 | Deploy/IAM | One digest-pinned crm4-spain-test service in europe-west1; native IAP true; invoker check enabled; runtime SA crm4-runtime; 1 CPU/1024 MiB; min 0/max 2; concurrency 8; timeout 120s; request billing; capture-only providers | No public invoker, load balancer, Hosting or custom domain. On failure withdraw tester binding first; preserve unrelated IAM; delete only the newly created service under approved rollback. |
