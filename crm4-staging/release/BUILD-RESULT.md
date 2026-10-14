@@ -1,5 +1,7 @@
 # CRM4 Spain: approved Firebase changes and first container build
 
+Scan approval update: only On-Demand Scanning API is now enabled, with IAM unchanged. Owner Cloud Shell execution is pending; see [IMAGE-SECURITY-SCAN.md](IMAGE-SECURITY-SCAN.md). The original build findings below remain historical.
+
 Shared CRM Framework; project quaerens-crm4-spain-test / 558324850479 only. Completed 14 October 2026. No application deployed, IAM granted, real accounts provisioned or other CRM resources changed. Prior 38/38 live Storage acceptance remains intact and was not repeated.
 
 ## Successful build and immutable image
