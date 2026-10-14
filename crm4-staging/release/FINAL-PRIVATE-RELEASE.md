@@ -1,5 +1,7 @@
 # CRM4 Spain first private release approval package
 
+Current execution update: the approved Firebase domain/referrer changes are applied and verified; the ONE authorized regional build succeeded. See [BUILD-RESULT.md](BUILD-RESULT.md) for the immutable image, evidence and remaining deployment gates. The preparation instructions below are historical where they describe those actions as pending; they do not authorize another build.
+
 Shared CRM Framework. Prepared from 47a578b0; original framework bundles and CRM2/CRM3/CRM5 remain unchanged. This is a local review package, not authority to execute the operations below. Current evidence is in evidence/final-private; historical bootstrap proposals are not the current cloud inventory. Storage acceptance remains 38/38 in STORAGE-LIVE-ACCEPTANCE.md and was not repeated.
 
 ## Fixed application origin

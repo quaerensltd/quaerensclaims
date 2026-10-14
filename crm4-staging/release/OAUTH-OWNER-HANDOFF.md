@@ -1,5 +1,7 @@
 # CRM4 Spain: existing OAuth client verification and private credential handoff
 
+Current execution update: the approved Firebase domain/referrer changes are applied and verified; the ONE authorized regional build succeeded. See [BUILD-RESULT.md](BUILD-RESULT.md) for the immutable image, evidence and remaining deployment gates. The preparation instructions below are historical where they describe those actions as pending; they do not authorize another build.
+
 Shared CRM Framework. Target only quaerens-crm4-spain-test / 558324850479, No organization. Owner confirmation dated 14 October 2026 supersedes the earlier proposed support email. No further cloud changes are authorized by this document.
 
 ## Saved client confirmed by owner
