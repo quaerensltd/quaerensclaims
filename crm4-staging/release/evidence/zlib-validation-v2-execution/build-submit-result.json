@@ -1,0 +1,87 @@
+{
+  "status": 200,
+  "etag": null,
+  "body": {
+    "name": "operations/build/quaerens-crm4-spain-test/ZWVkZGJiYTYtNjljMC00OWE3LWI2MzYtZTk3NmUxNDU1YTUx",
+    "metadata": {
+      "@type": "type.googleapis.com/google.devtools.cloudbuild.v1.BuildOperationMetadata",
+      "build": {
+        "id": "eeddbba6-69c0-49a7-b636-e976e1455a51",
+        "status": "QUEUED",
+        "source": {
+          "storageSource": {
+            "bucket": "quaerens-crm4-spain-test-build-source",
+            "object": "zlib-validation/d7fdf5cdf196f74929d5fdcee427aff62b70cc3ab7355fe369aa89ae39897339/a5869ff361af26c7fa95240ec3cfef7c9d9eababe45cf9b91a429dc1a918cf5c.tar.gz",
+            "generation": "1791985187169345"
+          }
+        },
+        "createTime": "2026-10-14T13:39:52.263664222Z",
+        "steps": [
+          {
+            "name": "gcr.io/cloud-builders/docker@sha256:f772ab459889c67835bd959c2b9e9351f2c0752c4f989710ecda20c229f0733e",
+            "args": [
+              "-ceu",
+              "mkdir -p /workspace/validation-output; docker run --rm --workdir=/work --memory=7g --memory-swap=7g --cpus=4 --mount type=bind,src=/workspace/release/zlib-remediation,dst=/recipe,readonly --mount type=bind,src=/workspace/validation-output,dst=/out node:22.23.3-trixie@sha256:e2b06d8e287f66a905c2da31bbd64482fa3aba9aee05a1ccf5ecdb636bbfeb86 timeout --signal=TERM --kill-after=30s 6600s bash /recipe/compile.sh"
+            ],
+            "id": "native-validation",
+            "entrypoint": "bash",
+            "allowFailure": true
+          },
+          {
+            "name": "gcr.io/cloud-builders/docker@sha256:f772ab459889c67835bd959c2b9e9351f2c0752c4f989710ecda20c229f0733e",
+            "args": [
+              "-ceu",
+              "test -d /workspace/validation-output/evidence; tar -czf /workspace/native-diagnostics.tar.gz -C /workspace/validation-output evidence; sha256sum /workspace/native-diagnostics.tar.gz; echo CRM4_DIAGNOSTICS_BASE64_BEGIN; base64 -w 3000 /workspace/native-diagnostics.tar.gz; echo; echo CRM4_DIAGNOSTICS_BASE64_END"
+            ],
+            "id": "native-diagnostics",
+            "entrypoint": "bash"
+          },
+          {
+            "name": "gcr.io/cloud-builders/docker@sha256:f772ab459889c67835bd959c2b9e9351f2c0752c4f989710ecda20c229f0733e",
+            "env": [
+              "DOCKER_BUILDKIT=1"
+            ],
+            "args": [
+              "build",
+              "--progress=plain",
+              "--platform=linux/amd64",
+              "--build-arg",
+              "COMPILER_IMAGE=node:22.23.3-trixie@sha256:e2b06d8e287f66a905c2da31bbd64482fa3aba9aee05a1ccf5ecdb636bbfeb86",
+              "--build-arg",
+              "RUNTIME_IMAGE=gcr.io/distroless/nodejs22-debian13:nonroot@sha256:7b0a2b9262b3d1d57e139e08fe11bccb0a7d426ca515eab0cd6abcaf2016ae5c",
+              "--file",
+              "release/zlib-remediation/Dockerfile.validation",
+              "--tag",
+              "crm4-zlib-validation:local",
+              "."
+            ],
+            "id": "final-runtime-validation"
+          }
+        ],
+        "timeout": "7200s",
+        "projectId": "quaerens-crm4-spain-test",
+        "sourceProvenance": {
+          "resolvedStorageSource": {
+            "bucket": "quaerens-crm4-spain-test-build-source",
+            "object": "zlib-validation/d7fdf5cdf196f74929d5fdcee427aff62b70cc3ab7355fe369aa89ae39897339/a5869ff361af26c7fa95240ec3cfef7c9d9eababe45cf9b91a429dc1a918cf5c.tar.gz",
+            "generation": "1791985187169345"
+          }
+        },
+        "options": {
+          "sourceProvenanceHash": [
+            "SHA256"
+          ],
+          "machineType": "E2_HIGHCPU_8",
+          "diskSizeGb": "100",
+          "logging": "CLOUD_LOGGING_ONLY",
+          "pool": {},
+          "workerRelease": "legacy"
+        },
+        "logUrl": "https://console.cloud.google.com/cloud-build/builds;region=europe-west1/eeddbba6-69c0-49a7-b636-e976e1455a51?project=558324850479",
+        "queueTtl": "3600s",
+        "serviceAccount": "projects/quaerens-crm4-spain-test/serviceAccounts/crm4-build@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+        "name": "projects/558324850479/locations/europe-west1/builds/eeddbba6-69c0-49a7-b636-e976e1455a51"
+      }
+    }
+  }
+}

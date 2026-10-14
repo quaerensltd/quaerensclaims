@@ -1,5 +1,7 @@
 # CRM4 zlib validation v2 — approval handoff
 
+> Execution completed: **PASS** on 14 October 2026. See [verified results](ZLIB-VALIDATION-V2-RESULT.md). The single-job approval is consumed; the preparation text below is historical and must not be used to resubmit.
+
 Prepared locally on 14 October 2026 from a96f4969. **No cloud job submitted; private and production release remain NO-GO.** This is Shared CRM Framework release tooling only. Historical acceptance and the failed first job remain intact.
 
 ## Investigation
