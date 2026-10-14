@@ -1,5 +1,7 @@
 # CRM4 image scan: owner Cloud Shell handoff
 
+Current security result: owner-submitted scan completed and all findings retrieved; **NO-GO** for this digest. See [IMAGE-SECURITY-RESULT.md](IMAGE-SECURITY-RESULT.md). The handoff/pending status below is historical; do not submit another scan.
+
 Shared CRM Framework. Target project quaerens-crm4-spain-test / 558324850479. The abbreviated approval image was resolved to the exact successful image from commit fb73d923:
 
 `europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:f62e96fef639c362e2aeb86630bbf6487c861017acdc74aa5b7f52a64b8d253e`
