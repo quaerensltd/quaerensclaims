@@ -1,0 +1,25 @@
+ARG COMPILER_IMAGE
+ARG RUNTIME_IMAGE
+FROM ${COMPILER_IMAGE} AS compile
+WORKDIR /work
+COPY release/zlib-remediation /recipe
+RUN bash /recipe/compile.sh
+WORKDIR /app/release
+COPY release/package.json release/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+
+FROM ${RUNTIME_IMAGE} AS validation
+WORKDIR /app/release
+COPY --from=compile /out/node/node /nodejs/bin/node
+COPY --from=compile /out/package/usr/lib/x86_64-linux-gnu/ /usr/lib/x86_64-linux-gnu/
+COPY --from=compile /out/status/ /var/lib/dpkg/status.d/
+COPY --from=compile /out/evidence/ /validation/
+COPY --from=compile /app/release/node_modules ./node_modules
+COPY release/runtime-smoke.cjs ./runtime-smoke.cjs
+ENV NODE_PATH=/app/release/node_modules
+USER 65532:65532
+RUN ["/nodejs/bin/node", "-e", "const a=require('node:assert/strict'),fs=require('node:fs'),crypto=require('node:crypto'),h=require('/validation/runtime-hashes.json'),sha=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');a.equal(sha('/nodejs/bin/node'),h.node);a.equal(sha('/usr/lib/x86_64-linux-gnu/libz.so.1.3.1'),h.systemZlib);a.equal(require('/validation/gzwrite.node').verify(),process.execPath);const c=require('node:child_process').spawnSync('/validation/system-regression',[],{env:{...process.env,LD_LIBRARY_PATH:'/usr/lib/x86_64-linux-gnu',CRM4_EXPECT_LIBRARY:'/usr/lib/x86_64-linux-gnu'},stdio:'inherit'});a.equal(c.status,0);console.log('Both patched components used in distroless runtime: PASS');"]
+RUN ["/nodejs/bin/node", "runtime-smoke.cjs"]
+# Deliberately no CRM application server, ports, deployment or registry publication.
+ENTRYPOINT ["/nodejs/bin/node"]
+CMD ["runtime-smoke.cjs"]

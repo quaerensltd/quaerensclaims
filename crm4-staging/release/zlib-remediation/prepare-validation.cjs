@@ -1,0 +1,12 @@
+'use strict';
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const lock=require('./inputs.lock.json'),hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+const parent=path.resolve(__dirname,'../../.scratch/zlib-validation');fs.mkdirSync(parent,{recursive:true});const out=fs.mkdtempSync(path.join(parent,'candidate-'));
+const add=(source,target)=>{fs.mkdirSync(path.dirname(path.join(out,target)),{recursive:true});fs.copyFileSync(source,path.join(out,target));};
+for(const name of ['inputs.lock.json','prepare-sources.cjs','zlib-1.3.1.patch','compile.sh','gzwrite-regression.c','package-metadata.cjs','original-package-control.txt','Dockerfile.validation','submit-validation.sh'])add(path.join(__dirname,name),'release/zlib-remediation/'+name);
+for(const name of ['package.json','package-lock.json','runtime-smoke.cjs'])add(path.join(__dirname,'..',name),'release/'+name);
+add(path.join(__dirname,'../context-integrity.cjs'),'verify-context.cjs');
+const build={steps:[{name:lock.builderImage,env:['DOCKER_BUILDKIT=1'],args:['build','--progress=plain','--platform=linux/amd64','--build-arg','COMPILER_IMAGE='+lock.compilerImage,'--build-arg','RUNTIME_IMAGE='+lock.runtimeImage,'--file','release/zlib-remediation/Dockerfile.validation','--tag','crm4-zlib-validation:local','.']}],timeout:'7200s',serviceAccount:'projects/quaerens-crm4-spain-test/serviceAccounts/crm4-build@quaerens-crm4-spain-test.iam.gserviceaccount.com',options:{logging:'CLOUD_LOGGING_ONLY',machineType:'E2_HIGHCPU_8',diskSizeGb:100,sourceProvenanceHash:['SHA256']}};
+fs.writeFileSync(path.join(out,'cloudbuild.validation.json'),JSON.stringify(build,null,2)+'\n');
+const sealed=require('../context-integrity.cjs').sealContext(out);require('../context-integrity.cjs').verifyContext(out,sealed.contextDigest);
+console.log(JSON.stringify({output:out,...sealed,lockSha256:hash(fs.readFileSync(path.join(__dirname,'../package-lock.json'))),compilerImage:lock.compilerImage,buildSubmitted:false,applicationImage:false},null,2));
