@@ -13,13 +13,22 @@ case "$(uname -s)" in Linux|Darwin) ;; *) echo 'Supported Linux/macOS host requi
 mkdir -p "$RECEIPTS"
 [[ ! -e "$RECEIPTS/submission-intent" ]] || { echo "Submission already attempted. Do not rerun; inspect $RECEIPTS/scan-operation.json and share only its operation name."; exit 1; }
 gcloud artifacts docker images describe "$IMAGE" --project="$PROJECT" --format=json > "$RECEIPTS/image-before.json"
-# Install only Google's scanning extractor into Cloud Shell, if missing.
-# This does not create a build, image, service, IAM grant or scanning request.
-gcloud components install local-extract --quiet
+# Detect the extractor without invoking the disabled component manager.
+SDK_ROOT="$(gcloud info --format='value(installation.sdk_root)')"
+EXTRACTOR=''
+if [[ -n "$SDK_ROOT" && -x "$SDK_ROOT/bin/local-extract" ]]; then
+  EXTRACTOR="$SDK_ROOT/bin/local-extract"
+elif command -v local-extract >/dev/null 2>&1; then
+  EXTRACTOR="$(command -v local-extract)"
+fi
+if [[ -z "$EXTRACTOR" ]]; then
+  printf '%s\n' 'Missing local-extract. In Cloud Shell run:' '  sudo apt-get update' '  sudo apt-get install google-cloud-cli-local-extract' 'Then rerun this script. No scan was submitted and no submission marker was created.' >&2
+  exit 1
+fi
+printf '%s\n' "$EXTRACTOR" > "$RECEIPTS/extractor-path.txt"
 # Recheck project immediately before the one permitted scanning request.
 [[ "$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')" == "$NUMBER" ]]
-(set -o noclobber; printf '%s
-' "$IMAGE" > "$RECEIPTS/submission-intent") || exit 1
+(set -o noclobber; printf '%s\n' "$IMAGE" > "$RECEIPTS/submission-intent") || exit 1
 gcloud artifacts docker images scan "$IMAGE" --project="$PROJECT" --remote --location=europe --async --quiet --format=json > "$RECEIPTS/scan-operation.json"
 # Operation metadata contains no OAuth client secret or access token.
 cat "$RECEIPTS/scan-operation.json"
