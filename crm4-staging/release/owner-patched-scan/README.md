@@ -1,4 +1,6 @@
-# Patched CRM4 image — one scan approved
+Completed owner scan: operation e5d1cd31-6ae1-438c-aca7-f1d001c02ef2. Do not execute the instructions below again; they are preserved as historical handoff evidence. See ../PATCHED-IMAGE-SCAN-RESULT.md for the NO-GO assessment and complete results.
+
+# Patched CRM4 image — approved scan consumed
 
 The owner approved ONE paid On-Demand scan on 2026-10-15. Execute only through the existing authorised Cloud Shell operator. No scan has been submitted by Codex.
 
@@ -35,3 +37,4 @@ Review every severity and affected OS/npm package against the operation's image 
 The final system zlib hash matches Linux validation; the final Node hash differs despite identical pinned source/recipe inputs. The final binary passed its own runtime/provider checks and matches the registry-layer evidence, but bit-identical Node reproducibility has not been established. See `../evidence/patched-application-build/validation-comparison.json` and `final-runtime-verification.json`. This limitation remains open and must accompany the security decision.
 
 The approval covers one paid scan only. No rebuild, deployment, IAM changes, real accounts or customer imports are authorised. Deployment needs separate approval even after security clearance.
+
