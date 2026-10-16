@@ -1,0 +1,139 @@
+{
+  "proposalOnly": true,
+  "executable": false,
+  "baseline": "6f5d8cef",
+  "project": "quaerens-crm4-spain-test",
+  "projectNumber": "558324850479",
+  "image": "europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:127600049240e507c8ad7ebc93125173ebdca4d094e9839764314e102bd47ceb",
+  "bootstrap": {
+    "designApproved": true,
+    "executionApproved": false,
+    "email": "bootstrap@crm4.example.test",
+    "ownerEmail": "owner@crm4.example.test",
+    "claimDelta": {
+      "platformAdmin": true
+    },
+    "crmMembership": false,
+    "googleIamRole": false,
+    "additionalIapAccess": false,
+    "ownerPlatformAdmin": false,
+    "cleanup": [
+      "remove temporary claim",
+      "revoke refresh tokens",
+      "disable bootstrap",
+      "verify retained token rejection"
+    ]
+  },
+  "audit": {
+    "proposalOnly": true,
+    "project": "quaerens-crm4-spain-test",
+    "projectNumber": "558324850479",
+    "baselineEtag": "BwZdwDu5QJg=",
+    "baselinePolicySha256": "31fd42362695124324f1fbda69eaac887ba0d1104cc0f7a52e4812cf7db8556d",
+    "existingAuditConfigs": [],
+    "addAuditConfigs": [
+      {
+        "service": "iap.googleapis.com",
+        "auditLogConfigs": [
+          {
+            "logType": "ADMIN_READ"
+          },
+          {
+            "logType": "DATA_READ"
+          },
+          {
+            "logType": "DATA_WRITE"
+          }
+        ]
+      },
+      {
+        "service": "datastore.googleapis.com",
+        "auditLogConfigs": [
+          {
+            "logType": "DATA_READ"
+          },
+          {
+            "logType": "DATA_WRITE"
+          }
+        ]
+      },
+      {
+        "service": "storage.googleapis.com",
+        "auditLogConfigs": [
+          {
+            "logType": "DATA_READ"
+          },
+          {
+            "logType": "DATA_WRITE"
+          }
+        ]
+      }
+    ],
+    "preserveBindings": true,
+    "preserveRetention": true,
+    "applyRule": "Freshly reread version-3 policy and etag; merge only reviewed categories preserving unrelated entries/exemptions; stop on drift. Not executed."
+  },
+  "iap": {
+    "generateIdentityFor": "iap.googleapis.com",
+    "expectedIdentity": "service-558324850479@gcp-sa-iap.iam.gserviceaccount.com",
+    "defaultProjectGrants": [],
+    "grants": [
+      {
+        "resource": "Cloud Run crm4-spain-test only",
+        "member": "serviceAccount:service-558324850479@gcp-sa-iap.iam.gserviceaccount.com",
+        "role": "roles/run.invoker"
+      },
+      {
+        "resource": "projects/558324850479/iap_web/cloud_run-europe-west1/services/crm4-spain-test",
+        "member": "user:brusseljeroen@gmail.com",
+        "role": "roles/iap.httpsResourceAccessor",
+        "condition": "REQUIRES_FIXED_WINDOW"
+      }
+    ],
+    "conditionTemplate": "request.time >= timestamp(\"START_UTC\") && request.time < timestamp(\"END_UTC\")",
+    "policyVersion": 3,
+    "conditionTitle": "crm4_synthetic_window",
+    "oauth": {
+      "clientId": "558324850479-brnmdsdg9brs2frq0hb3ha0suhugn64k.apps.googleusercontent.com",
+      "secretEntry": "Owner-only private Console; never agent/chat/Git"
+    }
+  },
+  "serviceControls": {
+    "iapEnabled": true,
+    "invokerIamDisabled": false,
+    "cpu": 1,
+    "memory": "1Gi",
+    "minInstances": 0,
+    "maxInstances": 2,
+    "concurrency": 8,
+    "timeoutSeconds": 120,
+    "providers": "capture-only",
+    "publicInvocation": false
+  },
+  "runtimeServiceAccount": "crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+  "windows": {
+    "rehearsal": {
+      "startUtc": null,
+      "endUtc": null,
+      "durationHours": 168,
+      "proposal": "End approximately 30 minutes after separately approved execution readiness; start=end-168h",
+      "separateApprovalRequired": true
+    },
+    "final": {
+      "startUtc": null,
+      "endUtc": null,
+      "durationHours": 168,
+      "sealOnlyAfterOwnerConfirmation": true
+    }
+  },
+  "executionGates": [
+    "review and seal private masked-input and same-origin browser tooling",
+    "fresh project/resource/etag/permission verification",
+    "materialise one canonical rehearsal window and exact byte hashes",
+    "separate complete rehearsal execution and containment approval",
+    "managed expiry acceptance PASS",
+    "owner-approved final UTC window and materialised seal",
+    "separate final activation and residual-risk acceptance"
+  ],
+  "cloudMutations": 0
+}
