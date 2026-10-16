@@ -1,6 +1,6 @@
 # Firebase support request — sanitized draft
 
-Status: NOT SENT. Owner may submit through the private [Firebase support case](https://firebase.google.com/support) route. Sending by Codex requires separate explicit instruction. Never post to a public community forum or attach this task, raw response, hash configuration, user export or credentials.
+Status: READY FOR OWNER SUBMISSION; NOT SENT. Owner may submit through the private [Firebase support case](https://firebase.google.com/support) route. Sending by Codex requires separate explicit instruction. Never post to a public community forum or attach this task, raw response, hash configuration, user export or credentials.
 
 **Subject:** Guidance requested: project password-hash configuration exposure, zero-user synthetic Firebase project
 
@@ -9,7 +9,7 @@ Project number: 558324850479
 Incident date: 16 October 2026, approximately 10:55 UTC
 Purpose: isolated, synthetic-only CRM4 Spain testing; no production customer use authorised.
 
-An authorised project configuration read returned Firebase Authentication password-hash configuration. Our diagnostic inadvertently persisted the full response locally and displayed it in private assistant tool output. Local prepared evidence was sanitized before Git commit. The underlying task output may remain retained; we are reviewing its access and retention. We will not provide the exposed values.
+An authorised project configuration read returned Firebase Authentication password-hash configuration. Our diagnostic inadvertently persisted the full response locally and displayed it in private assistant tool output. Local prepared evidence was sanitized before Git commit. The underlying task output may remain retained. Owner declaration received 16 October 2026: the owner was the only person using the computer and affected Codex session; no other computer was used; the owner has not shared the affected session, exported its conversation or sent screenshots of its tool output to anyone else. These are owner-attested facts, not independently verified access logs. Provider-side retention and access remain unresolved. We will not provide the exposed values.
 
 A successful read-only inventory at 2026-10-16T10:54:57.269Z reported zero Firebase users and no additional page. Earlier synthetic test users may have existed; zero current users is not an assertion that no historical accounts ever existed. No current user passwords, per-user salts or password hashes were included in this incident evidence. We have stopped identity creation and deployment. Client self-signup/deletion were disabled; password authentication restrictions were preserved. No rotation or other cloud changes have been attempted.
 

@@ -1,5 +1,7 @@
 # Owner security checklist and output-containment options
 
+Update: owner access declarations and the current residual-risk decision are recorded in OWNER-ACCESS-ATTESTATION.md. Earlier unknowns about owner sharing/device use are superseded only to that stated extent; provider-side access/retention remains unresolved.
+
 Prepared 16 October 2026 from db00926d. No requests sent, settings changed or transcripts retrieved. Answer each item YES / NO / UNKNOWN with reviewer and UTC review time. Keep account identifiers and evidence references private; return only conclusions. UNKNOWN does not mean restricted access.
 
 1. **Account and workspace:** Which account/workspace holds the affected task? Is it personal or managed? Who administers it, and which workspace/compliance roles can access retained task records? Record the applicable retention policy and data-sharing/training setting without exporting the conversation.

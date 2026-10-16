@@ -1,5 +1,7 @@
 # Firebase Auth configuration exposure — incident disposition
 
+Update: owner access declarations and the current residual-risk decision are recorded in OWNER-ACCESS-ATTESTATION.md. Earlier unknowns about owner sharing/device use are superseded only to that stated extent; provider-side access/retention remains unresolved.
+
 Date: 16 October 2026. Baseline: ec8b03da, feature/crm4-isolated-clone. Project: quaerens-crm4-spain-test (558324850479). Shared CRM Framework governance applies. This assessment uses sanitized incident records, local metadata, non-disclosing scans and official documentation. It does not retrieve the exposed configuration or reopen the affected transcript. No cloud requests or mutations were made during this review. Only this report is committed.
 
 ## Decision
