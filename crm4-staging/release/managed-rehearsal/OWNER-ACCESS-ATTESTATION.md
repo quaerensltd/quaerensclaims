@@ -1,5 +1,7 @@
 # Owner access attestation and synthetic-account risk decision
 
+Update: the owner has now conditionally accepted the documented incident risk for the three named identities, without execution authority. See CONDITIONAL-ACCEPTANCE-BUNDLE-RESULT.md for the recorded acceptance, proposed window and newly verified workflow blockers.
+
 16 October 2026. Baseline e48216a1. Shared CRM Framework. This is a sanitized update to AUTH-CONFIG-INCIDENT-DISPOSITION.md; it does not retrieve the affected output or replace the preserved incident history.
 
 ## Owner declarations recorded

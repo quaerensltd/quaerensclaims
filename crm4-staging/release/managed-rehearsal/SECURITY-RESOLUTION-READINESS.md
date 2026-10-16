@@ -1,5 +1,7 @@
 # Security resolution and rehearsal preparation status
 
+Update: the owner has now conditionally accepted the documented incident risk for the three named identities, without execution authority. See CONDITIONAL-ACCEPTANCE-BUNDLE-RESULT.md for the recorded acceptance, proposed window and newly verified workflow blockers.
+
 Update: owner access declarations and the current residual-risk decision are recorded in OWNER-ACCESS-ATTESTATION.md. Earlier unknowns about owner sharing/device use are superseded only to that stated extent; provider-side access/retention remains unresolved.
 
 16 October 2026. Baseline db00926d. Shared CRM Framework. **GO for the currently authorised sanitized preparation; NO-GO for accounts, cloud changes and rehearsal execution.** The incident remains contained in inspected Git/evidence but not eradicated from retained output. No support request was sent and no cloud request or mutation occurred this turn.

@@ -15,6 +15,8 @@ A successful read-only inventory at 2026-10-16T10:54:57.269Z reported zero Fireb
 
 The public Config documentation marks hashConfig output-only. We have not identified a documented self-service rotation procedure and will not attempt an unsupported configuration update. [Config reference](https://docs.cloud.google.com/identity-platform/docs/reference/rest/v2/Config)
 
+The owner has conditionally accepted retained-output/future synthetic-hash uncertainty for the three named fictional identities only, subject to unique passwords, independent expiry and teardown. This is not Google remediation guidance and does not authorise account creation or deployment. We still request your supported recommendation.
+
 Please advise:
 
 1. What risk does disclosure of the project password-hashing signer configuration create independently of access to user password hashes/salts? Does the empty current user inventory change your recommendation?
