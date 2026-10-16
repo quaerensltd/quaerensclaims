@@ -1,5 +1,7 @@
 # Managed rehearsal execution package (preparation only)
 
+Current decision and corrections: see FINAL-SEALING-RESULT.md. The current candidate is NO-GO; older positive Storage-read assumptions below are superseded.
+
 Shared CRM Framework. Baseline ca90acee; preparation authorised, execution forbidden. Target only quaerens-crm4-spain-test / 558324850479, europe-west1. Bootstrap DESIGN and rehearsal DESIGN approved. No cloud accounts, claims, IAM, rules or services changed. No real credentials handled. No application rebuild or scan. The immutable image remains sha256:127600049240e507c8ad7ebc93125173ebdca4d094e9839764314e102bd47ceb.
 
 ## Decision and validation limits

@@ -1,0 +1,201 @@
+{
+  "proposalOnly": true,
+  "executionApproved": false,
+  "project": "quaerens-crm4-spain-test",
+  "projectNumber": "558324850479",
+  "image": "europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:127600049240e507c8ad7ebc93125173ebdca4d094e9839764314e102bd47ceb",
+  "window": {
+    "endUtc": "2026-10-16T11:30:00.000Z",
+    "startUtc": "2026-10-09T11:30:00.000Z"
+  },
+  "ownerApprovalReference": null,
+  "executionNotBeforeUtc": "2026-10-16T11:00:00.000Z",
+  "containmentUntilUtc": "2026-10-16T12:30:00.000Z",
+  "operatorEmail": "martijnpronk76@gmail.com",
+  "bootstrapUid": null,
+  "ownerUid": null,
+  "actions": [],
+  "service": {
+    "parent": "projects/quaerens-crm4-spain-test/locations/europe-west1",
+    "serviceId": "crm4-spain-test",
+    "body": {
+      "ingress": "INGRESS_TRAFFIC_ALL",
+      "iapEnabled": true,
+      "invokerIamDisabled": false,
+      "template": {
+        "serviceAccount": "crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+        "scaling": {
+          "minInstanceCount": 0,
+          "maxInstanceCount": 2
+        },
+        "maxInstanceRequestConcurrency": 8,
+        "timeout": "120s",
+        "containers": [
+          {
+            "image": "europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:127600049240e507c8ad7ebc93125173ebdca4d094e9839764314e102bd47ceb",
+            "command": [
+              "/nodejs/bin/node"
+            ],
+            "args": [
+              "-e",
+              "(async function startup(d, s) {\n const fail=()=>{throw Error('CRM4 sealed startup rejected');};\n const start=Date.parse(s.startUtc),end=Date.parse(s.endUtc);\n if(!Number.isFinite(start)||!Number.isFinite(end)||end-start!==604800000||new Date(start).toISOString()!==s.startUtc||new Date(end).toISOString()!==s.endUtc)fail();\n if(d.env.CRM4_DEPLOYMENT_APPROVED!=='true'||d.env.GCLOUD_PROJECT!=='quaerens-crm4-spain-test'||d.now()>=end)fail();\n if(['GOOGLE_APPLICATION_CREDENTIALS','FIRESTORE_EMULATOR_HOST','FIREBASE_AUTH_EMULATOR_HOST','STORAGE_EMULATOR_HOST'].some(k=>d.env[k]))fail();\n const bytes=d.fs.readFileSync('/app/release/runtime-config.json');\n if(d.sha(bytes)!=='8ee3b8d34ea203461513584b2ac97083c890a754c1292a0d45df78de6e893eb4')fail();\n const config=JSON.parse(bytes);\n if(config.deploymentApproved!==false||config.projectId!=='quaerens-crm4-spain-test'||config.projectNumber!=='558324850479'||config.providers!=='capture-only'||JSON.stringify(config.testerEmails)!=='[\"brusseljeroen@gmail.com\"]')fail();\n const approved={...config,deploymentApproved:true};\n const content=JSON.stringify(approved,null,2)+'\\n';\n if(d.sha(content)!=='be32ef38127276c3ba875abb2a456acfa70816892df86c8eb768120c312610cc')fail();\n const file='/tmp/crm4-approved-runtime.json';\n d.fs.writeFileSync(file,content,{flag:'wx',mode:0o600});\n d.env.CRM4_CONFIG_FILE=file;\n const server=await d.loadServer().start();\n // The existing HTTP handler still performs all IAP/Firebase/framework checks.\n // Install the additional time gate before yielding back to request callbacks.\n const handlers=server.listeners('request');if(handlers.length!==1){server.closeAllConnections();server.close();fail();}\n server.removeAllListeners('request');\n server.on('request',(req,res)=>{\n   const now=d.now();if(now<start||now>=end){res.writeHead(403,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end('{\"error\":\"Synthetic test window closed\"}');return;}\n   handlers[0].call(server,req,res);\n });\n const stop=()=>{server.close();server.closeAllConnections();d.exit(0);};\n if(d.now()>=end){stop();return;}\n // Timer is independent of operator availability; every process restart also\n // refuses an expired window. Request gate uses UTC on every request.\n const timer=d.setTimeout(stop,end-d.now());timer.unref?.();\n return server;\n})({fs:require('node:fs'),sha:x=>require('node:crypto').createHash('sha256').update(x).digest('hex'),env:process.env,now:Date.now,loadServer:()=>require('/app/release/server.cjs'),setTimeout,exit:code=>process.exit(code)},{\"endUtc\":\"2026-10-16T11:30:00.000Z\",\"startUtc\":\"2026-10-09T11:30:00.000Z\"}).catch(()=>{console.error('CRM4 sealed startup rejected');process.exit(1)})"
+            ],
+            "env": [
+              {
+                "name": "GCLOUD_PROJECT",
+                "value": "quaerens-crm4-spain-test"
+              },
+              {
+                "name": "CRM4_DEPLOYMENT_APPROVED",
+                "value": "true"
+              }
+            ],
+            "resources": {
+              "limits": {
+                "cpu": "1",
+                "memory": "1Gi"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "iap": {
+    "generateIdentityFor": "iap.googleapis.com",
+    "expectedIdentity": "service-558324850479@gcp-sa-iap.iam.gserviceaccount.com",
+    "defaultProjectGrants": [],
+    "grants": [
+      {
+        "resource": "Cloud Run crm4-spain-test only",
+        "member": "serviceAccount:service-558324850479@gcp-sa-iap.iam.gserviceaccount.com",
+        "role": "roles/run.invoker"
+      },
+      {
+        "resource": "projects/558324850479/iap_web/cloud_run-europe-west1/services/crm4-spain-test",
+        "member": "user:brusseljeroen@gmail.com",
+        "role": "roles/iap.httpsResourceAccessor",
+        "condition": {
+          "title": "crm4_synthetic_window",
+          "expression": "request.time >= timestamp(\"2026-10-09T11:30:00.000Z\") && request.time < timestamp(\"2026-10-16T11:30:00.000Z\")"
+        }
+      }
+    ],
+    "conditionTemplate": "request.time >= timestamp(\"START_UTC\") && request.time < timestamp(\"END_UTC\")",
+    "policyVersion": 3,
+    "conditionTitle": "crm4_synthetic_window",
+    "oauth": {
+      "clientId": "558324850479-brnmdsdg9brs2frq0hb3ha0suhugn64k.apps.googleusercontent.com",
+      "secretEntry": "Owner-only private Console; never agent/chat/Git"
+    }
+  },
+  "audit": {
+    "proposalOnly": true,
+    "project": "quaerens-crm4-spain-test",
+    "projectNumber": "558324850479",
+    "baselineEtag": "BwZdwDu5QJg=",
+    "baselinePolicySha256": "31fd42362695124324f1fbda69eaac887ba0d1104cc0f7a52e4812cf7db8556d",
+    "existingAuditConfigs": [],
+    "addAuditConfigs": [
+      {
+        "service": "iap.googleapis.com",
+        "auditLogConfigs": [
+          {
+            "logType": "ADMIN_READ"
+          },
+          {
+            "logType": "DATA_READ"
+          },
+          {
+            "logType": "DATA_WRITE"
+          }
+        ]
+      },
+      {
+        "service": "datastore.googleapis.com",
+        "auditLogConfigs": [
+          {
+            "logType": "DATA_READ"
+          },
+          {
+            "logType": "DATA_WRITE"
+          }
+        ]
+      },
+      {
+        "service": "storage.googleapis.com",
+        "auditLogConfigs": [
+          {
+            "logType": "DATA_READ"
+          },
+          {
+            "logType": "DATA_WRITE"
+          }
+        ]
+      }
+    ],
+    "preserveBindings": true,
+    "preserveRetention": true,
+    "applyRule": "Freshly reread version-3 policy and etag; merge only reviewed categories preserving unrelated entries/exemptions; stop on drift. Not executed."
+  },
+  "rules": {
+    "firestore": {
+      "kind": "firestore",
+      "startUtc": "2026-10-09T11:30:00.000Z",
+      "endUtc": "2026-10-16T11:30:00.000Z",
+      "allowPaths": 9,
+      "sourceSha256": "f5980594f7b268f25bba66cfa018c4d1f5e5398f25307d44c01e2d20e26a5b70",
+      "output": "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    // CRM4 Spain private synthetic test only. Shared CRM membership/role contract; no client authority\n    // to create memberships, assessments, appointments or provider state.\n    function member() {\n      return request.auth != null\n        && exists(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid))\n        && get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.active == true\n        && get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.workspaceId == 'CRM4';\n    }\n    function role() { return get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.role; }\n    function staffRole(expected) {\n      let m=get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data;\n      return (!('roles' in m) && m.role == expected) || (m.role in ['lister','closer'] && m.roles is list && m.roles.size() == 2 && m.roles.hasAll(['lister','closer']) && expected in ['lister','closer']);\n    }\n    function supervisor() { return member() && role() in ['manager', 'administrator']; }\n    match /crm4Memberships/{uid} {\n      allow get: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (request.auth != null && (request.auth.uid == uid || supervisor()));\n      allow list: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (supervisor());\n    }\n    match /users/{uid} { allow get: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (member() && request.auth.uid == uid); }\n    match /crm4Leads/{id} {\n      allow read: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (resource.data.workspaceId == 'CRM4' && (supervisor() || (member() && (\n        (staffRole('lister') && resource.data.assignedToUid == request.auth.uid)\n        || (staffRole('closer') && (resource.data.closerUid == request.auth.uid || resource.data.assignedUserId == request.auth.uid))))));\n    }\n    match /crm4Assessments/{id} { allow read: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (supervisor()); }\n    match /crm4Activities/{id} {\n      allow read: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (supervisor() || (member() && resource.data.ownerUid == request.auth.uid));\n    }\n    match /crm4Attendance/{id} {\n      allow read: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (supervisor() || (member() && resource.data.uid == request.auth.uid));\n      allow create, update: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (member() && request.resource.data.workspaceId == 'CRM4'\n        && request.resource.data.uid == request.auth.uid\n        && (!exists(/databases/$(database)/documents/crm4Attendance/$(id)) || resource.data.uid == request.auth.uid));\n    }\n    match /{document=**} { allow read, write: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (false); }\n  }\n}\n",
+      "sha256": "77321557e235f1d3d5f976cabf7fff5b8a720e79fb48bd2eab80a955a12fdf3b"
+    },
+    "storage": {
+      "kind": "storage",
+      "startUtc": "2026-10-09T11:30:00.000Z",
+      "endUtc": "2026-10-16T11:30:00.000Z",
+      "allowPaths": 3,
+      "sourceSha256": "704066c28fda7b2868d3d5d68c4df3e386774a4e392c2ba8cb0a9a35eb6b6e61",
+      "output": "rules_version = '2';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    function caseOwner(caseId, uid) {\n      let c = firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data;\n      let link = c.get('crmLink', {});\n      let leadId = c.get('crm4LeadId', link.get('caseId', ''));\n      return (c.get('workspaceId', '') == 'CRM4' || link.get('workspaceId', '') == 'CRM4')\n        && c.get('workspaceId', 'CRM4') == 'CRM4'\n        && link.get('workspaceId', 'CRM4') == 'CRM4'\n        && link.get('collection', 'crm4Leads') == 'crm4Leads'\n        && (link.get('caseId', '') == '' || leadId == link.caseId)\n        && (leadId == '' || firestore.get(/databases/(default)/documents/crm4Leads/$(leadId)).data.workspaceId == 'CRM4')\n        && c.clientUid == uid && c.accessState == 'ACTIVE';\n    }\n    // Staff uploads use the authenticated CRM4 server boundary. It verifies\n    // membership + case + lead and commits the existing registration/audit.\n    match /clientPortal/{caseId}/shared/{filename} { allow read, write: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (false); }\n    match /clientPortal/{caseId}/client-uploads/{uid}/{filename} {\n      allow create: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (bucket == 'quaerens-crm4-spain-test.firebasestorage.app'\n        && resource == null\n        && request.auth != null && request.auth.uid == uid\n        && request.auth.token.email_verified == true\n        && caseOwner(caseId, uid)\n        && request.resource.size > 0 && request.resource.size <= 15 * 1024 * 1024\n        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);\n    }\n    match /{object=**} { allow read, write: if (request.time >= timestamp.value('2026-10-09T11:30:00.000Z') && request.time < timestamp.value('2026-10-16T11:30:00.000Z')) && (false); }\n  }\n}\n",
+      "sha256": "58178bab6dcb57ef1442f8fa7fa536c64b9bfc3aef2c5e6061a24da692e75978"
+    }
+  },
+  "toolHashes": {
+    "core.cjs": "8488bc48dd2eff44a3349f47110d5239866688ebaa5dbe241870448711172ed7",
+    "credentials.cjs": "e5db0fc7d85c33bcf58c2925f2d1cacb865a059abe42082db2b326f3709c72a1",
+    "browser-ceremony.js": "c4a11881c25392f7cd0325b0e6fe9d766d99620a68acb6dd4454c83d8b9453a1",
+    "acceptance.cjs": "431f9da0cd52de1dc37428dd6399bd333cc45ef441942c353a04464c8a11c1f1",
+    "containment.cjs": "148224abf73efbbff7c979c113246f8149df3637365cea0d1fa5cfa902b5eadb",
+    "browser-probes.js": "a6571756e5087d6260b81c01a23ebf44e05fc59bb07a9ab8a04614b14b2186cb",
+    "evidence-checks.cjs": "77015aa0eca85d5d49be9a0a9023e5e7b9f2b407f7f72f1909be07e0d5e40538",
+    "cloud-containment.cjs": "5f7fc4f7936082e1831a34549d32c5de4babe50515c33260ad82772e9bccf6f2",
+    "cleanup.cjs": "628ec6deff23a9a54ac08a241449a566a87e42f8e177557f1c6cb5e9709e52df",
+    "probe-bindings.cjs": "e1f2571312b9b17527625670db48427feb3db5ec02dbbaceabdbfd6bd43a69ca"
+  },
+  "resolveUidsByExactEmail": true,
+  "containmentApproved": false,
+  "fixtureRunId": "crm4-rehearsal-20261016-final",
+  "iapCondition": {
+    "title": "crm4_synthetic_window",
+    "expression": "request.time >= timestamp(\"2026-10-09T11:30:00.000Z\") && request.time < timestamp(\"2026-10-16T11:30:00.000Z\")"
+  },
+  "proposedActions": [
+    "create-bootstrap",
+    "watch-bootstrap",
+    "set-owner-password",
+    "revoke-bootstrap"
+  ],
+  "containmentActions": [
+    "revoke-bootstrap",
+    "disable-owner",
+    "withdraw-iap",
+    "remove-run-invoker",
+    "delete-test-service",
+    "cleanup-synthetic"
+  ],
+  "executionBlockedReasons": [
+    "Portal-client verified-case-owner fixture not yet approved",
+    "Native IAP denial evidence must be distinguished from app denial",
+    "Bounded listener observation and expired restart require actual managed evidence"
+  ],
+  "decision": "NO-GO",
+  "preparationBaseline": "74d37bce"
+}
