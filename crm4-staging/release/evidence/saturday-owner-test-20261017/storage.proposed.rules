@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function caseOwner(caseId, uid) {
+      let c = firestore.get(/databases/(default)/documents/clientPortalCases/$(caseId)).data;
+      let link = c.get('crmLink', {});
+      let leadId = c.get('crm4LeadId', link.get('caseId', ''));
+      return (c.get('workspaceId', '') == 'CRM4' || link.get('workspaceId', '') == 'CRM4')
+        && c.get('workspaceId', 'CRM4') == 'CRM4'
+        && link.get('workspaceId', 'CRM4') == 'CRM4'
+        && link.get('collection', 'crm4Leads') == 'crm4Leads'
+        && (link.get('caseId', '') == '' || leadId == link.caseId)
+        && (leadId == '' || firestore.get(/databases/(default)/documents/crm4Leads/$(leadId)).data.workspaceId == 'CRM4')
+        && c.clientUid == uid && c.accessState == 'ACTIVE';
+    }
+    // Staff uploads use the authenticated CRM4 server boundary. It verifies
+    // membership + case + lead and commits the existing registration/audit.
+    match /clientPortal/{caseId}/shared/{filename} { allow read, write: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (false); }
+    match /clientPortal/{caseId}/client-uploads/{uid}/{filename} {
+      allow create: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (bucket == 'quaerens-crm4-spain-test.firebasestorage.app'
+        && resource == null
+        && request.auth != null && request.auth.uid == uid
+        && request.auth.token.email_verified == true
+        && caseOwner(caseId, uid)
+        && request.resource.size > 0 && request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+    }
+    match /{object=**} { allow read, write: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (false); }
+  }
+}

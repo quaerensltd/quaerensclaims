@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // CRM4 Spain private synthetic test only. Shared CRM membership/role contract; no client authority
+    // to create memberships, assessments, appointments or provider state.
+    function member() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid))
+        && get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.active == true
+        && get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.workspaceId == 'CRM4';
+    }
+    function role() { return get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data.role; }
+    function staffRole(expected) {
+      let m=get(/databases/$(database)/documents/crm4Memberships/$(request.auth.uid)).data;
+      return (!('roles' in m) && m.role == expected) || (m.role in ['lister','closer'] && m.roles is list && m.roles.size() == 2 && m.roles.hasAll(['lister','closer']) && expected in ['lister','closer']);
+    }
+    function supervisor() { return member() && role() in ['manager', 'administrator']; }
+    match /crm4Memberships/{uid} {
+      allow get: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (request.auth != null && (request.auth.uid == uid || supervisor()));
+      allow list: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (supervisor());
+    }
+    match /users/{uid} { allow get: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (member() && request.auth.uid == uid); }
+    match /crm4Leads/{id} {
+      allow read: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (resource.data.workspaceId == 'CRM4' && (supervisor() || (member() && (
+        (staffRole('lister') && resource.data.assignedToUid == request.auth.uid)
+        || (staffRole('closer') && (resource.data.closerUid == request.auth.uid || resource.data.assignedUserId == request.auth.uid))))));
+    }
+    match /crm4Assessments/{id} { allow read: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (supervisor()); }
+    match /crm4Activities/{id} {
+      allow read: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (supervisor() || (member() && resource.data.ownerUid == request.auth.uid));
+    }
+    match /crm4Attendance/{id} {
+      allow read: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (supervisor() || (member() && resource.data.uid == request.auth.uid));
+      allow create, update: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (member() && request.resource.data.workspaceId == 'CRM4'
+        && request.resource.data.uid == request.auth.uid
+        && (!exists(/databases/$(database)/documents/crm4Attendance/$(id)) || resource.data.uid == request.auth.uid));
+    }
+    match /{document=**} { allow read, write: if (request.time >= timestamp.value('2026-10-17T09:00:00.000Z') && request.time < timestamp.value('2026-10-24T09:00:00.000Z')) && (false); }
+  }
+}
