@@ -1,0 +1,83 @@
+{
+  "name": "projects/quaerens-crm4-spain-test/locations/europe-west1/operations/8f1c1c92-ae1d-4116-b287-282454dc7132",
+  "metadata": {
+    "@type": "type.googleapis.com/google.cloud.run.v2.Service",
+    "name": "projects/quaerens-crm4-spain-test/locations/europe-west1/services/crm4-spain-test",
+    "uid": "15c897fb-dc6a-44ed-90b4-b1d97c3834ce",
+    "generation": "1",
+    "createTime": "2026-10-18T12:07:48.052374Z",
+    "updateTime": "2026-10-18T12:07:48.052374Z",
+    "creator": "martijnpronk76@gmail.com",
+    "lastModifier": "martijnpronk76@gmail.com",
+    "launchStage": "GA",
+    "template": {
+      "scaling": {
+        "maxInstanceCount": 2
+      },
+      "timeout": "120s",
+      "serviceAccount": "crm4-runtime@quaerens-crm4-spain-test.iam.gserviceaccount.com",
+      "containers": [
+        {
+          "image": "europe-west1-docker.pkg.dev/quaerens-crm4-spain-test/crm4-release/crm4-spain@sha256:127600049240e507c8ad7ebc93125173ebdca4d094e9839764314e102bd47ceb",
+          "command": [
+            "/nodejs/bin/node"
+          ],
+          "args": [
+            "-e",
+            "(async function startup(d, s) {\n const fail=()=>{throw Error('CRM4 sealed startup rejected');};\n const start=Date.parse(s.startUtc),end=Date.parse(s.endUtc);\n if(!Number.isFinite(start)||!Number.isFinite(end)||end-start!==604800000||new Date(start).toISOString()!==s.startUtc||new Date(end).toISOString()!==s.endUtc)fail();\n if(d.env.CRM4_DEPLOYMENT_APPROVED!=='true'||d.env.GCLOUD_PROJECT!=='quaerens-crm4-spain-test'||d.now()>=end)fail();\n if(['GOOGLE_APPLICATION_CREDENTIALS','FIRESTORE_EMULATOR_HOST','FIREBASE_AUTH_EMULATOR_HOST','STORAGE_EMULATOR_HOST'].some(k=>d.env[k]))fail();\n const bytes=d.fs.readFileSync('/app/release/runtime-config.json');\n if(d.sha(bytes)!=='8ee3b8d34ea203461513584b2ac97083c890a754c1292a0d45df78de6e893eb4')fail();\n const config=JSON.parse(bytes);\n if(config.deploymentApproved!==false||config.projectId!=='quaerens-crm4-spain-test'||config.projectNumber!=='558324850479'||config.providers!=='capture-only'||JSON.stringify(config.testerEmails)!=='[\"brusseljeroen@gmail.com\"]')fail();\n const approved={...config,deploymentApproved:true};\n const content=JSON.stringify(approved,null,2)+'\\n';\n if(d.sha(content)!=='be32ef38127276c3ba875abb2a456acfa70816892df86c8eb768120c312610cc')fail();\n const file='/tmp/crm4-approved-runtime.json';\n d.fs.writeFileSync(file,content,{flag:'wx',mode:0o600});\n d.env.CRM4_CONFIG_FILE=file;\n const server=await d.loadServer().start();\n // The existing HTTP handler still performs all IAP/Firebase/framework checks.\n // Install the additional time gate before yielding back to request callbacks.\n const handlers=server.listeners('request');if(handlers.length!==1){server.closeAllConnections();server.close();fail();}\n server.removeAllListeners('request');\n server.on('request',(req,res)=>{\n   const now=d.now();if(now<start||now>=end){res.writeHead(403,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end('{\"error\":\"Synthetic test window closed\"}');return;}\n   handlers[0].call(server,req,res);\n });\n const stop=()=>{server.close();server.closeAllConnections();d.exit(0);};\n if(d.now()>=end){stop();return;}\n // Timer is independent of operator availability; every process restart also\n // refuses an expired window. Request gate uses UTC on every request.\n const timer=d.setTimeout(stop,end-d.now());timer.unref?.();\n return server;\n})({fs:require('node:fs'),sha:x=>require('node:crypto').createHash('sha256').update(x).digest('hex'),env:process.env,now:Date.now,loadServer:()=>require('/app/release/server.cjs'),setTimeout,exit:code=>process.exit(code)},{\"endUtc\":\"2026-10-24T09:00:00.000Z\",\"startUtc\":\"2026-10-17T09:00:00.000Z\"}).catch(()=>{console.error('CRM4 sealed startup rejected');process.exit(1)})"
+          ],
+          "env": [
+            {
+              "name": "GCLOUD_PROJECT",
+              "value": "quaerens-crm4-spain-test"
+            },
+            {
+              "name": "CRM4_DEPLOYMENT_APPROVED",
+              "value": "true"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1",
+              "memory": "1Gi"
+            }
+          },
+          "ports": [
+            {
+              "name": "http1",
+              "containerPort": 8080
+            }
+          ],
+          "startupProbe": {
+            "timeoutSeconds": 240,
+            "periodSeconds": 240,
+            "failureThreshold": 1,
+            "tcpSocket": {
+              "port": 8080
+            }
+          }
+        }
+      ],
+      "maxInstanceRequestConcurrency": 8
+    },
+    "traffic": [
+      {
+        "type": "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST",
+        "percent": 100
+      }
+    ],
+    "scaling": {
+      "maxInstanceCount": 20
+    },
+    "urls": [
+      "https://crm4-spain-test-558324850479.europe-west1.run.app"
+    ],
+    "iapEnabled": true,
+    "sshEnabled": false,
+    "terminalCondition": {
+      "state": "CONDITION_PENDING"
+    },
+    "reconciling": true,
+    "etag": "\"CJTt0tYGEPDT_Bg/cHJvamVjdHMvcXVhZXJlbnMtY3JtNC1zcGFpbi10ZXN0L2xvY2F0aW9ucy9ldXJvcGUtd2VzdDEvc2VydmljZXMvY3JtNC1zcGFpbi10ZXN0\""
+  }
+}
