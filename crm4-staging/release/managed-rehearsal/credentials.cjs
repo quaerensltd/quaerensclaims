@@ -1,6 +1,6 @@
 'use strict';
 // Explicit manifest/checksum approval; no network or mutation on import.
-const fs=require('fs'),cp=require('child_process'),path=require('path'),c=require('./core.cjs'),w=require('./bootstrap-watcher.cjs'),diagnostics=require('./private-diagnostics.cjs');
+const fs=require('fs'),path=require('path'),c=require('./core.cjs'),w=require('./bootstrap-watcher.cjs'),diagnostics=require('./private-diagnostics.cjs'),io=require('./watcher-io.cjs');
 let activeDiagnostic=null;
 async function main(){
  const [action,file,expectedHash,suppliedUid]=process.argv.slice(2);let uid=suppliedUid;
@@ -8,28 +8,28 @@ async function main(){
  const bytes=fs.readFileSync(file);c.check(c.sha(bytes)===expectedHash);const a=JSON.parse(bytes.toString().replace(/^\uFEFF/,''));c.approve(a,action);
  if(['create-bootstrap','watch-bootstrap'].includes(action))c.approve(a,'revoke-bootstrap');
  for(const [name,hash]of Object.entries(a.toolHashes||{})){c.check(!name.includes('..')&&!path.isAbsolute(name));c.check(c.sha(fs.readFileSync(path.join(__dirname,name)))===hash);}
- c.check(['core.cjs','credentials.cjs','bootstrap-watcher.cjs','private-diagnostics.cjs'].every(n=>a.toolHashes?.[n]));
+ c.check(['core.cjs','credentials.cjs','bootstrap-watcher.cjs','private-diagnostics.cjs','watcher-io.cjs'].every(n=>a.toolHashes?.[n]));
  c.check(!['FIREBASE_AUTH_EMULATOR_HOST','FIRESTORE_EMULATOR_HOST','GOOGLE_APPLICATION_CREDENTIALS'].some(k=>process.env[k]));
  c.check(!process.env.GOOGLE_CLOUD_QUOTA_PROJECT||process.env.GOOGLE_CLOUD_QUOTA_PROJECT===c.P);
  const traceDir=path.resolve(__dirname,'../.scratch');fs.mkdirSync(traceDir,{recursive:true});const traceFile=path.join(traceDir,'credential-diagnostic-'+require('crypto').randomUUID()+'.json');
  const diag=diagnostics.create({write:r=>{const next=traceFile+'.next';fs.writeFileSync(next,JSON.stringify(r,null,2)+'\n',{mode:0o600});fs.renameSync(next,traceFile);}});activeDiagnostic=diag;diag.checkHealthy();
  process.env.GOOGLE_CLOUD_QUOTA_PROJECT=c.P; // SDK-supported, process-local only.
  const cliEnv={...process.env,CLOUDSDK_CORE_DISABLE_FILE_LOGGING:'true',CLOUDSDK_CORE_LOG_HTTP:'false'};
- const cli=args=>cp.execFileSync(process.platform==='win32'?'gcloud.cmd':'gcloud',args,{encoding:'utf8',stdio:['ignore','pipe','pipe'],shell:process.platform==='win32',env:cliEnv,timeout:30000}).trim();
- const token=()=>cli(['auth','print-access-token','--account='+a.operatorEmail]);
- async function read(url){const r=await fetch(url,{headers:{Authorization:'Bearer '+token(),'x-goog-user-project':c.P},redirect:'error',signal:AbortSignal.timeout(30000)});if(!r.ok){const e=Error('HTTP request failed');e.safeHttpStatus=r.status;throw e;}return r.json();}
+ const cli=args=>io.cli(process.platform==='win32'?'gcloud.cmd':'gcloud',args,{env:cliEnv,shell:process.platform==='win32'});
+ const token=io.tokenCache(()=>cli(['auth','print-access-token','--account='+a.operatorEmail]));
+ const read=io.serial(async(url,body)=>io.read(url,{token:await token(),project:c.P,body}));
  const receipt=w.receiptPath(a);
  async function guard(guardAction=action){
-  await diag.step('approval',async()=>c.approve(a,guardAction));await diag.step('operator',async()=>c.check(cli(['config','get-value','account'])===a.operatorEmail));
-  await diag.step('impersonation',async()=>{c.check(!process.env.CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT);c.check(['','(unset)'].includes(cli(['config','get-value','auth/impersonate_service_account'])));});
+  await diag.step('approval',async()=>c.approve(a,guardAction));await diag.step('operator',async()=>c.check(await cli(['config','get-value','account'])===a.operatorEmail));
+  await diag.step('impersonation',async()=>{c.check(!process.env.CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT);c.check(['','(unset)'].includes(await cli(['config','get-value','auth/impersonate_service_account'])));});
   const p=await diag.step('project-read',()=>read('https://cloudresourcemanager.googleapis.com/v1/projects/'+c.P+'?fields=projectId,projectNumber,lifecycleState'));
   await diag.step('project-identity',async()=>c.check(p.projectId===c.P&&p.projectNumber===c.N&&p.lifecycleState==='ACTIVE'));
   if(guardAction==='create-bootstrap'){await diag.step('watcher-readiness',async()=>w.assertReady(receipt,expectedHash));diag.checkHealthy();}
  }
  await guard();
  const {initializeApp,deleteApp}=require('firebase-admin/app');
- const app=initializeApp({projectId:c.P,credential:{getAccessToken:async()=>({access_token:token(),expires_in:300})}},'crm4-private-operator');
- const auth=diag.wrapAuth(require('firebase-admin/auth').getAuth(app));let password;
+ const app=initializeApp({projectId:c.P,credential:{getAccessToken:async()=>({access_token:await token(),expires_in:300})}},'crm4-private-operator');
+ const auth=diag.wrapAuth(io.authReads(require('firebase-admin/auth').getAuth(app),read,c.P));let password;
  const readMembers=()=>diag.step('membership-read',async()=>w.parseMembers(await read('https://firestore.googleapis.com/v1/projects/'+c.P+'/databases/(default)/documents/crm4Memberships?pageSize=2&mask.fieldPaths=email&mask.fieldPaths=createdBy&mask.fieldPaths=workspaceId&mask.fieldPaths=role&mask.fieldPaths=active'),c.P));
  try{
   if(!['create-bootstrap','watch-bootstrap'].includes(action)&&a.resolveUidsByExactEmail===true){const target=await auth.getUserByEmail(action==='set-owner-password'?'owner@crm4.example.test':'bootstrap@crm4.example.test');c.check(!uid||uid===target.uid);uid=target.uid;}
@@ -38,7 +38,7 @@ async function main(){
    fs.mkdirSync(path.dirname(receipt),{recursive:true});const fd=fs.openSync(receipt,'wx',0o600);fs.closeSync(fd);
    c.check(a.watcherArmedDurationMs===600000);const deadline=Date.parse(a.window.endUtc)-30000;
    let cancelled=false;const cancel=()=>{cancelled=true;};process.on('SIGINT',cancel);process.on('SIGTERM',cancel);
-   try{result=await w.monitor({auth,readMembers,guard,revokeGuard:()=>guard('revoke-bootstrap'),deadline,deadlineLimit:deadline,armedDurationMs:a.watcherArmedDurationMs,manifestHash:expectedHash,cancelled:()=>cancelled,readAcknowledgement:a.requireIndependentWatcherAcknowledgement===true?()=>{const file=receipt+'.ack';try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}:null,
+   try{result=await w.monitor({auth,readMembers,guard,revokeGuard:()=>guard('revoke-bootstrap'),deadline,deadlineLimit:deadline,armedDurationMs:a.watcherArmedDurationMs,manifestHash:expectedHash,liveHeartbeat:true,cancelled:()=>cancelled,readAcknowledgement:a.requireIndependentWatcherAcknowledgement===true?()=>{const file=receipt+'.ack';try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}:null,
     write:r=>{const next=receipt+'.next';fs.writeFileSync(next,JSON.stringify(r)+'\n',{mode:0o600});fs.renameSync(next,receipt);},notify:s=>process.stdout.write(s+'\n')});}finally{process.off('SIGINT',cancel);process.off('SIGTERM',cancel);}
    if(!result.pass)process.exitCode=1;
   }
