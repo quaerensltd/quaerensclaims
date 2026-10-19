@@ -2,7 +2,7 @@
 // No SDK initialisation or network on import. Uses existing core revocation only.
 const fs=require('fs'),path=require('path'),c=require('./core.cjs');
 const EMAIL='bootstrap@crm4.example.test',OWNER='owner@crm4.example.test';
-function receiptPath(a){c.check(['crm4-bootstrap-watch.json','crm4-bootstrap-watch-recovery-01.json','crm4-bootstrap-watch-recovery-02.json','crm4-bootstrap-watch-recovery-03.json','crm4-bootstrap-watch-recovery-05.json'].includes(a.watcherReceipt));return path.resolve(__dirname,'../.scratch',a.watcherReceipt);}
+function receiptPath(a){c.check(['crm4-bootstrap-watch.json','crm4-bootstrap-watch-recovery-01.json','crm4-bootstrap-watch-recovery-02.json','crm4-bootstrap-watch-recovery-03.json','crm4-bootstrap-watch-recovery-05.json','crm4-bootstrap-watch-recovery-07.json'].includes(a.watcherReceipt));return path.resolve(__dirname,'../.scratch',a.watcherReceipt);}
 function assertReady(file,hash,now=Date.now(),alive=pid=>process.kill(pid,0)){
  const fail=code=>{const e=Error('Watcher readiness failed');e.code=code;throw e;};
  let r;try{r=JSON.parse(fs.readFileSync(file,'utf8'));}catch{fail('WATCHER_RECEIPT_UNREADABLE');}

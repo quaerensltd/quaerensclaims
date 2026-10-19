@@ -1,0 +1,12 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),h=require('./historical-process.cjs');
+const receipt={pid:77,started:100,heartbeat:200,state:'FAIL_CLOSED'};
+const reused={pid:77,present:true,identityAvailable:true,name:'RuntimeBroker.exe',createdMs:300,watcher:false};
+test('PID reuse requires identified different process born after final receipt',()=>{assert.equal(h.classify(receipt,reused,true).result,'UNRELATED_PID_REUSE');});
+test('confirmed absent process passes',()=>assert.equal(h.classify(receipt,{pid:77,present:false},false).result,'ABSENT'));
+test('genuine surviving or newly started watcher is blocked',()=>{for(const createdMs of [50,300])assert.throws(()=>h.classify(receipt,{...reused,watcher:true,name:'node.exe',createdMs},true),e=>e.code==='WATCHER_SURVIVES');});
+test('missing metadata or uncertain time fails closed',()=>{for(const patch of [{identityAvailable:false},{createdMs:null},{watcher:null},{name:''},{createdMs:200},{createdMs:50}])assert.throws(()=>h.classify(receipt,{...reused,...patch},true));});
+test('missing receipt, active receipt, wrong PID and conflicting liveness fail',()=>{for(const r of [null,{...receipt,state:'ARMED'},{...receipt,heartbeat:null}])assert.throws(()=>h.classify(r,reused,true));assert.throws(()=>h.classify(receipt,{...reused,pid:78},true));assert.throws(()=>h.classify(receipt,{pid:77,present:false},true));assert.throws(()=>h.classify(receipt,reused,false));});
+test('inaccessible process metadata and lookup failure cannot pass',async()=>{await assert.rejects(h.verify(receipt,{read:async()=>{throw Error('access denied');}}));await assert.rejects(h.verify(receipt,{read:async()=>reused,isAlive:()=>{throw Error('access denied');}}));});
+test('metadata changing between independent reads fails',async()=>{let n=0;await assert.rejects(h.verify(receipt,{read:async()=>({...reused,createdMs:300+n++}),isAlive:()=>true}),e=>e.code==='PROCESS_CHANGED_DURING_READ');});
+test('stable metadata independently verified without process mutations',async()=>{let reads=0,checks=0;const r=await h.verify(receipt,{read:async pid=>{assert.equal(pid,77);reads++;return reused;},isAlive:()=>{checks++;return true;}});assert.equal(r.result,'UNRELATED_PID_REUSE');assert.equal(reads,2);assert.equal(checks,1);});
