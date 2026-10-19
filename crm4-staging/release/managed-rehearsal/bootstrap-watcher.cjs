@@ -2,13 +2,18 @@
 // No SDK initialisation or network on import. Uses existing core revocation only.
 const fs=require('fs'),path=require('path'),c=require('./core.cjs');
 const EMAIL='bootstrap@crm4.example.test',OWNER='owner@crm4.example.test';
-function receiptPath(a){c.check(a.watcherReceipt==='crm4-bootstrap-watch.json');return path.resolve(__dirname,'../.scratch',a.watcherReceipt);}
+function receiptPath(a){c.check(['crm4-bootstrap-watch.json','crm4-bootstrap-watch-recovery-01.json'].includes(a.watcherReceipt));return path.resolve(__dirname,'../.scratch',a.watcherReceipt);}
 function assertReady(file,hash,now=Date.now(),alive=pid=>process.kill(pid,0)){
- const r=JSON.parse(fs.readFileSync(file,'utf8'));
- c.check(r.manifestHash===hash&&r.state==='ARMED'&&Number.isInteger(r.pid)&&r.pid>0);
- c.check(Number.isFinite(r.heartbeat)&&now>=r.heartbeat&&now-r.heartbeat<30000&&now<r.deadline-5000);
- alive(r.pid);return r;
+ const fail=code=>{const e=Error('Watcher readiness failed');e.code=code;throw e;};
+ let r;try{r=JSON.parse(fs.readFileSync(file,'utf8'));}catch{fail('WATCHER_RECEIPT_UNREADABLE');}
+ if(r.manifestHash!==hash)fail('WATCHER_SEAL_MISMATCH');
+ if(r.state!=='ARMED')fail('WATCHER_NOT_ARMED');
+ if(!Number.isInteger(r.pid)||r.pid<=0)fail('WATCHER_PID_INVALID');
+ if(!Number.isFinite(r.heartbeat)||now<r.heartbeat||now-r.heartbeat>=30000)fail('WATCHER_HEARTBEAT_STALE');
+ if(!Number.isFinite(r.deadline)||now>=r.deadline-5000)fail('WATCHER_DEADLINE');
+ try{alive(r.pid);}catch{fail('WATCHER_PROCESS_DEAD');}return r;
 }
+
 function parseMembers(body,project){
  c.check(body&&typeof body==='object'&&!body.nextPageToken);
  const rows=body.documents||[];c.check(Array.isArray(rows)&&rows.length<=1);
@@ -17,14 +22,16 @@ function parseMembers(body,project){
 async function lookup(auth){try{return await auth.getUserByEmail(EMAIL);}catch(e){c.check(e.code==='auth/user-not-found');return null;}}
 function bind(user,start,deadline){c.check(user.email===EMAIL&&user.uid&&Number.isFinite(Date.parse(user.metadata?.creationTime)));const created=Date.parse(user.metadata.creationTime);/* Admin SDK creationTime is a UTC string with whole-second precision.
  Empty-inventory preflight and exact-email lookup still reject existing identities. */c.check(created>=Math.floor(start/1000)*1000&&created<=deadline);return user.uid;}
-async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),deadline,manifestHash,pid=process.pid,cancelled=()=>false}){
+async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),deadline,manifestHash,pid=process.pid,cancelled=()=>false,armedDurationMs=null,deadlineLimit=deadline}){
  let uid,started=now(),armed=false,completed=false,failure=false,revokeResult,absenceVerified=false;
  const state={manifestHash,pid,started,deadline,state:'STARTING',heartbeat:started};
  const publish=s=>{Object.assign(state,{state:s,heartbeat:now(),...(uid?{bootstrapUid:uid}:{})});write({...state});};
  try{
   await guard();c.check(deadline>now()+5000);c.check(await lookup(auth)===null);
   const users=await auth.listUsers(1);c.check(users.users.length===0&&!users.pageToken);
-  c.check((await readMembers()).length===0);armed=true;publish('ARMED');notify('WATCHER_ARMED');
+  c.check((await readMembers()).length===0);
+  if(armedDurationMs!==null){c.check(armedDurationMs===600000&&Number.isFinite(deadlineLimit));deadline=Math.min(now()+armedDurationMs,deadlineLimit);c.check(deadline-now()>=armedDurationMs);state.deadline=deadline;}
+  started=now();state.started=started;state.armedAt=started;armed=true;publish('ARMED');notify('WATCHER_ARMED');
   while(now()<deadline){
    c.check(!cancelled());await guard();const user=await lookup(auth);
    if(user){const found=bind(user,started,deadline);c.check(!uid||uid===found);uid=found;c.check(!user.disabled);}

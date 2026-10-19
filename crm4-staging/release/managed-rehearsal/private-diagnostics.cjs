@@ -1,0 +1,15 @@
+'use strict';
+// Explicit allowlists: never serialise inputs, return values, raw errors or SDK payloads.
+const STAGES=new Set(['approval','operator','impersonation','project-read','project-identity','watcher-readiness','membership-read','inventory-read','private-input','password-policy','auth-lookup','auth-create','auth-read','auth-claims','auth-revoke','auth-disable','auth-password','watcher-start','bootstrap-provision','completion']);
+const CODES=new Set(['WATCHER_RECEIPT_UNREADABLE','WATCHER_SEAL_MISMATCH','WATCHER_NOT_ARMED','WATCHER_PID_INVALID','WATCHER_HEARTBEAT_STALE','WATCHER_DEADLINE','WATCHER_PROCESS_DEAD','PASSWORD_POLICY_FAILED','DIAGNOSTIC_WRITE_FAILED']);
+function category(e){if(CODES.has(e?.code))return e.code;if(e?.code==='auth/user-not-found')return 'AUTH_NOT_FOUND';if(e?.code==='auth/insufficient-permission')return 'AUTH_PERMISSION_DENIED';if(e?.code==='auth/invalid-password')return 'AUTH_PASSWORD_REJECTED';if(e?.code==='auth/email-already-exists')return 'AUTH_IDENTITY_EXISTS';if(e?.code==='auth/internal-error')return 'AUTH_INTERNAL_ERROR';if(e?.name==='TimeoutError'||e?.name==='AbortError')return 'REQUEST_TIMEOUT';return 'GUARD_OR_REQUEST_FAILED';}
+function create({write,now=Date.now}){
+ let events=[],firstFailure=null,healthy=true;
+ const flush=()=>{try{write({version:1,events,firstFailure,healthy});}catch{healthy=false;}};
+ function record(stage,state,extra={}){if(!STAGES.has(stage))throw Error('Unknown diagnostic stage');const row={stage,state,at:new Date(now()).toISOString()};if(extra.category)row.category=extra.category;if(Number.isInteger(extra.httpStatus)&&extra.httpStatus>=100&&extra.httpStatus<=599)row.httpStatus=extra.httpStatus;events.push(row);if(events.length>150)events=events.slice(-150);if(state==='FAIL'&&!firstFailure)firstFailure=row;flush();}
+ async function step(stage,fn,{allowAbsent=false}={}){record(stage,'START');try{const value=await fn();record(stage,'PASS');return value;}catch(e){if(allowAbsent&&e?.code==='auth/user-not-found')record(stage,'ABSENT');else record(stage,'FAIL',{category:category(e),httpStatus:e?.safeHttpStatus});throw e;}}
+ function checkHealthy(){if(!healthy){const e=Error('Diagnostic unavailable');e.code='DIAGNOSTIC_WRITE_FAILED';throw e;}}
+ function wrapAuth(auth){return new Proxy(auth,{get(target,k){const map={getUserByEmail:'auth-lookup',listUsers:'inventory-read',createUser:'auth-create',getUser:'auth-read',setCustomUserClaims:'auth-claims',revokeRefreshTokens:'auth-revoke',updateUser:'auth-disable'};if(!map[k]){const v=target[k];return typeof v==='function'?v.bind(target):v;}return async(...args)=>{if(k==='createUser'||(k==='setCustomUserClaims'&&args[1]?.platformAdmin===true))checkHealthy();const stage=k==='updateUser'&&Object.hasOwn(args[1]||{},'password')?'auth-password':map[k];return step(stage,()=>target[k](...args),{allowAbsent:k==='getUserByEmail'});};}});}
+ flush();return {step,record,checkHealthy,wrapAuth,summary:()=>({firstFailure,healthy})};
+}
+module.exports={create,category};

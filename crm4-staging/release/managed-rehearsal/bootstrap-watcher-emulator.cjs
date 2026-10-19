@@ -19,11 +19,12 @@ async function main(){
   for(const scenario of ['success','read-failure','timeout','revocation-failure']){
    phase=scenario+':arming';let ready;const armed=new Promise(resolve=>ready=resolve),states=[];let failRead=false;
    const targetAuth=scenario==='revocation-failure'?new Proxy(auth,{get(t,k){if(k==='setCustomUserClaims')return async(uid,claims)=>{if(!claims.platformAdmin)throw Error('synthetic cleanup failure');return t.setCustomUserClaims(uid,claims);};const value=t[k];return typeof value==='function'?value.bind(t):value;}}):auth;
-   const watched=w.monitor({auth:targetAuth,readMembers:async()=>{if(failRead)throw Error('synthetic read failure');return members();},guard,revokeGuard:guard,deadline:Date.now()+(scenario==='timeout'?6000:30000),manifestHash:'emulator-only',write:s=>states.push(s),notify:()=>ready(),sleep:ms=>new Promise(resolve=>setTimeout(resolve,100))});
+   const diagnostic=require('./private-diagnostics.cjs').create({write:row=>{assert(!JSON.stringify(row).includes(password));}});
+   const watched=w.monitor({auth:diagnostic.wrapAuth(targetAuth),readMembers:async()=>{if(failRead)throw Error('synthetic read failure');return members();},guard,revokeGuard:guard,deadline:Date.now()+(scenario==='timeout'?6000:30000),manifestHash:'emulator-only',write:s=>states.push(s),notify:()=>ready(),sleep:ms=>new Promise(resolve=>setTimeout(resolve,100))});
    watched.then(result=>{if(!result.armed)console.log(JSON.stringify({phase,result}));});
    await Promise.race([armed,new Promise((_,reject)=>setTimeout(()=>reject(Error('not armed')),10000))]);
    assert.equal((await auth.listUsers(1)).users.length,0);assert.equal(states[0].state,'ARMED');
-   phase=scenario+':bootstrap';actor=await c.bootstrap(auth,password,guard);assert.equal((await r.db.collection('crm4Memberships').doc(actor.uid).get()).exists,false);
+   phase=scenario+':bootstrap';actor=await c.bootstrap(diagnostic.wrapAuth(auth),password,guard);assert.equal((await r.db.collection('crm4Memberships').doc(actor.uid).get()).exists,false);
    let session;
    if(scenario==='success'||scenario==='revocation-failure'){
     const login=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-only',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'bootstrap@crm4.example.test',password,returnSecureToken:true})});assert.equal(login.status,200);session=await login.json();const token=await auth.verifyIdToken(session.idToken,true);assert(token.platformAdmin);
