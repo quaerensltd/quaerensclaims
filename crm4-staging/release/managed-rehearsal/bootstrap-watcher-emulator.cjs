@@ -17,13 +17,13 @@ async function main(){
 
  try{
   for(const scenario of ['success','read-failure','timeout','revocation-failure']){
-   phase=scenario+':arming';let ready;const armed=new Promise(resolve=>ready=resolve),states=[];let failRead=false;
+   phase=scenario+':arming';let ready;const armed=new Promise(resolve=>ready=resolve),states=[];let failRead=false,ack=null;
    const targetAuth=scenario==='revocation-failure'?new Proxy(auth,{get(t,k){if(k==='setCustomUserClaims')return async(uid,claims)=>{if(!claims.platformAdmin)throw Error('synthetic cleanup failure');return t.setCustomUserClaims(uid,claims);};const value=t[k];return typeof value==='function'?value.bind(t):value;}}):auth;
    const diagnostic=require('./private-diagnostics.cjs').create({write:row=>{assert(!JSON.stringify(row).includes(password));}});
-   const watched=w.monitor({auth:diagnostic.wrapAuth(targetAuth),readMembers:async()=>{if(failRead)throw Error('synthetic read failure');return members();},guard,revokeGuard:guard,deadline:Date.now()+(scenario==='timeout'?6000:30000),manifestHash:'emulator-only',write:s=>states.push(s),notify:()=>ready(),sleep:ms=>new Promise(resolve=>setTimeout(resolve,100))});
+   const watched=w.monitor({auth:diagnostic.wrapAuth(targetAuth),readMembers:async()=>{if(failRead)throw Error('synthetic read failure');return members();},guard,revokeGuard:guard,deadline:Date.now()+(scenario==='success'?900000:scenario==='timeout'?6000:30000),...(scenario==='success'?{armedDurationMs:600000,readAcknowledgement:()=>ack}:{}),manifestHash:'emulator-only',write:s=>states.push(s),notify:state=>{if(state==='WATCHER_READY_FOR_VERIFICATION'){const row=states.at(-1);assert.equal(row.state,'READY_FOR_VERIFICATION');ack={manifestHash:row.manifestHash,pid:row.pid,started:row.started,verifiedAt:Date.now()};}else if(state==='WATCHER_ARMED')ready();},sleep:ms=>new Promise(resolve=>setTimeout(resolve,100))});
    watched.then(result=>{if(!result.armed)console.log(JSON.stringify({phase,result}));});
    await Promise.race([armed,new Promise((_,reject)=>setTimeout(()=>reject(Error('not armed')),10000))]);
-   assert.equal((await auth.listUsers(1)).users.length,0);assert.equal(states[0].state,'ARMED');
+   assert.equal((await auth.listUsers(1)).users.length,0);assert(states.some(s=>s.state==='ARMED'));if(scenario==='success'){const row=states.find(s=>s.state==='ARMED');assert.equal(row.deadline-row.armedAt,600000);assert(row.independentlyVerifiedAt<=row.armedAt);}
    phase=scenario+':bootstrap';actor=await c.bootstrap(diagnostic.wrapAuth(auth),password,guard);assert.equal((await r.db.collection('crm4Memberships').doc(actor.uid).get()).exists,false);
    let session;
    if(scenario==='success'||scenario==='revocation-failure'){

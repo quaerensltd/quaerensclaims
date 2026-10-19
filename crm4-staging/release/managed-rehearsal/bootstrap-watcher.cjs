@@ -14,6 +14,18 @@ function assertReady(file,hash,now=Date.now(),alive=pid=>process.kill(pid,0)){
  try{alive(r.pid);}catch{fail('WATCHER_PROCESS_DEAD');}return r;
 }
 
+// Local-only acknowledgement, called only after the independent cloud checks.
+function acknowledge(file,hash,now=Date.now(),alive=pid=>process.kill(pid,0)){
+ const r=JSON.parse(fs.readFileSync(file,'utf8'));
+ c.check(r.manifestHash===hash&&r.state==='READY_FOR_VERIFICATION');
+ c.check(Number.isInteger(r.pid)&&r.pid>0&&Number.isFinite(r.started));
+ c.check(Number.isFinite(r.heartbeat)&&now>=r.heartbeat&&now-r.heartbeat<30000);
+ c.check(Number.isFinite(r.verificationDeadline)&&now<r.verificationDeadline);
+ alive(r.pid);
+ const ack={manifestHash:hash,pid:r.pid,started:r.started,verifiedAt:now};
+ fs.writeFileSync(file+'.ack',JSON.stringify(ack)+'\n',{flag:'wx',mode:0o600});return ack;
+}
+
 function parseMembers(body,project){
  c.check(body&&typeof body==='object'&&!body.nextPageToken);
  const rows=body.documents||[];c.check(Array.isArray(rows)&&rows.length<=1);
@@ -22,7 +34,7 @@ function parseMembers(body,project){
 async function lookup(auth){try{return await auth.getUserByEmail(EMAIL);}catch(e){c.check(e.code==='auth/user-not-found');return null;}}
 function bind(user,start,deadline){c.check(user.email===EMAIL&&user.uid&&Number.isFinite(Date.parse(user.metadata?.creationTime)));const created=Date.parse(user.metadata.creationTime);/* Admin SDK creationTime is a UTC string with whole-second precision.
  Empty-inventory preflight and exact-email lookup still reject existing identities. */c.check(created>=Math.floor(start/1000)*1000&&created<=deadline);return user.uid;}
-async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),deadline,manifestHash,pid=process.pid,cancelled=()=>false,armedDurationMs=null,deadlineLimit=deadline}){
+async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),deadline,manifestHash,pid=process.pid,cancelled=()=>false,armedDurationMs=null,deadlineLimit=deadline,readAcknowledgement=null,verificationWaitMs=900000}){
  let uid,started=now(),armed=false,completed=false,failure=false,revokeResult,absenceVerified=false;
  const state={manifestHash,pid,started,deadline,state:'STARTING',heartbeat:started};
  const publish=s=>{Object.assign(state,{state:s,heartbeat:now(),...(uid?{bootstrapUid:uid}:{})});write({...state});};
@@ -30,6 +42,21 @@ async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},n
   await guard();c.check(deadline>now()+5000);c.check(await lookup(auth)===null);
   const users=await auth.listUsers(1);c.check(users.users.length===0&&!users.pageToken);
   c.check((await readMembers()).length===0);
+  if(readAcknowledgement){
+   c.check(armedDurationMs===600000&&verificationWaitMs===900000);
+   const verificationDeadline=Math.min(now()+verificationWaitMs,deadlineLimit-600000);
+   state.verificationDeadline=verificationDeadline;
+   publish('READY_FOR_VERIFICATION');notify('WATCHER_READY_FOR_VERIFICATION');
+   let acknowledged=false;
+   while(now()<verificationDeadline){
+    c.check(!cancelled());await guard();
+    c.check(await lookup(auth)===null);const empty=await auth.listUsers(1);c.check(empty.users.length===0&&!empty.pageToken);c.check((await readMembers()).length===0);
+    publish('READY_FOR_VERIFICATION');const ack=readAcknowledgement();
+    if(ack){c.check(ack.manifestHash===manifestHash&&ack.pid===pid&&ack.started===state.started&&Number.isFinite(ack.verifiedAt)&&ack.verifiedAt<=now()&&now()-ack.verifiedAt<30000);state.independentlyVerifiedAt=ack.verifiedAt;acknowledged=true;break;}
+    await sleep(1000);
+   }
+   c.check(acknowledged);
+  }
   if(armedDurationMs!==null){c.check(armedDurationMs===600000&&Number.isFinite(deadlineLimit));deadline=Math.min(now()+armedDurationMs,deadlineLimit);c.check(deadline-now()>=armedDurationMs);state.deadline=deadline;}
   started=now();state.started=started;state.armedAt=started;armed=true;publish('ARMED');notify('WATCHER_ARMED');
   while(now()<deadline){
@@ -54,4 +81,4 @@ async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},n
   return result;
  }
 }
-module.exports={receiptPath,assertReady,parseMembers,lookup,bind,monitor};
+module.exports={receiptPath,assertReady,acknowledge,parseMembers,lookup,bind,monitor};

@@ -38,7 +38,7 @@ async function main(){
    fs.mkdirSync(path.dirname(receipt),{recursive:true});const fd=fs.openSync(receipt,'wx',0o600);fs.closeSync(fd);
    c.check(a.watcherArmedDurationMs===600000);const deadline=Date.parse(a.window.endUtc)-30000;
    let cancelled=false;const cancel=()=>{cancelled=true;};process.on('SIGINT',cancel);process.on('SIGTERM',cancel);
-   try{result=await w.monitor({auth,readMembers,guard,revokeGuard:()=>guard('revoke-bootstrap'),deadline,deadlineLimit:deadline,armedDurationMs:a.watcherArmedDurationMs,manifestHash:expectedHash,cancelled:()=>cancelled,
+   try{result=await w.monitor({auth,readMembers,guard,revokeGuard:()=>guard('revoke-bootstrap'),deadline,deadlineLimit:deadline,armedDurationMs:a.watcherArmedDurationMs,manifestHash:expectedHash,cancelled:()=>cancelled,readAcknowledgement:a.requireIndependentWatcherAcknowledgement===true?()=>{const file=receipt+'.ack';try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}:null,
     write:r=>{const next=receipt+'.next';fs.writeFileSync(next,JSON.stringify(r)+'\n',{mode:0o600});fs.renameSync(next,receipt);},notify:s=>process.stdout.write(s+'\n')});}finally{process.off('SIGINT',cancel);process.off('SIGTERM',cancel);}
    if(!result.pass)process.exitCode=1;
   }
