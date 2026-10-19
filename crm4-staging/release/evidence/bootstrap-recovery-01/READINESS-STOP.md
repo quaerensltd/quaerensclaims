@@ -1,0 +1,9 @@
+# Independent readiness stop
+
+19 October 2026. The authorised verifier passed manifest/tool hashes, operator/no impersonation, exact active project, zero Firebase users and zero CRM4 memberships. It then failed the combined heartbeat gate before acknowledgement. The verifier recorded the stage but not which assertion (session PID/start, advancing heartbeat, or age under 30 seconds) failed, so a specific assertion is not proven.
+
+Follow-up read: watcher PID 79316 alive, READY_FOR_VERIFICATION, no acknowledgement file, fresh heartbeat at 13:26:36.002Z with age 12.370 seconds, no first diagnostic failure. Initial observed heartbeat was 13:25:23.341Z; subsequent diagnostics show synchronous gcloud operator/impersonation/project-read work. Long serial read cycles are a plausible cause of intermittent heartbeat staleness, not a proven diagnosis of the failed assertion. A later fresh heartbeat does not convert the failed independent check into PASS.
+
+No ten-minute armed ceremony started, account/claim creation command issued, automatic retry or cloud mutation. Preserve all receipts. Stop this waiting session with Ctrl+C in Terminal A; do not restart it, delete receipts or run account creation. Independent acknowledgement and live account creation remain blocked pending a verified correction/recovery decision. No known bootstrap identity requires revocation based on the just-completed empty inventories. The waiting watcher rejects unexpected identities rather than adopting them.
+
+Next local correction should retain exact assertion-specific readiness evidence and establish bounded heartbeat cadence without masking stalled/failed cloud reads or extending the 30-second guard. Fresh execution requires owner approval; no retry is implied by this report. Fixed expiry/security restrictions and production NO-GO remain unchanged.
