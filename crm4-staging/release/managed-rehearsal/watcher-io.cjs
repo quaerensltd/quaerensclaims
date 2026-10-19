@@ -17,7 +17,8 @@ function authReads(auth,read,project){
 function serial(fn){let active=false;return async(...args)=>{if(active){const e=Error('Overlapping read blocked');e.code='READ_OVERLAP';throw e;}active=true;try{return await fn(...args);}finally{active=false;}};}
 function tokenCache(load,now=Date.now){let value,until=0,pending;return async()=>{if(value&&now()<until)return value;if(pending)return pending;value=undefined;pending=(async()=>{try{const v=await load();if(typeof v!=='string'||!v)throw Error('Token unavailable');value=v;until=now()+60000;return v;}finally{pending=undefined;}})();return pending;};}
 const CONFIG_ARGS=['config','list','--all','--format="json(core.account,auth.impersonate_service_account)"'];
-function cliTimeout(args){return args.length===CONFIG_ARGS.length&&args.every((v,i)=>v===CONFIG_ARGS[i])?30000:10000;}
+const TOKEN_ARGS=['auth','print-access-token','--account=martijnpronk76@gmail.com'];
+function cliTimeout(args){return [CONFIG_ARGS,TOKEN_ARGS].some(expected=>args.length===expected.length&&args.every((v,i)=>v===expected[i]))?30000:10000;}
 function subprocessEnv(args,env){
  const child={...env};
  if(args.length===CONFIG_ARGS.length&&args.every((v,i)=>v===CONFIG_ARGS[i])){
@@ -41,4 +42,4 @@ async function operatorConfig(run,expected,env=process.env){
  // No cache or fallback: read effective configuration once per guard.
  const raw=await run([...CONFIG_ARGS]);return verifyOperatorConfig(raw,expected,env);
 }
-module.exports={cli,read,authReads,serial,tokenCache,verifyOperatorConfig,operatorConfig,CONFIG_ARGS,subprocessEnv,cliTimeout};
+module.exports={cli,read,authReads,serial,tokenCache,verifyOperatorConfig,operatorConfig,CONFIG_ARGS,TOKEN_ARGS,subprocessEnv,cliTimeout};

@@ -16,7 +16,8 @@ async function main(){
  process.env.GOOGLE_CLOUD_QUOTA_PROJECT=c.P; // SDK-supported, process-local only.
  const cliEnv={...process.env,CLOUDSDK_CORE_DISABLE_FILE_LOGGING:'true',CLOUDSDK_CORE_LOG_HTTP:'false'};
  const cli=args=>io.cli(process.platform==='win32'?'gcloud.cmd':'gcloud',args,{env:cliEnv,shell:process.platform==='win32'});
- const token=io.tokenCache(()=>cli(['auth','print-access-token','--account='+a.operatorEmail]));
+ c.check(a.operatorEmail==='martijnpronk76@gmail.com');
+ const token=io.tokenCache(()=>diag.step('operator-token-acquisition',()=>cli([...io.TOKEN_ARGS])));
  const read=io.serial(async(url,body)=>io.read(url,{token:await token(),project:c.P,body}));
  const receipt=w.receiptPath(a);
  async function guard(guardAction=action){
