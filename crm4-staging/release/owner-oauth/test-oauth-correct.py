@@ -74,6 +74,12 @@ class Tests(unittest.TestCase):
     def test_api_rejects_other_mutations(self):
         for url,method in [(m.PATCH_URL,'POST'),('https://example.test','PATCH'),(m.PATCH_URL,'PUT')]:
             with self.assertRaises(ValueError):m.api(url,{},method)
+    def test_interruption_at_enabled_never_reaches_secret_or_transaction(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(m.Path,'home',return_value=Path(d)), patch.object(m.sys,'argv',['tool','--apply']), patch.object(m.sys.stdin,'isatty',return_value=True),patch.object(m.sys.stdout,'isatty',return_value=True),patch.object(m.sys.stderr,'isatty',return_value=True),patch.object(m,'snapshot',return_value=BEFORE),patch('builtins.input',side_effect=KeyboardInterrupt()),patch.object(m.getpass,'getpass') as gp,patch.object(m,'transact') as tx:
+            with self.assertRaises(KeyboardInterrupt): m.run()
+            gp.assert_not_called()
+            tx.assert_not_called()
+            self.assertFalse((Path(d)/'.crm4-oauth-secret-correction-attempted.json').exists())
     def test_mask_only_secret(self):
         self.assertEqual(m.MASK,'iapSettings.accessSettings.oauthSettings.clientSecret')
         self.assertNotIn('clientId,',m.PATCH_URL)
