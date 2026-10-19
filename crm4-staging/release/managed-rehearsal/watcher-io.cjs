@@ -1,7 +1,7 @@
 'use strict';
 const cp=require('child_process');
 function timeout(){const e=Error('Bounded read failed');e.name='TimeoutError';return e;}
-function cli(file,args,{env,shell=false}={}){return new Promise((resolve,reject)=>cp.execFile(file,args,{env:subprocessEnv(args,env||process.env),shell,encoding:'utf8',timeout:10000,maxBuffer:1048576,windowsHide:true},(err,out)=>{if(err)return reject(err.killed?timeout():Error('CLI_READ_FAILED'));resolve(out.trim());}));}
+function cli(file,args,{env,shell=false,execFile=cp.execFile,now=Date.now}={}){const start=now(),limit=cliTimeout(args);return new Promise((resolve,reject)=>execFile(file,args,{env:subprocessEnv(args,env||process.env),shell,encoding:'utf8',timeout:limit,maxBuffer:1048576,windowsHide:true},(err,out)=>{if(now()-start>=limit)return reject(timeout());if(err)return reject(err.killed?timeout():Error('CLI_READ_FAILED'));resolve(out.trim());}));}
 async function read(url,{token,project,body,timeoutMs=15000,fetchImpl=fetch}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
  try{const r=await fetchImpl(url,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,'x-goog-user-project':project,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:controller.signal});if(!r.ok){const e=Error('Cloud read failed');e.safeHttpStatus=r.status;throw e;}const result=await r.json();if(controller.signal.aborted)throw timeout();return result;}catch(e){if(controller.signal.aborted)throw timeout();throw e;}finally{clearTimeout(timer);}
@@ -17,6 +17,7 @@ function authReads(auth,read,project){
 function serial(fn){let active=false;return async(...args)=>{if(active){const e=Error('Overlapping read blocked');e.code='READ_OVERLAP';throw e;}active=true;try{return await fn(...args);}finally{active=false;}};}
 function tokenCache(load,now=Date.now){let value,until=0,pending;return async()=>{if(value&&now()<until)return value;if(pending)return pending;value=undefined;pending=(async()=>{try{const v=await load();if(typeof v!=='string'||!v)throw Error('Token unavailable');value=v;until=now()+60000;return v;}finally{pending=undefined;}})();return pending;};}
 const CONFIG_ARGS=['config','list','--all','--format="json(core.account,auth.impersonate_service_account)"'];
+function cliTimeout(args){return args.length===CONFIG_ARGS.length&&args.every((v,i)=>v===CONFIG_ARGS[i])?30000:10000;}
 function subprocessEnv(args,env){
  const child={...env};
  if(args.length===CONFIG_ARGS.length&&args.every((v,i)=>v===CONFIG_ARGS[i])){
@@ -40,4 +41,4 @@ async function operatorConfig(run,expected,env=process.env){
  // No cache or fallback: read effective configuration once per guard.
  const raw=await run([...CONFIG_ARGS]);return verifyOperatorConfig(raw,expected,env);
 }
-module.exports={cli,read,authReads,serial,tokenCache,verifyOperatorConfig,operatorConfig,CONFIG_ARGS,subprocessEnv};
+module.exports={cli,read,authReads,serial,tokenCache,verifyOperatorConfig,operatorConfig,CONFIG_ARGS,subprocessEnv,cliTimeout};
