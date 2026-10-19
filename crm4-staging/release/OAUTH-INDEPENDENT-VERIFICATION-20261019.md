@@ -1,0 +1,13 @@
+# Independent OAuth verification — 19 October 2026
+
+**OAuth configuration verification PASS; browser access/owner provisioning still pending.**
+
+Owner reported successful execution of the approved private script. Independent reads confirm client ID 558324850479-brnmdsdg9brs2frq0hb3ha0suhugn64k.apps.googleusercontent.com attached to the exact native Cloud Run IAP resource. No client secret or secret hash was requested, printed, logged or committed. Explicit field projection covered name, public OAuth settings, CORS, GCIP, allowed domains, reauthentication and application settings; these match the previously read baseline except the approved client ID.
+
+Verified unchanged: exact running image and sealed command/arguments/environment/runtime identity; native IAP and invocation IAM check; both exact service-scoped policies including etags and owner expiry; published Firestore/Storage rule releases and source hashes; project IAM/audit policy; bucket policy; Firebase Auth restrictions, authorised domain and API-key restrictions. Firebase users remain absent. Anonymous requests to both service hostnames returned HTTP 302 to accounts.google.com. This demonstrates anonymous requests do not directly return CRM4 content; it does not replace the pending owner/unauthorised Google-account browser acceptance.
+
+A first read-only diagnostic stopped because its local receipt assembly used an undefined variable k instead of kind. No cloud comparison failed and no cloud mutation occurred. After fixing the diagnostic typo, the complete read-only checks passed. The stop receipt is preserved as local diagnostic history, not an outstanding cloud failure.
+
+Owner has been asked to open the planned hostname in a private window, authenticate to Google as brusseljeroen@gmail.com and report the resulting application login screen or non-sensitive error. No Firebase credential should be entered yet. Continue the already-approved sequence after browser IAP verification, including unauthorised access denial, genuine governed bootstrap, exact owner membership, immediate bootstrap claim removal/token revocation/disabling, private owner password entry, retained-token denial and audit visibility. No extra approval is required within that existing scope; private owner interaction is required.
+
+No identities, grants, configurations, deployments, builds or scans changed during this verification. This is Shared CRM Framework deployment acceptance only; no framework changes. Do not declare the dashboard ready or login verified yet. Expiry remains 24 October 2026 09:00 UTC, containment deadline 10:00 UTC. Synthetic-only restrictions, HIGH finding, Node reproducibility limitation and Firebase incident remain open. Production remains NO-GO.
