@@ -7,7 +7,7 @@ async function main(){
  const r=require('../../tools/local-handlers.cjs').createLocalHandlers(),auth=require('firebase-admin/auth').getAuth(r.app),project='demo-quaerens-crm4',password='fictional-emulator-watcher-password';
  let actor,owner;const results=[];
  const guard=async()=>assert.equal(process.env.GCLOUD_PROJECT,project);
- const members=async()=>{const response=await fetch('http://127.0.0.1:8080/v1/projects/'+project+'/databases/(default)/documents/crm4Memberships?pageSize=2',{headers:{Authorization:'Bearer owner'}});assert.equal(response.status,200);return w.parseMembers(await response.json(),project);};
+ const members=async()=>{const response=await fetch('http://127.0.0.1:8080/v1/projects/'+project+'/databases/(default)/documents/crm4Memberships?pageSize=2',{headers:{Authorization:'Bearer owner'},signal:AbortSignal.timeout(15000)});assert.equal(response.status,200);return w.parseMembers(await response.json(),project);};
  async function clean(){
   // Remove only this demo test's governed receipts, so the next scenario does
   // not replay a completed operation whose Auth fixture has been deleted.
@@ -16,14 +16,15 @@ async function main(){
  }
 
  try{
+  phase='loopback-readiness';assert.equal((await members()).length,0);assert.equal((await auth.listUsers(1)).users.length,0);
   for(const scenario of ['success','read-failure','timeout','revocation-failure']){
-   phase=scenario+':arming';let ready;const armed=new Promise(resolve=>ready=resolve),states=[];let failRead=false,ack=null;
+   phase=scenario+':arming';let ready;const armed=new Promise(resolve=>ready=resolve),states=[];let failRead=false,ack=null,cancelled=false;
    const targetAuth=scenario==='revocation-failure'?new Proxy(auth,{get(t,k){if(k==='setCustomUserClaims')return async(uid,claims)=>{if(!claims.platformAdmin)throw Error('synthetic cleanup failure');return t.setCustomUserClaims(uid,claims);};const value=t[k];return typeof value==='function'?value.bind(t):value;}}):auth;
    const diagnostic=require('./private-diagnostics.cjs').create({write:row=>{assert(!JSON.stringify(row).includes(password));}});
    const io=require('./watcher-io.cjs');const watchedAuth=io.authReads(targetAuth,(url,body)=>io.read(url.replace('https://identitytoolkit.googleapis.com','http://127.0.0.1:9099/identitytoolkit.googleapis.com'),{token:'owner',project,body}),project);
-   const watched=w.monitor({liveHeartbeat:true,auth:diagnostic.wrapAuth(watchedAuth),readMembers:async()=>{if(failRead)throw Error('synthetic read failure');return members();},guard,revokeGuard:guard,deadline:Date.now()+(scenario==='success'?900000:scenario==='timeout'?6000:30000),...(scenario==='success'?{armedDurationMs:600000,readAcknowledgement:()=>ack}:{}),manifestHash:'emulator-only',write:s=>states.push(s),notify:state=>{if(state==='WATCHER_READY_FOR_VERIFICATION'){const row=states.at(-1);assert.equal(row.state,'READY_FOR_VERIFICATION');ack={manifestHash:row.manifestHash,pid:row.pid,started:row.started,verifiedAt:Date.now()};}else if(state==='WATCHER_ARMED')ready();},sleep:ms=>new Promise(resolve=>setTimeout(resolve,100))});
+   const watched=w.monitor({cancelled:()=>cancelled,liveHeartbeat:true,auth:diagnostic.wrapAuth(watchedAuth),readMembers:async()=>{if(failRead)throw Error('synthetic read failure');return members();},guard,revokeGuard:guard,deadline:Date.now()+(scenario==='success'?900000:scenario==='timeout'?6000:30000),...(scenario==='success'?{armedDurationMs:600000,readAcknowledgement:()=>ack}:{}),manifestHash:'emulator-only',write:s=>states.push(s),notify:state=>{if(state==='WATCHER_READY_FOR_VERIFICATION'){const row=states.at(-1);assert.equal(row.state,'READY_FOR_VERIFICATION');ack={manifestHash:row.manifestHash,pid:row.pid,started:row.started,verifiedAt:Date.now()};}else if(state==='WATCHER_ARMED')ready();},sleep:ms=>new Promise(resolve=>setTimeout(resolve,100))});
    watched.then(result=>{if(!result.armed)console.log(JSON.stringify({phase,result,diagnostic:diagnostic.summary()}));});
-   await Promise.race([armed,new Promise((_,reject)=>setTimeout(()=>reject(Error('not armed')),10000))]);
+   try{await Promise.race([armed,new Promise((_,reject)=>setTimeout(()=>reject(Error('not armed')),10000))]);}catch(e){cancelled=true;console.log(JSON.stringify({phase,diagnostic:diagnostic.summary(),lastState:states.at(-1)?.state}));await watched;throw e;}
    assert.equal((await auth.listUsers(1)).users.length,0);assert(states.some(s=>s.state==='ARMED'));if(scenario==='success'){const row=states.find(s=>s.state==='ARMED');assert.equal(row.deadline-row.armedAt,600000);assert(row.independentlyVerifiedAt<=row.armedAt);}
    phase=scenario+':bootstrap';actor=await c.bootstrap(diagnostic.wrapAuth(auth),password,guard);assert.equal((await r.db.collection('crm4Memberships').doc(actor.uid).get()).exists,false);
    let session;
