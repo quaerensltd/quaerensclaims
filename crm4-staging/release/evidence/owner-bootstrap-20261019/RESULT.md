@@ -1,0 +1,13 @@
+# Private IAP PASS; governed bootstrap stopped before mutation
+
+Owner confirms successful Google IAP authentication as brusseljeroen@gmail.com and display of the Quaerens CRM4 Login page. Record as owner-observed browser PASS; Error 11 resolved. Existing public client/IAM/image/rule/audit verification remains preserved. Firebase login/dashboard acceptance is not yet established.
+
+Fresh read-only preflight confirms project quaerens-crm4-spain-test / 558324850479 and an empty crm4Memberships collection. User inventory with explicit x-goog-user-project: quaerens-crm4-spain-test succeeds (HTTP 200) and confirms zero users. The same request without quota attribution returns HTTP 403, structured ErrorInfo reason SERVICE_DISABLED, service identitytoolkit.googleapis.com, consumer projects/32555940559. No secret configuration was requested or printed.
+
+The unchanged credentials.cjs Firebase Admin authentication path was reproduced with a read-only listUsers(1) call. It fails with auth/internal-error. Therefore the governed bootstrap must not start: successful generic project reads do not establish a usable Auth credential path. No identities, passwords, claims, memberships or cloud settings were created/changed.
+
+The sealed bootstrap source hashes still match the approved canonical package. Twenty local safety tests pass, but do not override the live SDK failure. A local credential approval manifest was materialised under the existing owner authority; it is NOT execution-ready while this SDK check fails. Do not use it to provision. The private-terminal readiness question is superseded by this mandatory stop.
+
+Minimum next technical step: correct quota-project attribution in the client-side Firebase Admin credential/request path to the existing CRM4 project, locally validate and reseal the tooling, then repeat the exact SDK read-only gate. Do not enable Identity Toolkit in project 32555940559, change its IAM, broaden CRM4 permissions, substitute identities or bypass governed handlers. No cloud changes are necessary merely to diagnose/fix the request attribution. Any correction must preserve explicit project/operator checks, masked passwords, genuine Firebase authentication, governed owner creation, no owner platformAdmin, bounded watcher and immediate claim removal/token revocation/bootstrap disabling.
+
+Only after the exact SDK gate passes may the supervised two-identity ceremony proceed under the existing authorisation. Owner and bootstrap still do not exist. No readiness claim. Fixed expiry 24 October 2026 09:00 UTC, all residual-risk restrictions, and production NO-GO remain.
