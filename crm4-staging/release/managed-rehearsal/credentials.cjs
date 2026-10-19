@@ -20,8 +20,8 @@ async function main(){
  const read=io.serial(async(url,body)=>io.read(url,{token:await token(),project:c.P,body}));
  const receipt=w.receiptPath(a);
  async function guard(guardAction=action){
-  await diag.step('approval',async()=>c.approve(a,guardAction));await diag.step('operator',async()=>c.check(await cli(['config','get-value','account'])===a.operatorEmail));
-  await diag.step('impersonation',async()=>{c.check(!process.env.CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT);c.check(['','(unset)'].includes(await cli(['config','get-value','auth/impersonate_service_account'])));});
+  await diag.step('approval',async()=>c.approve(a,guardAction));
+  await diag.step('operator-configuration',()=>io.operatorConfig(cli,a.operatorEmail));
   const p=await diag.step('project-read',()=>read('https://cloudresourcemanager.googleapis.com/v1/projects/'+c.P+'?fields=projectId,projectNumber,lifecycleState'));
   await diag.step('project-identity',async()=>c.check(p.projectId===c.P&&p.projectNumber===c.N&&p.lifecycleState==='ACTIVE'));
   if(guardAction==='create-bootstrap'){await diag.step('watcher-readiness',async()=>w.assertReady(receipt,expectedHash));diag.checkHealthy();}
