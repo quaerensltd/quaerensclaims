@@ -38,9 +38,9 @@ async function main(){
   if(action==='watch-bootstrap'){
    fs.mkdirSync(path.dirname(receipt),{recursive:true});const fd=fs.openSync(receipt,'wx',0o600);fs.closeSync(fd);
    c.check(a.watcherArmedDurationMs===600000);const deadline=Date.parse(a.window.endUtc)-30000;
-   let cancelled=false;const cancel=()=>{cancelled=true;};process.on('SIGINT',cancel);process.on('SIGTERM',cancel);
-   try{result=await w.monitor({auth,readMembers,guard,revokeGuard:()=>guard('revoke-bootstrap'),deadline,deadlineLimit:deadline,armedDurationMs:a.watcherArmedDurationMs,manifestHash:expectedHash,liveHeartbeat:true,cancelled:()=>cancelled,readAcknowledgement:a.requireIndependentWatcherAcknowledgement===true?()=>{const file=receipt+'.ack';try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}:null,
-    write:r=>{const next=receipt+'.next';fs.writeFileSync(next,JSON.stringify(r)+'\n',{mode:0o600});fs.renameSync(next,receipt);},notify:s=>process.stdout.write(s+'\n')});}finally{process.off('SIGINT',cancel);process.off('SIGTERM',cancel);}
+   let cancelled=false;const cancel=()=>{cancelled=true;};process.on('SIGINT',cancel);process.on('SIGTERM',cancel);process.on('disconnect',cancel);
+   try{result=await w.monitor({auth,readMembers,guard,revokeGuard:()=>guard('revoke-bootstrap'),deadline,deadlineLimit:deadline,armedDurationMs:a.watcherArmedDurationMs,manifestHash:expectedHash,liveHeartbeat:true,cancelled:()=>cancelled||fs.existsSync(receipt+'.cancel'),readAcknowledgement:a.requireIndependentWatcherAcknowledgement===true?()=>{const file=receipt+'.ack';try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}:null,
+    write:r=>{const next=receipt+'.next';fs.writeFileSync(next,JSON.stringify(r)+'\n',{mode:0o600});fs.renameSync(next,receipt);},notify:s=>process.stdout.write(s+'\n')});}finally{process.off('SIGINT',cancel);process.off('SIGTERM',cancel);process.off('disconnect',cancel);}
    if(!result.pass)process.exitCode=1;
   }
   if(action==='create-bootstrap'){
@@ -57,7 +57,7 @@ async function main(){
   }
   diag.checkHealthy();diag.record('completion',result?.pass===false?'FAIL':'PASS');
   process.stdout.write(JSON.stringify({action,result})+'\n');
- }finally{password=undefined;await deleteApp(app);}
+ }finally{password=undefined;await deleteApp(app);if(action==='watch-bootstrap'&&process.connected)process.disconnect();}
 }
 if(require.main===module)main().catch(()=>{const first=activeDiagnostic?.summary().firstFailure;process.stderr.write('PRIVATE_ACTION_FAILED: '+(first?first.stage+' / '+first.category:'unclassified preflight or cleanup')+'; stop; no automatic retry.\n');process.exitCode=1;});
 module.exports={main};
