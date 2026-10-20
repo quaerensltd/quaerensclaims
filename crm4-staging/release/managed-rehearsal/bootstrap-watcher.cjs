@@ -2,7 +2,7 @@
 // No SDK initialisation or network on import. Uses existing core revocation only.
 const fs=require('fs'),path=require('path'),c=require('./core.cjs');
 const EMAIL='bootstrap@crm4.example.test',OWNER='owner@crm4.example.test';
-function receiptPath(a){c.check(['crm4-bootstrap-watch.json','crm4-bootstrap-watch-recovery-01.json','crm4-bootstrap-watch-recovery-02.json','crm4-bootstrap-watch-recovery-03.json','crm4-bootstrap-watch-recovery-05.json','crm4-bootstrap-watch-recovery-07.json','crm4-bootstrap-watch-coordinated-01.json','crm4-bootstrap-watch-coordinated-02.json'].includes(a.watcherReceipt));return path.resolve(__dirname,'../.scratch',a.watcherReceipt);}
+function receiptPath(a){c.check(['crm4-bootstrap-watch.json','crm4-bootstrap-watch-recovery-01.json','crm4-bootstrap-watch-recovery-02.json','crm4-bootstrap-watch-recovery-03.json','crm4-bootstrap-watch-recovery-05.json','crm4-bootstrap-watch-recovery-07.json','crm4-bootstrap-watch-coordinated-01.json','crm4-bootstrap-watch-coordinated-02.json','crm4-bootstrap-watch-manual-01.json'].includes(a.watcherReceipt));return path.resolve(__dirname,'../.scratch',a.watcherReceipt);}
 function assertReady(file,hash,now=Date.now(),alive=pid=>process.kill(pid,0)){
  const fail=code=>{const e=Error('Watcher readiness failed');e.code=code;throw e;};
  let r;try{r=JSON.parse(fs.readFileSync(file,'utf8'));}catch{fail('WATCHER_RECEIPT_UNREADABLE');}
@@ -64,8 +64,9 @@ async function monitor({auth,readMembers,guard,revokeGuard,write,notify=()=>{},n
    }
    c.check(acknowledged);
   }
-  if(armedDurationMs!==null){c.check(armedDurationMs===600000&&Number.isFinite(deadlineLimit));deadline=Math.min(now()+armedDurationMs,deadlineLimit);c.check(deadline-now()>=armedDurationMs);state.deadline=deadline;}
-  started=now();state.started=started;state.armedAt=started;armed=true;publish('ARMED');notify('WATCHER_ARMED');
+  const armedAt=now();
+  if(armedDurationMs!==null){c.check(armedDurationMs===600000&&Number.isFinite(deadlineLimit));deadline=Math.min(armedAt+armedDurationMs,deadlineLimit);c.check(deadline-armedAt>=armedDurationMs);state.deadline=deadline;}
+  started=armedAt;state.started=started;state.armedAt=started;armed=true;publish('ARMED');notify('WATCHER_ARMED');
   while(now()<deadline){
    c.check(!cancelled()&&!heartbeatFailed);await guard();const user=await lookup(auth);
    if(user){const found=bind(user,started,deadline);c.check(!uid||uid===found);uid=found;c.check(!user.disabled);}
