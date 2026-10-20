@@ -1,0 +1,29 @@
+"use strict";
+// Proposed one-time initial membership exception. No CLI or execution on import.
+// Auth and membership shape reuse CRM2's first-admin pattern; no platform claims.
+const assert=require('assert/strict'),crypto=require('crypto');
+const PROJECT='quaerens-crm4-spain-test',EMAIL='owner@crm4.example.test',OPERATOR='martijnpronk76@gmail.com';
+async function provision({auth,db,guard,approval,password,checkpoint=async()=>{},journal=()=>{},now=Date.now}){
+ assert.equal(approval?.initialOwnerExceptionApproved,true);assert.equal(approval.project,PROJECT);assert.equal(approval.operator,OPERATOR);assert.equal(approval.email,EMAIL);assert(now()<Date.parse('2026-10-24T09:00:00Z')-600000);assert(typeof password==='string'&&password.length>=20);
+ const uid='crm4-owner-'+crypto.randomUUID(),operation=db.collection('crm4AdminCreateOperations').doc('initial-owner-v1'),member=db.collection('crm4Memberships').doc(uid),audit=db.collection('crm4MembershipAudit').doc('initial-owner-'+uid),actor='iam:'+OPERATOR;let stage='preflight',created=false,claimed=false;
+ const step=async name=>{stage=name;assert(now()<Date.parse('2026-10-24T09:00:00Z'));await guard();await checkpoint(name);};
+ const verifyUser=async disabled=>{const u=await auth.getUser(uid);assert.equal(u.email,EMAIL);assert.equal(u.disabled,disabled);assert.equal(Object.keys(u.customClaims||{}).length,0);return u;};
+ try{
+  await step('preflight');const users=await auth.listUsers(1);assert.equal(users.users.length,0);assert(!users.pageToken);assert((await db.collection('crm4Memberships').limit(1).get()).empty);
+  journal({stage:'intent',uid,project:PROJECT,email:EMAIL,operator:OPERATOR});
+  await step('claim-operation');await db.runTransaction(async tx=>{assert(!(await tx.get(operation)).exists,'INITIAL_BOOTSTRAP_ALREADY_ATTEMPTED');tx.create(operation,{kind:'INITIAL_OWNER_BOOTSTRAP',uid,email:EMAIL,operator:OPERATOR,state:'PENDING',createdAt:new Date(now())});});claimed=true;
+  await step('create-disabled');await auth.createUser({uid,email:EMAIL,displayName:'CRM4 Synthetic Owner',password,disabled:true,emailVerified:false});created=true;password=undefined;await checkpoint('after-auth-create');await verifyUser(true);
+  await step('stage-membership');await db.runTransaction(async tx=>{const op=(await tx.get(operation)).data();assert.equal(op.uid,uid);assert(!(await tx.get(member)).exists);assert(!(await tx.get(audit)).exists);tx.create(member,{uid,email:EMAIL,displayName:'CRM4 Synthetic Owner',role:'administrator',workspaceId:'CRM4',workspaceAccess:['CRM4'],active:false,createdBy:actor,createdAt:new Date(now()),updatedAt:new Date(now())});tx.create(audit,{action:'CRM4_INITIAL_OWNER_BOOTSTRAP',actorType:'google-iam-operator',actorPrincipal:OPERATOR,targetUid:uid,workspaceId:'CRM4',role:'administrator',state:'STAGED_DISABLED',passwordStored:false,createdAt:new Date(now())});tx.update(operation,{state:'STAGED_DISABLED'});});await checkpoint('after-membership');
+  await verifyUser(true);const m=(await member.get()).data();assert.equal(m.createdBy,actor);assert.equal(m.workspaceId,'CRM4');assert.equal(m.role,'administrator');assert.deepEqual(m.workspaceAccess,['CRM4']);assert.equal(m.active,false);
+  await step('authorise-enable');await db.runTransaction(async tx=>{const op=(await tx.get(operation)).data(),current=(await tx.get(member)).data();assert.equal(op.uid,uid);assert.equal(current.createdBy,actor);assert.equal(current.active,false);tx.update(member,{active:true,updatedAt:new Date(now())});tx.update(audit,{state:'AUTH_ENABLE_AUTHORISED'});tx.update(operation,{state:'AUTH_ENABLE_AUTHORISED'});});await checkpoint('before-auth-enable');
+  await step('enable-owner');await auth.updateUser(uid,{disabled:false});await checkpoint('after-auth-enable');await verifyUser(false);
+  await step('verify-complete');const finalMember=(await member.get()).data(),finalAudit=(await audit.get()).data();assert.equal(finalMember.uid,uid);assert.equal(finalMember.active,true);assert.equal(finalAudit.actorPrincipal,OPERATOR);assert.equal(finalAudit.targetUid,uid);await operation.update({state:'COMPLETE',verifiedAt:new Date(now())});await audit.update({state:'COMPLETE',verifiedAt:new Date(now())});journal({stage:'complete',uid,project:PROJECT,claimsAssigned:0});return {pass:true,uid,bootstrapAccountCreated:false,claimsAssigned:0};
+ }catch(error){
+  const failedStage=stage,cleanup=[];
+  // UID is fixed before creation, so an uncertain create response can be read back.
+  if(claimed){try{await guard();const u=await auth.getUser(uid);assert.equal(u.email,EMAIL);created=true;}catch(e){if(e.code!=='auth/user-not-found')cleanup.push({action:'identity-read',pass:false});}}
+  if(created){for(const action of ['disable','revoke','membership-off']){try{await guard();if(action==='disable'){await auth.updateUser(uid,{disabled:true});await verifyUser(true);}if(action==='revoke'){const requested=Math.floor(now()/1000)*1000;await auth.revokeRefreshTokens(uid);const u=await verifyUser(true);assert(Number.isFinite(Date.parse(u.tokensValidAfterTime))&&Date.parse(u.tokensValidAfterTime)>=requested);}if(action==='membership-off')await db.runTransaction(async tx=>{const op=(await tx.get(operation)).data(),m=await tx.get(member);assert.equal(op.uid,uid);if(m.exists){assert.equal(m.data().createdBy,actor);tx.update(member,{active:false,updatedAt:new Date(now())});}tx.update(operation,{state:'FAILED_DISABLED',failedStage});});if(action==='membership-off'){const m=await member.get();assert(!m.exists||m.data().active===false);}cleanup.push({action,pass:true});}catch{cleanup.push({action,pass:false});}}}
+  journal({stage:'failed',failedStage,uid,cleanup});return {pass:false,failedStage,uid:claimed?uid:null,cleanupVerified:cleanup.every(x=>x.pass),created,cleanup};
+ }finally{password=undefined;}
+}
+module.exports={provision,PROJECT,EMAIL,OPERATOR};

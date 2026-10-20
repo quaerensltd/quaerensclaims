@@ -13,11 +13,11 @@ function classify(receipt,record,alive){
  if(record.createdMs<=receipt.heartbeat)fail('PROCESS_BIRTH_UNCERTAIN');
  return {pid:receipt.pid,result:'UNRELATED_PID_REUSE',name:record.name,createdUtc:new Date(record.createdMs).toISOString(),receiptHeartbeatUtc:new Date(receipt.heartbeat).toISOString()};
 }
-async function inspect(pid){
+async function inspect(pid,{run=io.cli,report=()=>{},now=Date.now}={}){
  if(!Number.isInteger(pid)||pid<=0)fail('PID_INVALID');
  const script=`$ErrorActionPreference='Stop'; $p=Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}'; if($null -eq $p){[pscustomobject]@{pid=${pid};present=$false}|ConvertTo-Json -Compress}else{ $ok=($null -ne $p.CreationDate -and -not [string]::IsNullOrWhiteSpace($p.Name) -and -not [string]::IsNullOrWhiteSpace($p.ExecutablePath) -and -not [string]::IsNullOrWhiteSpace($p.CommandLine) -and [IO.Path]::GetFileName($p.ExecutablePath) -ieq $p.Name); [pscustomobject]@{pid=[int]$p.ProcessId;present=$true;identityAvailable=$ok;name=$p.Name;createdMs=if($p.CreationDate){([DateTimeOffset]$p.CreationDate.ToUniversalTime()).ToUnixTimeMilliseconds()}else{$null};watcher=([string]$p.CommandLine -match 'credentials\\.cjs' -and [string]$p.CommandLine -match 'watch-bootstrap')}|ConvertTo-Json -Compress }`;
  const executable=path.join(require('node:os').homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','native','powershell','pwsh.exe');
- try{return JSON.parse(await io.cli(executable,['-NoProfile','-NonInteractive','-Command',script],{shell:false}));}catch{fail('PROCESS_READ_UNCERTAIN');}
+ const start=now();let phase='subprocess';try{const raw=await run(executable,['-NoProfile','-NonInteractive','-Command',script],{shell:false});phase='parse';const value=JSON.parse(raw);report({pid,phase:'complete',at:new Date(start).toISOString(),elapsedMs:now()-start,result:'PASS',process:value});return value;}catch(e){const diagnostic={pid,phase,at:new Date(start).toISOString(),elapsedMs:now()-start,result:'FAIL',category:e.name==='TimeoutError'?'SUBPROCESS_TIMEOUT':phase==='parse'?'INVALID_JSON':'SUBPROCESS_FAILURE',timeoutMs:10000};report(diagnostic);const failure=Error('Historical process read failed');failure.code='PROCESS_READ_UNCERTAIN';failure.safeDiagnostic=diagnostic;throw failure;}
 }
 async function verify(receipt,{read=inspect,isAlive=pid=>{try{process.kill(pid,0);return true;}catch(e){if(e.code==='ESRCH')return false;fail('PROCESS_ACCESS_UNCERTAIN');}}}={}){
  const first=await read(receipt.pid),second=await read(receipt.pid);
