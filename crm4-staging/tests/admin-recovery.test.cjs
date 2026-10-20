@@ -9,6 +9,7 @@ test('durable Admin creation recovers interruptions, concurrent calls and lost c
  try{
   for(const stage of ['AUTH_CREATED','MEMBERSHIP_WRITTEN','BEFORE_AUTH_UPDATE','AUTH_UPDATED','BEFORE_CAPTURE','CAPTURE_ACCEPTED']){
    const id='recovery-'+randomUUID(),request={auth:{uid:id,token:{platformAdmin:true}},data:{email:id+'@example.test',displayName:'Synthetic recovery',role:'processing'}};
+   await r.db.collection('crm4Memberships').doc(id).set({uid:id,workspaceId:'CRM4',role:'administrator',active:true});
    let fired=false;
    await assert.rejects(factory({checkpoint:async point=>{if(point===stage&&!fired){fired=true;throw Error('Simulated process interruption');}}})(request),/interruption/);
    if(stage==='CAPTURE_ACCEPTED') {
@@ -20,14 +21,15 @@ test('durable Admin creation recovers interruptions, concurrent calls and lost c
    assert.equal(new Set(results.map(v=>v.uid)).size,1);
    assert.equal((await r.db.collection('crm4Memberships').where('email','==',request.data.email).get()).size,1);
    assert.equal((await r.db.collection('crm4AdminSetupCaptures').where('recipient','==',request.data.email).get()).size,1);
-   assert.equal((await r.db.collection('crm4MembershipAudit').where('targetUid','==',results[0].uid).get()).size,1);
+   assert.equal((await r.db.collection('crm4MembershipAudit').where('targetUid','==',results[0].uid).get()).size,2);
    assert.equal((await auth.getUser(results[0].uid)).disabled,false);
    assert.deepEqual(await factory()(request),results[0]);
-   await assert.rejects(factory()({...request,auth:{uid:id,token:{}}}),e=>e.code==='permission-denied');
+   await assert.rejects(factory()({...request,auth:{uid:id+'-unauthorised',token:{platformAdmin:true}}}),e=>e.code==='permission-denied');
    await assert.rejects(factory()({...request,data:{...request.data,role:'administrator'}}),e=>e.code==='failed-precondition');
    assert.equal(results[0].externalCommunications,0);
   }
   const id='fresh-race-'+randomUUID(),request={auth:{uid:id,token:{platformAdmin:true}},data:{email:id+'@example.test',displayName:'Concurrent account',role:'lister',active:false}};
+  await r.db.collection('crm4Memberships').doc(id).set({uid:id,workspaceId:'CRM4',role:'administrator',active:true});
   const values=await Promise.all(Array.from({length:5},()=>factory()(request)));
   assert.equal(new Set(values.map(v=>v.uid)).size,1);
   assert.equal((await auth.getUser(values[0].uid)).disabled,true);

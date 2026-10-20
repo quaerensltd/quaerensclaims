@@ -6,6 +6,8 @@ function loadAdmin(name,deps) {
   const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto');
   const root=path.resolve(__dirname,'../backend-sources',name),manifest=require(path.join(root,'source-manifest.json'));
   for(const row of manifest.records)if(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,row.target))).digest('hex')!==row.cloneSha256)throw Error('Admin source integrity mismatch');
+  const policy=require('./admin-authority.cjs').administration(deps);
+  if(name==='crm4AdminUpdateMembership')return policy.update;
   const exports={};
   const localRequire=id=>{
     const target=id.replace(/^\.\//,'')+'.js';
@@ -13,10 +15,21 @@ function loadAdmin(name,deps) {
     return require(path.join(root,target));
   };
   let source=fs.readFileSync(path.join(root,'index.js'),'utf8');
-  if(name==='crm4AdminUpdateMembership')source=require('./admin-capability-extension.cjs').extendMembershipUpdate(source);
-  require('node:vm').compileFunction(source,['exports','require','admin','db','onCall','HttpsError','resend','resendApiKeySecret','FieldValue','process','crm4Capabilities'],{filename:path.join(root,'index.js')})(exports,localRequire,deps.admin,deps.db,deps.onCall,deps.HttpsError,deps.resend,{},deps.admin.firestore.FieldValue,Object.freeze({env:Object.freeze({FUNCTIONS_EMULATOR:'false'})}),require('./staff-capabilities.cjs'));
+  if(name!=='crm4AdminProvisionExistingProcessing'){
+    const guard=/if \(!request\.auth \|\| request\.auth\.token\.platformAdmin !== true\) \{?[\s]*throw new HttpsError\("permission-denied", "Platform administrator access is required\."\);[\s]*\}?/;
+    if(!guard.test(source))throw Error('Admin authority hook drift');
+    source=source.replace(guard,'await crm4Administration.authorize(request,{role:request.data?.role});');
+    source=source.replace('outcome: "sent"','outcome: "captured"');
+    if(name==='crm4AdminSendPasswordSetupEmail')source=source.replace('  const user = await admin.auth().getUser(uid)', '  await crm4Administration.authorize(request,{target:{...membership.data(),uid}});\n  const user = await admin.auth().getUser(uid)');
+    if(name==='crm4AdminCreateUser'){
+      source=source.replace('user = await admin.auth().createUser({ email, displayName, emailVerified: false });','user = await admin.auth().createUser({ email, displayName, emailVerified: false, disabled:true });');
+      source=source.replace('    role,\n    workspaceId:', '    role,\n    ...(crm4Administration.desired(data)?{roles:[...crm4Administration.desired(data)]}:{}),\n    workspaceId:');
+    }
+  }
+  require('node:vm').compileFunction(source,['exports','require','admin','db','onCall','HttpsError','resend','resendApiKeySecret','FieldValue','process','crm4Capabilities','crm4Administration'],{filename:path.join(root,'index.js')})(exports,localRequire,deps.admin,deps.db,deps.onCall,deps.HttpsError,deps.resend,{},deps.admin.firestore.FieldValue,Object.freeze({env:Object.freeze({FUNCTIONS_EMULATOR:'false'})}),require('./staff-capabilities.cjs'),policy);
   return async request=>{
-    if(request.auth?.token?.platformAdmin!==true)throw new deps.HttpsError('permission-denied','Platform administrator required');
+    if(name==='crm4AdminProvisionExistingProcessing'){if(request.auth?.token?.platformAdmin!==true)throw new deps.HttpsError('permission-denied','Platform administrator required');}
+    else {const target=request.data?.uid?{...(await deps.db.collection('crm4Memberships').doc(request.data.uid).get()).data(),uid:request.data.uid}:undefined;await policy.authorize(request,{target,role:request.data?.role});}
     const synthetic=email=>{if(!/^[^@\s]+@(?:crm4\.)?example\.test$/.test(email||''))throw new deps.HttpsError('permission-denied','Synthetic emulator identity required');};
     if(name.endsWith('CreateUser'))synthetic(String(request.data?.email||'').trim().toLowerCase());
     else if(name.endsWith('ProvisionExistingProcessing')) {
@@ -25,8 +38,9 @@ function loadAdmin(name,deps) {
         try { synthetic((await deps.admin.auth().getUser(row.id)).email); }
         catch(error) { if(error.code!=='auth/user-not-found')throw error; }
       }
-    } else if(request.data?.uid)synthetic((await deps.admin.auth().getUser(request.data.uid)).email);
-    return exports[name](request);
+    } else if(request.data?.uid){const targetUser=await deps.admin.auth().getUser(request.data.uid);synthetic(targetUser.email);if(Object.keys(targetUser.customClaims||{}).length)throw new deps.HttpsError('permission-denied','Claim-bearing identities require separate governance');}
+    const result=await exports[name](request);
+    return name.endsWith('SendPasswordSetupEmail')?{...result,setupEmailSent:false,capturedOnly:true,externalCommunications:0}:result;
   };
 }
 module.exports={loadAdmin};

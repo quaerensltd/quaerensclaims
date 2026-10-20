@@ -9,33 +9,39 @@ function adminCreateRecovery(deps, options = {}) {
   return async request => {
     require('./runtime-boundary.cjs').assertRuntime(deps, true);
     const fail = (code, message) => { throw new deps.HttpsError(code, message); };
-    if (!request.auth?.uid || request.auth.token?.platformAdmin !== true) fail('permission-denied', 'Platform administrator required');
+    const policy=require('./admin-authority.cjs').administration(deps);
+    await policy.authorize(request,{role:request.data?.role});
     const d = request.data || {}, input = { email: String(d.email || '').trim().toLowerCase(), displayName: String(d.displayName || '').trim(), role: String(d.role || '').trim().toLowerCase(), active: d.active === undefined ? true : d.active, workspaceId: d.workspaceId === undefined ? 'CRM4' : d.workspaceId };
     if (!/^[^@\s]+@(?:crm4\.)?example\.test$/.test(input.email)) fail('permission-denied', 'Synthetic emulator identity required');
     if (!input.displayName || !['lister','manager','closer','processing','administrator'].includes(input.role) || typeof input.active !== 'boolean' || input.workspaceId !== 'CRM4') fail('invalid-argument', 'Invalid CRM4 account request');
+    const roles=policy.desired({...input,...(Object.hasOwn(d,'roles')?{roles:d.roles}:{})});if(roles)input.roles=[...roles];
     const key = hash(input.email), fingerprint = hash(input), ref = db.collection('crm4AdminCreateOperations').doc(key);
     const previous = await db.runTransaction(async tx => {
       const snap = await tx.get(ref);
       if (snap.exists) {
         const op = snap.data();
+        if(op.actorUid!==request.auth.uid)fail('permission-denied','Creation belongs to another actor');
         if (op.fingerprint !== fingerprint) fail('failed-precondition', 'Account creation request conflicts; use the membership operation for changes');
         return op;
       }
-      const op = { fingerprint, actorUid: request.auth.uid, state: 'PENDING', createdAt: deps.admin.firestore.FieldValue.serverTimestamp() };
+      const op = { uid:'crm4-staff-'+require('node:crypto').randomUUID(), fingerprint, actorUid: request.auth.uid, state: 'PENDING', createdAt: deps.admin.firestore.FieldValue.serverTimestamp() };
       tx.create(ref, op); return op;
     });
     if (previous.state === 'COMPLETE') return previous.result;
     const auth = deps.admin.auth();
     const wrappedAuth = new Proxy(auth, { get(target, property) {
+      if(property==='getUserByEmail')return async email=>{const user=await target.getUserByEmail(email);const op=(await ref.get()).data();if(Object.keys(user.customClaims||{}).length)fail('permission-denied','Claim-bearing identity cannot be adopted');if(op.uid!==user.uid)fail('failed-precondition','Existing identity requires explicit review');return user;};
       if (property === 'updateUser') return async (...args) => {
         await fault('BEFORE_AUTH_UPDATE');
         const user = await target.updateUser(...args);
+        await db.runTransaction(async tx=>{const member=db.collection('crm4Memberships').doc(user.uid),m=await tx.get(member);if(m.exists&&m.data().creationPending===key)tx.update(member,{creationPending:deps.admin.firestore.FieldValue.delete()});});
         await fault('AUTH_UPDATED'); return user;
       };
       if (property === 'createUser') return async values => {
         let user;
-        try { user = await target.createUser(values); }
-        catch (error) { if (error.code !== 'auth/email-already-exists') throw error; user = await target.getUserByEmail(input.email); }
+        try { user = await target.createUser({...values,uid:previous.uid}); }
+        catch (error) { if(!['auth/uid-already-exists','auth/email-already-exists'].includes(error.code))throw error;user=await target.getUser(previous.uid);if(user.email!==input.email)fail('failed-precondition','Auth identity mismatch'); }
+        await ref.update({uid:user.uid});
         await fault('AUTH_CREATED'); return user;
       };
       return typeof target[property] === 'function' ? target[property].bind(target) : target[property];
@@ -53,10 +59,12 @@ function adminCreateRecovery(deps, options = {}) {
               return async (data, settings) => {
                 await db.runTransaction(async tx => {
                   const op = (await tx.get(ref)).data(), existing = await tx.get(member);
+                  await policy.authorize(request,{role:input.role,tx});
                   if (op.uid && op.uid !== uid) fail('failed-precondition', 'Auth identity conflict');
                   if (op.membershipWritten) return;
                   if (existing.exists) fail('failed-precondition', 'Existing membership requires explicit membership management');
-                  tx.set(member, data, settings); tx.update(ref, { uid, membershipWritten: true });
+                  tx.set(member, {...data,creationPending:key}, settings); tx.update(ref, { uid, membershipWritten: true });
+                  tx.create(db.collection('crm4MembershipAudit').doc('membership-'+key),{action:'CRM4_USER_CREATED',actorUid:request.auth.uid,targetUid:uid,workspaceId:'CRM4',after:{role:input.role,roles:input.roles||[input.role],active:input.active},createdAt:deps.admin.firestore.FieldValue.serverTimestamp()});
                 });
                 await fault('MEMBERSHIP_WRITTEN');
               };
@@ -85,7 +93,7 @@ function adminCreateRecovery(deps, options = {}) {
     const result = await original({ ...request, auth: { ...request.auth, uid: previous.actorUid }, data: input });
     // Capture is explicitly not external communication, despite the source's
     // provider-branch bookkeeping value.
-    result.externalCommunications = 0;
+    result.externalCommunications = 0;result.setupEmailSent=false;result.capturedOnly=true;
     await ref.update({ state: 'COMPLETE', result });
     return result;
   };

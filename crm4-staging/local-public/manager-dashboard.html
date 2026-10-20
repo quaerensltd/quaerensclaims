@@ -429,6 +429,7 @@
     let refreshInProgress = false;
     let currentContext = null;
     let platformAdminEnabled = false;
+    let staffManagementEnabled = false;
     let guidedSupportCases = [];
     let governedGuidedOperations = null;
     let guidedSupportRefundCase = null;
@@ -598,10 +599,10 @@
       const select = document.createElement("select");
       select.className = "rounded-xl border border-blue-200 bg-white px-3 py-2";
       select.setAttribute("aria-label", `Role for ${member.email || member.uid}`);
-      for (const role of [...CRM4_ADMIN_ROLES,"lister_closer"]) {
+      for (const role of (currentContext?.membershipRole === "administrator" ? [...CRM4_ADMIN_ROLES,"lister_closer"] : ["lister","closer","lister_closer"])) {
         const option = document.createElement("option");
         option.value = role;
-        option.textContent = role === "lister_closer" ? "Lister + Closer" : role.charAt(0).toUpperCase() + role.slice(1);
+        option.textContent = role === "lister_closer" ? "Lister & Closer" : role.charAt(0).toUpperCase() + role.slice(1);
         option.selected = (member.roles?.length === 2 && member.roles.includes("lister") && member.roles.includes("closer") ? "lister_closer" : member.role) === role;
         select.appendChild(option);
       }
@@ -623,7 +624,7 @@
     }
 
     async function updateCrm2Membership(member, roleSelect, activeSelect, button) {
-      if (!platformAdminEnabled) return;
+      if (!staffManagementEnabled) return;
       button.disabled = true;
       setAdminMessage("Updating protected CRM4 membership...");
       try {
@@ -633,22 +634,22 @@
         await loadCrm2Memberships();
       } catch (error) {
         console.warn("CRM4 membership update was rejected.");
-        setAdminMessage("The CRM4 membership could not be updated. Confirm platform administrator access and try again.", true);
+        setAdminMessage("The CRM4 membership could not be updated. Confirm CRM4 management access and try again.", true);
       } finally {
         button.disabled = false;
       }
     }
 
     async function sendCrm2PasswordSetupEmail(member, button) {
-      if (!platformAdminEnabled) return;
+      if (!staffManagementEnabled) return;
       button.disabled = true;
       setAdminMessage("Sending a new secure password setup link...");
       try {
         await httpsCallable(functions, "crm4AdminSendPasswordSetupEmail")({ uid:member.uid });
-        setAdminMessage(`A new secure password setup link has been emailed to ${member.email || "the selected user"}.`);
+        setAdminMessage(`Password setup invitation captured for ${member.email || "the selected user"}; synthetic mode sends no email.`);
       } catch (error) {
         console.warn("CRM4 password setup email was rejected.");
-        setAdminMessage("The password setup email could not be sent. Confirm platform administrator access and try again.", true);
+        setAdminMessage("The password setup email could not be sent. Confirm CRM4 management access and try again.", true);
       } finally { button.disabled = false; }
     }
 
@@ -696,6 +697,11 @@
         resetButton.className = "btn btn-secondary py-2 px-3 ml-2";
         resetButton.textContent = "Send new password setup link";
         resetButton.addEventListener("click", () => sendCrm2PasswordSetupEmail(member, resetButton));
+        if(member.accessChangePending)userEmail.textContent += " — Access change requires reconciliation";
+        if(member.accessChangePending)saveButton.textContent="Retry access change";
+        const manageable=!member.creationPending && member.uid!==auth.currentUser?.uid && (currentContext.membershipRole==="administrator" || ["lister","closer"].includes(member.role));
+        for(const control of [roleSelect,activeSelect,saveButton,resetButton])control.disabled=!manageable;
+        if(member.accessChangePending){roleSelect.disabled=true;activeSelect.disabled=true;resetButton.disabled=true;}
         actionCell.append(saveButton, resetButton);
         row.append(userCell, roleCell, activeCell, actionCell);
         crm4MembershipsBody.appendChild(row);
@@ -703,7 +709,7 @@
     }
 
     async function loadCrm2Memberships() {
-      if (!platformAdminEnabled) return;
+      if (!staffManagementEnabled) return;
       refreshMembershipsBtn.disabled = true;
       try {
         const snapshot = await getDocs(collection(db, "crm4Memberships"));
@@ -713,7 +719,7 @@
       } catch (error) {
         console.warn("CRM4 memberships are not currently available.");
         renderCrm2Memberships([]);
-        setAdminMessage("CRM4 memberships could not be loaded. Confirm platform administrator access and try again.", true);
+        setAdminMessage("CRM4 memberships could not be loaded. Confirm CRM4 management access and try again.", true);
       } finally {
         refreshMembershipsBtn.disabled = false;
       }
@@ -738,11 +744,20 @@
 
     async function enablePlatformAdminTools(user) {
       platformAdminEnabled = false;
+      staffManagementEnabled = false;
       crm4AdminNav.classList.add("hidden");
       crm4UserAdministration.classList.add("hidden");
       guidedSupportNav.classList.add("hidden");
       guidedSupportQueue.classList.add("hidden");
-      if (!isCrm2(currentContext) || currentContext.membershipRole !== "administrator") return;
+      if (!isCrm2(currentContext) || !["manager","administrator"].includes(currentContext.membershipRole)) return;
+      staffManagementEnabled = true;
+      crm4AdminNav.classList.remove("hidden");
+      crm4UserAdministration.classList.remove("hidden");
+      provisionProcessingBtn.classList.add("hidden");
+      const roleInput=document.getElementById("crm4AdminRole");
+      for(const option of roleInput.options)option.disabled=currentContext.membershipRole!=="administrator" && !["lister","closer","lister_closer"].includes(option.value);
+      await loadCrm2Memberships();
+      if(currentContext.membershipRole!=="administrator")return;
       const token = await getIdTokenResult(user);
       if (token.claims.platformAdmin !== true) return;
       platformAdminEnabled = true;
@@ -1385,7 +1400,7 @@
 
     crm4CreateUserForm.addEventListener("submit", async event => {
       event.preventDefault();
-      if (!platformAdminEnabled) return;
+      if (!staffManagementEnabled) return;
       crm4CreateUserBtn.disabled = true;
       setAdminMessage("Creating secure CRM4 access...");
       try {
@@ -1394,17 +1409,18 @@
         const response = await createUser({
           displayName:String(values.displayName || "").trim(),
           email:String(values.email || "").trim().toLowerCase(),
-          role:String(values.role || ""),
+          role:values.role === "lister_closer" ? "lister" : String(values.role || ""),
+          ...(values.role === "lister_closer" ? {roles:["lister","closer"]} : {}),
           active:document.getElementById("crm4AdminActive").checked,
           workspaceId:"CRM4"
         });
         crm4CreateUserForm.reset();
         document.getElementById("crm4AdminActive").checked = true;
-        setAdminMessage(`Secure CRM4 access created for ${response.data.email}. The password setup link was emailed directly to the employee.`);
+        setAdminMessage(`Secure CRM4 access created for ${response.data.email}. The setup invitation was captured for synthetic testing; no email was delivered.`);
         await loadCrm2Memberships();
       } catch (error) {
         console.warn("CRM4 user creation was rejected.");
-        setAdminMessage("CRM4 access could not be created. Check the user details and platform administrator permission, then try again.", true);
+        setAdminMessage("CRM4 access could not be created. Check the user details and CRM4 management permission, then try again.", true);
       } finally {
         crm4CreateUserBtn.disabled = false;
       }

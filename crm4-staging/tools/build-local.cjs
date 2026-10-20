@@ -40,6 +40,7 @@ function transform(source, modules) {
   text = require('./adapt-manual-page.cjs').adaptManualPage(text);
   text = require('./scope-browser-queries.cjs').scopeQueries(text);
   text = require('./adapt-staff-browser.cjs').adaptStaffBrowser(text);
+  text = require('./adapt-admin-browser.cjs').adaptAdminBrowser(text);
   return text.replace(/^[\t ]+$/gm, '').replace(/\s+$/, '') + '\n';
 }
 function compatWrapper() {

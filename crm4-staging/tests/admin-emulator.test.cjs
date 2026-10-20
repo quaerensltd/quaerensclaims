@@ -7,6 +7,7 @@ test('pinned Admin create/setup/block/reactivate and Processing provisioning rem
  try {
   const input={email:id+'@example.test',displayName:'Synthetic Processing',role:'processing',workspaceId:'CRM4'};
   await assert.rejects(invoke('CreateUser',input,{}),e=>e.code==='permission-denied');
+  await r.db.collection('crm4Memberships').doc(id).set({uid:id,workspaceId:'CRM4',role:'administrator',active:true});
   await assert.rejects(invoke('CreateUser',{...input,email:'not-synthetic@example.com'}),e=>e.code==='permission-denied');
   await assert.rejects(invoke('CreateUser',{...input,workspaceId:'CRM2'}),e=>e.code==='invalid-argument');
   const created=await invoke('CreateUser',input),member=r.db.collection('crm4Memberships').doc(created.uid);

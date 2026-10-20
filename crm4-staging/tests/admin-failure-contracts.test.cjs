@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-test('Admin failure diagnostic: original multi-service contract converges on retry but is not atomic/exactly-once',async()=>{
+test('Admin failure diagnostic: multi-service failure is explicit and exact authorised reconciliation converges',async()=>{
  Object.assign(process.env,{GCLOUD_PROJECT:'demo-quaerens-crm4',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099'});
  const r=require('../tools/local-handlers.cjs').createLocalHandlers(),auth=require('firebase-admin/auth').getAuth(r.app),id='admin-failure-'+require('node:crypto').randomUUID();
  class HttpsError extends Error {constructor(code,message){super(message);this.code=code;}}
@@ -10,6 +10,7 @@ test('Admin failure diagnostic: original multi-service contract converges on ret
  const load=suffix=>require('../tools/local-admin.cjs').loadAdmin('crm4Admin'+suffix,deps),identity={uid:id,token:{platformAdmin:true}};
  const data={email:id+'@example.test',displayName:'Synthetic failure recovery',role:'processing',workspaceId:'CRM4'};
  try {
+  await r.db.collection('crm4Memberships').doc(id).set({uid:id,workspaceId:'CRM4',role:'administrator',active:true});
   await assert.rejects(load('CreateUser')({auth:identity,data}),/provider failure/);
   const user=await auth.getUserByEmail(data.email),member=r.db.collection('crm4Memberships').doc(user.uid);
   assert.equal((await member.get()).data().active,true,'Inherited partial creation exists before failed email');
@@ -17,10 +18,10 @@ test('Admin failure diagnostic: original multi-service contract converges on ret
   // Source has no setup-email request key: this remains a documented limitation.
   await load('CreateUser')({auth:identity,data});assert.equal(captures,2,'Repeated successful source call captures another setup email');
   failAuth=true;const update={uid:user.uid,role:'processing',active:false};
-  await assert.rejects(load('UpdateMembership')({auth:identity,data:update}),/interrupted Auth/);
+  await assert.rejects(load('UpdateMembership')({auth:identity,data:update}),e=>e.code==='internal');
   assert.equal((await member.get()).data().active,false);assert.equal((await auth.getUser(user.uid)).disabled,false);
   await load('UpdateMembership')({auth:identity,data:update});assert.equal((await auth.getUser(user.uid)).disabled,true);
-  console.log('KNOWN INHERITED ADMIN LIMITATION: partial Auth/Firestore state and duplicate setup capture; retry convergence verified, atomic recovery NOT CERTIFIED');
+  console.log('Partial Auth/Firestore state remains non-atomic; explicit pending state and reconciliation verified. Direct pinned creation is not the registered recovery handler.');
  } finally {await r.close();}
 });
 test('legacy Closer Processing links are deliberately excluded for CRM4 members',async()=>{
@@ -48,6 +49,7 @@ test('Admin concurrent-create diagnostic preserves one Auth identity but exposes
  }:typeof target[key]==='function'?target[key].bind(target):target[key]});
  const deps={db:r.db,admin:{firestore:require('firebase-admin').firestore,auth:()=>proxy},HttpsError,onCall:(...a)=>a.at(-1),resend:require('../tools/local-providers.cjs').createLocalProviders().resend};
  try {
+  await r.db.collection('crm4Memberships').doc(id).set({uid:id,workspaceId:'CRM4',role:'administrator',active:true});
   const handler=require('../tools/local-admin.cjs').loadAdmin('crm4AdminCreateUser',deps),request={auth:{uid:id,token:{platformAdmin:true}},data:{email:id+'@example.test',displayName:'Synthetic race',role:'processing'}};
   const results=await Promise.allSettled([handler(request),handler(request)]);
   assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.find(r=>r.status==='rejected').reason.code,'auth/email-already-exists');
